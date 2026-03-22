@@ -1,0 +1,27 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+dist/
+
+# User and IDE files
+.vs/
+.vscode/
+*.user
+*.rsuser
+*.suo
+*.userprefs
+
+# Logs and diagnostics
+*.log
+*.tmp
+*.cache
+
+# NuGet and local packages
+packages/
+*.nupkg
+*.snupkg
+
+# OS files
+Thumbs.db
+Desktop.ini
+
