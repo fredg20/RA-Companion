@@ -36,4 +36,7 @@ public sealed class SuccesJeuUtilisateurRetroAchievements
 
     [JsonPropertyName("DateEarnedHardcore")]
     public string DateObtentionHardcore { get; set; } = string.Empty;
+
+    [JsonPropertyName("MemAddr")]
+    public string DefinitionMemoire { get; set; } = string.Empty;
 }

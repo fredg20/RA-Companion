@@ -3,7 +3,7 @@
 namespace RA.Compagnon.Modeles.Api;
 
 /// <summary>
-/// Représente l'achievement of the week.
+/// Représente le succès de la semaine.
 /// </summary>
 public sealed class SuccesSemaineRetroAchievements : ModeleApiRetroAchievementsBase
 {

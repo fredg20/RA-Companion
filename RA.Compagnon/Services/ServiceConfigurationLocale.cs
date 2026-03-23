@@ -90,6 +90,7 @@ public sealed class ServiceConfigurationLocale
 
         try
         {
+            // `user.json` évolue moins souvent que le reste de l'état applicatif.
             Directory.CreateDirectory(ObtenirDossierConfiguration());
             await SauvegarderJsonAsync(
                 CheminFichierUtilisateur,
@@ -115,6 +116,7 @@ public sealed class ServiceConfigurationLocale
 
         try
         {
+            // L'état applicatif est découpé en plusieurs fichiers pour limiter les réécritures inutiles.
             Directory.CreateDirectory(ObtenirDossierConfiguration());
             await SauvegarderJsonAsync(CheminFichierConfiguration, configuration);
             await SauvegarderOuSupprimerAsync(CheminFichierJeu, configuration.DernierJeuAffiche);
@@ -304,6 +306,7 @@ public sealed class ServiceConfigurationLocale
             await fluxEcriture.FlushAsync();
         }
 
+        // On remplace le fichier final seulement une fois le JSON temporaire complet.
         if (File.Exists(cheminFichier))
         {
             File.Delete(cheminFichier);

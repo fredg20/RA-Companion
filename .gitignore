@@ -2,6 +2,10 @@
 [Bb]in/
 [Oo]bj/
 dist/
+native/*/build/
+native/*/build-clang/
+native/*/build-zig/
+third_party/
 
 # User and IDE files
 .vs/
@@ -15,6 +19,8 @@ dist/
 *.log
 *.tmp
 *.cache
+*.pdb
+*.lib
 
 # NuGet and local packages
 packages/
@@ -25,3 +31,8 @@ packages/
 Thumbs.db
 Desktop.ini
 
+# Local temporary work
+.tmp_*/
+.tmp*
+.zig-*/
+.zig-cache*/

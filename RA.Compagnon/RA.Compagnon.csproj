@@ -15,4 +15,13 @@
   <ItemGroup>
     <Resource Include="..\rac.ico" Link="rac.ico" />
   </ItemGroup>
+
+  <ItemGroup Condition="Exists('..\native\ra_compagnon_rcheevos_bridge\build-zig\ra_compagnon_rcheevos_bridge.dll')">
+    <Content
+      Include="..\native\ra_compagnon_rcheevos_bridge\build-zig\ra_compagnon_rcheevos_bridge.dll"
+      Link="ra_compagnon_rcheevos_bridge.dll"
+    >
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

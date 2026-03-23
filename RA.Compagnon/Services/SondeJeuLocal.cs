@@ -108,6 +108,7 @@ public sealed class SondeJeuLocal
 
                         JeuDetecteLocalement jeuDetecte = new()
                         {
+                            IdentifiantProcessus = processus.Id,
                             NomEmulateur = emulateur.NomAffiche,
                             NomProcessus = processus.ProcessName,
                             TitreFenetre = processus.MainWindowTitle,

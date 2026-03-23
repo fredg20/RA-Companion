@@ -6,6 +6,11 @@
 public sealed class JeuDetecteLocalement
 {
     /// <summary>
+    /// Identifiant du processus détecté.
+    /// </summary>
+    public int IdentifiantProcessus { get; set; }
+
+    /// <summary>
     /// Nom lisible de l'émulateur détecté.
     /// </summary>
     public string NomEmulateur { get; set; } = string.Empty;

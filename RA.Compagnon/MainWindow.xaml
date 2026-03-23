@@ -535,6 +535,14 @@
                           TextWrapping="Wrap"
                           Visibility="Collapsed"
                         />
+                        <TextBox
+                          x:Name="TexteIndicateurRcheevosPremierSuccesNonDebloque"
+                          Margin="0,4,0,0"
+                          Style="{StaticResource StyleTexteCopiable}"
+                          Opacity="0.72"
+                          TextWrapping="Wrap"
+                          Visibility="Collapsed"
+                        />
                       </StackPanel>
                     </Grid>
                   </Grid>

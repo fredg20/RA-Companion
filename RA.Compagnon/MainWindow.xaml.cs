@@ -49,6 +49,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly SondeJeuLocal _sondeJeuLocal = new();
     private readonly ServiceHachageJeuLocal _serviceHachageJeuLocal = new();
     private readonly ServiceTraductionTexte _serviceTraductionTexte = new();
+    private readonly ServiceRcheevos _serviceRcheevos = new();
     private readonly DispatcherTimer _minuteurActualisationApi = new();
     private readonly DispatcherTimer _minuteurSondeLocale = new();
     private readonly DispatcherTimer _minuteurMasquageBarreDefilement = new();
@@ -825,6 +826,21 @@ public partial class MainWindow : UiControls.FluentWindow
         TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
         TextePointsPremierSuccesNonDebloque.Text = string.Empty;
         TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+        TexteIndicateurRcheevosPremierSuccesNonDebloque.Text = string.Empty;
+        TexteIndicateurRcheevosPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Met à jour la ligne d'indicateur rcheevos du succès en cours.
+    /// </summary>
+    private void DefinirIndicateurRcheevosPremierSucces(string texte)
+    {
+        TexteIndicateurRcheevosPremierSuccesNonDebloque.Text = texte;
+        TexteIndicateurRcheevosPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            texte
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
     }
 
     /// <summary>
@@ -841,6 +857,27 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
+    /// Efface les zones de rétrosuccès et leur état persisté pour éviter de garder ceux d'un ancien jeu.
+    /// </summary>
+    private void ReinitialiserSuccesAffichesEtPersistes()
+    {
+        ReinitialiserPremierSuccesNonDebloque();
+        ReinitialiserGrilleTousSucces();
+
+        if (_configurationConnexion.DernierSuccesAffiche is not null)
+        {
+            _configurationConnexion.DernierSuccesAffiche = null;
+            _dernierSuccesAfficheModifie = true;
+        }
+
+        if (_configurationConnexion.DerniereListeSuccesAffichee is not null)
+        {
+            _configurationConnexion.DerniereListeSuccesAffichee = null;
+            _derniereListeSuccesAfficheeModifiee = true;
+        }
+    }
+
+    /// <summary>
     /// Met à jour l'affichage des succès du jeu courant.
     /// </summary>
     private async Task MettreAJourSuccesJeuAsync(JeuUtilisateurRetroAchievements jeu)
@@ -852,6 +889,7 @@ public partial class MainWindow : UiControls.FluentWindow
                 .ThenBy(item => item.IdentifiantSucces),
         ];
 
+        _serviceRcheevos.DefinirDefinitionsSucces(succes);
         await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
         await MettreAJourGrilleTousSuccesAsync(jeu.IdentifiantJeu, succes);
     }
@@ -881,13 +919,16 @@ public partial class MainWindow : UiControls.FluentWindow
             TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TextePointsPremierSuccesNonDebloque.Text = string.Empty;
             TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            DefinirIndicateurRcheevosPremierSucces(string.Empty);
             SauvegarderDernierSuccesAffiche(
                 new EtatSuccesAfficheLocal
                 {
                     IdentifiantJeu = identifiantJeu,
+                    IdentifiantSucces = 0,
                     Titre = TexteTitrePremierSuccesNonDebloque.Text,
                     Description = TexteDescriptionPremierSuccesNonDebloque.Text,
                     DetailsPoints = string.Empty,
+                    IndicateurProgression = string.Empty,
                     TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
                 }
             );
@@ -925,13 +966,19 @@ public partial class MainWindow : UiControls.FluentWindow
         TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(detailsPoints)
             ? Visibility.Collapsed
             : Visibility.Visible;
+        string indicateurProgression = ConstruireIndicateurRcheevosPremierSucces(
+            _serviceRcheevos.ObtenirIndicateurProgression(premierSucces.IdentifiantSucces)
+        );
+        DefinirIndicateurRcheevosPremierSucces(indicateurProgression);
         SauvegarderDernierSuccesAffiche(
             new EtatSuccesAfficheLocal
             {
                 IdentifiantJeu = identifiantJeu,
+                IdentifiantSucces = premierSucces.IdentifiantSucces,
                 Titre = TexteTitrePremierSuccesNonDebloque.Text,
                 Description = TexteDescriptionPremierSuccesNonDebloque.Text,
                 DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
+                IndicateurProgression = indicateurProgression,
                 CheminImageBadge = urlBadge,
                 TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
             }
@@ -1120,415 +1167,6 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Planifie le recalcul de la hauteur visible de la grille des succès.
-    /// </summary>
-    private void PlanifierMiseAJourAnimationGrilleTousSucces()
-    {
-        if (_miseAJourAnimationGrilleSuccesPlanifiee)
-        {
-            return;
-        }
-
-        _miseAJourAnimationGrilleSuccesPlanifiee = true;
-        _ = Dispatcher.BeginInvoke(
-            () =>
-            {
-                _miseAJourAnimationGrilleSuccesPlanifiee = false;
-                MettreAJourAnimationGrilleTousSucces();
-            },
-            DispatcherPriority.Render
-        );
-    }
-
-    /// <summary>
-    /// Borne la hauteur visible de la grille des succès et anime son contenu en rebond si nécessaire.
-    /// </summary>
-    private void MettreAJourAnimationGrilleTousSucces()
-    {
-        if (
-            ConteneurGrilleTousSuccesJeuEnCours is null
-            || GrilleTousSuccesJeuEnCours is null
-            || ZonePrincipale is null
-        )
-        {
-            return;
-        }
-
-        if (GrilleTousSuccesJeuEnCours.Children.Count == 0)
-        {
-            _signatureAnimationGrilleSucces = string.Empty;
-            _amplitudeAnimationGrilleSucces = 0;
-            TranslateTransform translationVide =
-                GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-                ?? new TranslateTransform();
-            GrilleTousSuccesJeuEnCours.RenderTransform = translationVide;
-            ArreterAnimationGrilleSucces(translationVide);
-            GrilleTousSuccesJeuEnCours.Width = double.NaN;
-            GrilleTousSuccesJeuEnCours.Height = double.NaN;
-            ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
-            ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
-            return;
-        }
-
-        double hauteurDisponible = CalculerHauteurDisponibleGrilleTousSucces();
-
-        if (hauteurDisponible <= 0)
-        {
-            _signatureAnimationGrilleSucces = string.Empty;
-            _amplitudeAnimationGrilleSucces = 0;
-            TranslateTransform translationVide =
-                GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-                ?? new TranslateTransform();
-            GrilleTousSuccesJeuEnCours.RenderTransform = translationVide;
-            ArreterAnimationGrilleSucces(translationVide);
-            GrilleTousSuccesJeuEnCours.Width = double.NaN;
-            GrilleTousSuccesJeuEnCours.Height = double.NaN;
-            ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
-            ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
-            return;
-        }
-
-        ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = hauteurDisponible;
-        ConteneurGrilleTousSuccesJeuEnCours.Height = hauteurDisponible;
-        GrilleTousSuccesJeuEnCours.Measure(
-            new Size(ConteneurGrilleTousSuccesJeuEnCours.ActualWidth, double.PositiveInfinity)
-        );
-        double hauteurContenu = GrilleTousSuccesJeuEnCours.DesiredSize.Height;
-        GrilleTousSuccesJeuEnCours.Width = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
-        GrilleTousSuccesJeuEnCours.Height = hauteurContenu;
-        double amplitude = Math.Max(0, hauteurContenu - hauteurDisponible + 8);
-        _amplitudeAnimationGrilleSucces = amplitude;
-
-        string signatureAnimation =
-            $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurDisponible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(amplitude, 1, MidpointRounding.AwayFromZero)}";
-
-        TranslateTransform translation =
-            GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-            ?? new TranslateTransform();
-        GrilleTousSuccesJeuEnCours.RenderTransform = translation;
-
-        if (amplitude <= SeuilDeclenchementDefilementGrilleSucces)
-        {
-            ArreterAnimationGrilleSucces(translation);
-            _signatureAnimationGrilleSucces = signatureAnimation;
-            return;
-        }
-
-        if (
-            string.Equals(
-                _signatureAnimationGrilleSucces,
-                signatureAnimation,
-                StringComparison.Ordinal
-            )
-        )
-        {
-            return;
-        }
-
-        _signatureAnimationGrilleSucces = signatureAnimation;
-        ArreterAnimationGrilleSucces(translation);
-        DemarrerAnimationGrilleSuccesDepuisPosition(
-            translation.Y,
-            amplitude,
-            _animationGrilleSuccesVersBas
-        );
-    }
-
-    /// <summary>
-    /// Arrête l'animation verticale de la grille et réinitialise sa position.
-    /// </summary>
-    private void ArreterAnimationGrilleSucces(TranslateTransform translation)
-    {
-        _horlogeAnimationGrilleSucces?.Controller?.Stop();
-        _horlogeAnimationGrilleSucces = null;
-        translation.ApplyAnimationClock(TranslateTransform.YProperty, null);
-    }
-
-    /// <summary>
-    /// Démarre l'animation verticale de la grille depuis une position donnée.
-    /// </summary>
-    private void DemarrerAnimationGrilleSuccesDepuisPosition(
-        double positionInitiale,
-        double amplitude,
-        bool allerVersBas
-    )
-    {
-        if (GrilleTousSuccesJeuEnCours is null)
-        {
-            return;
-        }
-
-        TranslateTransform translation =
-            GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-            ?? new TranslateTransform();
-        GrilleTousSuccesJeuEnCours.RenderTransform = translation;
-
-        double position = Math.Clamp(positionInitiale, -amplitude, 0);
-        translation.Y = position;
-        _animationGrilleSuccesVersBas = allerVersBas;
-
-        if (Math.Abs(position) <= 0.5)
-        {
-            DemarrerAnimationGrilleSuccesCyclique(translation, amplitude, true);
-            return;
-        }
-
-        if (Math.Abs(position + amplitude) <= 0.5)
-        {
-            DemarrerAnimationGrilleSuccesCyclique(translation, amplitude, false);
-            return;
-        }
-
-        double ciblePremierTrajet = allerVersBas ? -amplitude : 0;
-        double distancePremierTrajet = Math.Abs(ciblePremierTrajet - position);
-        double dureePremierTrajet = Math.Clamp(
-            distancePremierTrajet / VitesseDefilementGrilleSuccesPixelsParSeconde,
-            0.8,
-            16
-        );
-        DoubleAnimation animationPremierTrajet = new()
-        {
-            From = position,
-            To = ciblePremierTrajet,
-            Duration = TimeSpan.FromSeconds(dureePremierTrajet),
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-            FillBehavior = FillBehavior.Stop,
-        };
-
-        AnimationClock horlogePremierTrajet = animationPremierTrajet.CreateClock();
-        _horlogeAnimationGrilleSucces = horlogePremierTrajet;
-        animationPremierTrajet.Completed += (_, _) =>
-        {
-            if (!ReferenceEquals(_horlogeAnimationGrilleSucces, horlogePremierTrajet))
-            {
-                return;
-            }
-
-            translation.ApplyAnimationClock(TranslateTransform.YProperty, null);
-            translation.Y = ciblePremierTrajet;
-            _horlogeAnimationGrilleSucces = null;
-
-            if (_survolBadgeGrilleSuccesActif)
-            {
-                return;
-            }
-
-            DemarrerAnimationGrilleSuccesCyclique(
-                translation,
-                amplitude,
-                departEnHaut: ciblePremierTrajet >= -0.5
-            );
-        };
-
-        translation.ApplyAnimationClock(TranslateTransform.YProperty, horlogePremierTrajet);
-
-        if (_survolBadgeGrilleSuccesActif)
-        {
-            horlogePremierTrajet.Controller?.Pause();
-        }
-    }
-
-    /// <summary>
-    /// Démarre un cycle de rebond complet entre le haut et le bas de la grille.
-    /// </summary>
-    private void DemarrerAnimationGrilleSuccesCyclique(
-        TranslateTransform translation,
-        double amplitude,
-        bool departEnHaut
-    )
-    {
-        double positionDepart = departEnHaut ? 0 : -amplitude;
-        double positionArrivee = departEnHaut ? -amplitude : 0;
-        double dureeTrajetSecondes = Math.Clamp(
-            amplitude / VitesseDefilementGrilleSuccesPixelsParSeconde,
-            4,
-            16
-        );
-        TimeSpan pause = TimeSpan.FromSeconds(1.1);
-        TimeSpan trajet = TimeSpan.FromSeconds(dureeTrajetSecondes);
-        DoubleAnimationUsingKeyFrames animation = new() { RepeatBehavior = RepeatBehavior.Forever };
-
-        translation.Y = positionDepart;
-        _animationGrilleSuccesVersBas = departEnHaut;
-
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(positionDepart, KeyTime.FromTimeSpan(TimeSpan.Zero))
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(positionDepart, KeyTime.FromTimeSpan(pause))
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                positionArrivee,
-                KeyTime.FromTimeSpan(pause + trajet),
-                new SineEase { EasingMode = EasingMode.EaseInOut }
-            )
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(positionArrivee, KeyTime.FromTimeSpan(pause + trajet + pause))
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                positionDepart,
-                KeyTime.FromTimeSpan(pause + trajet + pause + trajet),
-                new SineEase { EasingMode = EasingMode.EaseInOut }
-            )
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                positionDepart,
-                KeyTime.FromTimeSpan(pause + trajet + pause + trajet + pause)
-            )
-        );
-
-        _horlogeAnimationGrilleSucces = animation.CreateClock();
-        translation.ApplyAnimationClock(
-            TranslateTransform.YProperty,
-            _horlogeAnimationGrilleSucces
-        );
-
-        if (_survolBadgeGrilleSuccesActif)
-        {
-            _horlogeAnimationGrilleSucces.Controller?.Pause();
-        }
-    }
-
-    /// <summary>
-    /// Calcule la hauteur visible maximale de la grille des succès dans la fenêtre.
-    /// </summary>
-    private double CalculerHauteurDisponibleGrilleTousSucces()
-    {
-        if (
-            ConteneurGrilleTousSuccesJeuEnCours is null
-            || ZonePrincipale is null
-            || !ConteneurGrilleTousSuccesJeuEnCours.IsLoaded
-        )
-        {
-            return 0;
-        }
-
-        double hauteurViewport =
-            ZonePrincipale.ViewportHeight > 0
-                ? ZonePrincipale.ViewportHeight
-                : ZonePrincipale.ActualHeight;
-
-        if (hauteurViewport <= 0)
-        {
-            return 0;
-        }
-
-        Point positionDansScrollViewer = ConteneurGrilleTousSuccesJeuEnCours.TranslatePoint(
-            new Point(0, 0),
-            ZonePrincipale
-        );
-        double margeBas = 12;
-        double hauteurDisponible = hauteurViewport - positionDansScrollViewer.Y - margeBas;
-
-        return Math.Max(HauteurMinimaleGrilleSucces, hauteurDisponible);
-    }
-
-    /// <summary>
-    /// Met en pause l'animation des succès lors du survol d'un badge.
-    /// </summary>
-    private void BadgeGrilleSucces_EntreeSouris(object sender, MouseEventArgs e)
-    {
-        _survolBadgeGrilleSuccesActif = true;
-        _minuteurRepriseAnimationGrilleSucces.Stop();
-        _horlogeAnimationGrilleSucces?.Controller?.Pause();
-    }
-
-    /// <summary>
-    /// Reprend l'animation des succès lorsque le survol d'un badge se termine.
-    /// </summary>
-    private void BadgeGrilleSucces_SortieSouris(object sender, MouseEventArgs e)
-    {
-        _survolBadgeGrilleSuccesActif = false;
-        ReprendreAnimationGrilleSuccesSiPossible();
-    }
-
-    /// <summary>
-    /// Permet de faire défiler manuellement la grille des succès à la molette.
-    /// </summary>
-    private void ConteneurGrilleTousSuccesJeuEnCours_ApercuMoletteSouris(
-        object sender,
-        MouseWheelEventArgs e
-    )
-    {
-        if (
-            GrilleTousSuccesJeuEnCours is null
-            || _amplitudeAnimationGrilleSucces <= SeuilDeclenchementDefilementGrilleSucces
-        )
-        {
-            return;
-        }
-
-        TranslateTransform translation =
-            GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-            ?? new TranslateTransform();
-        GrilleTousSuccesJeuEnCours.RenderTransform = translation;
-
-        double positionCourante =
-            _horlogeAnimationGrilleSucces?.GetCurrentValue(translation.Y, translation.Y) as double?
-            ?? translation.Y;
-
-        ArreterAnimationGrilleSucces(translation);
-
-        double pas = Math.Abs(e.Delta) / 120d * 32d;
-        double nouvellePosition = Math.Clamp(
-            positionCourante + (e.Delta > 0 ? pas : -pas),
-            -_amplitudeAnimationGrilleSucces,
-            0
-        );
-
-        translation.Y = nouvellePosition;
-        _animationGrilleSuccesVersBas = e.Delta < 0;
-        _minuteurRepriseAnimationGrilleSucces.Stop();
-        _minuteurRepriseAnimationGrilleSucces.Start();
-        e.Handled = true;
-    }
-
-    /// <summary>
-    /// Relance l'animation des succès après un défilement manuel.
-    /// </summary>
-    private void MinuteurRepriseAnimationGrilleSucces_Tick(object? sender, EventArgs e)
-    {
-        _minuteurRepriseAnimationGrilleSucces.Stop();
-        ReprendreAnimationGrilleSuccesSiPossible();
-    }
-
-    /// <summary>
-    /// Reprend ou recrée l'animation de la grille des succès si les conditions le permettent.
-    /// </summary>
-    private void ReprendreAnimationGrilleSuccesSiPossible()
-    {
-        if (
-            _survolBadgeGrilleSuccesActif
-            || GrilleTousSuccesJeuEnCours is null
-            || _amplitudeAnimationGrilleSucces <= SeuilDeclenchementDefilementGrilleSucces
-        )
-        {
-            return;
-        }
-
-        TranslateTransform translation =
-            GrilleTousSuccesJeuEnCours.RenderTransform as TranslateTransform
-            ?? new TranslateTransform();
-        GrilleTousSuccesJeuEnCours.RenderTransform = translation;
-
-        if (_horlogeAnimationGrilleSucces is not null)
-        {
-            _horlogeAnimationGrilleSucces.Controller?.Resume();
-            return;
-        }
-
-        DemarrerAnimationGrilleSuccesDepuisPosition(
-            translation.Y,
-            _amplitudeAnimationGrilleSucces,
-            _animationGrilleSuccesVersBas
-        );
-    }
-
-    /// <summary>
     /// Construit l'URL publique d'un badge de succès.
     /// </summary>
     private static string ConstruireUrlBadgeDepuisNom(string nomBadge, bool versionVerrouillee)
@@ -1594,6 +1232,74 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         return string.Join(" • ", segments);
+    }
+
+    /// <summary>
+    /// Formate le Progress Indicator rcheevos du succès courant pour l'affichage.
+    /// </summary>
+    private static string ConstruireIndicateurRcheevosPremierSucces(
+        IndicateurProgressionRcheevos? indicateur
+    )
+    {
+        if (indicateur is null)
+        {
+            return string.Empty;
+        }
+
+        List<string> segments = [];
+
+        if (!string.IsNullOrWhiteSpace(indicateur.Texte))
+        {
+            segments.Add($"Indicateur : {indicateur.Texte.Trim()}");
+        }
+
+        if (indicateur.Pourcentage.HasValue)
+        {
+            segments.Add(
+                $"Mesure : {indicateur.Pourcentage.Value.ToString("0.#", CultureInfo.CurrentCulture)} %"
+            );
+        }
+
+        return string.Join(" • ", segments);
+    }
+
+    /// <summary>
+    /// Tente de recalculer l'indicateur rcheevos du succès actuellement affiché quand on connaît son identifiant.
+    /// </summary>
+    private void RafraichirIndicateurRcheevosPremierSuccesSiPossible(int identifiantSucces)
+    {
+        if (identifiantSucces <= 0)
+        {
+            return;
+        }
+
+        string indicateurProgression = ConstruireIndicateurRcheevosPremierSucces(
+            _serviceRcheevos.ObtenirIndicateurProgression(identifiantSucces)
+        );
+
+        if (string.IsNullOrWhiteSpace(indicateurProgression))
+        {
+            return;
+        }
+
+        DefinirIndicateurRcheevosPremierSucces(indicateurProgression);
+
+        EtatSuccesAfficheLocal? succesSauvegarde = _configurationConnexion.DernierSuccesAffiche;
+        if (
+            succesSauvegarde is null
+            || succesSauvegarde.IdentifiantSucces != identifiantSucces
+            || string.Equals(
+                succesSauvegarde.IndicateurProgression,
+                indicateurProgression,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            return;
+        }
+
+        succesSauvegarde.IndicateurProgression = indicateurProgression;
+        _dernierSuccesAfficheModifie = true;
     }
 
     /// <summary>
@@ -1796,173 +1502,6 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Met à jour le titre du jeu puis relance son éventuel défilement.
-    /// </summary>
-    private void DefinirTitreJeuEnCours(string titre)
-    {
-        bool titreInchange = string.Equals(
-            TexteTitreJeuEnCours.Text,
-            titre,
-            StringComparison.Ordinal
-        );
-        ConteneurTitreJeuEnCours.ToolTip = titre;
-
-        if (titreInchange)
-        {
-            return;
-        }
-
-        _signatureAnimationTitreJeu = string.Empty;
-        TexteTitreJeuEnCours.Text = titre;
-        TexteTitreJeuEnCours.Width = double.NaN;
-        TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
-        PlanifierMiseAJourAnimationTitreJeuEnCours();
-    }
-
-    /// <summary>
-    /// Recalcule l'animation horizontale du titre de jeu si sa largeur dépasse l'espace disponible.
-    /// </summary>
-    private void MettreAJourAnimationTitreJeuEnCours()
-    {
-        if (
-            ConteneurTitreJeuEnCours is null
-            || TexteTitreJeuEnCours is null
-            || ZoneTitreJeuEnCours is null
-            || ConteneurTitreJeuEnCours.ActualWidth <= 0
-        )
-        {
-            return;
-        }
-
-        TranslateTransform translation =
-            TexteTitreJeuEnCours.RenderTransform as TranslateTransform ?? new TranslateTransform();
-        TexteTitreJeuEnCours.RenderTransform = translation;
-        translation.BeginAnimation(TranslateTransform.XProperty, null);
-        translation.X = 0;
-        TexteTitreJeuEnCours.Width = double.NaN;
-        TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
-        double largeurTitreSouhaitee = MesurerLargeurTitreJeuEnCours();
-        double largeurDisponible = ConteneurTitreJeuEnCours.ActualWidth;
-
-        if (largeurTitreSouhaitee <= 0 || largeurDisponible <= 0)
-        {
-            return;
-        }
-
-        double amplitude = Math.Max(0, largeurTitreSouhaitee - largeurDisponible + 12);
-
-        string signatureAnimation =
-            $"{TexteTitreJeuEnCours.Text}|{Math.Round(largeurTitreSouhaitee, 1, MidpointRounding.AwayFromZero)}|{Math.Round(largeurDisponible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(amplitude, 1, MidpointRounding.AwayFromZero)}";
-
-        if (amplitude <= SeuilDeclenchementDefilementTitreJeu)
-        {
-            _signatureAnimationTitreJeu = signatureAnimation;
-            return;
-        }
-
-        if (
-            string.Equals(_signatureAnimationTitreJeu, signatureAnimation, StringComparison.Ordinal)
-        )
-        {
-            return;
-        }
-
-        _signatureAnimationTitreJeu = signatureAnimation;
-
-        TexteTitreJeuEnCours.Width = largeurTitreSouhaitee;
-        System.Windows.Controls.Canvas.SetLeft(TexteTitreJeuEnCours, 0);
-
-        double dureeTrajetSecondes = Math.Clamp(
-            amplitude / VitesseDefilementTitreJeuPixelsParSeconde,
-            4,
-            16
-        );
-        TimeSpan pause = TimeSpan.FromSeconds(1.2);
-        TimeSpan trajet = TimeSpan.FromSeconds(dureeTrajetSecondes);
-        DoubleAnimationUsingKeyFrames animation = new() { RepeatBehavior = RepeatBehavior.Forever };
-
-        animation.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        animation.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause)));
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                -amplitude,
-                KeyTime.FromTimeSpan(pause + trajet),
-                new SineEase { EasingMode = EasingMode.EaseInOut }
-            )
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(-amplitude, KeyTime.FromTimeSpan(pause + trajet + pause))
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                0,
-                KeyTime.FromTimeSpan(pause + trajet + pause + trajet),
-                new SineEase { EasingMode = EasingMode.EaseInOut }
-            )
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                0,
-                KeyTime.FromTimeSpan(pause + trajet + pause + trajet + pause)
-            )
-        );
-
-        translation.BeginAnimation(TranslateTransform.XProperty, animation);
-    }
-
-    /// <summary>
-    /// Planifie le recalcul de l'animation du titre à la fin du cycle de mise en page courant.
-    /// </summary>
-    private void PlanifierMiseAJourAnimationTitreJeuEnCours()
-    {
-        if (_miseAJourAnimationTitreJeuPlanifiee)
-        {
-            return;
-        }
-
-        _miseAJourAnimationTitreJeuPlanifiee = true;
-        _ = Dispatcher.BeginInvoke(
-            () =>
-            {
-                _miseAJourAnimationTitreJeuPlanifiee = false;
-                MettreAJourAnimationTitreJeuEnCours();
-            },
-            DispatcherPriority.Render
-        );
-    }
-
-    /// <summary>
-    /// Mesure la largeur réelle du titre indépendamment du layout WPF courant.
-    /// </summary>
-    private double MesurerLargeurTitreJeuEnCours()
-    {
-        string texte = TexteTitreJeuEnCours.Text ?? string.Empty;
-
-        if (string.IsNullOrWhiteSpace(texte))
-        {
-            return 0;
-        }
-
-        double pixelsParDip = VisualTreeHelper.GetDpi(TexteTitreJeuEnCours).PixelsPerDip;
-        FormattedText texteMesure = new(
-            texte,
-            CultureInfo.CurrentUICulture,
-            FlowDirection.LeftToRight,
-            new Typeface(
-                TexteTitreJeuEnCours.FontFamily,
-                TexteTitreJeuEnCours.FontStyle,
-                TexteTitreJeuEnCours.FontWeight,
-                TexteTitreJeuEnCours.FontStretch
-            ),
-            TexteTitreJeuEnCours.FontSize,
-            Brushes.Transparent,
-            pixelsParDip
-        );
-
-        return Math.Ceiling(texteMesure.WidthIncludingTrailingWhitespace);
-    }
-
-    /// <summary>
     /// Affiche temporairement la barre de défilement après un usage de la molette ou un scroll.
     /// </summary>
     private void AfficherTemporairementBarreDefilementPrincipale()
@@ -2140,6 +1679,12 @@ public partial class MainWindow : UiControls.FluentWindow
         _dernierTitreJeuApi = jeuSauvegarde.Titre;
         _dernierIdentifiantJeuAvecInfos = jeuSauvegarde.IdentifiantJeu;
         _dernierIdentifiantJeuAvecProgression = jeuSauvegarde.IdentifiantJeu;
+        _serviceRcheevos.DefinirJeuActif(
+            jeuSauvegarde.IdentifiantJeu,
+            jeuSauvegarde.IdentifiantConsole,
+            jeuSauvegarde.Titre
+        );
+        _serviceRcheevos.ReinitialiserSourceMemoire();
 
         DefinirTitreJeuEnCours(jeuSauvegarde.Titre);
         DefinirDetailsJeuEnCours(jeuSauvegarde.Details);
@@ -2202,6 +1747,8 @@ public partial class MainWindow : UiControls.FluentWindow
         )
             ? Visibility.Collapsed
             : Visibility.Visible;
+        DefinirIndicateurRcheevosPremierSucces(succesSauvegarde.IndicateurProgression);
+        RafraichirIndicateurRcheevosPremierSuccesSiPossible(succesSauvegarde.IdentifiantSucces);
 
         if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
         {
@@ -2376,11 +1923,17 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         return precedent.IdentifiantJeu == courant.IdentifiantJeu
+            && precedent.IdentifiantSucces == courant.IdentifiantSucces
             && string.Equals(precedent.Titre, courant.Titre, StringComparison.Ordinal)
             && string.Equals(precedent.Description, courant.Description, StringComparison.Ordinal)
             && string.Equals(
                 precedent.DetailsPoints,
                 courant.DetailsPoints,
+                StringComparison.Ordinal
+            )
+            && string.Equals(
+                precedent.IndicateurProgression,
+                courant.IndicateurProgression,
                 StringComparison.Ordinal
             )
             && string.Equals(
@@ -2442,11 +1995,14 @@ public partial class MainWindow : UiControls.FluentWindow
     )
     {
         EtatJeuAfficheLocal? etatPrecedent = _configurationConnexion.DernierJeuAffiche;
-        bool conserverInformationsApi = JeuLocalCorrespondAuJeuAffiche(jeuLocal);
+        bool jeuLocalResoluParHash = jeuLocal.IdentifiantJeuRetroAchievements > 0;
+        bool conserverInformationsApi =
+            jeuLocalResoluParHash && JeuLocalCorrespondAuJeuAffiche(jeuLocal);
+        int identifiantJeu = jeuLocalResoluParHash ? jeuLocal.IdentifiantJeuRetroAchievements : 0;
 
         return new EtatJeuAfficheLocal
         {
-            IdentifiantJeu = conserverInformationsApi ? _dernierIdentifiantJeuAvecInfos : 0,
+            IdentifiantJeu = identifiantJeu,
             EstJeuEnCours = true,
             Titre = TexteTitreJeuEnCours.Text,
             Details = detailsJeuLocal,
@@ -2518,134 +2074,6 @@ public partial class MainWindow : UiControls.FluentWindow
             Developpeur = jeuSauvegarde.Developpeur,
             CheminImageBoite = jeuSauvegarde.CheminImageBoite,
         };
-    }
-
-    /// <summary>
-    /// Télécharge une image distante puis la garde en cache mémoire pour les prochains affichages.
-    /// </summary>
-    private async Task<ImageSource?> ChargerImageDistanteAsync(string urlImage)
-    {
-        if (string.IsNullOrWhiteSpace(urlImage))
-        {
-            return null;
-        }
-
-        if (_cacheImagesDistantes.TryGetValue(urlImage, out ImageSource? imageCachee))
-        {
-            return imageCachee;
-        }
-
-        string cheminCache = ObtenirCheminCacheImageDistante(urlImage);
-
-        if (File.Exists(cheminCache))
-        {
-            ImageSource? imageDepuisDisque = await ChargerImageDepuisFichierAsync(cheminCache);
-
-            if (imageDepuisDisque is not null)
-            {
-                _cacheImagesDistantes[urlImage] = imageDepuisDisque;
-                return imageDepuisDisque;
-            }
-        }
-
-        if (_chargementsImagesDistantesEnCours.TryGetValue(urlImage, out Task<ImageSource?>? tache))
-        {
-            return await tache;
-        }
-
-        Task<ImageSource?> nouvelleTache = TelechargerEtMettreEnCacheImageDistanteAsync(
-            urlImage,
-            cheminCache
-        );
-        _chargementsImagesDistantesEnCours[urlImage] = nouvelleTache;
-
-        try
-        {
-            ImageSource? image = await nouvelleTache;
-
-            if (image is not null)
-            {
-                _cacheImagesDistantes[urlImage] = image;
-            }
-
-            return image;
-        }
-        finally
-        {
-            _chargementsImagesDistantesEnCours.Remove(urlImage);
-        }
-    }
-
-    /// <summary>
-    /// Télécharge réellement une image distante.
-    /// </summary>
-    private static async Task<ImageSource?> TelechargerEtMettreEnCacheImageDistanteAsync(
-        string urlImage,
-        string cheminCache
-    )
-    {
-        using HttpResponseMessage reponse = await HttpClientImages.GetAsync(urlImage);
-        reponse.EnsureSuccessStatusCode();
-
-        await using Stream fluxImage = await reponse.Content.ReadAsStreamAsync();
-        MemoryStream memoire = new();
-        await fluxImage.CopyToAsync(memoire);
-        byte[] contenu = memoire.ToArray();
-
-        Directory.CreateDirectory(Path.GetDirectoryName(cheminCache)!);
-        await File.WriteAllBytesAsync(cheminCache, contenu);
-        return ChargerImageDepuisOctets(contenu);
-    }
-
-    /// <summary>
-    /// Charge une image depuis un fichier de cache local.
-    /// </summary>
-    private static async Task<ImageSource?> ChargerImageDepuisFichierAsync(string cheminCache)
-    {
-        try
-        {
-            byte[] contenu = await File.ReadAllBytesAsync(cheminCache);
-            return ChargerImageDepuisOctets(contenu);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Construit une image WPF figée à partir d'octets.
-    /// </summary>
-    private static ImageSource? ChargerImageDepuisOctets(byte[] contenu)
-    {
-        if (contenu.Length == 0)
-        {
-            return null;
-        }
-
-        using MemoryStream memoire = new(contenu);
-        BitmapImage image = new();
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.StreamSource = memoire;
-        image.EndInit();
-        image.Freeze();
-        return image;
-    }
-
-    /// <summary>
-    /// Détermine le chemin de cache disque d'une image distante.
-    /// </summary>
-    private static string ObtenirCheminCacheImageDistante(string urlImage)
-    {
-        byte[] empreinte = SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(urlImage));
-        string nomFichier = Convert.ToHexString(empreinte) + ".bin";
-        string dossierCache = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "RA-Compagnon",
-            "image_cache"
-        );
-        return Path.Combine(dossierCache, nomFichier);
     }
 
     /// <summary>
@@ -3340,6 +2768,7 @@ public partial class MainWindow : UiControls.FluentWindow
     )
     {
         JeuDetecteLocalement? jeuLocalDetecte = _sondeJeuLocal.DetecterJeu();
+        await _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocalDetecte);
         bool emulateurLocalDetecte = jeuLocalDetecte is not null;
         DefinirTitreZoneJeu(emulateurLocalDetecte);
         string messagePresence = string.IsNullOrWhiteSpace(profil.MessagePresenceRiche)
@@ -3364,6 +2793,16 @@ public partial class MainWindow : UiControls.FluentWindow
         {
             dernierJeuJoue = await ObtenirDernierJeuJoueAsync();
             identifiantJeuEffectif = dernierJeuJoue?.IdentifiantJeu ?? 0;
+        }
+
+        if (
+            _configurationConnexion.DernierSuccesAffiche?.IdentifiantJeu == identifiantJeuEffectif
+            && identifiantJeuEffectif > 0
+        )
+        {
+            RafraichirIndicateurRcheevosPremierSuccesSiPossible(
+                _configurationConnexion.DernierSuccesAffiche.IdentifiantSucces
+            );
         }
 
         if (identifiantJeuEffectif <= 0)
@@ -3541,6 +2980,7 @@ public partial class MainWindow : UiControls.FluentWindow
         _dernierTitreJeuApi = jeu.Titre;
         _dernierIdentifiantJeuAvecInfos = jeu.IdentifiantJeu;
         _dernierIdentifiantJeuAvecProgression = jeu.IdentifiantJeu;
+        _serviceRcheevos.DefinirJeuActif(jeu.IdentifiantJeu, jeu.IdentifiantConsole, jeu.Titre);
         await MettreAJourVisuelsJeuEnCoursAsync(jeu);
         await MettreAJourMetaConsoleJeuEnCoursAsync(jeu);
 
@@ -4111,6 +3551,7 @@ public partial class MainWindow : UiControls.FluentWindow
         string? raisonIndisponibiliteApi = null
     )
     {
+        await _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocal);
         jeuLocal.CheminJeuRetenu = DeterminerCheminJeuLocalRetenu(jeuLocal);
         string signatureJeuLocal = ConstruireSignatureJeuLocal(jeuLocal);
         JeuSystemeRetroAchievements? jeuResoluParHash =
@@ -4158,8 +3599,15 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (!conserverInformationsJeuAffiche)
         {
+            _serviceRcheevos.ReinitialiserJeuActif();
+            _serviceRcheevos.ReinitialiserDefinitionsSucces();
+            _dernierIdentifiantJeuApi = 0;
+            _dernierIdentifiantJeuAvecInfos = 0;
+            _dernierIdentifiantJeuAvecProgression = 0;
+            _dernierTitreJeuApi = string.Empty;
             ReinitialiserImageJeuEnCours();
             ReinitialiserMetaConsoleJeuEnCours();
+            ReinitialiserSuccesAffichesEtPersistes();
             DefinirTempsJeuSousImage(string.Empty);
             DefinirEtatJeuDansProgression(string.Empty);
         }
@@ -4179,6 +3627,22 @@ public partial class MainWindow : UiControls.FluentWindow
 
     private bool JeuLocalCorrespondAuJeuAffiche(JeuDetecteLocalement jeuLocal)
     {
+        if (jeuLocal.IdentifiantJeuRetroAchievements > 0)
+        {
+            int identifiantJeuAffiche =
+                _dernierIdentifiantJeuAvecInfos > 0
+                    ? _dernierIdentifiantJeuAvecInfos
+                    : _configurationConnexion.DernierJeuAffiche?.IdentifiantJeu ?? 0;
+
+            if (
+                identifiantJeuAffiche > 0
+                && identifiantJeuAffiche != jeuLocal.IdentifiantJeuRetroAchievements
+            )
+            {
+                return false;
+            }
+        }
+
         string titreLocal = NormaliserCleComparaisonJeu(jeuLocal.TitreJeuEstime);
         string titreAffiche = NormaliserCleComparaisonJeu(TexteTitreJeuEnCours.Text);
         string titreApi = NormaliserCleComparaisonJeu(_dernierTitreJeuApi);
@@ -4437,6 +3901,8 @@ public partial class MainWindow : UiControls.FluentWindow
     private void ReinitialiserJeuEnCours()
     {
         DefinirTitreZoneJeu(true);
+        _serviceRcheevos.ReinitialiserJeuActif();
+        _serviceRcheevos.ReinitialiserSourceMemoire();
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
         ReinitialiserCarrouselVisuelsJeuEnCours();
@@ -4460,6 +3926,8 @@ public partial class MainWindow : UiControls.FluentWindow
     private void ReinitialiserContexteSurveillance()
     {
         _actualisationApiCibleeEnAttente = false;
+        _serviceRcheevos.ReinitialiserJeuActif();
+        _serviceRcheevos.ReinitialiserSourceMemoire();
         _dernierIdentifiantJeuApi = 0;
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
@@ -4645,7 +4113,7 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Ouvre la modale de connexion pour modifier le compte sans perdre l'etat visuel courant.
+    /// Ouvre la modale de connexion pour modifier le compte sans perdre l'état visuel courant.
     /// </summary>
     private async void ConfigurerConnexion_Click(object sender, RoutedEventArgs e)
     {

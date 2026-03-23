@@ -11,6 +11,11 @@ public sealed class EtatSuccesAfficheLocal
     public int IdentifiantJeu { get; set; }
 
     /// <summary>
+    /// Identifiant RetroAchievements du succès affiché.
+    /// </summary>
+    public int IdentifiantSucces { get; set; }
+
+    /// <summary>
     /// Titre affiché pour le succès en cours.
     /// </summary>
     public string Titre { get; set; } = string.Empty;
@@ -24,6 +29,11 @@ public sealed class EtatSuccesAfficheLocal
     /// Ligne de détails affichée pour le succès en cours.
     /// </summary>
     public string DetailsPoints { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Indicateur de progression rcheevos affiché pour le succès en cours.
+    /// </summary>
+    public string IndicateurProgression { get; set; } = string.Empty;
 
     /// <summary>
     /// URL ou chemin du badge affiché.
