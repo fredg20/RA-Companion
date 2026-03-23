@@ -1,18 +1,22 @@
-﻿namespace RA.Compagnon.Modeles.Local;
+using System.Text.Json.Serialization;
+
+namespace RA.Compagnon.Modeles.Local;
 
 /// <summary>
-/// Représente les informations minimales de connexion et d'affichage à mémoriser localement.
+/// Représente les informations minimales d'affichage à mémoriser localement.
 /// </summary>
 public sealed class ConfigurationConnexion
 {
     /// <summary>
     /// Pseudo RetroAchievements saisi par l'utilisateur.
     /// </summary>
+    [JsonIgnore]
     public string Pseudo { get; set; } = string.Empty;
 
     /// <summary>
     /// Clé Web API utilisée pour les futurs appels authentifiés.
     /// </summary>
+    [JsonIgnore]
     public string CleApiWeb { get; set; } = string.Empty;
 
     /// <summary>
@@ -38,5 +42,18 @@ public sealed class ConfigurationConnexion
     /// <summary>
     /// Dernier jeu affiché avec ses informations principales.
     /// </summary>
+    [JsonIgnore]
     public EtatJeuAfficheLocal? DernierJeuAffiche { get; set; }
+
+    /// <summary>
+    /// Dernier rétrosuccès affiché dans la section dédiée.
+    /// </summary>
+    [JsonIgnore]
+    public EtatSuccesAfficheLocal? DernierSuccesAffiche { get; set; }
+
+    /// <summary>
+    /// Dernière liste de rétrosuccès affichée dans la grille du jeu.
+    /// </summary>
+    [JsonIgnore]
+    public EtatListeSuccesAfficheeLocal? DerniereListeSuccesAffichee { get; set; }
 }

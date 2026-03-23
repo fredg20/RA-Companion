@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -55,15 +56,17 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly Dictionary<string, ImageSource> _cacheImagesDistantes = new(
         StringComparer.OrdinalIgnoreCase
     );
+    private readonly Dictionary<string, Task<ImageSource?>> _chargementsImagesDistantesEnCours =
+        new(StringComparer.OrdinalIgnoreCase);
     private readonly List<VisuelJeuEnCours> _visuelsJeuEnCours = [];
     private SystemControls.Primitives.ScrollBar? _barreDefilementVerticalePrincipale;
-    private bool _carteConnexionRepliee;
-    private bool _carteJeuEnCoursRepliee;
     private bool _connexionInitialeAffichee;
     private bool _chargementJeuEnCoursActif;
     private bool _actualisationApiCibleeEnAttente;
     private bool _profilUtilisateurAccessible = true;
     private bool _dernierJeuAfficheModifie;
+    private bool _dernierSuccesAfficheModifie;
+    private bool _derniereListeSuccesAfficheeModifiee;
     private bool _miseAJourAnimationTitreJeuPlanifiee;
     private bool _miseAJourAnimationGrilleSuccesPlanifiee;
     private bool _animationGrilleSuccesVersBas = true;
@@ -80,6 +83,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _signatureAnimationTitreJeu = string.Empty;
     private string _signatureAnimationGrilleSucces = string.Empty;
     private string _etatConnexionCourant = "Non configuré";
+    private string _cheminImageJeuEnCoursDemande = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
     private int _indexVisuelJeuEnCours;
     private double _amplitudeAnimationGrilleSucces;
@@ -91,7 +95,6 @@ public partial class MainWindow : UiControls.FluentWindow
     public MainWindow()
     {
         InitializeComponent();
-        AppliquerEtatSectionsRepliables();
         AppliquerIconeApplication();
         ReinitialiserJeuEnCours();
         ConfigurerActualisationAutomatique();
@@ -150,6 +153,8 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         _connexionInitialeAffichee = true;
+        DefinirVisibiliteContenuPrincipal(true);
+        AjusterDisposition();
         _configurationConnexion = await _serviceConfigurationLocale.ChargerAsync();
         AppliquerGeometrieFenetre();
         MettreAJourResumeConnexion();
@@ -159,12 +164,13 @@ public partial class MainWindow : UiControls.FluentWindow
             DispatcherPriority.Loaded
         );
         await AppliquerDernierJeuSauvegardeAsync();
+        bool conserverEtatSauvegardeAuPremierChargement =
+            _configurationConnexion.DernierJeuAffiche is not null;
 
         if (ConfigurationConnexionEstComplete())
         {
-            DefinirVisibiliteContenuPrincipal(true);
             await AmorcerEtatJeuLocalAuDemarrageAsync();
-            await ChargerJeuEnCoursAsync();
+            await ChargerJeuEnCoursAsync(!conserverEtatSauvegardeAuPremierChargement, true);
             DemarrerActualisationAutomatique();
             return;
         }
@@ -175,11 +181,25 @@ public partial class MainWindow : UiControls.FluentWindow
     /// <summary>
     /// Sauvegarde la géométrie de la fenêtre au moment de la fermeture.
     /// </summary>
-    private async void FenetrePrincipale_Fermeture(object? sender, CancelEventArgs e)
+    private void FenetrePrincipale_Fermeture(object? sender, CancelEventArgs e)
     {
         ArreterActualisationAutomatique();
         MemoriserGeometrieFenetre();
-        await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
+
+        try
+        {
+            Task.Run(() =>
+                    _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                        _configurationConnexion
+                    )
+                )
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch
+        {
+            // Évite de bloquer la fermeture si la persistance locale échoue au tout dernier moment.
+        }
     }
 
     /// <summary>
@@ -347,13 +367,18 @@ public partial class MainWindow : UiControls.FluentWindow
             )
             {
                 _configurationConnexion.DernierJeuAffiche = null;
+                _configurationConnexion.DernierSuccesAffiche = null;
+                _configurationConnexion.DerniereListeSuccesAffichee = null;
             }
 
             _configurationConnexion.Pseudo = pseudo;
             _configurationConnexion.CleApiWeb = cleApi;
 
             MemoriserGeometrieFenetre();
-            await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
+            await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                _configurationConnexion
+            );
 
             MettreAJourResumeConnexion();
             if (masquerContenuPrincipal)
@@ -652,9 +677,10 @@ public partial class MainWindow : UiControls.FluentWindow
     /// <summary>
     /// Met à jour le visuel du jeu courant à partir du box art retourné par l'API.
     /// </summary>
-    private void MettreAJourImageJeuEnCours(string? cheminImage)
+    private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
         string urlImage = ConstruireUrlImageRetroAchievements(cheminImage);
+        _cheminImageJeuEnCoursDemande = urlImage;
 
         if (string.IsNullOrWhiteSpace(urlImage) || urlImage == "Indisponible")
         {
@@ -664,11 +690,19 @@ public partial class MainWindow : UiControls.FluentWindow
 
         try
         {
-            BitmapImage imageJeu = new();
-            imageJeu.BeginInit();
-            imageJeu.UriSource = new Uri(urlImage, UriKind.Absolute);
-            imageJeu.CacheOption = BitmapCacheOption.OnLoad;
-            imageJeu.EndInit();
+            ImageSource? imageJeu = await ChargerImageDistanteAsync(urlImage);
+
+            if (
+                imageJeu is null
+                || !string.Equals(
+                    _cheminImageJeuEnCoursDemande,
+                    urlImage,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                return;
+            }
 
             ImageJeuEnCours.Source = imageJeu;
             AppliquerCoinsArrondisImageJeuEnCours();
@@ -733,13 +767,13 @@ public partial class MainWindow : UiControls.FluentWindow
             : -1;
 
         _indexVisuelJeuEnCours = indexConserve >= 0 ? indexConserve : 0;
-        MettreAJourAffichageVisuelJeuEnCours();
+        _ = MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
     /// <summary>
     /// Met à jour le grand visuel et l'état du carrousel sous l'image.
     /// </summary>
-    private void MettreAJourAffichageVisuelJeuEnCours()
+    private async Task MettreAJourAffichageVisuelJeuEnCoursAsync()
     {
         if (_visuelsJeuEnCours.Count == 0)
         {
@@ -752,7 +786,7 @@ public partial class MainWindow : UiControls.FluentWindow
             (_indexVisuelJeuEnCours + _visuelsJeuEnCours.Count) % _visuelsJeuEnCours.Count;
 
         VisuelJeuEnCours visuel = _visuelsJeuEnCours[_indexVisuelJeuEnCours];
-        MettreAJourImageJeuEnCours(visuel.CheminImage);
+        await MettreAJourImageJeuEnCoursAsync(visuel.CheminImage);
         TexteVisuelJeuEnCours.Text =
             $"{visuel.Libelle} {_indexVisuelJeuEnCours + 1}/{_visuelsJeuEnCours.Count}";
         CarrouselVisuelsJeuEnCours.Visibility =
@@ -818,14 +852,15 @@ public partial class MainWindow : UiControls.FluentWindow
                 .ThenBy(item => item.IdentifiantSucces),
         ];
 
-        await MettreAJourPremierSuccesNonDebloqueAsync(succes);
-        await MettreAJourGrilleTousSuccesAsync(succes);
+        await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
+        await MettreAJourGrilleTousSuccesAsync(jeu.IdentifiantJeu, succes);
     }
 
     /// <summary>
     /// Met à jour la carte du premier succès restant à débloquer.
     /// </summary>
     private async Task MettreAJourPremierSuccesNonDebloqueAsync(
+        int identifiantJeu,
         List<SuccesJeuUtilisateurRetroAchievements> succes
     )
     {
@@ -846,12 +881,21 @@ public partial class MainWindow : UiControls.FluentWindow
             TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TextePointsPremierSuccesNonDebloque.Text = string.Empty;
             TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            SauvegarderDernierSuccesAffiche(
+                new EtatSuccesAfficheLocal
+                {
+                    IdentifiantJeu = identifiantJeu,
+                    Titre = TexteTitrePremierSuccesNonDebloque.Text,
+                    Description = TexteDescriptionPremierSuccesNonDebloque.Text,
+                    DetailsPoints = string.Empty,
+                    TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
+                }
+            );
             return;
         }
 
-        ImageSource? imageSucces = await ChargerImageDistanteAsync(
-            ConstruireUrlBadgeDepuisNom(premierSucces.NomBadge, false)
-        );
+        string urlBadge = ConstruireUrlBadgeDepuisNom(premierSucces.NomBadge, false);
+        ImageSource? imageSucces = await ChargerImageDistanteAsync(urlBadge);
 
         if (imageSucces is not null)
         {
@@ -881,12 +925,24 @@ public partial class MainWindow : UiControls.FluentWindow
         TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(detailsPoints)
             ? Visibility.Collapsed
             : Visibility.Visible;
+        SauvegarderDernierSuccesAffiche(
+            new EtatSuccesAfficheLocal
+            {
+                IdentifiantJeu = identifiantJeu,
+                Titre = TexteTitrePremierSuccesNonDebloque.Text,
+                Description = TexteDescriptionPremierSuccesNonDebloque.Text,
+                DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
+                CheminImageBadge = urlBadge,
+                TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
+            }
+        );
     }
 
     /// <summary>
     /// Remplit la grille de tous les succès avec leurs badges.
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesAsync(
+        int identifiantJeu,
         List<SuccesJeuUtilisateurRetroAchievements> succes
     )
     {
@@ -894,64 +950,94 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (succes.Count == 0)
         {
+            SauvegarderDerniereListeSuccesAffichee(identifiantJeu, []);
             PlanifierMiseAJourAnimationGrilleTousSucces();
             return;
         }
 
-        foreach (SuccesJeuUtilisateurRetroAchievements succesJeu in succes)
+        var badgesCharges = await Task.WhenAll(
+            succes.Select(async succesJeu =>
+            {
+                string urlBadge = ConstruireUrlBadgeDepuisNom(
+                    succesJeu.NomBadge,
+                    !SuccesEstDebloque(succesJeu)
+                );
+
+                return new
+                {
+                    Badge = await ConstruireBadgeGrilleSuccesAsync(succesJeu.Titre, urlBadge),
+                    Etat = new ElementListeSuccesAfficheLocal
+                    {
+                        Titre = succesJeu.Titre,
+                        CheminImageBadge = urlBadge,
+                    },
+                };
+            })
+        );
+
+        foreach (var badgeCharge in badgesCharges)
         {
-            string urlBadge = ConstruireUrlBadgeDepuisNom(
-                succesJeu.NomBadge,
-                !SuccesEstDebloque(succesJeu)
-            );
-            ImageSource? imageBadge = await ChargerImageDistanteAsync(urlBadge);
-            SystemControls.Border conteneur = new()
-            {
-                Width = TailleBadgeGrilleSucces,
-                Height = TailleBadgeGrilleSucces,
-                Margin = new Thickness(0),
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Padding = new Thickness(0),
-                ToolTip = succesJeu.Titre,
-            };
-            conteneur.MouseEnter += BadgeGrilleSucces_EntreeSouris;
-            conteneur.MouseLeave += BadgeGrilleSucces_SortieSouris;
-
-            if (imageBadge is null)
-            {
-                conteneur.Child = new SystemControls.TextBlock
-                {
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Opacity = 0.62,
-                    Text = succesJeu.Titre,
-                    TextAlignment = TextAlignment.Center,
-                    TextWrapping = TextWrapping.Wrap,
-                };
-            }
-            else
-            {
-                SystemControls.Image imageSucces = new()
-                {
-                    Source = imageBadge,
-                    Width = 34,
-                    Height = 34,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Stretch = Stretch.Uniform,
-                };
-
-                imageSucces.Loaded += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
-                imageSucces.SizeChanged += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
-                conteneur.Child = imageSucces;
-            }
-
-            GrilleTousSuccesJeuEnCours.Children.Add(conteneur);
+            GrilleTousSuccesJeuEnCours.Children.Add(badgeCharge.Badge);
         }
 
+        SauvegarderDerniereListeSuccesAffichee(
+            identifiantJeu,
+            [.. badgesCharges.Select(item => item.Etat)]
+        );
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+    }
+
+    /// <summary>
+    /// Construit un badge de la grille des rétrosuccès à partir de son titre et de son visuel.
+    /// </summary>
+    private async Task<SystemControls.Border> ConstruireBadgeGrilleSuccesAsync(
+        string titre,
+        string urlBadge
+    )
+    {
+        ImageSource? imageBadge = await ChargerImageDistanteAsync(urlBadge);
+        SystemControls.Border conteneur = new()
+        {
+            Width = TailleBadgeGrilleSucces,
+            Height = TailleBadgeGrilleSucces,
+            Margin = new Thickness(0),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            ToolTip = titre,
+        };
+        conteneur.MouseEnter += BadgeGrilleSucces_EntreeSouris;
+        conteneur.MouseLeave += BadgeGrilleSucces_SortieSouris;
+
+        if (imageBadge is null)
+        {
+            conteneur.Child = new SystemControls.TextBlock
+            {
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Opacity = 0.62,
+                Text = titre,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+            };
+            return conteneur;
+        }
+
+        SystemControls.Image imageSucces = new()
+        {
+            Source = imageBadge,
+            Width = 34,
+            Height = 34,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Stretch = Stretch.Uniform,
+        };
+
+        imageSucces.Loaded += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
+        imageSucces.SizeChanged += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
+        conteneur.Child = imageSucces;
+        return conteneur;
     }
 
     /// <summary>
@@ -1710,19 +1796,6 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Affiche ou masque les placeholders animés du chargement initial.
-    /// </summary>
-    private void DefinirChargementVisuel(bool actif)
-    {
-        Visibility visibilite = actif ? Visibility.Visible : Visibility.Collapsed;
-        ShimmerJeuEnCoursImage.Visibility = visibilite;
-        ShimmerJeuEnCoursInfos.Visibility = visibilite;
-        ShimmerPremierSuccesNonDebloque.Visibility = visibilite;
-        ShimmerProgressionJeuEnCours.Visibility = visibilite;
-        ShimmerTousSuccesJeuEnCours.Visibility = visibilite;
-    }
-
-    /// <summary>
     /// Met à jour le titre du jeu puis relance son éventuel défilement.
     /// </summary>
     private void DefinirTitreJeuEnCours(string titre)
@@ -2068,15 +2141,6 @@ public partial class MainWindow : UiControls.FluentWindow
         _dernierIdentifiantJeuAvecInfos = jeuSauvegarde.IdentifiantJeu;
         _dernierIdentifiantJeuAvecProgression = jeuSauvegarde.IdentifiantJeu;
 
-        DefinirVisuelsJeuEnCours(
-            string.IsNullOrWhiteSpace(jeuSauvegarde.CheminImageBoite)
-                ? []
-                : [new VisuelJeuEnCours("Jaquette", jeuSauvegarde.CheminImageBoite)]
-        );
-        await MettreAJourMetaConsoleJeuEnCoursAsync(
-            ConstruireJeuUtilisateurDepuisEtatLocal(jeuSauvegarde)
-        );
-
         DefinirTitreJeuEnCours(jeuSauvegarde.Titre);
         DefinirDetailsJeuEnCours(jeuSauvegarde.Details);
         DefinirTempsJeuSousImage(jeuSauvegarde.TempsJeuSousImage);
@@ -2092,6 +2156,111 @@ public partial class MainWindow : UiControls.FluentWindow
             ? "Progression du jeu indisponible"
             : jeuSauvegarde.PourcentageProgression;
         BarreProgressionJeuEnCours.Value = Math.Clamp(jeuSauvegarde.ValeurProgression, 0, 100);
+
+        DefinirVisuelsJeuEnCours(
+            string.IsNullOrWhiteSpace(jeuSauvegarde.CheminImageBoite)
+                ? []
+                : [new VisuelJeuEnCours("Jaquette", jeuSauvegarde.CheminImageBoite)]
+        );
+
+        JeuUtilisateurRetroAchievements jeuLocalReconstruit =
+            ConstruireJeuUtilisateurDepuisEtatLocal(jeuSauvegarde);
+        await Task.WhenAll(
+            MettreAJourMetaConsoleJeuEnCoursAsync(jeuLocalReconstruit),
+            AppliquerDernierSuccesSauvegardeAsync(jeuSauvegarde.IdentifiantJeu),
+            AppliquerDerniereListeSuccesSauvegardeeAsync(jeuSauvegarde.IdentifiantJeu)
+        );
+    }
+
+    /// <summary>
+    /// Réapplique le dernier rétrosuccès sauvegardé pour éviter une zone vide au démarrage.
+    /// </summary>
+    private async Task AppliquerDernierSuccesSauvegardeAsync(int identifiantJeu)
+    {
+        EtatSuccesAfficheLocal? succesSauvegarde = _configurationConnexion.DernierSuccesAffiche;
+
+        if (
+            succesSauvegarde is null
+            || succesSauvegarde.IdentifiantJeu != identifiantJeu
+            || string.IsNullOrWhiteSpace(succesSauvegarde.Titre)
+        )
+        {
+            return;
+        }
+
+        TexteTitrePremierSuccesNonDebloque.Text = succesSauvegarde.Titre;
+        TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
+        TexteDescriptionPremierSuccesNonDebloque.Text = succesSauvegarde.Description;
+        TexteDescriptionPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesSauvegarde.Description
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        TextePointsPremierSuccesNonDebloque.Text = succesSauvegarde.DetailsPoints;
+        TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesSauvegarde.DetailsPoints
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
+        {
+            ImageSource? imageSucces = await ChargerImageDistanteAsync(
+                succesSauvegarde.CheminImageBadge
+            );
+
+            if (imageSucces is not null)
+            {
+                ImagePremierSuccesNonDebloque.Source = ConvertirImageEnNoirEtBlanc(imageSucces);
+                ImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
+                TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+                AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
+                return;
+            }
+        }
+
+        ImagePremierSuccesNonDebloque.Source = null;
+        ImagePremierSuccesNonDebloque.Clip = null;
+        ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+        TexteImagePremierSuccesNonDebloque.Text = succesSauvegarde.TexteVisuel;
+        TexteImagePremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesSauvegarde.TexteVisuel
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Réapplique la dernière grille de rétrosuccès sauvegardée pour éviter une zone vide au démarrage.
+    /// </summary>
+    private async Task AppliquerDerniereListeSuccesSauvegardeeAsync(int identifiantJeu)
+    {
+        EtatListeSuccesAfficheeLocal? listeSauvegardee =
+            _configurationConnexion.DerniereListeSuccesAffichee;
+
+        if (listeSauvegardee is null || listeSauvegardee.IdentifiantJeu != identifiantJeu)
+        {
+            return;
+        }
+
+        GrilleTousSuccesJeuEnCours.Children.Clear();
+
+        SystemControls.Border[] badges = await Task.WhenAll(
+            listeSauvegardee.Succes.Select(succesSauvegarde =>
+                ConstruireBadgeGrilleSuccesAsync(
+                    succesSauvegarde.Titre,
+                    succesSauvegarde.CheminImageBadge
+                )
+            )
+        );
+
+        foreach (SystemControls.Border badge in badges)
+        {
+            GrilleTousSuccesJeuEnCours.Children.Add(badge);
+        }
+
+        MettreAJourDispositionGrilleTousSucces();
+        PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
     /// <summary>
@@ -2148,6 +2317,120 @@ public partial class MainWindow : UiControls.FluentWindow
         _configurationConnexion.DernierJeuAffiche = nouvelEtat;
         _dernierJeuAfficheModifie = true;
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Sauvegarde l'état du rétrosuccès actuellement affiché.
+    /// </summary>
+    private void SauvegarderDernierSuccesAffiche(EtatSuccesAfficheLocal nouvelEtat)
+    {
+        if (EtatSuccesAfficheEquivalent(_configurationConnexion.DernierSuccesAffiche, nouvelEtat))
+        {
+            return;
+        }
+
+        _configurationConnexion.DernierSuccesAffiche = nouvelEtat;
+        _dernierSuccesAfficheModifie = true;
+    }
+
+    /// <summary>
+    /// Sauvegarde l'état de la grille des rétrosuccès actuellement affichée.
+    /// </summary>
+    private void SauvegarderDerniereListeSuccesAffichee(
+        int identifiantJeu,
+        List<ElementListeSuccesAfficheLocal> succes
+    )
+    {
+        EtatListeSuccesAfficheeLocal nouvelEtat = new()
+        {
+            IdentifiantJeu = identifiantJeu,
+            Succes = succes,
+        };
+
+        if (
+            EtatListeSuccesAfficheeEquivalent(
+                _configurationConnexion.DerniereListeSuccesAffichee,
+                nouvelEtat
+            )
+        )
+        {
+            return;
+        }
+
+        _configurationConnexion.DerniereListeSuccesAffichee = nouvelEtat;
+        _derniereListeSuccesAfficheeModifiee = true;
+        _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+    }
+
+    /// <summary>
+    /// Compare deux états de rétrosuccès affiché pour éviter les écritures inutiles.
+    /// </summary>
+    private static bool EtatSuccesAfficheEquivalent(
+        EtatSuccesAfficheLocal? precedent,
+        EtatSuccesAfficheLocal? courant
+    )
+    {
+        if (precedent is null || courant is null)
+        {
+            return precedent is null && courant is null;
+        }
+
+        return precedent.IdentifiantJeu == courant.IdentifiantJeu
+            && string.Equals(precedent.Titre, courant.Titre, StringComparison.Ordinal)
+            && string.Equals(precedent.Description, courant.Description, StringComparison.Ordinal)
+            && string.Equals(
+                precedent.DetailsPoints,
+                courant.DetailsPoints,
+                StringComparison.Ordinal
+            )
+            && string.Equals(
+                precedent.CheminImageBadge,
+                courant.CheminImageBadge,
+                StringComparison.Ordinal
+            )
+            && string.Equals(precedent.TexteVisuel, courant.TexteVisuel, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Compare deux états de grille de rétrosuccès pour éviter les écritures inutiles.
+    /// </summary>
+    private static bool EtatListeSuccesAfficheeEquivalent(
+        EtatListeSuccesAfficheeLocal? precedent,
+        EtatListeSuccesAfficheeLocal? courant
+    )
+    {
+        if (precedent is null || courant is null)
+        {
+            return precedent is null && courant is null;
+        }
+
+        if (
+            precedent.IdentifiantJeu != courant.IdentifiantJeu
+            || precedent.Succes.Count != courant.Succes.Count
+        )
+        {
+            return false;
+        }
+
+        for (int index = 0; index < precedent.Succes.Count; index++)
+        {
+            ElementListeSuccesAfficheLocal succesPrecedent = precedent.Succes[index];
+            ElementListeSuccesAfficheLocal succesCourant = courant.Succes[index];
+
+            if (
+                !string.Equals(succesPrecedent.Titre, succesCourant.Titre, StringComparison.Ordinal)
+                || !string.Equals(
+                    succesPrecedent.CheminImageBadge,
+                    succesCourant.CheminImageBadge,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -2252,23 +2535,117 @@ public partial class MainWindow : UiControls.FluentWindow
             return imageCachee;
         }
 
+        string cheminCache = ObtenirCheminCacheImageDistante(urlImage);
+
+        if (File.Exists(cheminCache))
+        {
+            ImageSource? imageDepuisDisque = await ChargerImageDepuisFichierAsync(cheminCache);
+
+            if (imageDepuisDisque is not null)
+            {
+                _cacheImagesDistantes[urlImage] = imageDepuisDisque;
+                return imageDepuisDisque;
+            }
+        }
+
+        if (_chargementsImagesDistantesEnCours.TryGetValue(urlImage, out Task<ImageSource?>? tache))
+        {
+            return await tache;
+        }
+
+        Task<ImageSource?> nouvelleTache = TelechargerEtMettreEnCacheImageDistanteAsync(
+            urlImage,
+            cheminCache
+        );
+        _chargementsImagesDistantesEnCours[urlImage] = nouvelleTache;
+
+        try
+        {
+            ImageSource? image = await nouvelleTache;
+
+            if (image is not null)
+            {
+                _cacheImagesDistantes[urlImage] = image;
+            }
+
+            return image;
+        }
+        finally
+        {
+            _chargementsImagesDistantesEnCours.Remove(urlImage);
+        }
+    }
+
+    /// <summary>
+    /// Télécharge réellement une image distante.
+    /// </summary>
+    private static async Task<ImageSource?> TelechargerEtMettreEnCacheImageDistanteAsync(
+        string urlImage,
+        string cheminCache
+    )
+    {
         using HttpResponseMessage reponse = await HttpClientImages.GetAsync(urlImage);
         reponse.EnsureSuccessStatusCode();
 
         await using Stream fluxImage = await reponse.Content.ReadAsStreamAsync();
         MemoryStream memoire = new();
         await fluxImage.CopyToAsync(memoire);
-        memoire.Position = 0;
+        byte[] contenu = memoire.ToArray();
 
+        Directory.CreateDirectory(Path.GetDirectoryName(cheminCache)!);
+        await File.WriteAllBytesAsync(cheminCache, contenu);
+        return ChargerImageDepuisOctets(contenu);
+    }
+
+    /// <summary>
+    /// Charge une image depuis un fichier de cache local.
+    /// </summary>
+    private static async Task<ImageSource?> ChargerImageDepuisFichierAsync(string cheminCache)
+    {
+        try
+        {
+            byte[] contenu = await File.ReadAllBytesAsync(cheminCache);
+            return ChargerImageDepuisOctets(contenu);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Construit une image WPF figée à partir d'octets.
+    /// </summary>
+    private static ImageSource? ChargerImageDepuisOctets(byte[] contenu)
+    {
+        if (contenu.Length == 0)
+        {
+            return null;
+        }
+
+        using MemoryStream memoire = new(contenu);
         BitmapImage image = new();
         image.BeginInit();
         image.CacheOption = BitmapCacheOption.OnLoad;
         image.StreamSource = memoire;
         image.EndInit();
         image.Freeze();
-
-        _cacheImagesDistantes[urlImage] = image;
         return image;
+    }
+
+    /// <summary>
+    /// Détermine le chemin de cache disque d'une image distante.
+    /// </summary>
+    private static string ObtenirCheminCacheImageDistante(string urlImage)
+    {
+        byte[] empreinte = SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(urlImage));
+        string nomFichier = Convert.ToHexString(empreinte) + ".bin";
+        string dossierCache = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "RA-Compagnon",
+            "image_cache"
+        );
+        return Path.Combine(dossierCache, nomFichier);
     }
 
     /// <summary>
@@ -2293,20 +2670,30 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async Task PersisterDernierJeuAfficheSiNecessaireAsync()
     {
-        if (!_dernierJeuAfficheModifie)
+        if (
+            !_dernierJeuAfficheModifie
+            && !_dernierSuccesAfficheModifie
+            && !_derniereListeSuccesAfficheeModifiee
+        )
         {
             return;
         }
 
         _dernierJeuAfficheModifie = false;
+        _dernierSuccesAfficheModifie = false;
+        _derniereListeSuccesAfficheeModifiee = false;
 
         try
         {
-            await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                _configurationConnexion
+            );
         }
         catch
         {
             _dernierJeuAfficheModifie = true;
+            _dernierSuccesAfficheModifie = true;
+            _derniereListeSuccesAfficheeModifiee = true;
         }
     }
 
@@ -2329,7 +2716,7 @@ public partial class MainWindow : UiControls.FluentWindow
     /// <summary>
     /// Affiche le visuel précédent du jeu courant.
     /// </summary>
-    private void VisuelJeuPrecedent_Click(object sender, RoutedEventArgs e)
+    private async void VisuelJeuPrecedent_Click(object sender, RoutedEventArgs e)
     {
         if (_visuelsJeuEnCours.Count <= 1)
         {
@@ -2337,13 +2724,13 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         _indexVisuelJeuEnCours--;
-        MettreAJourAffichageVisuelJeuEnCours();
+        await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
     /// <summary>
     /// Affiche le visuel suivant du jeu courant.
     /// </summary>
-    private void VisuelJeuSuivant_Click(object sender, RoutedEventArgs e)
+    private async void VisuelJeuSuivant_Click(object sender, RoutedEventArgs e)
     {
         if (_visuelsJeuEnCours.Count <= 1)
         {
@@ -2351,7 +2738,7 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         _indexVisuelJeuEnCours++;
-        MettreAJourAffichageVisuelJeuEnCours();
+        await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
     /// <summary>
@@ -2685,82 +3072,6 @@ public partial class MainWindow : UiControls.FluentWindow
     /// <summary>
     /// Déclenche un cycle périodique d'actualisation API.
     /// </summary>
-    /// <summary>
-    /// Bascule l'affichage de la carte de connexion.
-    /// </summary>
-    private void BasculerCarteConnexion_Click(object sender, RoutedEventArgs e)
-    {
-        _carteConnexionRepliee = !_carteConnexionRepliee;
-        AppliquerEtatCarteConnexion();
-    }
-
-    /// <summary>
-    /// Bascule l'affichage de la carte du jeu en cours.
-    /// </summary>
-    private void BasculerCarteJeuEnCours_Click(object sender, RoutedEventArgs e)
-    {
-        _carteJeuEnCoursRepliee = !_carteJeuEnCoursRepliee;
-        AppliquerEtatCarteJeuEnCours();
-    }
-
-    /// <summary>
-    /// Applique l'etat visuel initial des sections repliables.
-    /// </summary>
-    private void AppliquerEtatSectionsRepliables()
-    {
-        AppliquerEtatCarteConnexion();
-        AppliquerEtatCarteJeuEnCours();
-    }
-
-    /// <summary>
-    /// Replie ou déplie le contenu de la carte de connexion en conservant son titre visible.
-    /// </summary>
-    private void AppliquerEtatCarteConnexion()
-    {
-        if (ContenuCarteConnexion is null)
-        {
-            return;
-        }
-
-        for (int index = 1; index < ContenuCarteConnexion.Children.Count; index++)
-        {
-            ContenuCarteConnexion.Children[index].Visibility = _carteConnexionRepliee
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-        }
-
-        IconeRepliCarteConnexion.Text = _carteConnexionRepliee ? "+" : "-";
-        BoutonRepliCarteConnexion.ToolTip = _carteConnexionRepliee
-            ? "Déplier la section"
-            : "Replier la section";
-    }
-
-    /// <summary>
-    /// Replie ou déplie le contenu de la carte du jeu en cours en conservant son en-tête visible.
-    /// </summary>
-    private void AppliquerEtatCarteJeuEnCours()
-    {
-        if (GrilleCarteJeuEnCours is null)
-        {
-            return;
-        }
-
-        for (int index = 1; index < GrilleCarteJeuEnCours.Children.Count; index++)
-        {
-            if (GrilleCarteJeuEnCours.Children[index] is UIElement element)
-            {
-                element.Visibility = _carteJeuEnCoursRepliee
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
-            }
-        }
-
-        IconeRepliCarteJeuEnCours.Text = _carteJeuEnCoursRepliee ? "+" : "-";
-        BoutonRepliCarteJeuEnCours.ToolTip = _carteJeuEnCoursRepliee
-            ? "Déplier la section"
-            : "Replier la section";
-    }
-
     private async void ActualisationApi_Tick(object? sender, EventArgs e)
     {
         if (!ConfigurationConnexionEstComplete())
@@ -2921,9 +3232,6 @@ public partial class MainWindow : UiControls.FluentWindow
 
         try
         {
-            bool afficherShimmer = afficherEtatChargement && _dernierIdentifiantJeuAvecInfos <= 0;
-            DefinirChargementVisuel(afficherShimmer);
-
             if (afficherEtatChargement)
             {
                 ReinitialiserPremierSuccesNonDebloque();
@@ -3010,7 +3318,6 @@ public partial class MainWindow : UiControls.FluentWindow
         finally
         {
             _chargementJeuEnCoursActif = false;
-            DefinirChargementVisuel(false);
 
             if (_actualisationApiCibleeEnAttente && ConfigurationConnexionEstComplete())
             {
@@ -4129,7 +4436,6 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private void ReinitialiserJeuEnCours()
     {
-        DefinirChargementVisuel(false);
         DefinirTitreZoneJeu(true);
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
