@@ -60,6 +60,22 @@ RA_COMPAGNON_EXPORT int ra_compagnon_rcheevos_set_serialized_progress(
 /* Efface la progression sérialisée précédemment injectée. */
 RA_COMPAGNON_EXPORT int ra_compagnon_rcheevos_clear_serialized_progress(void);
 
+/* Génère un hash RetroAchievements pour un fichier de jeu et une console donnés. */
+RA_COMPAGNON_EXPORT int ra_compagnon_rcheevos_generate_game_hash(
+    int identifiant_console,
+    const char* chemin_fichier,
+    char* hash,
+    unsigned int taille_hash,
+    char* message,
+    unsigned int taille_message);
+
+/* Valide une définition d'achievement pour une console donnée et retourne un message lisible. */
+RA_COMPAGNON_EXPORT int ra_compagnon_rcheevos_validate_achievement_definition(
+    int identifiant_console,
+    const char* definition,
+    char* message,
+    unsigned int taille_message);
+
 /* Retourne le Progress Indicator calculé pour un succès donné. */
 RA_COMPAGNON_EXPORT int ra_compagnon_rcheevos_get_progress_indicator(
     int identifiant_jeu,

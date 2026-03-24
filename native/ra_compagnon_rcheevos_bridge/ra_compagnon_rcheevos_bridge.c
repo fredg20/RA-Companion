@@ -5,7 +5,10 @@
 #include <string.h>
 
 #ifdef RA_COMPAGNON_HAS_RCHEEVOS
+#include "rc_error.h"
+#include "rc_hash.h"
 #include "rc_runtime.h"
+#include "rc_validate.h"
 #endif
 
 typedef struct ra_compagnon_rcheevos_achievement_definition_entry_t
@@ -50,6 +53,27 @@ static char* ra_compagnon_strdup(const char* texte)
         memcpy(copie, texte, longueur);
 
     return copie;
+}
+
+static void ra_compagnon_copy_message(char* destination, unsigned int taille, const char* source)
+{
+    size_t longueur;
+
+    if (destination == 0 || taille == 0)
+        return;
+
+    if (source == 0)
+    {
+        destination[0] = '\0';
+        return;
+    }
+
+    longueur = strlen(source);
+    if (longueur >= taille)
+        longueur = taille - 1;
+
+    memcpy(destination, source, longueur);
+    destination[longueur] = '\0';
 }
 
 #ifdef RA_COMPAGNON_HAS_RCHEEVOS
@@ -225,6 +249,156 @@ int ra_compagnon_rcheevos_clear_serialized_progress(void)
     g_progression_serialisee = 0;
     g_taille_progression_serialisee = 0;
     return 0;
+}
+
+int ra_compagnon_rcheevos_generate_game_hash(
+    int identifiant_console,
+    const char* chemin_fichier,
+    char* hash,
+    unsigned int taille_hash,
+    char* message,
+    unsigned int taille_message)
+{
+    if (hash != 0 && taille_hash > 0)
+        hash[0] = '\0';
+
+    if (message != 0 && taille_message > 0)
+        message[0] = '\0';
+
+    if (
+        identifiant_console <= 0 || chemin_fichier == 0 || chemin_fichier[0] == '\0'
+        || hash == 0 || taille_hash < 33
+    )
+    {
+        ra_compagnon_copy_message(message, taille_message, "Paramètres invalides.");
+        return 2;
+    }
+
+#ifndef RA_COMPAGNON_HAS_RCHEEVOS
+    ra_compagnon_copy_message(
+        message,
+        taille_message,
+        "Hash indisponible : bridge compilé sans rcheevos."
+    );
+    return 3;
+#else
+    {
+        rc_hash_iterator_t iterator;
+        int resultat;
+
+        rc_hash_initialize_iterator(&iterator, chemin_fichier, 0, 0);
+        resultat = rc_hash_generate(hash, (uint32_t)identifiant_console, &iterator);
+        rc_hash_destroy_iterator(&iterator);
+
+        if (!resultat)
+        {
+            hash[0] = '\0';
+            ra_compagnon_copy_message(
+                message,
+                taille_message,
+                "Génération du hash RetroAchievements impossible pour ce fichier."
+            );
+            return 1;
+        }
+
+        hash[32] = '\0';
+        return 0;
+    }
+#endif
+}
+
+int ra_compagnon_rcheevos_validate_achievement_definition(
+    int identifiant_console,
+    const char* definition,
+    char* message,
+    unsigned int taille_message)
+{
+    if (message != 0 && taille_message > 0)
+        message[0] = '\0';
+
+    if (identifiant_console <= 0 || definition == 0 || definition[0] == '\0')
+    {
+        ra_compagnon_copy_message(message, taille_message, "Paramètres invalides.");
+        return 2;
+    }
+
+#ifndef RA_COMPAGNON_HAS_RCHEEVOS
+    ra_compagnon_copy_message(
+        message,
+        taille_message,
+        "Validation indisponible : bridge compilé sans rcheevos."
+    );
+    return 3;
+#else
+    {
+        char* buffer;
+        rc_trigger_t* trigger;
+        int taille_definition;
+        int resultat_validation;
+        char details[256];
+
+        taille_definition = rc_trigger_size(definition);
+        if (taille_definition < 0)
+        {
+            ra_compagnon_copy_message(
+                message,
+                taille_message,
+                rc_error_str(taille_definition)
+            );
+            return 1;
+        }
+
+        buffer = (char*)malloc((size_t)taille_definition + 4);
+        if (buffer == 0)
+        {
+            ra_compagnon_copy_message(message, taille_message, "Mémoire insuffisante.");
+            return 5;
+        }
+
+        memset(buffer + taille_definition, 0xCD, 4);
+        trigger = rc_parse_trigger(buffer, definition, 0, 0);
+        if (trigger == 0)
+        {
+            free(buffer);
+            ra_compagnon_copy_message(message, taille_message, "Échec du parsing.");
+            return 1;
+        }
+
+        if (*(unsigned int*)&buffer[taille_definition] != 0xCDCDCDCDu)
+        {
+            free(buffer);
+            ra_compagnon_copy_message(
+                message,
+                taille_message,
+                "Écriture hors limites détectée pendant le parsing."
+            );
+            return 1;
+        }
+
+        details[0] = '\0';
+        resultat_validation = rc_validate_trigger_for_console(
+            trigger,
+            details,
+            sizeof(details),
+            (uint32_t)identifiant_console
+        );
+
+        free(buffer);
+
+        if (resultat_validation)
+        {
+            ra_compagnon_copy_message(message, taille_message, "Définition valide.");
+            return 0;
+        }
+
+        if (details[0] == '\0')
+            ra_compagnon_copy_message(message, taille_message, "Définition invalide.");
+        else
+            ra_compagnon_copy_message(message, taille_message, details);
+
+        return 1;
+    }
+#endif
 }
 
 int ra_compagnon_rcheevos_set_achievement_definition(

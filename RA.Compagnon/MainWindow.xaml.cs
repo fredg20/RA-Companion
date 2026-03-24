@@ -24,11 +24,30 @@ public partial class MainWindow : UiControls.FluentWindow
 {
     private sealed record VisuelJeuEnCours(string Libelle, string CheminImage);
 
+    private sealed record BadgeSuccesGrilleContexte(
+        int IdentifiantJeu,
+        int IdentifiantSucces,
+        string UrlBadge
+    );
+
+    private enum OrdreSuccesGrille
+    {
+        Normal,
+        Aleatoire,
+        Facile,
+        Difficile,
+    }
+
     private static readonly TimeSpan IntervalleActualisationApi = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan IntervalleSondeLocale = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan IntervalleRafraichissementIndicateurRcheevos =
+        TimeSpan.FromSeconds(1);
     private static readonly TimeSpan IntervalleMasquageBarreDefilement = TimeSpan.FromSeconds(1.2);
     private static readonly TimeSpan IntervalleRepriseAnimationGrilleSucces = TimeSpan.FromSeconds(
         1.3
+    );
+    private static readonly TimeSpan DureeAffichageTemporaireSuccesGrille = TimeSpan.FromSeconds(
+        10
     );
     private static readonly HttpClient HttpClientImages = new();
     private const double LargeurMinimaleDispositionDouble = 920;
@@ -43,17 +62,23 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double HauteurMinimaleGrilleSucces = 0;
     private const double VitesseDefilementGrilleSuccesPixelsParSeconde = 22;
     private const double SeuilDeclenchementDefilementGrilleSucces = 4;
+    private const double DureeFonduImageJeuEnCoursMillisecondes = 420;
+    private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(4);
 
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();
     private readonly ClientRetroAchievements _clientRetroAchievements = new();
     private readonly SondeJeuLocal _sondeJeuLocal = new();
     private readonly ServiceHachageJeuLocal _serviceHachageJeuLocal = new();
+    private readonly ServiceHachageRcheevos _serviceHachageRcheevos = new();
     private readonly ServiceTraductionTexte _serviceTraductionTexte = new();
     private readonly ServiceRcheevos _serviceRcheevos = new();
     private readonly DispatcherTimer _minuteurActualisationApi = new();
     private readonly DispatcherTimer _minuteurSondeLocale = new();
     private readonly DispatcherTimer _minuteurMasquageBarreDefilement = new();
     private readonly DispatcherTimer _minuteurRepriseAnimationGrilleSucces = new();
+    private readonly DispatcherTimer _minuteurAffichageTemporaireSuccesGrille = new();
+    private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
+    private readonly Random _generateurAleatoireSuccesGrille = new();
     private readonly Dictionary<string, ImageSource> _cacheImagesDistantes = new(
         StringComparer.OrdinalIgnoreCase
     );
@@ -80,15 +105,26 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _dernierTitreJeuApi = string.Empty;
     private string _dernierePresenceRiche = string.Empty;
     private string _dernierPseudoCharge = string.Empty;
+    private DateTime _dernierRafraichissementIndicateurRcheevosUtc = DateTime.MinValue;
     private string _signatureDernierJeuLocal = string.Empty;
     private string _signatureAnimationTitreJeu = string.Empty;
     private string _signatureAnimationGrilleSucces = string.Empty;
+    private string _signatureOrdreAleatoireSuccesGrille = string.Empty;
     private string _etatConnexionCourant = "Non configuré";
     private string _cheminImageJeuEnCoursDemande = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
+    private JeuDetecteLocalement? _dernierJeuLocalDetecte;
     private int _indexVisuelJeuEnCours;
+    private int _identifiantJeuSuccesCourant;
+    private int _identifiantJeuOrdreAleatoireSuccesGrille;
+    private int? _identifiantSuccesGrilleTemporaire;
+    private int? _identifiantSuccesGrilleEpingle;
+    private bool _retourPremierSuccesNonDebloqueApresSelectionTemporaire;
     private double _amplitudeAnimationGrilleSucces;
     private AnimationClock? _horlogeAnimationGrilleSucces;
+    private Dictionary<int, int> _positionsAleatoiresSuccesGrille = [];
+    private List<SuccesJeuUtilisateurRetroAchievements> _succesJeuCourant = [];
+    private OrdreSuccesGrille _ordreSuccesGrilleCourant = OrdreSuccesGrille.Normal;
 
     /// <summary>
     /// Initialise la fenêtre principale.
@@ -96,6 +132,7 @@ public partial class MainWindow : UiControls.FluentWindow
     public MainWindow()
     {
         InitializeComponent();
+        MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
         ReinitialiserJeuEnCours();
         ConfigurerActualisationAutomatique();
@@ -141,6 +178,13 @@ public partial class MainWindow : UiControls.FluentWindow
 
         _minuteurRepriseAnimationGrilleSucces.Interval = IntervalleRepriseAnimationGrilleSucces;
         _minuteurRepriseAnimationGrilleSucces.Tick += MinuteurRepriseAnimationGrilleSucces_Tick;
+
+        _minuteurAffichageTemporaireSuccesGrille.Interval = DureeAffichageTemporaireSuccesGrille;
+        _minuteurAffichageTemporaireSuccesGrille.Tick +=
+            MinuteurAffichageTemporaireSuccesGrille_Tick;
+
+        _minuteurRotationVisuelsJeuEnCours.Interval = IntervalleRotationVisuelsJeuEnCours;
+        _minuteurRotationVisuelsJeuEnCours.Tick += MinuteurRotationVisuelsJeuEnCours_Tick;
     }
 
     /// <summary>
@@ -705,10 +749,7 @@ public partial class MainWindow : UiControls.FluentWindow
                 return;
             }
 
-            ImageJeuEnCours.Source = imageJeu;
-            AppliquerCoinsArrondisImageJeuEnCours();
-            ImageJeuEnCours.Visibility = Visibility.Visible;
-            TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+            AppliquerImageJeuEnCoursAvecFondu(imageJeu, urlImage);
         }
         catch
         {
@@ -721,6 +762,8 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private void ReinitialiserImageJeuEnCours()
     {
+        ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
+        ImageJeuEnCours.Opacity = 1;
         ImageJeuEnCours.Source = null;
         ImageJeuEnCours.Clip = null;
         ImageJeuEnCours.Visibility = Visibility.Collapsed;
@@ -729,10 +772,66 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
+    /// Applique la jaquette avec un fondu doux pour éviter un changement brutal de visuel.
+    /// </summary>
+    private void AppliquerImageJeuEnCoursAvecFondu(ImageSource imageJeu, string urlImage)
+    {
+        void AfficherNouvelleImageAvecFondu()
+        {
+            if (
+                !string.Equals(
+                    _cheminImageJeuEnCoursDemande,
+                    urlImage,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                return;
+            }
+
+            ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
+            ImageJeuEnCours.Source = imageJeu;
+            AppliquerCoinsArrondisImageJeuEnCours();
+            ImageJeuEnCours.Visibility = Visibility.Visible;
+            TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+            ImageJeuEnCours.Opacity = 0;
+
+            DoubleAnimation animationFonduEntree = new()
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            };
+
+            ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
+        }
+
+        if (ImageJeuEnCours.Source is null || ImageJeuEnCours.Visibility != Visibility.Visible)
+        {
+            AfficherNouvelleImageAvecFondu();
+            return;
+        }
+
+        DoubleAnimation animationFonduSortie = new()
+        {
+            From = ImageJeuEnCours.Opacity,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            FillBehavior = FillBehavior.Stop,
+        };
+
+        animationFonduSortie.Completed += (_, _) => AfficherNouvelleImageAvecFondu();
+        ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduSortie);
+    }
+
+    /// <summary>
     /// Réinitialise le carrousel des visuels du jeu courant.
     /// </summary>
     private void ReinitialiserCarrouselVisuelsJeuEnCours()
     {
+        _minuteurRotationVisuelsJeuEnCours.Stop();
         _visuelsJeuEnCours.Clear();
         _indexVisuelJeuEnCours = 0;
         TexteVisuelJeuEnCours.Text = string.Empty;
@@ -768,6 +867,7 @@ public partial class MainWindow : UiControls.FluentWindow
             : -1;
 
         _indexVisuelJeuEnCours = indexConserve >= 0 ? indexConserve : 0;
+        MettreAJourRotationVisuelsJeuEnCours();
         _ = MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
@@ -796,6 +896,36 @@ public partial class MainWindow : UiControls.FluentWindow
             _visuelsJeuEnCours.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         BoutonVisuelJeuSuivant.Visibility =
             _visuelsJeuEnCours.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Active ou coupe la rotation automatique des visuels selon le nombre d'images disponibles.
+    /// </summary>
+    private void MettreAJourRotationVisuelsJeuEnCours()
+    {
+        if (_visuelsJeuEnCours.Count > 1)
+        {
+            _minuteurRotationVisuelsJeuEnCours.Stop();
+            _minuteurRotationVisuelsJeuEnCours.Start();
+            return;
+        }
+
+        _minuteurRotationVisuelsJeuEnCours.Stop();
+    }
+
+    /// <summary>
+    /// Fait défiler automatiquement les autres visuels du jeu avec un fondu doux.
+    /// </summary>
+    private async void MinuteurRotationVisuelsJeuEnCours_Tick(object? sender, EventArgs e)
+    {
+        if (_visuelsJeuEnCours.Count <= 1)
+        {
+            _minuteurRotationVisuelsJeuEnCours.Stop();
+            return;
+        }
+
+        _indexVisuelJeuEnCours++;
+        await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
     /// <summary>
@@ -861,6 +991,11 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private void ReinitialiserSuccesAffichesEtPersistes()
     {
+        _identifiantJeuSuccesCourant = 0;
+        _succesJeuCourant = [];
+        _identifiantSuccesGrilleTemporaire = null;
+        _identifiantSuccesGrilleEpingle = null;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
         ReinitialiserPremierSuccesNonDebloque();
         ReinitialiserGrilleTousSucces();
 
@@ -889,9 +1024,76 @@ public partial class MainWindow : UiControls.FluentWindow
                 .ThenBy(item => item.IdentifiantSucces),
         ];
 
-        _serviceRcheevos.DefinirDefinitionsSucces(succes);
+        _identifiantJeuSuccesCourant = jeu.IdentifiantJeu;
+        _succesJeuCourant = succes;
+        _serviceRcheevos.DefinirDefinitionsSucces(jeu.IdentifiantJeu, succes);
         await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
         await MettreAJourGrilleTousSuccesAsync(jeu.IdentifiantJeu, succes);
+    }
+
+    /// <summary>
+    /// Choisit le rétrosuccès en cours en suivant l'ordre réel de la grille quand aucun badge n'est sélectionné.
+    /// </summary>
+    private (
+        SuccesJeuUtilisateurRetroAchievements? Succes,
+        string IndicateurProgression,
+        bool DoitSauvegarder,
+        bool EstEpingleManuellement
+    ) SelectionnerSuccesEnCours(List<SuccesJeuUtilisateurRetroAchievements> succes)
+    {
+        if (_identifiantJeuSuccesCourant > 0)
+        {
+            if (_identifiantSuccesGrilleTemporaire.HasValue)
+            {
+                SuccesJeuUtilisateurRetroAchievements? succesTemporaire = succes.FirstOrDefault(
+                    item => item.IdentifiantSucces == _identifiantSuccesGrilleTemporaire.Value
+                );
+
+                if (succesTemporaire is not null)
+                {
+                    return (
+                        succesTemporaire,
+                        ConstruireTexteRcheevosPremierSucces(succesTemporaire.IdentifiantSucces),
+                        false,
+                        false
+                    );
+                }
+            }
+
+            if (_identifiantSuccesGrilleEpingle.HasValue)
+            {
+                SuccesJeuUtilisateurRetroAchievements? succesEpingle = succes.FirstOrDefault(item =>
+                    item.IdentifiantSucces == _identifiantSuccesGrilleEpingle.Value
+                );
+
+                if (succesEpingle is not null)
+                {
+                    return (
+                        succesEpingle,
+                        ConstruireTexteRcheevosPremierSucces(succesEpingle.IdentifiantSucces),
+                        true,
+                        true
+                    );
+                }
+            }
+        }
+
+        List<SuccesJeuUtilisateurRetroAchievements> succesNonDebloques =
+        [
+            .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, succes)
+                .Where(item => !SuccesEstDebloque(item)),
+        ];
+        SuccesJeuUtilisateurRetroAchievements? premierSuccesNonDebloque =
+            succesNonDebloques.FirstOrDefault();
+
+        return (
+            premierSuccesNonDebloque,
+            premierSuccesNonDebloque is null
+                ? string.Empty
+                : ConstruireTexteRcheevosPremierSucces(premierSuccesNonDebloque.IdentifiantSucces),
+            true,
+            false
+        );
     }
 
     /// <summary>
@@ -902,11 +1104,34 @@ public partial class MainWindow : UiControls.FluentWindow
         List<SuccesJeuUtilisateurRetroAchievements> succes
     )
     {
-        SuccesJeuUtilisateurRetroAchievements? premierSucces = succes.FirstOrDefault(item =>
-            !SuccesEstDebloque(item)
-        );
+        (
+            SuccesJeuUtilisateurRetroAchievements? premierSucces,
+            string indicateurProgression,
+            bool doitSauvegarder,
+            bool estEpingleManuellement
+        ) = SelectionnerSuccesEnCours(succes);
 
-        if (premierSucces is null)
+        await AppliquerSuccesEnCoursAsync(
+            identifiantJeu,
+            premierSucces,
+            indicateurProgression,
+            doitSauvegarder,
+            estEpingleManuellement
+        );
+    }
+
+    /// <summary>
+    /// Applique le succès choisi à la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
+    /// </summary>
+    private async Task AppliquerSuccesEnCoursAsync(
+        int identifiantJeu,
+        SuccesJeuUtilisateurRetroAchievements? succesSelectionne,
+        string indicateurProgression,
+        bool doitSauvegarder,
+        bool estEpingleManuellement
+    )
+    {
+        if (succesSelectionne is null)
         {
             ImagePremierSuccesNonDebloque.Source = null;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
@@ -935,12 +1160,16 @@ public partial class MainWindow : UiControls.FluentWindow
             return;
         }
 
-        string urlBadge = ConstruireUrlBadgeDepuisNom(premierSucces.NomBadge, false);
+        bool succesDebloque = SuccesEstDebloque(succesSelectionne);
+        string urlBadge = ConstruireUrlBadgeDepuisNom(succesSelectionne.NomBadge, !succesDebloque);
         ImageSource? imageSucces = await ChargerImageDistanteAsync(urlBadge);
 
         if (imageSucces is not null)
         {
-            ImagePremierSuccesNonDebloque.Source = ConvertirImageEnNoirEtBlanc(imageSucces);
+            ImagePremierSuccesNonDebloque.Source = succesDebloque
+                ? imageSucces
+                : ConvertirImageEnNoirEtBlanc(imageSucces);
+            ImagePremierSuccesNonDebloque.Opacity = succesDebloque ? 1 : 0.58;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
             AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
@@ -949,219 +1178,42 @@ public partial class MainWindow : UiControls.FluentWindow
         {
             ImagePremierSuccesNonDebloque.Source = null;
             ImagePremierSuccesNonDebloque.Clip = null;
+            ImagePremierSuccesNonDebloque.Opacity = 0.58;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
             TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TexteImagePremierSuccesNonDebloque.Text = "Visuel indisponible";
         }
 
-        TexteTitrePremierSuccesNonDebloque.Text = premierSucces.Titre;
+        TexteTitrePremierSuccesNonDebloque.Text = succesSelectionne.Titre;
         TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-        string descriptionSucces = string.IsNullOrWhiteSpace(premierSucces.Description)
+        string descriptionSucces = string.IsNullOrWhiteSpace(succesSelectionne.Description)
             ? "Aucune description disponible."
-            : await _serviceTraductionTexte.TraduireVersFrancaisAsync(premierSucces.Description);
+            : await _serviceTraductionTexte.TraduireVersFrancaisAsync(
+                succesSelectionne.Description
+            );
         TexteDescriptionPremierSuccesNonDebloque.Text = descriptionSucces.Trim();
         TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
-        string detailsPoints = ConstruireDetailsPointsSucces(premierSucces);
+        string detailsPoints = ConstruireDetailsPointsSucces(succesSelectionne);
         TextePointsPremierSuccesNonDebloque.Text = detailsPoints;
         TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(detailsPoints)
             ? Visibility.Collapsed
             : Visibility.Visible;
-        string indicateurProgression = ConstruireIndicateurRcheevosPremierSucces(
-            _serviceRcheevos.ObtenirIndicateurProgression(premierSucces.IdentifiantSucces)
-        );
         DefinirIndicateurRcheevosPremierSucces(indicateurProgression);
-        SauvegarderDernierSuccesAffiche(
-            new EtatSuccesAfficheLocal
-            {
-                IdentifiantJeu = identifiantJeu,
-                IdentifiantSucces = premierSucces.IdentifiantSucces,
-                Titre = TexteTitrePremierSuccesNonDebloque.Text,
-                Description = TexteDescriptionPremierSuccesNonDebloque.Text,
-                DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
-                IndicateurProgression = indicateurProgression,
-                CheminImageBadge = urlBadge,
-                TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
-            }
-        );
-    }
-
-    /// <summary>
-    /// Remplit la grille de tous les succès avec leurs badges.
-    /// </summary>
-    private async Task MettreAJourGrilleTousSuccesAsync(
-        int identifiantJeu,
-        List<SuccesJeuUtilisateurRetroAchievements> succes
-    )
-    {
-        GrilleTousSuccesJeuEnCours.Children.Clear();
-
-        if (succes.Count == 0)
+        if (doitSauvegarder)
         {
-            SauvegarderDerniereListeSuccesAffichee(identifiantJeu, []);
-            PlanifierMiseAJourAnimationGrilleTousSucces();
-            return;
-        }
-
-        var badgesCharges = await Task.WhenAll(
-            succes.Select(async succesJeu =>
-            {
-                string urlBadge = ConstruireUrlBadgeDepuisNom(
-                    succesJeu.NomBadge,
-                    !SuccesEstDebloque(succesJeu)
-                );
-
-                return new
+            SauvegarderDernierSuccesAffiche(
+                new EtatSuccesAfficheLocal
                 {
-                    Badge = await ConstruireBadgeGrilleSuccesAsync(succesJeu.Titre, urlBadge),
-                    Etat = new ElementListeSuccesAfficheLocal
-                    {
-                        Titre = succesJeu.Titre,
-                        CheminImageBadge = urlBadge,
-                    },
-                };
-            })
-        );
-
-        foreach (var badgeCharge in badgesCharges)
-        {
-            GrilleTousSuccesJeuEnCours.Children.Add(badgeCharge.Badge);
-        }
-
-        SauvegarderDerniereListeSuccesAffichee(
-            identifiantJeu,
-            [.. badgesCharges.Select(item => item.Etat)]
-        );
-        MettreAJourDispositionGrilleTousSucces();
-        PlanifierMiseAJourAnimationGrilleTousSucces();
-    }
-
-    /// <summary>
-    /// Construit un badge de la grille des rétrosuccès à partir de son titre et de son visuel.
-    /// </summary>
-    private async Task<SystemControls.Border> ConstruireBadgeGrilleSuccesAsync(
-        string titre,
-        string urlBadge
-    )
-    {
-        ImageSource? imageBadge = await ChargerImageDistanteAsync(urlBadge);
-        SystemControls.Border conteneur = new()
-        {
-            Width = TailleBadgeGrilleSucces,
-            Height = TailleBadgeGrilleSucces,
-            Margin = new Thickness(0),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            Padding = new Thickness(0),
-            ToolTip = titre,
-        };
-        conteneur.MouseEnter += BadgeGrilleSucces_EntreeSouris;
-        conteneur.MouseLeave += BadgeGrilleSucces_SortieSouris;
-
-        if (imageBadge is null)
-        {
-            conteneur.Child = new SystemControls.TextBlock
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.62,
-                Text = titre,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap,
-            };
-            return conteneur;
-        }
-
-        SystemControls.Image imageSucces = new()
-        {
-            Source = imageBadge,
-            Width = 34,
-            Height = 34,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Stretch = Stretch.Uniform,
-        };
-
-        imageSucces.Loaded += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
-        imageSucces.SizeChanged += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
-        conteneur.Child = imageSucces;
-        return conteneur;
-    }
-
-    /// <summary>
-    /// Indique si un succès du jeu a déjà été obtenu par l'utilisateur.
-    /// </summary>
-    private static bool SuccesEstDebloque(SuccesJeuUtilisateurRetroAchievements succes)
-    {
-        return !string.IsNullOrWhiteSpace(succes.DateObtention)
-            || !string.IsNullOrWhiteSpace(succes.DateObtentionHardcore);
-    }
-
-    /// <summary>
-    /// Recalcule le gap de la grille des succès selon la largeur disponible.
-    /// </summary>
-    private void ConteneurGrilleTousSuccesJeuEnCours_TailleChangee(
-        object sender,
-        SizeChangedEventArgs e
-    )
-    {
-        MettreAJourDispositionGrilleTousSucces();
-        PlanifierMiseAJourAnimationGrilleTousSucces();
-    }
-
-    /// <summary>
-    /// Répartit les badges sur la largeur disponible avec un espacement adaptatif.
-    /// </summary>
-    private void MettreAJourDispositionGrilleTousSucces()
-    {
-        if (
-            ConteneurGrilleTousSuccesJeuEnCours is null
-            || GrilleTousSuccesJeuEnCours is null
-            || GrilleTousSuccesJeuEnCours.Children.Count == 0
-        )
-        {
-            return;
-        }
-
-        double largeurDisponible = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
-
-        if (largeurDisponible <= 0)
-        {
-            return;
-        }
-
-        int nombreBadges = GrilleTousSuccesJeuEnCours.Children.Count;
-        int colonnes = Math.Max(
-            1,
-            (int)
-                Math.Floor(
-                    (largeurDisponible + EspaceMinimalGrilleSucces)
-                        / (TailleBadgeGrilleSucces + EspaceMinimalGrilleSucces)
-                )
-        );
-        colonnes = Math.Min(colonnes, nombreBadges);
-
-        double gapHorizontal =
-            colonnes > 1
-                ? Math.Max(
-                    EspaceMinimalGrilleSucces,
-                    (largeurDisponible - (colonnes * TailleBadgeGrilleSucces)) / (colonnes - 1)
-                )
-                : 0;
-
-        for (int index = 0; index < nombreBadges; index++)
-        {
-            if (GrilleTousSuccesJeuEnCours.Children[index] is not SystemControls.Border badge)
-            {
-                continue;
-            }
-
-            int colonne = index % colonnes;
-            bool dernierDeLigne = colonne == colonnes - 1;
-            badge.Margin = new Thickness(
-                0,
-                0,
-                dernierDeLigne ? 0 : gapHorizontal,
-                EspaceMinimalGrilleSucces
+                    IdentifiantJeu = identifiantJeu,
+                    IdentifiantSucces = succesSelectionne.IdentifiantSucces,
+                    Titre = TexteTitrePremierSuccesNonDebloque.Text,
+                    Description = TexteDescriptionPremierSuccesNonDebloque.Text,
+                    DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
+                    IndicateurProgression = indicateurProgression,
+                    EstEpingleManuellement = estEpingleManuellement,
+                    CheminImageBadge = urlBadge,
+                    TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
+                }
             );
         }
     }
@@ -1253,14 +1305,71 @@ public partial class MainWindow : UiControls.FluentWindow
             segments.Add($"Indicateur : {indicateur.Texte.Trim()}");
         }
 
-        if (indicateur.Pourcentage.HasValue)
+        return string.Join(" • ", segments);
+    }
+
+    /// <summary>
+    /// Retourne uniquement l'indicateur rcheevos mesuré quand il existe réellement.
+    /// </summary>
+    private string ConstruireTexteRcheevosPremierSucces(int identifiantSucces)
+    {
+        return ConstruireIndicateurRcheevosPremierSucces(
+            _serviceRcheevos.ObtenirIndicateurProgression(identifiantSucces)
+        );
+    }
+
+    /// <summary>
+    /// Retourne l'identifiant du succès actuellement montré dans la carte principale.
+    /// </summary>
+    private int ObtenirIdentifiantSuccesAffichePourRafraichissementRcheevos()
+    {
+        if (_identifiantJeuSuccesCourant <= 0)
         {
-            segments.Add(
-                $"Mesure : {indicateur.Pourcentage.Value.ToString("0.#", CultureInfo.CurrentCulture)} %"
-            );
+            return 0;
         }
 
-        return string.Join(" • ", segments);
+        if (_identifiantSuccesGrilleTemporaire.HasValue)
+        {
+            return _identifiantSuccesGrilleTemporaire.Value;
+        }
+
+        if (_identifiantSuccesGrilleEpingle.HasValue)
+        {
+            return _identifiantSuccesGrilleEpingle.Value;
+        }
+
+        return
+            _configurationConnexion.DernierSuccesAffiche?.IdentifiantJeu
+            == _identifiantJeuSuccesCourant
+            ? _configurationConnexion.DernierSuccesAffiche.IdentifiantSucces
+            : 0;
+    }
+
+    /// <summary>
+    /// Rafraîchit périodiquement l'indicateur rcheevos du succès affiché sans attendre un rechargement complet.
+    /// </summary>
+    private void ActualiserIndicateurRcheevosAfficheSiPossible(bool forcer = false)
+    {
+        int identifiantSucces = ObtenirIdentifiantSuccesAffichePourRafraichissementRcheevos();
+
+        if (identifiantSucces <= 0)
+        {
+            return;
+        }
+
+        DateTime maintenantUtc = DateTime.UtcNow;
+        if (
+            !forcer
+            && _dernierRafraichissementIndicateurRcheevosUtc != DateTime.MinValue
+            && maintenantUtc - _dernierRafraichissementIndicateurRcheevosUtc
+                < IntervalleRafraichissementIndicateurRcheevos
+        )
+        {
+            return;
+        }
+
+        _dernierRafraichissementIndicateurRcheevosUtc = maintenantUtc;
+        RafraichirIndicateurRcheevosPremierSuccesSiPossible(identifiantSucces);
     }
 
     /// <summary>
@@ -1273,14 +1382,7 @@ public partial class MainWindow : UiControls.FluentWindow
             return;
         }
 
-        string indicateurProgression = ConstruireIndicateurRcheevosPremierSucces(
-            _serviceRcheevos.ObtenirIndicateurProgression(identifiantSucces)
-        );
-
-        if (string.IsNullOrWhiteSpace(indicateurProgression))
-        {
-            return;
-        }
+        string indicateurProgression = ConstruireTexteRcheevosPremierSucces(identifiantSucces);
 
         DefinirIndicateurRcheevosPremierSucces(indicateurProgression);
 
@@ -1710,9 +1812,10 @@ public partial class MainWindow : UiControls.FluentWindow
 
         JeuUtilisateurRetroAchievements jeuLocalReconstruit =
             ConstruireJeuUtilisateurDepuisEtatLocal(jeuSauvegarde);
+        _identifiantSuccesGrilleTemporaire = null;
+        _identifiantSuccesGrilleEpingle = null;
         await Task.WhenAll(
             MettreAJourMetaConsoleJeuEnCoursAsync(jeuLocalReconstruit),
-            AppliquerDernierSuccesSauvegardeAsync(jeuSauvegarde.IdentifiantJeu),
             AppliquerDerniereListeSuccesSauvegardeeAsync(jeuSauvegarde.IdentifiantJeu)
         );
     }
@@ -1733,6 +1836,9 @@ public partial class MainWindow : UiControls.FluentWindow
             return;
         }
 
+        _identifiantSuccesGrilleEpingle = succesSauvegarde.EstEpingleManuellement
+            ? succesSauvegarde.IdentifiantSucces
+            : null;
         TexteTitrePremierSuccesNonDebloque.Text = succesSauvegarde.Titre;
         TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
         TexteDescriptionPremierSuccesNonDebloque.Text = succesSauvegarde.Description;
@@ -1795,7 +1901,12 @@ public partial class MainWindow : UiControls.FluentWindow
         SystemControls.Border[] badges = await Task.WhenAll(
             listeSauvegardee.Succes.Select(succesSauvegarde =>
                 ConstruireBadgeGrilleSuccesAsync(
-                    succesSauvegarde.Titre,
+                    identifiantJeu,
+                    new SuccesJeuUtilisateurRetroAchievements
+                    {
+                        IdentifiantSucces = succesSauvegarde.IdentifiantSucces,
+                        Titre = succesSauvegarde.Titre,
+                    },
                     succesSauvegarde.CheminImageBadge
                 )
             )
@@ -1806,6 +1917,7 @@ public partial class MainWindow : UiControls.FluentWindow
             GrilleTousSuccesJeuEnCours.Children.Add(badge);
         }
 
+        RafraichirStyleBadgesGrilleSucces();
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
@@ -1936,6 +2048,7 @@ public partial class MainWindow : UiControls.FluentWindow
                 courant.IndicateurProgression,
                 StringComparison.Ordinal
             )
+            && precedent.EstEpingleManuellement == courant.EstEpingleManuellement
             && string.Equals(
                 precedent.CheminImageBadge,
                 courant.CheminImageBadge,
@@ -2514,6 +2627,7 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         await ChargerJeuEnCoursAsync(false, false);
+        ActualiserIndicateurRcheevosAfficheSiPossible();
     }
 
     /// <summary>
@@ -2538,6 +2652,7 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (string.Equals(signatureJeuLocal, _signatureDernierJeuLocal, StringComparison.Ordinal))
         {
+            ActualiserIndicateurRcheevosAfficheSiPossible();
             return;
         }
 
@@ -2617,6 +2732,7 @@ public partial class MainWindow : UiControls.FluentWindow
     {
         _minuteurActualisationApi.Stop();
         _minuteurSondeLocale.Stop();
+        _minuteurRotationVisuelsJeuEnCours.Stop();
     }
 
     /// <summary>
@@ -2628,6 +2744,7 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (jeuLocal is null)
         {
+            _dernierJeuLocalDetecte = null;
             _signatureDernierJeuLocal = string.Empty;
             return;
         }
@@ -3028,6 +3145,10 @@ public partial class MainWindow : UiControls.FluentWindow
                     _configurationConnexion.CleApiWeb,
                     jeu.IdentifiantJeu
                 );
+            ResultatHashRcheevos hashRcheevos = _serviceHachageRcheevos.CalculerHash(
+                jeuLocal.CheminJeuRetenu,
+                jeu.IdentifiantConsole
+            );
 
             bool hashReconnu = hashesOfficiels.Any(hash =>
                 hash.EmpreinteMd5.Equals(
@@ -3035,11 +3156,27 @@ public partial class MainWindow : UiControls.FluentWindow
                     StringComparison.OrdinalIgnoreCase
                 )
             );
+            bool hashRcheevosReconnu =
+                !string.IsNullOrWhiteSpace(hashRcheevos.Hash)
+                && hashesOfficiels.Any(hash =>
+                    hash.EmpreinteMd5.Equals(hashRcheevos.Hash, StringComparison.OrdinalIgnoreCase)
+                );
 
             string detailsValidation =
                 $"\nValidation locale : {(hashReconnu ? "MD5 reconnu" : "MD5 non reconnu")}"
                 + $"\nMD5 local : {jeuLocal.EmpreinteLocale.EmpreinteMd5}"
                 + $"\nSHA-1 local : {jeuLocal.EmpreinteLocale.EmpreinteSha1}";
+
+            if (!string.IsNullOrWhiteSpace(hashRcheevos.Hash))
+            {
+                detailsValidation +=
+                    $"\nHash rcheevos : {hashRcheevos.Hash}"
+                    + $"\nValidation rcheevos : {(hashRcheevosReconnu ? "hash reconnu" : "hash non reconnu")}";
+            }
+            else if (!string.IsNullOrWhiteSpace(hashRcheevos.Message))
+            {
+                detailsValidation += $"\nHash rcheevos : {hashRcheevos.Message}";
+            }
 
             if (!string.IsNullOrWhiteSpace(jeuLocal.CheminJeuRetenu))
             {
@@ -3121,6 +3258,10 @@ public partial class MainWindow : UiControls.FluentWindow
 
         foreach (int identifiantConsole in consolesCandidates)
         {
+            ResultatHashRcheevos hashRcheevos = _serviceHachageRcheevos.CalculerHash(
+                jeuLocal.CheminJeuRetenu,
+                identifiantConsole
+            );
             IReadOnlyList<JeuSystemeRetroAchievements> jeuxSysteme =
                 await _clientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
                     _configurationConnexion.CleApiWeb,
@@ -3132,6 +3273,10 @@ public partial class MainWindow : UiControls.FluentWindow
                     hash.Equals(
                         jeuLocal.EmpreinteLocale.EmpreinteMd5,
                         StringComparison.OrdinalIgnoreCase
+                    )
+                    || (
+                        !string.IsNullOrWhiteSpace(hashRcheevos.Hash)
+                        && hash.Equals(hashRcheevos.Hash, StringComparison.OrdinalIgnoreCase)
                     )
                 )
             );
@@ -3551,6 +3696,7 @@ public partial class MainWindow : UiControls.FluentWindow
         string? raisonIndisponibiliteApi = null
     )
     {
+        _dernierJeuLocalDetecte = jeuLocal;
         await _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocal);
         jeuLocal.CheminJeuRetenu = DeterminerCheminJeuLocalRetenu(jeuLocal);
         string signatureJeuLocal = ConstruireSignatureJeuLocal(jeuLocal);
@@ -3901,6 +4047,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private void ReinitialiserJeuEnCours()
     {
         DefinirTitreZoneJeu(true);
+        _dernierJeuLocalDetecte = null;
         _serviceRcheevos.ReinitialiserJeuActif();
         _serviceRcheevos.ReinitialiserSourceMemoire();
         _dernierIdentifiantJeuAvecInfos = 0;
@@ -3926,6 +4073,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private void ReinitialiserContexteSurveillance()
     {
         _actualisationApiCibleeEnAttente = false;
+        _dernierJeuLocalDetecte = null;
         _serviceRcheevos.ReinitialiserJeuActif();
         _serviceRcheevos.ReinitialiserSourceMemoire();
         _dernierIdentifiantJeuApi = 0;

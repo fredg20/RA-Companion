@@ -277,71 +277,73 @@
                         </Grid>
                       </Border>
 
-                      <Grid
-                        x:Name="CarrouselVisuelsJeuEnCours"
-                        Margin="{StaticResource MargeBlocCompacte}"
-                        Visibility="Collapsed"
-                      >
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="Auto" />
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <ui:Button
-                          x:Name="BoutonVisuelJeuPrecedent"
-                          Width="28"
-                          Height="28"
-                          Appearance="Secondary"
-                          Click="VisuelJeuPrecedent_Click"
-                          ToolTip="Visuel précédent"
+                      <StackPanel x:Name="ZoneSousImageJeuEnCours" Visibility="Collapsed">
+                        <Grid
+                          x:Name="CarrouselVisuelsJeuEnCours"
+                          Margin="{StaticResource MargeBlocCompacte}"
+                          Visibility="Collapsed"
                         >
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+
+                          <ui:Button
+                            x:Name="BoutonVisuelJeuPrecedent"
+                            Width="28"
+                            Height="28"
+                            Appearance="Secondary"
+                            Click="VisuelJeuPrecedent_Click"
+                            ToolTip="Visuel précédent"
+                          >
+                            <TextBlock
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              FontSize="14"
+                              FontWeight="SemiBold"
+                              Text="‹"
+                            />
+                          </ui:Button>
+
                           <TextBlock
+                            x:Name="TexteVisuelJeuEnCours"
+                            Grid.Column="1"
+                            Margin="8,0"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
-                            FontSize="14"
-                            FontWeight="SemiBold"
-                            Text="‹"
+                            Opacity="0.74"
+                            TextAlignment="Center"
+                            TextWrapping="Wrap"
                           />
-                        </ui:Button>
+
+                          <ui:Button
+                            x:Name="BoutonVisuelJeuSuivant"
+                            Grid.Column="2"
+                            Width="28"
+                            Height="28"
+                            Appearance="Secondary"
+                            Click="VisuelJeuSuivant_Click"
+                            ToolTip="Visuel suivant"
+                          >
+                            <TextBlock
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              FontSize="14"
+                              FontWeight="SemiBold"
+                              Text="›"
+                            />
+                          </ui:Button>
+                        </Grid>
 
                         <TextBlock
-                          x:Name="TexteVisuelJeuEnCours"
-                          Grid.Column="1"
-                          Margin="8,0"
-                          HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                          Opacity="0.74"
-                          TextAlignment="Center"
+                          x:Name="TexteTempsJeuSousImage"
+                          Margin="{StaticResource MargeBlocCompacte}"
+                          Opacity="0.78"
                           TextWrapping="Wrap"
+                          Visibility="Collapsed"
                         />
-
-                        <ui:Button
-                          x:Name="BoutonVisuelJeuSuivant"
-                          Grid.Column="2"
-                          Width="28"
-                          Height="28"
-                          Appearance="Secondary"
-                          Click="VisuelJeuSuivant_Click"
-                          ToolTip="Visuel suivant"
-                        >
-                          <TextBlock
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            FontSize="14"
-                            FontWeight="SemiBold"
-                            Text="›"
-                          />
-                        </ui:Button>
-                      </Grid>
-
-                      <TextBlock
-                        x:Name="TexteTempsJeuSousImage"
-                        Margin="{StaticResource MargeBlocCompacte}"
-                        Opacity="0.78"
-                        TextWrapping="Wrap"
-                        Visibility="Collapsed"
-                      />
+                      </StackPanel>
                     </StackPanel>
 
                     <Grid Grid.Column="2" VerticalAlignment="Top">
@@ -562,7 +564,120 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+
                       <TextBlock FontSize="18" FontWeight="SemiBold" Text="Rétrosuccès du jeu" />
+
+                      <ui:Button
+                        x:Name="BoutonOrdreSuccesGrille"
+                        Grid.Column="1"
+                        Margin="12,0,0,0"
+                        Appearance="Secondary"
+                        Click="BoutonOrdreSuccesGrille_Click"
+                      >
+                        <ui:Button.ContextMenu>
+                          <ContextMenu x:Name="MenuOrdreSuccesGrille">
+                            <MenuItem
+                              x:Name="MenuItemOrdreSuccesNormal"
+                              Click="OrdreSuccesGrilleNormal_Click"
+                            >
+                              <MenuItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                    <Ellipse
+                                      x:Name="ContourOrdreSuccesNormal"
+                                      StrokeThickness="1.2"
+                                    />
+                                    <Ellipse
+                                      x:Name="CentreOrdreSuccesNormal"
+                                      Width="6"
+                                      Height="6"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                    />
+                                  </Grid>
+                                  <TextBlock VerticalAlignment="Center" Text="Normal" />
+                                </StackPanel>
+                              </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem
+                              x:Name="MenuItemOrdreSuccesFacile"
+                              Click="OrdreSuccesGrilleFacile_Click"
+                            >
+                              <MenuItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                    <Ellipse
+                                      x:Name="ContourOrdreSuccesFacile"
+                                      StrokeThickness="1.2"
+                                    />
+                                    <Ellipse
+                                      x:Name="CentreOrdreSuccesFacile"
+                                      Width="6"
+                                      Height="6"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed"
+                                    />
+                                  </Grid>
+                                  <TextBlock VerticalAlignment="Center" Text="Facile" />
+                                </StackPanel>
+                              </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem
+                              x:Name="MenuItemOrdreSuccesDifficile"
+                              Click="OrdreSuccesGrilleDifficile_Click"
+                            >
+                              <MenuItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                    <Ellipse
+                                      x:Name="ContourOrdreSuccesDifficile"
+                                      StrokeThickness="1.2"
+                                    />
+                                    <Ellipse
+                                      x:Name="CentreOrdreSuccesDifficile"
+                                      Width="6"
+                                      Height="6"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed"
+                                    />
+                                  </Grid>
+                                  <TextBlock VerticalAlignment="Center" Text="Difficile" />
+                                </StackPanel>
+                              </MenuItem.Header>
+                            </MenuItem>
+                            <MenuItem
+                              x:Name="MenuItemOrdreSuccesAleatoire"
+                              Click="OrdreSuccesGrilleAleatoire_Click"
+                            >
+                              <MenuItem.Header>
+                                <StackPanel Orientation="Horizontal">
+                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                    <Ellipse
+                                      x:Name="ContourOrdreSuccesAleatoire"
+                                      StrokeThickness="1.2"
+                                    />
+                                    <Ellipse
+                                      x:Name="CentreOrdreSuccesAleatoire"
+                                      Width="6"
+                                      Height="6"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed"
+                                    />
+                                  </Grid>
+                                  <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
+                                </StackPanel>
+                              </MenuItem.Header>
+                            </MenuItem>
+                          </ContextMenu>
+                        </ui:Button.ContextMenu>
+                      </ui:Button>
                     </Grid>
 
                     <Border

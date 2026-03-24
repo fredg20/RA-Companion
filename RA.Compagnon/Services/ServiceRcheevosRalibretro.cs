@@ -2,6 +2,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
@@ -15,6 +16,7 @@ public sealed class ServiceRcheevosRalibretro
     private const string BlocAchievements = "ACHV";
     private readonly List<string> _dossiersEtats = [];
     private readonly List<string> _clesJeu = [];
+    private readonly Dictionary<int, IReadOnlyDictionary<int, string>> _cacheDefinitionsSucces = [];
     private string _dossierRacine = string.Empty;
     private string _cheminEtatActif = string.Empty;
     private DateTime _derniereEcritureEtatUtc = DateTime.MinValue;
@@ -65,6 +67,100 @@ public sealed class ServiceRcheevosRalibretro
         }
 
         return "Source mémoire : RALibRetro savestate";
+    }
+
+    /// <summary>
+    /// Lit les définitions de succès complètes depuis le cache local de RALibRetro.
+    /// </summary>
+    public IReadOnlyDictionary<int, string> ObtenirDefinitionsSuccesCachees(int identifiantJeu)
+    {
+        if (identifiantJeu <= 0 || string.IsNullOrWhiteSpace(_dossierRacine))
+        {
+            return new Dictionary<int, string>();
+        }
+
+        if (
+            _cacheDefinitionsSucces.TryGetValue(
+                identifiantJeu,
+                out IReadOnlyDictionary<int, string>? definitions
+            )
+        )
+        {
+            return definitions;
+        }
+
+        Dictionary<int, string> resultat = [];
+        string cheminCacheJeu = Path.Combine(
+            _dossierRacine,
+            "RACache",
+            "Data",
+            $"{identifiantJeu}.json"
+        );
+
+        if (!File.Exists(cheminCacheJeu))
+        {
+            _cacheDefinitionsSucces[identifiantJeu] = resultat;
+            return resultat;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminCacheJeu));
+            if (
+                !document.RootElement.TryGetProperty("Sets", out JsonElement setsElement)
+                || setsElement.ValueKind != JsonValueKind.Array
+            )
+            {
+                _cacheDefinitionsSucces[identifiantJeu] = resultat;
+                return resultat;
+            }
+
+            foreach (JsonElement setElement in setsElement.EnumerateArray())
+            {
+                if (
+                    !setElement.TryGetProperty("Achievements", out JsonElement achievementsElement)
+                    || achievementsElement.ValueKind != JsonValueKind.Array
+                )
+                {
+                    continue;
+                }
+
+                foreach (JsonElement achievementElement in achievementsElement.EnumerateArray())
+                {
+                    if (
+                        !achievementElement.TryGetProperty("ID", out JsonElement idElement)
+                        || !idElement.TryGetInt32(out int identifiantSucces)
+                        || identifiantSucces <= 0
+                    )
+                    {
+                        continue;
+                    }
+
+                    if (
+                        !achievementElement.TryGetProperty(
+                            "MemAddr",
+                            out JsonElement memAddrElement
+                        )
+                        || memAddrElement.ValueKind != JsonValueKind.String
+                    )
+                    {
+                        continue;
+                    }
+
+                    string definition = memAddrElement.GetString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(definition))
+                    {
+                        resultat[identifiantSucces] = definition;
+                    }
+                }
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        catch (JsonException) { }
+
+        _cacheDefinitionsSucces[identifiantJeu] = resultat;
+        return resultat;
     }
 
     public bool ActualiserProgressionPont()
@@ -128,6 +224,7 @@ public sealed class ServiceRcheevosRalibretro
         _derniereEcritureEtatUtc = DateTime.MinValue;
         _dossiersEtats.Clear();
         _clesJeu.Clear();
+        _cacheDefinitionsSucces.Clear();
         EssayerEffacerProgressionSerialisee();
     }
 
@@ -371,6 +468,110 @@ public sealed class ServiceRcheevosRalibretro
             {
                 return dossier;
             }
+        }
+
+        string cheminExecutableLigneCommande = ExtraireCheminExecutableDepuisLigneCommande(
+            jeuLocal.LigneCommande
+        );
+        if (!string.IsNullOrWhiteSpace(cheminExecutableLigneCommande))
+        {
+            string? dossier = Path.GetDirectoryName(cheminExecutableLigneCommande);
+            if (!string.IsNullOrWhiteSpace(dossier))
+            {
+                return dossier;
+            }
+        }
+
+        foreach (string dossierCandidat in EnumererDossiersRacineCandidats(jeuLocal))
+        {
+            if (string.IsNullOrWhiteSpace(dossierCandidat) || !Directory.Exists(dossierCandidat))
+            {
+                continue;
+            }
+
+            if (
+                File.Exists(Path.Combine(dossierCandidat, "RALibretro.json"))
+                || Directory.Exists(Path.Combine(dossierCandidat, "RACache"))
+            )
+            {
+                return dossierCandidat;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static IEnumerable<string> EnumererDossiersRacineCandidats(
+        JeuDetecteLocalement jeuLocal
+    )
+    {
+        string mesDocuments = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(mesDocuments))
+        {
+            yield return Path.Combine(mesDocuments, "emulation", "RALibretro");
+            yield return Path.Combine(mesDocuments, "emulation", "RALibRetro");
+        }
+
+        foreach (
+            string cheminJeu in new[]
+            {
+                jeuLocal.CheminJeuRetenu,
+                jeuLocal.CheminJeuLigneCommande,
+                jeuLocal.CheminJeuEstime,
+            }
+        )
+        {
+            if (string.IsNullOrWhiteSpace(cheminJeu))
+            {
+                continue;
+            }
+
+            string? dossierJeu = Path.GetDirectoryName(cheminJeu);
+            if (string.IsNullOrWhiteSpace(dossierJeu))
+            {
+                continue;
+            }
+
+            DirectoryInfo? repertoire = new DirectoryInfo(dossierJeu);
+            while (repertoire is not null)
+            {
+                if (string.Equals(repertoire.Name, "emulation", StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return Path.Combine(repertoire.FullName, "RALibretro");
+                    yield return Path.Combine(repertoire.FullName, "RALibRetro");
+                    break;
+                }
+
+                repertoire = repertoire.Parent;
+            }
+        }
+    }
+
+    private static string ExtraireCheminExecutableDepuisLigneCommande(string? ligneCommande)
+    {
+        if (string.IsNullOrWhiteSpace(ligneCommande))
+        {
+            return string.Empty;
+        }
+
+        Match cheminEntreGuillemets = Regex.Match(
+            ligneCommande,
+            "^\\s*\"(?<exe>[^\"]+\\.exe)\"",
+            RegexOptions.IgnoreCase
+        );
+        if (cheminEntreGuillemets.Success)
+        {
+            return cheminEntreGuillemets.Groups["exe"].Value.Trim();
+        }
+
+        Match cheminSansGuillemets = Regex.Match(
+            ligneCommande,
+            "^\\s*(?<exe>[A-Za-z]:\\\\\\S+?\\.exe)\\b",
+            RegexOptions.IgnoreCase
+        );
+        if (cheminSansGuillemets.Success)
+        {
+            return cheminSansGuillemets.Groups["exe"].Value.Trim();
         }
 
         return string.Empty;

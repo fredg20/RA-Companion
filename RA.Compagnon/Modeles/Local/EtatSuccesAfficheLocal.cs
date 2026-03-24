@@ -36,6 +36,11 @@ public sealed class EtatSuccesAfficheLocal
     public string IndicateurProgression { get; set; } = string.Empty;
 
     /// <summary>
+    /// Indique si ce succès a été épinglé manuellement depuis la grille.
+    /// </summary>
+    public bool EstEpingleManuellement { get; set; }
+
+    /// <summary>
     /// URL ou chemin du badge affiché.
     /// </summary>
     public string CheminImageBadge { get; set; } = string.Empty;

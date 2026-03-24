@@ -35,12 +35,17 @@ if(RA_COMPAGNON_RCHEEVOS_FOUND)
         "${RA_COMPAGNON_RCHEEVOS_ROOT}/src/*.c"
     )
 
+    list(FILTER RA_COMPAGNON_RCHEEVOS_SOURCES EXCLUDE REGEX ".*/src/rc_libretro\\.c$")
+
     if(RA_COMPAGNON_RCHEEVOS_SOURCES)
         target_sources(ra_compagnon_rcheevos_bridge PRIVATE ${RA_COMPAGNON_RCHEEVOS_SOURCES})
         target_include_directories(ra_compagnon_rcheevos_bridge
             PRIVATE
                 "${RA_COMPAGNON_RCHEEVOS_ROOT}/include"
                 "${RA_COMPAGNON_RCHEEVOS_ROOT}/src"
+                "${RA_COMPAGNON_RCHEEVOS_ROOT}/src/rcheevos"
+                "${RA_COMPAGNON_RCHEEVOS_ROOT}/src/rapi"
+                "${RA_COMPAGNON_RCHEEVOS_ROOT}/src/rhash"
         )
         target_compile_definitions(
             ra_compagnon_rcheevos_bridge

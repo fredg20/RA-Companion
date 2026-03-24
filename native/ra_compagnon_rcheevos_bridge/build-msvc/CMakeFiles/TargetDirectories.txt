@@ -1,0 +1,3 @@
+C:/Users/fredg/Desktop/RA-Companion/native/ra_compagnon_rcheevos_bridge/build-msvc/CMakeFiles/ra_compagnon_rcheevos_bridge.dir
+C:/Users/fredg/Desktop/RA-Companion/native/ra_compagnon_rcheevos_bridge/build-msvc/CMakeFiles/edit_cache.dir
+C:/Users/fredg/Desktop/RA-Companion/native/ra_compagnon_rcheevos_bridge/build-msvc/CMakeFiles/rebuild_cache.dir

@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Local;
@@ -23,6 +24,7 @@ public sealed class ServiceRcheevos
     private DiagnosticMemoireRetroArch? _diagnosticMemoireRetroArch;
     private string _nomEmulateurSource = string.Empty;
     private readonly Dictionary<int, string> _definitionsSucces = [];
+    private readonly Dictionary<string, ValidationDefinitionRcheevos> _validationsDefinitions = [];
     private string _signatureDefinitionsSucces = string.Empty;
 
     public ServiceRcheevos()
@@ -64,21 +66,42 @@ public sealed class ServiceRcheevos
     /// <summary>
     /// Enregistre les définitions MemAddr du jeu courant pour le bridge natif.
     /// </summary>
-    public void DefinirDefinitionsSucces(IEnumerable<SuccesJeuUtilisateurRetroAchievements> succes)
+    public void DefinirDefinitionsSucces(
+        int identifiantJeu,
+        IEnumerable<SuccesJeuUtilisateurRetroAchievements> succes
+    )
     {
+        IReadOnlyDictionary<int, string> definitionsCacheesRalibretro =
+            _serviceRcheevosRalibretro.ObtenirDefinitionsSuccesCachees(identifiantJeu);
         Dictionary<int, string> nouvellesDefinitions = [];
 
         foreach (SuccesJeuUtilisateurRetroAchievements succesJeu in succes)
         {
-            if (
-                succesJeu.IdentifiantSucces <= 0
-                || string.IsNullOrWhiteSpace(succesJeu.DefinitionMemoire)
-            )
+            if (succesJeu.IdentifiantSucces <= 0)
             {
                 continue;
             }
 
-            nouvellesDefinitions[succesJeu.IdentifiantSucces] = succesJeu.DefinitionMemoire;
+            string definition = succesJeu.DefinitionMemoire;
+
+            if (
+                definitionsCacheesRalibretro.TryGetValue(
+                    succesJeu.IdentifiantSucces,
+                    out string? definitionCachee
+                )
+                && !string.IsNullOrWhiteSpace(definitionCachee)
+                && (string.IsNullOrWhiteSpace(definition) || DefinitionSembleHashApi(definition))
+            )
+            {
+                definition = definitionCachee;
+            }
+
+            if (string.IsNullOrWhiteSpace(definition))
+            {
+                continue;
+            }
+
+            nouvellesDefinitions[succesJeu.IdentifiantSucces] = definition;
         }
 
         string nouvelleSignature = ConstruireSignatureDefinitions(nouvellesDefinitions);
@@ -89,6 +112,7 @@ public sealed class ServiceRcheevos
         }
 
         _definitionsSucces.Clear();
+        _validationsDefinitions.Clear();
 
         foreach ((int identifiantSucces, string definition) in nouvellesDefinitions)
         {
@@ -220,6 +244,7 @@ public sealed class ServiceRcheevos
         }
 
         _definitionsSucces.Clear();
+        _validationsDefinitions.Clear();
         _signatureDefinitionsSucces = string.Empty;
         ActualiserDefinitionsPont();
     }
@@ -311,6 +336,14 @@ public sealed class ServiceRcheevos
             return "Diagnostic rcheevos : définition du succès absente.";
         }
 
+        ValidationDefinitionRcheevos validation = ValiderDefinitionSucces(definition);
+        if (!validation.EstValide)
+        {
+            return string.IsNullOrWhiteSpace(validation.Message)
+                ? "Diagnostic rcheevos : définition du succès invalide."
+                : $"Diagnostic rcheevos : {validation.Message}";
+        }
+
         if (DefinitionSembleHashApi(definition))
         {
             return "Diagnostic rcheevos : l'API fournit ici un hash MemAddr, pas une définition mesurée exploitable.";
@@ -325,6 +358,19 @@ public sealed class ServiceRcheevos
                 "Diagnostic rcheevos : aucune progression mesurée pour ce succès.",
             _ => string.Empty,
         };
+    }
+
+    /// <summary>
+    /// Valide une définition de succès avec le validateur rcheevos si le bridge natif le permet.
+    /// </summary>
+    public ValidationDefinitionRcheevos ValiderDefinitionSucces(int identifiantSucces)
+    {
+        if (!_definitionsSucces.TryGetValue(identifiantSucces, out string? definition))
+        {
+            return new ValidationDefinitionRcheevos(false, "Définition du succès absente.");
+        }
+
+        return ValiderDefinitionSucces(definition);
     }
 
     private static bool DefinitionSembleHashApi(string definition)
@@ -348,6 +394,92 @@ public sealed class ServiceRcheevos
         }
 
         return true;
+    }
+
+    private ValidationDefinitionRcheevos ValiderDefinitionSucces(string definition)
+    {
+        if (_bridgeIndisponible)
+        {
+            return new ValidationDefinitionRcheevos(
+                false,
+                "Validation indisponible : bridge natif absent."
+            );
+        }
+
+        if (_jeuActif is null || _jeuActif.IdentifiantConsole <= 0)
+        {
+            return new ValidationDefinitionRcheevos(
+                false,
+                "Validation indisponible : console inconnue."
+            );
+        }
+
+        string cle = $"{_jeuActif.IdentifiantConsole}:{definition}";
+        if (_validationsDefinitions.TryGetValue(cle, out ValidationDefinitionRcheevos? validation))
+        {
+            return validation;
+        }
+
+        if (DefinitionSembleHashApi(definition))
+        {
+            validation = new ValidationDefinitionRcheevos(
+                false,
+                "l'API fournit ici un hash MemAddr, pas une définition mesurée exploitable."
+            );
+            _validationsDefinitions[cle] = validation;
+            return validation;
+        }
+
+        try
+        {
+            StringBuilder message = new(256);
+            int resultat = MethodesNatives.ValiderDefinitionSucces(
+                _jeuActif.IdentifiantConsole,
+                definition,
+                message,
+                message.Capacity
+            );
+
+            validation = resultat switch
+            {
+                0 => new ValidationDefinitionRcheevos(true, message.ToString().Trim()),
+                1 => new ValidationDefinitionRcheevos(false, message.ToString().Trim()),
+                3 => new ValidationDefinitionRcheevos(false, "validation native indisponible."),
+                _ => new ValidationDefinitionRcheevos(
+                    false,
+                    string.IsNullOrWhiteSpace(message.ToString())
+                        ? $"validation native impossible (code {resultat})."
+                        : message.ToString().Trim()
+                ),
+            };
+        }
+        catch (DllNotFoundException)
+        {
+            _bridgeIndisponible = true;
+            validation = new ValidationDefinitionRcheevos(
+                false,
+                "validation indisponible : bridge natif absent."
+            );
+        }
+        catch (EntryPointNotFoundException)
+        {
+            _bridgeIndisponible = true;
+            validation = new ValidationDefinitionRcheevos(
+                false,
+                "validation indisponible : bridge natif incomplet."
+            );
+        }
+        catch (BadImageFormatException)
+        {
+            _bridgeIndisponible = true;
+            validation = new ValidationDefinitionRcheevos(
+                false,
+                "validation indisponible : bridge natif incompatible."
+            );
+        }
+
+        _validationsDefinitions[cle] = validation;
+        return validation;
     }
 
     private void ActualiserPontMemoire()
@@ -547,6 +679,19 @@ public sealed class ServiceRcheevos
         )]
         public static extern int DefinirDefinitionSucces(int identifiantSucces, string definition);
 
+        [DllImport(
+            NomBibliotheque,
+            EntryPoint = "ra_compagnon_rcheevos_validate_achievement_definition",
+            CallingConvention = CallingConvention.Cdecl,
+            CharSet = CharSet.Ansi
+        )]
+        public static extern int ValiderDefinitionSucces(
+            int identifiantConsole,
+            string definition,
+            StringBuilder message,
+            int tailleMessage
+        );
+
         [DllImport(NomBibliotheque, EntryPoint = "ra_compagnon_rcheevos_get_progress_indicator")]
         public static extern int ObtenirIndicateurProgression(
             int identifiantJeu,
@@ -561,6 +706,11 @@ public sealed class ServiceRcheevos
 /// Représente un Progress Indicator rcheevos prêt à être affiché.
 /// </summary>
 public sealed record IndicateurProgressionRcheevos(string Texte, double? Pourcentage);
+
+/// <summary>
+/// Résultat d'une validation native rcheevos sur une définition d'achievement.
+/// </summary>
+public sealed record ValidationDefinitionRcheevos(bool EstValide, string Message);
 
 public enum SourceMemoireRcheevos
 {
