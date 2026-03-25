@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Local;
@@ -13,6 +14,8 @@ public sealed class SondeJeuLocal
 {
     private static readonly TimeSpan DureeCacheLigneCommande = TimeSpan.FromSeconds(3);
     private readonly Dictionary<int, LigneCommandeCachee> _cacheLignesCommande = [];
+    private DateTime _dateLectureRalibretroJsonUtc = DateTime.MinValue;
+    private string _cheminJeuRecentRalibretro = string.Empty;
 
     private static readonly string[] ExtensionsJeuConnues =
     [
@@ -81,16 +84,37 @@ public sealed class SondeJeuLocal
                             continue;
                         }
 
-                        string ligneCommande = ObtenirLigneCommande(processus);
-                        string cheminJeuLigneCommande = ExtraireCheminJeu(ligneCommande);
                         string cheminJeuEstime = ExtraireCheminJeu(processus.MainWindowTitle);
+
                         string titreJeuEstime = ExtraireTitreJeu(
                             processus.MainWindowTitle,
                             emulateur.SeparateursTitre,
-                            string.IsNullOrWhiteSpace(cheminJeuLigneCommande)
-                                ? cheminJeuEstime
-                                : cheminJeuLigneCommande
+                            cheminJeuEstime
                         );
+
+                        if (
+                            string.IsNullOrWhiteSpace(cheminJeuEstime)
+                            && string.Equals(
+                                emulateur.NomAffiche,
+                                "RALibRetro",
+                                StringComparison.Ordinal
+                            )
+                            && TitreRalibretroEstGenerique(titreJeuEstime)
+                        )
+                        {
+                            string cheminJeuRecentRalibretro =
+                                ObtenirCheminJeuRecentRalibretroSiFiable();
+
+                            if (!string.IsNullOrWhiteSpace(cheminJeuRecentRalibretro))
+                            {
+                                cheminJeuEstime = cheminJeuRecentRalibretro;
+                                titreJeuEstime = ExtraireTitreJeu(
+                                    processus.MainWindowTitle,
+                                    emulateur.SeparateursTitre,
+                                    cheminJeuEstime
+                                );
+                            }
+                        }
 
                         int scoreConfiance = CalculerScoreConfiance(
                             emulateur,
@@ -98,8 +122,39 @@ public sealed class SondeJeuLocal
                             processus.MainWindowTitle,
                             titreJeuEstime,
                             cheminJeuEstime,
-                            cheminJeuLigneCommande
+                            string.Empty
                         );
+
+                        string ligneCommande = string.Empty;
+                        string cheminJeuLigneCommande = string.Empty;
+
+                        if (
+                            string.IsNullOrWhiteSpace(cheminJeuEstime)
+                            || string.IsNullOrWhiteSpace(titreJeuEstime)
+                            || scoreConfiance < 5
+                        )
+                        {
+                            ligneCommande = ObtenirLigneCommande(processus);
+                            cheminJeuLigneCommande = ExtraireCheminJeu(ligneCommande);
+
+                            if (!string.IsNullOrWhiteSpace(cheminJeuLigneCommande))
+                            {
+                                titreJeuEstime = ExtraireTitreJeu(
+                                    processus.MainWindowTitle,
+                                    emulateur.SeparateursTitre,
+                                    cheminJeuLigneCommande
+                                );
+                            }
+
+                            scoreConfiance = CalculerScoreConfiance(
+                                emulateur,
+                                processus.ProcessName,
+                                processus.MainWindowTitle,
+                                titreJeuEstime,
+                                cheminJeuEstime,
+                                cheminJeuLigneCommande
+                            );
+                        }
 
                         if (scoreConfiance <= 0)
                         {
@@ -259,6 +314,100 @@ public sealed class SondeJeuLocal
         {
             return string.Empty;
         }
+    }
+
+    /// <summary>
+    /// Utilise la liste récente de RALibRetro comme indice faible quand le titre de fenêtre reste générique.
+    /// </summary>
+    private string ObtenirCheminJeuRecentRalibretroSiFiable()
+    {
+        string cheminConfiguration = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "emulation",
+            "RALibretro",
+            "RALibretro.json"
+        );
+
+        try
+        {
+            if (!File.Exists(cheminConfiguration))
+            {
+                _cheminJeuRecentRalibretro = string.Empty;
+                return string.Empty;
+            }
+
+            DateTime dateModificationUtc = File.GetLastWriteTimeUtc(cheminConfiguration);
+            if (
+                !string.IsNullOrWhiteSpace(_cheminJeuRecentRalibretro)
+                && dateModificationUtc == _dateLectureRalibretroJsonUtc
+            )
+            {
+                return _cheminJeuRecentRalibretro;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminConfiguration));
+            if (
+                !document.RootElement.TryGetProperty("recent", out JsonElement recent)
+                || recent.ValueKind != JsonValueKind.Array
+                || recent.GetArrayLength() == 0
+                || !recent[0].TryGetProperty("path", out JsonElement chemin)
+            )
+            {
+                _cheminJeuRecentRalibretro = string.Empty;
+                return string.Empty;
+            }
+
+            string cheminJeu = chemin.GetString() ?? string.Empty;
+            if (!CheminJeuSembleValide(cheminJeu))
+            {
+                _cheminJeuRecentRalibretro = string.Empty;
+                return string.Empty;
+            }
+
+            _dateLectureRalibretroJsonUtc = dateModificationUtc;
+            _cheminJeuRecentRalibretro = cheminJeu;
+            return _cheminJeuRecentRalibretro;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Évite de traiter un simple titre d'application RALibRetro comme un nom de jeu exploitable.
+    /// </summary>
+    private static bool TitreRalibretroEstGenerique(string titreJeuEstime)
+    {
+        if (string.IsNullOrWhiteSpace(titreJeuEstime))
+        {
+            return true;
+        }
+
+        string titreNormalise = titreJeuEstime.Trim();
+
+        return titreNormalise.Equals("RALibRetro", StringComparison.OrdinalIgnoreCase)
+            || titreNormalise.StartsWith("RALibRetro - ", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Vérifie rapidement que le chemin candidat ressemble bien à un jeu exploitable.
+    /// </summary>
+    private static bool CheminJeuSembleValide(string cheminJeu)
+    {
+        if (string.IsNullOrWhiteSpace(cheminJeu))
+        {
+            return false;
+        }
+
+        string extension = Path.GetExtension(cheminJeu);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            return false;
+        }
+
+        return ExtensionsJeuConnues.Contains(extension, StringComparer.OrdinalIgnoreCase)
+            || Path.IsPathRooted(cheminJeu);
     }
 
     /// <summary>

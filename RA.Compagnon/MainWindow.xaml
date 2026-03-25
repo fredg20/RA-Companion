@@ -246,6 +246,8 @@
 
                     <StackPanel Grid.Column="0" VerticalAlignment="Top">
                       <Border
+                        Width="180"
+                        Height="252"
                         MaxHeight="252"
                         VerticalAlignment="Top"
                         CornerRadius="{StaticResource RayonCoinsPetit}"
@@ -256,13 +258,33 @@
                           <Image
                             x:Name="ImageJeuEnCours"
                             Margin="0"
+                            MaxWidth="180"
                             MaxHeight="252"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Top"
                             Stretch="Uniform"
                             SizeChanged="ImageJeuEnCours_TailleChangee"
                             Visibility="Collapsed"
-                          />
+                          >
+                            <Image.RenderTransform>
+                              <TranslateTransform />
+                            </Image.RenderTransform>
+                          </Image>
+                          <Image
+                            x:Name="ImageJeuEnCoursTransition"
+                            Margin="0"
+                            MaxWidth="180"
+                            MaxHeight="252"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top"
+                            Stretch="Uniform"
+                            SizeChanged="ImageJeuEnCours_TailleChangee"
+                            Visibility="Collapsed"
+                          >
+                            <Image.RenderTransform>
+                              <TranslateTransform />
+                            </Image.RenderTransform>
+                          </Image>
                           <TextBlock
                             x:Name="TexteImageJeuEnCours"
                             HorizontalAlignment="Center"

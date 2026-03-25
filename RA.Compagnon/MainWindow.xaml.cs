@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api;
@@ -62,7 +63,8 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double HauteurMinimaleGrilleSucces = 0;
     private const double VitesseDefilementGrilleSuccesPixelsParSeconde = 22;
     private const double SeuilDeclenchementDefilementGrilleSucces = 4;
-    private const double DureeFonduImageJeuEnCoursMillisecondes = 420;
+    private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
+    private const double RayonFlouTransitionImageJeuEnCours = 14;
     private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(4);
 
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();
@@ -112,6 +114,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _signatureOrdreAleatoireSuccesGrille = string.Empty;
     private string _etatConnexionCourant = "Non configuré";
     private string _cheminImageJeuEnCoursDemande = string.Empty;
+    private string _cheminImageJeuEnCoursAffiche = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
     private JeuDetecteLocalement? _dernierJeuLocalDetecte;
     private int _indexVisuelJeuEnCours;
@@ -724,6 +727,7 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
+        JournaliserDiagnosticChangementJeu("image_debut", cheminImage ?? string.Empty);
         string urlImage = ConstruireUrlImageRetroAchievements(cheminImage);
         _cheminImageJeuEnCoursDemande = urlImage;
 
@@ -750,6 +754,7 @@ public partial class MainWindow : UiControls.FluentWindow
             }
 
             AppliquerImageJeuEnCoursAvecFondu(imageJeu, urlImage);
+            JournaliserDiagnosticChangementJeu("image_appliquee");
         }
         catch
         {
@@ -763,20 +768,137 @@ public partial class MainWindow : UiControls.FluentWindow
     private void ReinitialiserImageJeuEnCours()
     {
         ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
+        if (ImageJeuEnCours.Effect is BlurEffect effetImageJeu)
+        {
+            effetImageJeu.BeginAnimation(BlurEffect.RadiusProperty, null);
+        }
+        ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, null);
+        if (ImageJeuEnCoursTransition.Effect is BlurEffect effetTransition)
+        {
+            effetTransition.BeginAnimation(BlurEffect.RadiusProperty, null);
+        }
         ImageJeuEnCours.Opacity = 1;
+        ImageJeuEnCours.Effect = null;
         ImageJeuEnCours.Source = null;
         ImageJeuEnCours.Clip = null;
         ImageJeuEnCours.Visibility = Visibility.Collapsed;
+        ImageJeuEnCoursTransition.Opacity = 1;
+        ImageJeuEnCoursTransition.Effect = null;
+        ImageJeuEnCoursTransition.Source = null;
+        ImageJeuEnCoursTransition.Clip = null;
+        ImageJeuEnCoursTransition.Visibility = Visibility.Collapsed;
+        _cheminImageJeuEnCoursAffiche = string.Empty;
         TexteImageJeuEnCours.Text = string.Empty;
         TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
-    /// Applique la jaquette avec un fondu doux pour éviter un changement brutal de visuel.
+    /// Applique la jaquette avec une transition douce par flou entre deux visuels.
     /// </summary>
     private void AppliquerImageJeuEnCoursAvecFondu(ImageSource imageJeu, string urlImage)
     {
-        void AfficherNouvelleImageAvecFondu()
+        if (ImageJeuEnCours.Source is null || ImageJeuEnCours.Visibility != Visibility.Visible)
+        {
+            ImageJeuEnCours.Source = imageJeu;
+            ImageJeuEnCours.Visibility = Visibility.Visible;
+            ImageJeuEnCours.Opacity = 0;
+            BlurEffect effetEntreeInitiale = new() { Radius = RayonFlouTransitionImageJeuEnCours };
+            ImageJeuEnCours.Effect = effetEntreeInitiale;
+            AppliquerCoinsArrondisImageJeuEnCours();
+            TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+
+            DoubleAnimation animationFonduEntreeInitiale = new()
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            };
+
+            DoubleAnimation animationFlouEntreeInitiale = new()
+            {
+                From = RayonFlouTransitionImageJeuEnCours,
+                To = 0,
+                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
+            };
+
+            animationFlouEntreeInitiale.Completed += (_, _) => ImageJeuEnCours.Effect = null;
+            ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduEntreeInitiale);
+            effetEntreeInitiale.BeginAnimation(
+                BlurEffect.RadiusProperty,
+                animationFlouEntreeInitiale
+            );
+            _cheminImageJeuEnCoursAffiche = urlImage;
+            return;
+        }
+
+        if (
+            string.Equals(
+                _cheminImageJeuEnCoursAffiche,
+                urlImage,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return;
+        }
+
+        ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
+        if (ImageJeuEnCours.Effect is BlurEffect effetImageJeuActuelle)
+        {
+            effetImageJeuActuelle.BeginAnimation(BlurEffect.RadiusProperty, null);
+        }
+        ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, null);
+        if (ImageJeuEnCoursTransition.Effect is BlurEffect effetImageTransition)
+        {
+            effetImageTransition.BeginAnimation(BlurEffect.RadiusProperty, null);
+        }
+
+        ImageJeuEnCours.Visibility = Visibility.Visible;
+        BlurEffect effetSortie = new() { Radius = 0 };
+        ImageJeuEnCours.Effect = effetSortie;
+        ImageJeuEnCoursTransition.Source = imageJeu;
+        ImageJeuEnCoursTransition.Visibility = Visibility.Visible;
+        ImageJeuEnCoursTransition.Opacity = 0;
+        BlurEffect effetEntree = new() { Radius = RayonFlouTransitionImageJeuEnCours };
+        ImageJeuEnCoursTransition.Effect = effetEntree;
+        AppliquerCoinsArrondisImageJeuEnCours();
+        TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+
+        DoubleAnimation animationFonduSortie = new()
+        {
+            From = 1,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
+        };
+
+        DoubleAnimation animationFlouSortie = new()
+        {
+            From = 0,
+            To = RayonFlouTransitionImageJeuEnCours,
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
+        };
+
+        DoubleAnimation animationFonduEntree = new()
+        {
+            From = 0,
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
+        };
+
+        DoubleAnimation animationFlouEntree = new()
+        {
+            From = RayonFlouTransitionImageJeuEnCours,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
+        };
+
+        animationFonduEntree.Completed += (_, _) =>
         {
             if (
                 !string.Equals(
@@ -790,40 +912,30 @@ public partial class MainWindow : UiControls.FluentWindow
             }
 
             ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
+            ((TranslateTransform)ImageJeuEnCours.RenderTransform).BeginAnimation(
+                TranslateTransform.XProperty,
+                null
+            );
             ImageJeuEnCours.Source = imageJeu;
-            AppliquerCoinsArrondisImageJeuEnCours();
             ImageJeuEnCours.Visibility = Visibility.Visible;
-            TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
-            ImageJeuEnCours.Opacity = 0;
+            ImageJeuEnCours.Opacity = 1;
+            ImageJeuEnCours.Effect = null;
+            _cheminImageJeuEnCoursAffiche = urlImage;
 
-            DoubleAnimation animationFonduEntree = new()
-            {
-                From = 0,
-                To = 1,
-                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
-            };
-
-            ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
-        }
-
-        if (ImageJeuEnCours.Source is null || ImageJeuEnCours.Visibility != Visibility.Visible)
-        {
-            AfficherNouvelleImageAvecFondu();
-            return;
-        }
-
-        DoubleAnimation animationFonduSortie = new()
-        {
-            From = ImageJeuEnCours.Opacity,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
-            FillBehavior = FillBehavior.Stop,
+            ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, null);
+            effetEntree.BeginAnimation(BlurEffect.RadiusProperty, null);
+            ImageJeuEnCoursTransition.Source = null;
+            ImageJeuEnCoursTransition.Clip = null;
+            ImageJeuEnCoursTransition.Visibility = Visibility.Collapsed;
+            ImageJeuEnCoursTransition.Opacity = 1;
+            ImageJeuEnCoursTransition.Effect = null;
+            AppliquerCoinsArrondisImageJeuEnCours();
         };
 
-        animationFonduSortie.Completed += (_, _) => AfficherNouvelleImageAvecFondu();
         ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduSortie);
+        effetSortie.BeginAnimation(BlurEffect.RadiusProperty, animationFlouSortie);
+        ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
+        effetEntree.BeginAnimation(BlurEffect.RadiusProperty, animationFlouEntree);
     }
 
     /// <summary>
@@ -2297,6 +2409,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private void AppliquerCoinsArrondisImageJeuEnCours()
     {
         AppliquerCoinsArrondisImage(ImageJeuEnCours);
+        AppliquerCoinsArrondisImage(ImageJeuEnCoursTransition);
     }
 
     /// <summary>
@@ -2657,11 +2770,13 @@ public partial class MainWindow : UiControls.FluentWindow
         }
 
         _signatureDernierJeuLocal = signatureJeuLocal;
+        DemarrerDiagnosticChangementJeu(signatureJeuLocal, jeuLocal);
 
         if (_chargementJeuEnCoursActif)
         {
             if (jeuLocal is not null)
             {
+                JournaliserDiagnosticChangementJeu("sonde_pendant_chargement", "etat_local");
                 AppliquerEtatJeuLocal(jeuLocal);
                 _ = SauvegarderJeuLocalAfficheAsync(
                     jeuLocal,
@@ -2679,13 +2794,16 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (jeuLocal is null)
         {
+            JournaliserDiagnosticChangementJeu("sonde_aucun_jeu");
             ReinitialiserContexteSurveillance();
             await ChargerJeuEnCoursAsync(false, true);
             RedemarrerMinuteurActualisationApi();
             return;
         }
 
+        JournaliserDiagnosticChangementJeu("sonde_jeu_detecte", $"titre={jeuLocal.TitreJeuEstime}");
         await AppliquerJeuLocalAsync(jeuLocal);
+        JournaliserDiagnosticChangementJeu("sonde_apres_etat_local");
         await ChargerJeuEnCoursAsync(false, true);
         RedemarrerMinuteurActualisationApi();
     }
@@ -2762,6 +2880,11 @@ public partial class MainWindow : UiControls.FluentWindow
         bool forcerChargementJeu = true
     )
     {
+        JournaliserDiagnosticChangementJeu(
+            "charger_jeu_debut",
+            $"forcer={forcerChargementJeu};chargement={afficherEtatChargement}"
+        );
+
         if (!ConfigurationConnexionEstComplete())
         {
             ReinitialiserJeuEnCours();
@@ -2792,12 +2915,14 @@ public partial class MainWindow : UiControls.FluentWindow
                     _configurationConnexion.CleApiWeb
                 );
 
+            JournaliserDiagnosticChangementJeu("charger_jeu_profil_charge");
             _profilUtilisateurAccessible = true;
             _dernierProfilUtilisateurCharge = profil;
             _dernierResumeUtilisateurCharge = null;
             DefinirEtatConnexion("Connecté");
             await AppliquerProfilUtilisateurAsync(profil, forcerChargementJeu);
             await ChargerSuccesRecentsAsync(profil);
+            JournaliserDiagnosticChangementJeu("charger_jeu_fin");
         }
         catch (UtilisateurRetroAchievementsInaccessibleException exception)
         {
@@ -3094,11 +3219,13 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async Task AppliquerProgressionJeuAsync(JeuUtilisateurRetroAchievements jeu)
     {
+        JournaliserDiagnosticChangementJeu("progression_debut", $"jeu={jeu.IdentifiantJeu}");
         _dernierTitreJeuApi = jeu.Titre;
         _dernierIdentifiantJeuAvecInfos = jeu.IdentifiantJeu;
         _dernierIdentifiantJeuAvecProgression = jeu.IdentifiantJeu;
         _serviceRcheevos.DefinirJeuActif(jeu.IdentifiantJeu, jeu.IdentifiantConsole, jeu.Titre);
         await MettreAJourVisuelsJeuEnCoursAsync(jeu);
+        JournaliserDiagnosticChangementJeu("progression_visuels_ok");
         await MettreAJourMetaConsoleJeuEnCoursAsync(jeu);
 
         string detailsTempsJeu = string.Empty;
@@ -3108,12 +3235,14 @@ public partial class MainWindow : UiControls.FluentWindow
         DefinirEtatJeuDansProgression(detailsRecompense);
         DefinirDetailsJeuEnCours(string.Empty);
         await MettreAJourSuccesJeuAsync(jeu);
+        JournaliserDiagnosticChangementJeu("progression_succes_ok");
 
         TexteResumeProgressionJeuEnCours.Text = $"{jeu.NombreSuccesObtenus} / {jeu.NombreSucces}";
         TextePourcentageJeuEnCours.Text = NormaliserPourcentage(jeu.CompletionUtilisateur);
         BarreProgressionJeuEnCours.Value = ExtrairePourcentage(jeu.CompletionUtilisateur);
 
         await SauvegarderDernierJeuAfficheAsync(jeu, detailsTempsJeu, detailsRecompense);
+        JournaliserDiagnosticChangementJeu("progression_fin");
     }
 
     /// <summary>
@@ -3696,12 +3825,19 @@ public partial class MainWindow : UiControls.FluentWindow
         string? raisonIndisponibiliteApi = null
     )
     {
+        JournaliserDiagnosticChangementJeu("etat_local_debut", $"titre={jeuLocal.TitreJeuEstime}");
         _dernierJeuLocalDetecte = jeuLocal;
-        await _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocal);
         jeuLocal.CheminJeuRetenu = DeterminerCheminJeuLocalRetenu(jeuLocal);
         string signatureJeuLocal = ConstruireSignatureJeuLocal(jeuLocal);
-        JeuSystemeRetroAchievements? jeuResoluParHash =
-            await ResoudreJeuRetroAchievementsParHashAsync(jeuLocal);
+        AppliquerEtatJeuLocal(jeuLocal, raisonIndisponibiliteApi);
+        JournaliserDiagnosticChangementJeu("etat_local_applique");
+
+        Task definitionSourceLocaleTask = _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocal);
+        Task<JeuSystemeRetroAchievements?> resolutionHashTask =
+            ResoudreJeuRetroAchievementsParHashAsync(jeuLocal);
+
+        await definitionSourceLocaleTask;
+        JeuSystemeRetroAchievements? jeuResoluParHash = await resolutionHashTask;
 
         if (jeuResoluParHash is not null)
         {
@@ -3709,9 +3845,24 @@ public partial class MainWindow : UiControls.FluentWindow
             jeuLocal.TitreJeuRetroAchievements = jeuResoluParHash.Titre;
             jeuLocal.NomConsoleRetroAchievements = jeuResoluParHash.NomConsole;
             jeuLocal.TitreJeuEstime = jeuResoluParHash.Titre;
+
+            if (
+                string.Equals(
+                    _signatureDernierJeuLocal,
+                    signatureJeuLocal,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                DefinirTitreJeuEnCours(jeuLocal.TitreJeuEstime);
+            }
         }
 
-        AppliquerEtatJeuLocal(jeuLocal, raisonIndisponibiliteApi);
+        JournaliserDiagnosticChangementJeu(
+            "etat_local_hash_resolu",
+            jeuResoluParHash is null ? "non" : $"jeu={jeuResoluParHash.IdentifiantJeu}"
+        );
+
         await SauvegarderJeuLocalAfficheAsync(
             jeuLocal,
             ConstruireTexteDetailsJeuLocal(jeuLocal, raisonIndisponibiliteApi)
@@ -3763,6 +3914,7 @@ public partial class MainWindow : UiControls.FluentWindow
                 ? string.Empty
                 : jeuLocal.TitreJeuEstime
         );
+        JournaliserDiagnosticChangementJeu("ui_titre_local");
         DefinirDetailsJeuEnCours(
             ConstruireTexteDetailsJeuLocal(jeuLocal, raisonIndisponibiliteApi)
         );

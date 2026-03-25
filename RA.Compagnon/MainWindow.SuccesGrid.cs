@@ -361,6 +361,10 @@ public partial class MainWindow
         List<SuccesJeuUtilisateurRetroAchievements> succes
     )
     {
+        JournaliserDiagnosticChangementJeu(
+            "grille_debut",
+            $"jeu={identifiantJeu};succes={succes.Count}"
+        );
         GrilleTousSuccesJeuEnCours.Children.Clear();
         List<SuccesJeuUtilisateurRetroAchievements> succesOrdonnes =
             OrdonnerSuccesPourGrilleSelonMode(identifiantJeu, succes);
@@ -369,6 +373,7 @@ public partial class MainWindow
         {
             SauvegarderDerniereListeSuccesAffichee(identifiantJeu, []);
             PlanifierMiseAJourAnimationGrilleTousSucces();
+            TerminerDiagnosticChangementJeu("grille_vide");
             return;
         }
 
@@ -409,6 +414,7 @@ public partial class MainWindow
         RafraichirStyleBadgesGrilleSucces();
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        TerminerDiagnosticChangementJeu("grille_fin", $"badges={badgesCharges.Length}");
     }
 
     /// <summary>
