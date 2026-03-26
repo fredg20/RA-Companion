@@ -12,6 +12,7 @@
   MinWidth="360"
   MinHeight="320"
   ResizeMode="CanResize"
+  Cursor="Arrow"
   Background="Transparent"
   WindowStartupLocation="CenterScreen"
   ExtendsContentIntoTitleBar="True"
@@ -559,14 +560,6 @@
                           TextWrapping="Wrap"
                           Visibility="Collapsed"
                         />
-                        <TextBox
-                          x:Name="TexteIndicateurRcheevosPremierSuccesNonDebloque"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource StyleTexteCopiable}"
-                          Opacity="0.72"
-                          TextWrapping="Wrap"
-                          Visibility="Collapsed"
-                        />
                       </StackPanel>
                     </Grid>
                   </Grid>
@@ -793,6 +786,8 @@
       x:Name="RacineModales"
       Grid.RowSpan="3"
       Background="Transparent"
+      IsHitTestVisible="False"
+      Visibility="Collapsed"
       Panel.ZIndex="10"
     />
   </Grid>

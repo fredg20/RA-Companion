@@ -9,7 +9,7 @@ using Wpf.Ui.Controls;
 namespace RA.Compagnon;
 
 /// <summary>
-/// Initialise l'application et applique le thème WPF-UI au démarrage.
+/// Initialise l'application et applique le theme WPF-UI au demarrage.
 /// </summary>
 public partial class App : Application
 {
@@ -32,20 +32,36 @@ public partial class App : Application
     private static partial bool SetForegroundWindow(IntPtr hWnd);
 
     /// <summary>
-    /// Applique le thème global avant l'affichage de la première fenêtre.
+    /// Applique le theme global avant l'affichage de la premiere fenetre.
     /// </summary>
     protected override void OnStartup(StartupEventArgs e)
     {
-        JournaliserDemarrage("OnStartup début");
+        JournaliserDemarrage("OnStartup debut");
 
         _mutexInstanceUnique = new Mutex(true, NomMutexInstanceUnique, out bool premiereInstance);
 
         if (!premiereInstance)
         {
-            JournaliserDemarrage("Instance existante détectée");
-            ActiverInstanceExistanteSiPossible();
-            Shutdown();
-            return;
+            JournaliserDemarrage("Instance existante detectee");
+            if (ActiverInstanceExistanteSiPossible())
+            {
+                Shutdown();
+                return;
+            }
+
+            NettoyerInstancesFantomes();
+            _mutexInstanceUnique.Dispose();
+            _mutexInstanceUnique = null;
+            _mutexInstanceUnique = new Mutex(true, NomMutexInstanceUnique, out premiereInstance);
+
+            if (!premiereInstance)
+            {
+                JournaliserDemarrage("Impossible de reprendre la main apres nettoyage");
+                Shutdown();
+                return;
+            }
+
+            JournaliserDemarrage("Instance fantome nettoyee, poursuite du demarrage");
         }
 
         ApplicationThemeManager.Apply(
@@ -59,7 +75,7 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Libère le verrou d'instance unique à la fermeture de l'application.
+    /// Libere le verrou d'instance unique a la fermeture de l'application.
     /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
@@ -69,7 +85,7 @@ public partial class App : Application
         }
         catch
         {
-            // Le mutex a pu être abandonné ou déjà libéré.
+            // Le mutex a pu etre abandonne ou deja libere.
         }
         finally
         {
@@ -81,9 +97,9 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Tente de remettre au premier plan l'instance déjà ouverte de Compagnon.
+    /// Tente de remettre au premier plan l'instance deja ouverte de Compagnon.
     /// </summary>
-    private static void ActiverInstanceExistanteSiPossible()
+    private static bool ActiverInstanceExistanteSiPossible()
     {
         try
         {
@@ -96,15 +112,55 @@ public partial class App : Application
 
             if (processusExistant is null)
             {
-                return;
+                return false;
             }
 
             ShowWindowAsync(processusExistant.MainWindowHandle, SwRestore);
             SetForegroundWindow(processusExistant.MainWindowHandle);
+            return true;
         }
         catch
         {
-            // Ne jamais empêcher l'instance secondaire de se fermer proprement.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Ferme les anciennes instances sans fenetre qui bloquent le mutex sans proposer d'interface utilisable.
+    /// </summary>
+    private static void NettoyerInstancesFantomes()
+    {
+        try
+        {
+            Process processusCourant = Process.GetCurrentProcess();
+            Process[] processusCompagnon = Process.GetProcessesByName(processusCourant.ProcessName);
+
+            foreach (Process processus in processusCompagnon)
+            {
+                try
+                {
+                    if (processus.Id == processusCourant.Id)
+                    {
+                        continue;
+                    }
+
+                    if (processus.MainWindowHandle != IntPtr.Zero)
+                    {
+                        continue;
+                    }
+
+                    processus.Kill();
+                    processus.WaitForExit(2000);
+                }
+                catch
+                {
+                    // Ignore une ancienne instance recalcitrante.
+                }
+            }
+        }
+        catch
+        {
+            // Ne jamais empecher le demarrage pour un nettoyage opportuniste.
         }
     }
 
@@ -131,7 +187,7 @@ public partial class App : Application
         }
         catch
         {
-            // Ne jamais bloquer le démarrage pour un simple journal.
+            // Ne jamais bloquer le demarrage pour un simple journal.
         }
     }
 }

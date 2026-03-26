@@ -31,11 +31,6 @@ public sealed class EtatSuccesAfficheLocal
     public string DetailsPoints { get; set; } = string.Empty;
 
     /// <summary>
-    /// Indicateur de progression rcheevos affiché pour le succès en cours.
-    /// </summary>
-    public string IndicateurProgression { get; set; } = string.Empty;
-
-    /// <summary>
     /// Indique si ce succès a été épinglé manuellement depuis la grille.
     /// </summary>
     public bool EstEpingleManuellement { get; set; }

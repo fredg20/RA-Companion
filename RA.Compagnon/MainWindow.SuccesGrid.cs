@@ -584,33 +584,6 @@ public partial class MainWindow
         bool succesDebloque = SuccesEstDebloque(succes);
         bool affichagePermanent = permanent && !succesDebloque;
 
-        EtatJeuAfficheLocal? jeuAffiche = _configurationConnexion.DernierJeuAffiche;
-        int identifiantConsoleActuel =
-            jeuAffiche?.IdentifiantJeu == _identifiantJeuSuccesCourant
-                ? jeuAffiche.IdentifiantConsole
-                : 0;
-        string titreJeuActuel =
-            jeuAffiche?.IdentifiantJeu == _identifiantJeuSuccesCourant
-            && !string.IsNullOrWhiteSpace(jeuAffiche.Titre)
-                ? jeuAffiche.Titre
-                : TexteTitreJeuEnCours.Text;
-
-        _serviceRcheevos.DefinirJeuActif(
-            _identifiantJeuSuccesCourant,
-            identifiantConsoleActuel,
-            titreJeuActuel
-        );
-
-        if (
-            _serviceRcheevos.SourceMemoireActive == SourceMemoireRcheevos.Aucune
-            && _dernierJeuLocalDetecte is not null
-        )
-        {
-            await _serviceRcheevos.DefinirSourceLocaleAsync(_dernierJeuLocalDetecte);
-        }
-
-        _serviceRcheevos.DefinirDefinitionsSucces(_identifiantJeuSuccesCourant, _succesJeuCourant);
-
         if (affichagePermanent)
         {
             _identifiantSuccesGrilleEpingle = succes.IdentifiantSucces;
@@ -639,11 +612,9 @@ public partial class MainWindow
         await AppliquerSuccesEnCoursAsync(
             _identifiantJeuSuccesCourant,
             succes,
-            ConstruireTexteRcheevosPremierSucces(succes.IdentifiantSucces),
             affichagePermanent,
             affichagePermanent
         );
-        RafraichirIndicateurRcheevosPremierSuccesSiPossible(succes.IdentifiantSucces);
     }
 
     /// <summary>
@@ -674,11 +645,6 @@ public partial class MainWindow
             await AppliquerSuccesEnCoursAsync(
                 _identifiantJeuSuccesCourant,
                 premierSuccesNonDebloque,
-                premierSuccesNonDebloque is null
-                    ? string.Empty
-                    : ConstruireTexteRcheevosPremierSucces(
-                        premierSuccesNonDebloque.IdentifiantSucces
-                    ),
                 true,
                 false
             );

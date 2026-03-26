@@ -1,5 +1,4 @@
 using System.IO;
-using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon;
 
@@ -16,33 +15,6 @@ public partial class MainWindow
         "RA-Compagnon",
         "journal-performance-jeu.log"
     );
-
-    private void DemarrerDiagnosticChangementJeu(
-        string signatureJeuLocal,
-        JeuDetecteLocalement? jeuLocal
-    )
-    {
-        if (!ActiverJournalDiagnosticChangementJeu)
-        {
-            _signatureDiagnosticChangementJeu = string.Empty;
-            _chronometreDiagnosticChangementJeu = null;
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(signatureJeuLocal))
-        {
-            _signatureDiagnosticChangementJeu = string.Empty;
-            _chronometreDiagnosticChangementJeu = null;
-            return;
-        }
-
-        _signatureDiagnosticChangementJeu = signatureJeuLocal;
-        _chronometreDiagnosticChangementJeu = System.Diagnostics.Stopwatch.StartNew();
-        JournaliserDiagnosticChangementJeu(
-            "switch_detecte",
-            ConstruireResumeDiagnosticJeuLocal(jeuLocal)
-        );
-    }
 
     private void JournaliserDiagnosticChangementJeu(string etape, string? details = null)
     {
@@ -77,15 +49,5 @@ public partial class MainWindow
         JournaliserDiagnosticChangementJeu(etape, details);
         _signatureDiagnosticChangementJeu = string.Empty;
         _chronometreDiagnosticChangementJeu = null;
-    }
-
-    private static string ConstruireResumeDiagnosticJeuLocal(JeuDetecteLocalement? jeuLocal)
-    {
-        if (jeuLocal is null)
-        {
-            return "jeuLocal=null";
-        }
-
-        return $"emu={jeuLocal.NomEmulateur};titre={jeuLocal.TitreJeuEstime};fenetre={jeuLocal.TitreFenetre}";
     }
 }

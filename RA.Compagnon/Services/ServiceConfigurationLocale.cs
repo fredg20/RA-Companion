@@ -69,6 +69,13 @@ public sealed class ServiceConfigurationLocale
         configuration.DernierJeuAffiche = await ChargerEtatJeuAsync();
         configuration.DernierSuccesAffiche = await ChargerEtatSuccesAsync();
         configuration.DerniereListeSuccesAffichee = await ChargerEtatListeSuccesAsync();
+        bool etatNormalise = NormaliserEtatApplication(configuration);
+
+        if (etatNormalise)
+        {
+            await SauvegarderEtatApplicationAsync(configuration);
+        }
+
         return configuration;
     }
 
@@ -368,5 +375,53 @@ public sealed class ServiceConfigurationLocale
         }
 
         File.Move(cheminTemporaire, cheminFichier);
+    }
+
+    /// <summary>
+    /// Nettoie les états persistés incohérents pour éviter de restaurer un succès ou une grille d'un autre jeu.
+    /// </summary>
+    private static bool NormaliserEtatApplication(ConfigurationConnexion configuration)
+    {
+        bool modifie = false;
+        EtatJeuAfficheLocal? jeu = configuration.DernierJeuAffiche;
+
+        if (jeu is null)
+        {
+            if (configuration.DernierSuccesAffiche is not null)
+            {
+                configuration.DernierSuccesAffiche = null;
+                modifie = true;
+            }
+
+            if (configuration.DerniereListeSuccesAffichee is not null)
+            {
+                configuration.DerniereListeSuccesAffichee = null;
+                modifie = true;
+            }
+
+            return modifie;
+        }
+
+        int identifiantJeu = jeu.IdentifiantJeu;
+
+        if (
+            configuration.DernierSuccesAffiche is not null
+            && configuration.DernierSuccesAffiche.IdentifiantJeu != identifiantJeu
+        )
+        {
+            configuration.DernierSuccesAffiche = null;
+            modifie = true;
+        }
+
+        if (
+            configuration.DerniereListeSuccesAffichee is not null
+            && configuration.DerniereListeSuccesAffichee.IdentifiantJeu != identifiantJeu
+        )
+        {
+            configuration.DerniereListeSuccesAffichee = null;
+            modifie = true;
+        }
+
+        return modifie;
     }
 }
