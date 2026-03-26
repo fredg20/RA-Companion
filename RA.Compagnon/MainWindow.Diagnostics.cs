@@ -8,6 +8,7 @@ namespace RA.Compagnon;
 /// </summary>
 public partial class MainWindow
 {
+    private static readonly bool ActiverJournalDiagnosticChangementJeu = false;
     private string _signatureDiagnosticChangementJeu = string.Empty;
     private System.Diagnostics.Stopwatch? _chronometreDiagnosticChangementJeu;
     private static readonly string CheminJournalDiagnosticPerformance = Path.Combine(
@@ -21,6 +22,13 @@ public partial class MainWindow
         JeuDetecteLocalement? jeuLocal
     )
     {
+        if (!ActiverJournalDiagnosticChangementJeu)
+        {
+            _signatureDiagnosticChangementJeu = string.Empty;
+            _chronometreDiagnosticChangementJeu = null;
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(signatureJeuLocal))
         {
             _signatureDiagnosticChangementJeu = string.Empty;
@@ -38,7 +46,7 @@ public partial class MainWindow
 
     private void JournaliserDiagnosticChangementJeu(string etape, string? details = null)
     {
-        if (_chronometreDiagnosticChangementJeu is null)
+        if (!ActiverJournalDiagnosticChangementJeu || _chronometreDiagnosticChangementJeu is null)
         {
             return;
         }
@@ -59,6 +67,13 @@ public partial class MainWindow
 
     private void TerminerDiagnosticChangementJeu(string etape, string? details = null)
     {
+        if (!ActiverJournalDiagnosticChangementJeu)
+        {
+            _signatureDiagnosticChangementJeu = string.Empty;
+            _chronometreDiagnosticChangementJeu = null;
+            return;
+        }
+
         JournaliserDiagnosticChangementJeu(etape, details);
         _signatureDiagnosticChangementJeu = string.Empty;
         _chronometreDiagnosticChangementJeu = null;

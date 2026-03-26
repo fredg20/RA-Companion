@@ -12,9 +12,15 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ClientRetroAchievements
 {
+    private sealed record JeuUtilisateurCache(
+        JeuUtilisateurRetroAchievements Jeu,
+        DateTimeOffset DateChargement
+    );
+
     private static readonly Uri AdresseBaseApi = new("https://retroachievements.org/API/");
     private static readonly TimeSpan DureeCacheConsoles = TimeSpan.FromHours(6);
     private static readonly TimeSpan DureeCacheJeuxSysteme = TimeSpan.FromHours(12);
+    private static readonly TimeSpan DureeCacheJeuUtilisateur = TimeSpan.FromSeconds(10);
     private static readonly JsonSerializerOptions OptionsJson = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -24,14 +30,15 @@ public sealed class ClientRetroAchievements
         BaseAddress = AdresseBaseApi,
         Timeout = TimeSpan.FromSeconds(15),
     };
-    private static IReadOnlyList<ConsoleRetroAchievements> _cacheConsoles = [];
+    private static List<ConsoleRetroAchievements> _cacheConsoles = [];
     private static DateTimeOffset _dateMiseEnCacheConsoles = DateTimeOffset.MinValue;
     private static readonly Dictionary<int, JeuxSystemeCachees> _cacheJeuxSysteme = [];
+    private static readonly Dictionary<string, JeuUtilisateurCache> _cacheJeuxUtilisateur = [];
 
     /// <summary>
     /// Récupère le profil utilisateur minimal nécessaire à l'affichage du jeu en cours.
     /// </summary>
-    public async Task<ProfilUtilisateurRetroAchievements> ObtenirProfilUtilisateurAsync(
+    public static async Task<ProfilUtilisateurRetroAchievements> ObtenirProfilUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -92,7 +99,7 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Récupère le résumé utilisateur utile à l'en-tête de la modale compte.
     /// </summary>
-    public async Task<ResumeUtilisateurRetroAchievements> ObtenirResumeUtilisateurAsync(
+    public static async Task<ResumeUtilisateurRetroAchievements> ObtenirResumeUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -155,7 +162,7 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Récupère les données du jeu ciblé ainsi que la progression de l'utilisateur.
     /// </summary>
-    public async Task<JeuUtilisateurRetroAchievements> ObtenirJeuEtProgressionUtilisateurAsync(
+    public static async Task<JeuUtilisateurRetroAchievements> ObtenirJeuEtProgressionUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
         int identifiantJeu,
@@ -181,6 +188,21 @@ public sealed class ClientRetroAchievements
                 "L'identifiant du jeu est invalide.",
                 nameof(identifiantJeu)
             );
+        }
+
+        string cleCacheJeuUtilisateur = $"{pseudo.Trim().ToLowerInvariant()}|{identifiantJeu}";
+        DateTimeOffset maintenant = DateTimeOffset.UtcNow;
+
+        if (
+            _cacheJeuxUtilisateur.TryGetValue(
+                cleCacheJeuUtilisateur,
+                out JeuUtilisateurCache? jeuCache
+            )
+            && jeuCache is not null
+            && maintenant - jeuCache.DateChargement < DureeCacheJeuUtilisateur
+        )
+        {
+            return jeuCache.Jeu;
         }
 
         string cheminRequete =
@@ -212,13 +234,15 @@ public sealed class ClientRetroAchievements
             );
         }
 
+        _cacheJeuxUtilisateur[cleCacheJeuUtilisateur] = new JeuUtilisateurCache(jeu, maintenant);
+
         return jeu;
     }
 
     /// <summary>
     /// Récupère les empreintes officielles connues par RetroAchievements pour un jeu donné.
     /// </summary>
-    public async Task<IReadOnlyList<HashJeuRetroAchievements>> ObtenirHashesJeuAsync(
+    public static async Task<IReadOnlyList<HashJeuRetroAchievements>> ObtenirHashesJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
         CancellationToken jetonAnnulation = default
@@ -263,7 +287,9 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Récupère la liste complète des jeux d'un système avec leurs hashes officiels.
     /// </summary>
-    public async Task<IReadOnlyList<JeuSystemeRetroAchievements>> ObtenirJeuxSystemeAvecHashesAsync(
+    public static async Task<
+        IReadOnlyList<JeuSystemeRetroAchievements>
+    > ObtenirJeuxSystemeAvecHashesAsync(
         string cleApiWeb,
         int identifiantConsole,
         CancellationToken jetonAnnulation = default
@@ -315,7 +341,7 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Récupère la liste des consoles et leur icône officielle, avec cache mémoire local.
     /// </summary>
-    public async Task<IReadOnlyList<ConsoleRetroAchievements>> ObtenirConsolesAsync(
+    public static async Task<IReadOnlyList<ConsoleRetroAchievements>> ObtenirConsolesAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
     )
@@ -358,7 +384,7 @@ public sealed class ClientRetroAchievements
     /// Récupère la liste des jeux récemment joués pour retrouver un dernier jeu
     /// lorsqu'aucun jeu actif n'est remonté.
     /// </summary>
-    public async Task<
+    public static async Task<
         IReadOnlyList<JeuRecemmentJoueRetroAchievements>
     > ObtenirJeuxRecemmentJouesAsync(
         string pseudo,
@@ -399,7 +425,7 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Récupère les succès débloqués par un utilisateur sur une plage de temps.
     /// </summary>
-    public async Task<
+    public static async Task<
         IReadOnlyList<SuccesRecentRetroAchievements>
     > ObtenirSuccesDebloquesEntreAsync(
         string pseudo,

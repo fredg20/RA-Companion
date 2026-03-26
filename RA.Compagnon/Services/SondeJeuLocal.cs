@@ -1,308 +1,267 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
 /// <summary>
-/// Détecte localement un émulateur actif et tente d'estimer le jeu chargé.
+/// Détecte localement l'état live de RetroArch sans heuristiques lourdes ni appels externes.
 /// </summary>
 public sealed class SondeJeuLocal
 {
-    private static readonly TimeSpan DureeCacheLigneCommande = TimeSpan.FromSeconds(3);
-    private readonly Dictionary<int, LigneCommandeCachee> _cacheLignesCommande = [];
-    private DateTime _dateLectureRalibretroJsonUtc = DateTime.MinValue;
-    private string _cheminJeuRecentRalibretro = string.Empty;
-
-    private static readonly string[] ExtensionsJeuConnues =
-    [
-        ".zip",
-        ".7z",
-        ".rar",
-        ".cue",
-        ".iso",
-        ".bin",
-        ".img",
-        ".chd",
-        ".cso",
-        ".rvz",
-        ".gdi",
-        ".wbfs",
-        ".nes",
-        ".fds",
-        ".sfc",
-        ".smc",
-        ".gb",
-        ".gbc",
-        ".gba",
-        ".nds",
-        ".n64",
-        ".z64",
-        ".v64",
-        ".gen",
-        ".md",
-        ".gg",
-        ".sms",
-        ".pce",
-        ".cue",
-        ".pbp",
-    ];
-
-    private static readonly DefinitionEmulateur[] EmulateursPrisEnCharge =
-    [
-        new("Luna's Project64", ["project64"], [" - Project64", " | Project64"]),
-        new("RALibRetro", ["ralibretro"], [" - RALibRetro", " | RALibRetro"]),
-        new("BizHawk", ["emuhawk"], [" - BizHawk", " | BizHawk"]),
-        new("Flycast", ["flycast"], [" - Flycast", " | Flycast"]),
-        new("Dolphin", ["dolphin"], [" | Dolphin", " - Dolphin"]),
-        new("PPSSPP", ["ppssppwindows", "ppssppwindows64"], [" - PPSSPP", " | PPSSPP"]),
-        new("DuckStation", ["duckstation"], [" | DuckStation", " - DuckStation"]),
-        new("PCSX2", ["pcsx2", "pcsx2-qt"], [" | PCSX2", " - PCSX2"]),
-        new("RetroArch", ["retroarch"], [" - RetroArch", " | RetroArch"]),
-    ];
+    private static readonly TimeSpan DureeCacheDetection = TimeSpan.FromMilliseconds(200);
+    private DateTime _dateDerniereDetectionUtc = DateTime.MinValue;
+    private string _signatureDerniereDetection = string.Empty;
+    private JeuDetecteLocalement? _dernierJeuDetecte;
 
     /// <summary>
-    /// Retourne le premier jeu localement détecté parmi les émulateurs connus.
+    /// Retourne l'état local actuel de RetroArch si l'émulateur est lancé.
     /// </summary>
     public JeuDetecteLocalement? DetecterJeu()
     {
-        JeuDetecteLocalement? meilleurJeu = null;
+        Process? processusRetroArch = null;
 
-        foreach (DefinitionEmulateur emulateur in EmulateursPrisEnCharge)
+        try
         {
-            foreach (string nomProcessus in emulateur.NomsProcessus)
+            processusRetroArch = Process
+                .GetProcessesByName("retroarch")
+                .FirstOrDefault(processus => !string.IsNullOrWhiteSpace(processus.MainWindowTitle));
+
+            if (processusRetroArch is null)
             {
-                foreach (Process processus in Process.GetProcessesByName(nomProcessus))
-                {
-                    try
-                    {
-                        if (string.IsNullOrWhiteSpace(processus.MainWindowTitle))
-                        {
-                            continue;
-                        }
-
-                        string cheminJeuEstime = ExtraireCheminJeu(processus.MainWindowTitle);
-
-                        string titreJeuEstime = ExtraireTitreJeu(
-                            processus.MainWindowTitle,
-                            emulateur.SeparateursTitre,
-                            cheminJeuEstime
-                        );
-
-                        if (
-                            string.IsNullOrWhiteSpace(cheminJeuEstime)
-                            && string.Equals(
-                                emulateur.NomAffiche,
-                                "RALibRetro",
-                                StringComparison.Ordinal
-                            )
-                            && TitreRalibretroEstGenerique(titreJeuEstime)
-                        )
-                        {
-                            string cheminJeuRecentRalibretro =
-                                ObtenirCheminJeuRecentRalibretroSiFiable();
-
-                            if (!string.IsNullOrWhiteSpace(cheminJeuRecentRalibretro))
-                            {
-                                cheminJeuEstime = cheminJeuRecentRalibretro;
-                                titreJeuEstime = ExtraireTitreJeu(
-                                    processus.MainWindowTitle,
-                                    emulateur.SeparateursTitre,
-                                    cheminJeuEstime
-                                );
-                            }
-                        }
-
-                        int scoreConfiance = CalculerScoreConfiance(
-                            emulateur,
-                            processus.ProcessName,
-                            processus.MainWindowTitle,
-                            titreJeuEstime,
-                            cheminJeuEstime,
-                            string.Empty
-                        );
-
-                        string ligneCommande = string.Empty;
-                        string cheminJeuLigneCommande = string.Empty;
-
-                        if (
-                            string.IsNullOrWhiteSpace(cheminJeuEstime)
-                            || string.IsNullOrWhiteSpace(titreJeuEstime)
-                            || scoreConfiance < 5
-                        )
-                        {
-                            ligneCommande = ObtenirLigneCommande(processus);
-                            cheminJeuLigneCommande = ExtraireCheminJeu(ligneCommande);
-
-                            if (!string.IsNullOrWhiteSpace(cheminJeuLigneCommande))
-                            {
-                                titreJeuEstime = ExtraireTitreJeu(
-                                    processus.MainWindowTitle,
-                                    emulateur.SeparateursTitre,
-                                    cheminJeuLigneCommande
-                                );
-                            }
-
-                            scoreConfiance = CalculerScoreConfiance(
-                                emulateur,
-                                processus.ProcessName,
-                                processus.MainWindowTitle,
-                                titreJeuEstime,
-                                cheminJeuEstime,
-                                cheminJeuLigneCommande
-                            );
-                        }
-
-                        if (scoreConfiance <= 0)
-                        {
-                            continue;
-                        }
-
-                        JeuDetecteLocalement jeuDetecte = new()
-                        {
-                            IdentifiantProcessus = processus.Id,
-                            NomEmulateur = emulateur.NomAffiche,
-                            NomProcessus = processus.ProcessName,
-                            TitreFenetre = processus.MainWindowTitle,
-                            TitreJeuEstime = titreJeuEstime,
-                            CheminJeuEstime = cheminJeuEstime,
-                            CheminJeuLigneCommande = cheminJeuLigneCommande,
-                            LigneCommande = ligneCommande,
-                            CheminExecutable = ObtenirCheminExecutable(processus),
-                            ScoreConfiance = scoreConfiance,
-                        };
-
-                        if (
-                            meilleurJeu is null
-                            || jeuDetecte.ScoreConfiance > meilleurJeu.ScoreConfiance
-                        )
-                        {
-                            meilleurJeu = jeuDetecte;
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore les processus devenus inaccessibles pendant l'énumération.
-                    }
-                    finally
-                    {
-                        processus.Dispose();
-                    }
-                }
+                MemoriserDetection(string.Empty, null);
+                return null;
             }
-        }
 
-        return meilleurJeu;
-    }
+            string titreFenetre = processusRetroArch.MainWindowTitle.Trim();
+            string signatureDetection = $"{processusRetroArch.Id}|{titreFenetre}".Trim();
 
-    /// <summary>
-    /// Tente de déduire le titre du jeu à partir du titre de fenêtre de l'émulateur.
-    /// </summary>
-    private static string ExtraireTitreJeu(
-        string titreFenetre,
-        IReadOnlyList<string> separateurs,
-        string cheminJeuEstime
-    )
-    {
-        if (!string.IsNullOrWhiteSpace(cheminJeuEstime))
-        {
-            return NettoyerTitreJeu(cheminJeuEstime);
-        }
+            if (
+                string.Equals(
+                    _signatureDerniereDetection,
+                    signatureDetection,
+                    StringComparison.Ordinal
+                )
+                && DateTime.UtcNow - _dateDerniereDetectionUtc < DureeCacheDetection
+            )
+            {
+                return ClonerJeuDetecte(_dernierJeuDetecte);
+            }
 
-        string titreNettoye = titreFenetre.Trim();
-
-        foreach (string separateur in separateurs)
-        {
-            int indexSeparateur = titreNettoye.IndexOf(
-                separateur,
-                StringComparison.OrdinalIgnoreCase
+            JeuDetecteLocalement jeuDetecte = ConstruireDetectionRetroArch(
+                processusRetroArch,
+                titreFenetre
             );
 
-            if (indexSeparateur > 0)
-            {
-                return NettoyerTitreJeu(titreNettoye[..indexSeparateur]);
-            }
+            MemoriserDetection(signatureDetection, jeuDetecte);
+            return ClonerJeuDetecte(jeuDetecte);
         }
-
-        return NettoyerTitreJeu(titreNettoye);
+        catch
+        {
+            MemoriserDetection(string.Empty, null);
+            return null;
+        }
+        finally
+        {
+            processusRetroArch?.Dispose();
+        }
     }
 
     /// <summary>
-    /// Essaie d'extraire un chemin ou un nom de fichier de jeu depuis le titre de fenêtre.
+    /// Construit un état de détection stable pour RetroArch.
     /// </summary>
-    private static string ExtraireCheminJeu(string titreFenetre)
+    private static JeuDetecteLocalement ConstruireDetectionRetroArch(
+        Process processusRetroArch,
+        string titreFenetre
+    )
+    {
+        string titreJeu = ExtraireTitreJeuRetroArch(titreFenetre);
+        string cheminJeu = ExtraireCheminJeuDepuisTitre(titreFenetre);
+
+        return new JeuDetecteLocalement
+        {
+            IdentifiantProcessus = processusRetroArch.Id,
+            NomEmulateur = "RetroArch",
+            NomProcessus = processusRetroArch.ProcessName,
+            TitreFenetre = titreFenetre,
+            TitreJeuEstime = titreJeu,
+            CheminJeuEstime = cheminJeu,
+            CheminJeuLigneCommande = string.Empty,
+            LigneCommande = string.Empty,
+            CheminExecutable = ObtenirCheminExecutable(processusRetroArch),
+            ScoreConfiance = string.IsNullOrWhiteSpace(titreJeu) ? 3 : 8,
+        };
+    }
+
+    /// <summary>
+    /// Retire l'habillage de fenêtre RetroArch pour ne garder qu'un vrai titre de jeu quand il existe.
+    /// </summary>
+    private static string ExtraireTitreJeuRetroArch(string titreFenetre)
     {
         if (string.IsNullOrWhiteSpace(titreFenetre))
         {
             return string.Empty;
         }
 
-        string motifExtensions = string.Join(
-            "|",
-            ExtensionsJeuConnues.Select(extension => Regex.Escape(extension.TrimStart('.')))
-        );
+        string titre = titreFenetre.Trim();
 
-        Match correspondanceCheminComplet = Regex.Match(
-            titreFenetre,
-            $@"(?<jeu>[A-Za-z]:\\[^""\r\n|]*?\.({motifExtensions}))",
-            RegexOptions.IgnoreCase
-        );
-
-        if (correspondanceCheminComplet.Success)
+        if (TitreRetroArchEstGenerique(titre))
         {
-            return correspondanceCheminComplet.Groups["jeu"].Value.Trim();
+            return string.Empty;
         }
 
-        Match correspondanceFichier = Regex.Match(
-            titreFenetre,
-            $@"(?<jeu>[^\\/:*?""<>|\r\n]+\.({motifExtensions}))",
-            RegexOptions.IgnoreCase
+        string[] separateurs = [" - RetroArch", " | RetroArch"];
+
+        foreach (string separateur in separateurs)
+        {
+            int indexSeparateur = titre.IndexOf(separateur, StringComparison.OrdinalIgnoreCase);
+
+            if (indexSeparateur > 0)
+            {
+                return NettoyerTitreJeu(titre[..indexSeparateur]);
+            }
+        }
+
+        return NettoyerTitreJeu(titre);
+    }
+
+    /// <summary>
+    /// Essaie d'extraire un chemin ou un nom de fichier de jeu si RetroArch l'affiche dans sa fenêtre.
+    /// </summary>
+    private static string ExtraireCheminJeuDepuisTitre(string titreFenetre)
+    {
+        if (string.IsNullOrWhiteSpace(titreFenetre))
+        {
+            return string.Empty;
+        }
+
+        string[] morceaux = titreFenetre.Split(
+            ['|', '-'],
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
         );
 
-        if (correspondanceFichier.Success)
+        foreach (string morceau in morceaux)
         {
-            return correspondanceFichier.Groups["jeu"].Value.Trim();
+            if (RessembleAFichierJeu(morceau))
+            {
+                return morceau.Trim();
+            }
         }
 
         return string.Empty;
     }
 
     /// <summary>
-    /// Nettoie un titre de jeu estimé pour le rendre plus lisible.
+    /// Ignore les états transitoires qui ne représentent pas un jeu chargé.
+    /// </summary>
+    private static bool TitreRetroArchEstGenerique(string titreFenetre)
+    {
+        if (string.IsNullOrWhiteSpace(titreFenetre))
+        {
+            return true;
+        }
+
+        string titre = titreFenetre.Trim();
+
+        if (titre.Equals("RetroArch", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (titre.StartsWith("RetroArch ", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return titre.Contains("no core", StringComparison.OrdinalIgnoreCase)
+            || titre.Contains("no game", StringComparison.OrdinalIgnoreCase)
+            || titre.Contains("main menu", StringComparison.OrdinalIgnoreCase)
+            || titre.Contains("menu", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Nettoie le titre brut du jeu pour l'affichage.
     /// </summary>
     private static string NettoyerTitreJeu(string titreBrut)
     {
-        string titreNettoye = titreBrut.Trim();
+        string titre = titreBrut.Trim();
 
-        if (titreNettoye.Contains('\\') || titreNettoye.Contains('/'))
+        if (titre.Contains('\\') || titre.Contains('/'))
         {
-            titreNettoye = Path.GetFileName(titreNettoye);
+            titre = Path.GetFileName(titre);
         }
 
-        foreach (string extension in ExtensionsJeuConnues)
+        string[] extensionsConnues =
+        [
+            ".zip",
+            ".7z",
+            ".rar",
+            ".cue",
+            ".iso",
+            ".bin",
+            ".img",
+            ".chd",
+            ".cso",
+            ".rvz",
+            ".gdi",
+            ".wbfs",
+            ".nes",
+            ".fds",
+            ".sfc",
+            ".smc",
+            ".gb",
+            ".gbc",
+            ".gba",
+            ".nds",
+            ".n64",
+            ".z64",
+            ".v64",
+            ".gen",
+            ".md",
+            ".gg",
+            ".sms",
+            ".pce",
+            ".pbp",
+        ];
+
+        foreach (string extension in extensionsConnues)
         {
-            if (titreNettoye.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            if (titre.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
             {
-                titreNettoye = titreNettoye[..^extension.Length];
+                titre = titre[..^extension.Length];
                 break;
             }
         }
 
-        titreNettoye = titreNettoye.Replace('_', ' ').Trim();
+        titre = titre.Replace('_', ' ').Trim();
 
-        while (titreNettoye.Contains("  ", StringComparison.Ordinal))
+        while (titre.Contains("  ", StringComparison.Ordinal))
         {
-            titreNettoye = titreNettoye.Replace("  ", " ", StringComparison.Ordinal);
+            titre = titre.Replace("  ", " ", StringComparison.Ordinal);
         }
 
-        return titreNettoye.Trim(' ', '-', '|');
+        return titre.Trim(' ', '-', '|');
     }
 
     /// <summary>
-    /// Récupère le chemin de l'exécutable si Windows nous y autorise.
+    /// Vérifie rapidement si un fragment de titre ressemble à un nom de fichier de jeu.
+    /// </summary>
+    private static bool RessembleAFichierJeu(string texte)
+    {
+        if (string.IsNullOrWhiteSpace(texte))
+        {
+            return false;
+        }
+
+        string extension = Path.GetExtension(texte.Trim());
+
+        return !string.IsNullOrWhiteSpace(extension)
+            && extension.Length <= 5
+            && extension.StartsWith('.');
+    }
+
+    /// <summary>
+    /// Récupère le chemin de l'exécutable si Windows l'autorise.
     /// </summary>
     private static string ObtenirCheminExecutable(Process processus)
     {
@@ -317,288 +276,42 @@ public sealed class SondeJeuLocal
     }
 
     /// <summary>
-    /// Utilise la liste récente de RALibRetro comme indice faible quand le titre de fenêtre reste générique.
+    /// Met à jour le cache court de détection.
     /// </summary>
-    private string ObtenirCheminJeuRecentRalibretroSiFiable()
+    private void MemoriserDetection(string signatureDetection, JeuDetecteLocalement? jeuDetecte)
     {
-        string cheminConfiguration = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "emulation",
-            "RALibretro",
-            "RALibretro.json"
-        );
-
-        try
-        {
-            if (!File.Exists(cheminConfiguration))
-            {
-                _cheminJeuRecentRalibretro = string.Empty;
-                return string.Empty;
-            }
-
-            DateTime dateModificationUtc = File.GetLastWriteTimeUtc(cheminConfiguration);
-            if (
-                !string.IsNullOrWhiteSpace(_cheminJeuRecentRalibretro)
-                && dateModificationUtc == _dateLectureRalibretroJsonUtc
-            )
-            {
-                return _cheminJeuRecentRalibretro;
-            }
-
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminConfiguration));
-            if (
-                !document.RootElement.TryGetProperty("recent", out JsonElement recent)
-                || recent.ValueKind != JsonValueKind.Array
-                || recent.GetArrayLength() == 0
-                || !recent[0].TryGetProperty("path", out JsonElement chemin)
-            )
-            {
-                _cheminJeuRecentRalibretro = string.Empty;
-                return string.Empty;
-            }
-
-            string cheminJeu = chemin.GetString() ?? string.Empty;
-            if (!CheminJeuSembleValide(cheminJeu))
-            {
-                _cheminJeuRecentRalibretro = string.Empty;
-                return string.Empty;
-            }
-
-            _dateLectureRalibretroJsonUtc = dateModificationUtc;
-            _cheminJeuRecentRalibretro = cheminJeu;
-            return _cheminJeuRecentRalibretro;
-        }
-        catch
-        {
-            return string.Empty;
-        }
+        _signatureDerniereDetection = signatureDetection;
+        _dateDerniereDetectionUtc = DateTime.UtcNow;
+        _dernierJeuDetecte = ClonerJeuDetecte(jeuDetecte);
     }
 
     /// <summary>
-    /// Évite de traiter un simple titre d'application RALibRetro comme un nom de jeu exploitable.
+    /// Retourne une copie pour éviter qu'un appelant modifie l'instance cachée.
     /// </summary>
-    private static bool TitreRalibretroEstGenerique(string titreJeuEstime)
+    private static JeuDetecteLocalement? ClonerJeuDetecte(JeuDetecteLocalement? jeuDetecte)
     {
-        if (string.IsNullOrWhiteSpace(titreJeuEstime))
+        if (jeuDetecte is null)
         {
-            return true;
+            return null;
         }
 
-        string titreNormalise = titreJeuEstime.Trim();
-
-        return titreNormalise.Equals("RALibRetro", StringComparison.OrdinalIgnoreCase)
-            || titreNormalise.StartsWith("RALibRetro - ", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Vérifie rapidement que le chemin candidat ressemble bien à un jeu exploitable.
-    /// </summary>
-    private static bool CheminJeuSembleValide(string cheminJeu)
-    {
-        if (string.IsNullOrWhiteSpace(cheminJeu))
+        return new JeuDetecteLocalement
         {
-            return false;
-        }
-
-        string extension = Path.GetExtension(cheminJeu);
-        if (string.IsNullOrWhiteSpace(extension))
-        {
-            return false;
-        }
-
-        return ExtensionsJeuConnues.Contains(extension, StringComparer.OrdinalIgnoreCase)
-            || Path.IsPathRooted(cheminJeu);
-    }
-
-    /// <summary>
-    /// Essaie de lire la ligne de commande du processus via PowerShell et CIM.
-    /// </summary>
-    private string ObtenirLigneCommande(Process processus)
-    {
-        if (
-            _cacheLignesCommande.TryGetValue(
-                processus.Id,
-                out LigneCommandeCachee? ligneCommandeCachee
-            )
-            && string.Equals(
-                ligneCommandeCachee.TitreFenetre,
-                processus.MainWindowTitle,
-                StringComparison.Ordinal
-            )
-            && DateTime.UtcNow - ligneCommandeCachee.DateLectureUtc < DureeCacheLigneCommande
-        )
-        {
-            return ligneCommandeCachee.LigneCommande;
-        }
-
-        string cheminPowerShell = Path.Combine(
-            Environment.SystemDirectory,
-            "WindowsPowerShell",
-            "v1.0",
-            "powershell.exe"
-        );
-
-        if (!File.Exists(cheminPowerShell))
-        {
-            _cacheLignesCommande[processus.Id] = new LigneCommandeCachee(
-                processus.MainWindowTitle,
-                string.Empty
-            );
-            return string.Empty;
-        }
-
-        try
-        {
-            using Process processusPowerShell = new();
-            processusPowerShell.StartInfo = new ProcessStartInfo
-            {
-                FileName = cheminPowerShell,
-                Arguments =
-                    $"-NoProfile -NonInteractive -Command \"(Get-CimInstance Win32_Process -Filter 'ProcessId = {processus.Id}').CommandLine\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-            };
-
-            processusPowerShell.Start();
-            if (!processusPowerShell.WaitForExit(700))
-            {
-                try
-                {
-                    processusPowerShell.Kill();
-                }
-                catch
-                {
-                    // Ignore les cas où le processus se ferme entre-temps.
-                }
-
-                _cacheLignesCommande[processus.Id] = new LigneCommandeCachee(
-                    processus.MainWindowTitle,
-                    string.Empty
-                );
-                return string.Empty;
-            }
-
-            string ligneCommande = processusPowerShell.StandardOutput.ReadToEnd().Trim();
-
-            _cacheLignesCommande[processus.Id] = new LigneCommandeCachee(
-                processus.MainWindowTitle,
-                ligneCommande
-            );
-            return ligneCommande;
-        }
-        catch
-        {
-            _cacheLignesCommande[processus.Id] = new LigneCommandeCachee(
-                processus.MainWindowTitle,
-                string.Empty
-            );
-            return string.Empty;
-        }
-    }
-
-    /// <summary>
-    /// Évalue rapidement si le titre de fenêtre ressemble à un vrai jeu plutôt qu'au seul nom de l'émulateur.
-    /// </summary>
-    private static int CalculerScoreConfiance(
-        DefinitionEmulateur emulateur,
-        string nomProcessus,
-        string titreFenetre,
-        string titreJeuEstime,
-        string cheminJeuEstime,
-        string cheminJeuLigneCommande
-    )
-    {
-        string titreFenetreNormalise = titreFenetre.Trim();
-        string titreJeuNormalise = titreJeuEstime.Trim();
-
-        if (string.IsNullOrWhiteSpace(titreJeuNormalise))
-        {
-            return 0;
-        }
-
-        int score = 0;
-
-        if (!titreFenetreNormalise.Equals(titreJeuNormalise, StringComparison.OrdinalIgnoreCase))
-        {
-            score += 2;
-        }
-
-        if (
-            !titreJeuNormalise.Equals(emulateur.NomAffiche, StringComparison.OrdinalIgnoreCase)
-            && !titreJeuNormalise.Equals(nomProcessus, StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            score += 2;
-        }
-
-        if (titreJeuNormalise.Length >= 4)
-        {
-            score += 1;
-        }
-
-        if (!string.IsNullOrWhiteSpace(cheminJeuEstime))
-        {
-            score += 3;
-        }
-
-        if (!string.IsNullOrWhiteSpace(cheminJeuLigneCommande))
-        {
-            score += 4;
-        }
-
-        if (
-            titreFenetreNormalise.Contains("no disc", StringComparison.OrdinalIgnoreCase)
-            || titreFenetreNormalise.Contains("no game", StringComparison.OrdinalIgnoreCase)
-            || titreFenetreNormalise.Contains("bios", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            score = 0;
-        }
-
-        return score;
-    }
-
-    /// <summary>
-    /// Décrit un émulateur reconnu par la sonde locale.
-    /// </summary>
-    private sealed class DefinitionEmulateur
-    {
-        public DefinitionEmulateur(
-            string nomAffiche,
-            IReadOnlyList<string> nomsProcessus,
-            IReadOnlyList<string> separateursTitre
-        )
-        {
-            NomAffiche = nomAffiche;
-            NomsProcessus = nomsProcessus;
-            SeparateursTitre = separateursTitre;
-        }
-
-        public string NomAffiche { get; }
-
-        public IReadOnlyList<string> NomsProcessus { get; }
-
-        public IReadOnlyList<string> SeparateursTitre { get; }
-    }
-
-    /// <summary>
-    /// Mémorise temporairement une ligne de commande lue pour éviter de relancer PowerShell trop souvent.
-    /// </summary>
-    private sealed class LigneCommandeCachee
-    {
-        public LigneCommandeCachee(string titreFenetre, string ligneCommande)
-        {
-            TitreFenetre = titreFenetre;
-            LigneCommande = ligneCommande;
-            DateLectureUtc = DateTime.UtcNow;
-        }
-
-        public string TitreFenetre { get; }
-
-        public string LigneCommande { get; }
-
-        public DateTime DateLectureUtc { get; }
+            IdentifiantProcessus = jeuDetecte.IdentifiantProcessus,
+            NomEmulateur = jeuDetecte.NomEmulateur,
+            NomProcessus = jeuDetecte.NomProcessus,
+            TitreFenetre = jeuDetecte.TitreFenetre,
+            TitreJeuEstime = jeuDetecte.TitreJeuEstime,
+            CheminJeuEstime = jeuDetecte.CheminJeuEstime,
+            CheminJeuLigneCommande = jeuDetecte.CheminJeuLigneCommande,
+            CheminJeuRetenu = jeuDetecte.CheminJeuRetenu,
+            EmpreinteLocale = jeuDetecte.EmpreinteLocale,
+            IdentifiantJeuRetroAchievements = jeuDetecte.IdentifiantJeuRetroAchievements,
+            TitreJeuRetroAchievements = jeuDetecte.TitreJeuRetroAchievements,
+            NomConsoleRetroAchievements = jeuDetecte.NomConsoleRetroAchievements,
+            LigneCommande = jeuDetecte.LigneCommande,
+            CheminExecutable = jeuDetecte.CheminExecutable,
+            ScoreConfiance = jeuDetecte.ScoreConfiance,
+        };
     }
 }

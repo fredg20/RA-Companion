@@ -68,7 +68,6 @@ public partial class MainWindow : UiControls.FluentWindow
     private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(4);
 
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();
-    private readonly ClientRetroAchievements _clientRetroAchievements = new();
     private readonly SondeJeuLocal _sondeJeuLocal = new();
     private readonly ServiceHachageJeuLocal _serviceHachageJeuLocal = new();
     private readonly ServiceHachageRcheevos _serviceHachageRcheevos = new();
@@ -102,6 +101,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
+    private int _versionChargementContenuJeu;
     private ProfilUtilisateurRetroAchievements? _dernierProfilUtilisateurCharge;
     private ResumeUtilisateurRetroAchievements? _dernierResumeUtilisateurCharge;
     private string _dernierTitreJeuApi = string.Empty;
@@ -134,7 +134,9 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     public MainWindow()
     {
+        App.JournaliserDemarrage("MainWindow ctor début");
         InitializeComponent();
+        App.JournaliserDemarrage("MainWindow ctor fin");
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
         ReinitialiserJeuEnCours();
@@ -195,6 +197,7 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async void FenetrePrincipaleChargee(object sender, RoutedEventArgs e)
     {
+        App.JournaliserDemarrage("FenetrePrincipaleChargee début");
         if (_connexionInitialeAffichee)
         {
             return;
@@ -203,7 +206,9 @@ public partial class MainWindow : UiControls.FluentWindow
         _connexionInitialeAffichee = true;
         DefinirVisibiliteContenuPrincipal(true);
         AjusterDisposition();
+        App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerConfig");
         _configurationConnexion = await _serviceConfigurationLocale.ChargerAsync();
+        App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerConfig");
         AppliquerGeometrieFenetre();
         MettreAJourResumeConnexion();
         AjusterDisposition();
@@ -211,19 +216,31 @@ public partial class MainWindow : UiControls.FluentWindow
             DefinirVisibiliteBarreDefilementPrincipale,
             DispatcherPriority.Loaded
         );
+        App.JournaliserDemarrage("FenetrePrincipaleChargee avant DernierJeuSauvegarde");
         await AppliquerDernierJeuSauvegardeAsync();
+        App.JournaliserDemarrage("FenetrePrincipaleChargee apres DernierJeuSauvegarde");
         bool conserverEtatSauvegardeAuPremierChargement =
             _configurationConnexion.DernierJeuAffiche is not null;
 
         if (ConfigurationConnexionEstComplete())
         {
-            await AmorcerEtatJeuLocalAuDemarrageAsync();
-            await ChargerJeuEnCoursAsync(!conserverEtatSauvegardeAuPremierChargement, true);
-            DemarrerActualisationAutomatique();
+            App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerJeuEnCours");
+            await ChargerJeuEnCoursAsync(
+                !conserverEtatSauvegardeAuPremierChargement,
+                true,
+                sonderJeuLocal: false
+            );
+            App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerJeuEnCours");
+            _ = Dispatcher.BeginInvoke(
+                () => DemarrerActualisationAutomatique(),
+                DispatcherPriority.ApplicationIdle
+            );
+            App.JournaliserDemarrage("FenetrePrincipaleChargee fin");
             return;
         }
 
         await AfficherModaleConnexionAsync();
+        App.JournaliserDemarrage("FenetrePrincipaleChargee fin");
     }
 
     /// <summary>
@@ -390,7 +407,7 @@ public partial class MainWindow : UiControls.FluentWindow
 
             try
             {
-                await _clientRetroAchievements.ObtenirProfilUtilisateurAsync(pseudo, cleApi);
+                await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(pseudo, cleApi);
             }
             catch (UtilisateurRetroAchievementsInaccessibleException exception)
             {
@@ -513,7 +530,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             _dernierResumeUtilisateurCharge =
-                await _clientRetroAchievements.ObtenirResumeUtilisateurAsync(
+                await ClientRetroAchievements.ObtenirResumeUtilisateurAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
@@ -543,7 +560,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             _dernierProfilUtilisateurCharge =
-                await _clientRetroAchievements.ObtenirProfilUtilisateurAsync(
+                await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
@@ -1041,15 +1058,46 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Construit les visuels disponibles pour le jeu courant.
+    /// Affiche immédiatement les visuels essentiels du jeu courant.
     /// </summary>
-    private async Task MettreAJourVisuelsJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    private void AppliquerVisuelsJeuEnCoursInitiaux(JeuUtilisateurRetroAchievements jeu)
     {
         List<VisuelJeuEnCours> visuels = [];
-
         AjouterVisuelJeu(visuels, "Jaquette", jeu.CheminImageBoite);
-        AjouterVisuelJeu(visuels, "Badge", await ObtenirCheminBadgeJeuAsync(jeu));
         DefinirVisuelsJeuEnCours(visuels);
+    }
+
+    /// <summary>
+    /// Enrichit ensuite les visuels du jeu avec des éléments secondaires comme le badge.
+    /// </summary>
+    private void DemarrerEnrichissementVisuelsJeuEnCours(JeuUtilisateurRetroAchievements jeu)
+    {
+        _ = EnrichirVisuelsJeuEnCoursAsync(jeu);
+    }
+
+    /// <summary>
+    /// Charge le badge du jeu sans bloquer l'affichage initial.
+    /// </summary>
+    private async Task EnrichirVisuelsJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    {
+        try
+        {
+            string cheminBadge = await ObtenirCheminBadgeJeuAsync(jeu);
+
+            if (_dernierIdentifiantJeuAvecInfos != jeu.IdentifiantJeu)
+            {
+                return;
+            }
+
+            List<VisuelJeuEnCours> visuels = [];
+            AjouterVisuelJeu(visuels, "Jaquette", jeu.CheminImageBoite);
+            AjouterVisuelJeu(visuels, "Badge", cheminBadge);
+            DefinirVisuelsJeuEnCours(visuels);
+        }
+        catch
+        {
+            // Le badge reste un enrichissement facultatif.
+        }
     }
 
     /// <summary>
@@ -1140,7 +1188,36 @@ public partial class MainWindow : UiControls.FluentWindow
         _succesJeuCourant = succes;
         _serviceRcheevos.DefinirDefinitionsSucces(jeu.IdentifiantJeu, succes);
         await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
-        await MettreAJourGrilleTousSuccesAsync(jeu.IdentifiantJeu, succes);
+        DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes);
+    }
+
+    /// <summary>
+    /// Charge la grille complète des succès sans bloquer l'affichage du succès principal.
+    /// </summary>
+    private void DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(
+        int identifiantJeu,
+        List<SuccesJeuUtilisateurRetroAchievements> succes
+    )
+    {
+        _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes);
+    }
+
+    /// <summary>
+    /// Exécute le remplissage complet de la grille en arrière-plan et ignore les erreurs non critiques.
+    /// </summary>
+    private async Task MettreAJourGrilleTousSuccesEnArrierePlanAsync(
+        int identifiantJeu,
+        List<SuccesJeuUtilisateurRetroAchievements> succes
+    )
+    {
+        try
+        {
+            await MettreAJourGrilleTousSuccesAsync(identifiantJeu, succes);
+        }
+        catch
+        {
+            // La grille complète enrichit l'interface, mais ne doit pas bloquer le rendu principal.
+        }
     }
 
     /// <summary>
@@ -1578,7 +1655,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             IReadOnlyList<JeuSystemeRetroAchievements> jeuxSysteme =
-                await _clientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
+                await ClientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
                     _configurationConnexion.CleApiWeb,
                     jeu.IdentifiantConsole
                 );
@@ -1654,7 +1731,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             IReadOnlyList<ConsoleRetroAchievements> consoles =
-                await _clientRetroAchievements.ObtenirConsolesAsync(
+                await ClientRetroAchievements.ObtenirConsolesAsync(
                     _configurationConnexion.CleApiWeb
                 );
             ConsoleRetroAchievements? console = consoles.FirstOrDefault(item =>
@@ -1683,6 +1760,127 @@ public partial class MainWindow : UiControls.FluentWindow
             || TexteAnneeJeuEnCours.Visibility == Visibility.Visible
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Affiche immédiatement les métadonnées déjà connues du jeu sans attendre les enrichissements lents.
+    /// </summary>
+    private void AppliquerMetaConsoleJeuEnCoursInitiale(JeuUtilisateurRetroAchievements jeu)
+    {
+        ReinitialiserMetaConsoleJeuEnCours();
+
+        string anneeJeu = ExtraireAnneeJeu(jeu.DateSortie);
+        DefinirTitreJeuEnCours(jeu.Titre);
+
+        if (!string.IsNullOrWhiteSpace(anneeJeu))
+        {
+            TexteAnneeJeuEnCours.Text = anneeJeu;
+            TexteAnneeJeuEnCours.Visibility = Visibility.Visible;
+        }
+
+        if (!string.IsNullOrWhiteSpace(jeu.NomConsole))
+        {
+            TexteConsoleJeuEnCours.Text = jeu.NomConsole.Trim();
+            TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
+        }
+
+        if (!string.IsNullOrWhiteSpace(jeu.Genre))
+        {
+            TexteTypeJeuEnCours.Text = jeu.Genre.Trim();
+            TexteTypeJeuEnCours.Visibility = Visibility.Visible;
+        }
+
+        if (!string.IsNullOrWhiteSpace(jeu.Developpeur))
+        {
+            TexteDeveloppeurJeuEnCours.Text = jeu.Developpeur.Trim();
+            TexteDeveloppeurJeuEnCours.Visibility = Visibility.Visible;
+        }
+
+        LigneMetaJeuEnCours.Visibility =
+            TexteConsoleJeuEnCours.Visibility == Visibility.Visible
+            || TexteAnneeJeuEnCours.Visibility == Visibility.Visible
+            || TexteTypeJeuEnCours.Visibility == Visibility.Visible
+            || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Lance les enrichissements secondaires des métadonnées sans bloquer le rendu initial.
+    /// </summary>
+    private void DemarrerEnrichissementMetaConsoleJeuEnCours(JeuUtilisateurRetroAchievements jeu)
+    {
+        _ = EnrichirMetaConsoleJeuEnCoursAsync(jeu);
+    }
+
+    /// <summary>
+    /// Traduit le genre et charge l'icône de console après l'affichage initial.
+    /// </summary>
+    private async Task EnrichirMetaConsoleJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    {
+        try
+        {
+            string genreAffiche = jeu.Genre?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(jeu.Genre))
+            {
+                genreAffiche = (
+                    await _serviceTraductionTexte.TraduireVersFrancaisAsync(jeu.Genre)
+                ).Trim();
+            }
+
+            ImageSource? imageConsole = null;
+
+            try
+            {
+                IReadOnlyList<ConsoleRetroAchievements> consoles =
+                    await ClientRetroAchievements.ObtenirConsolesAsync(
+                        _configurationConnexion.CleApiWeb
+                    );
+                ConsoleRetroAchievements? console = consoles.FirstOrDefault(item =>
+                    item.IdentifiantConsole == jeu.IdentifiantConsole
+                );
+
+                if (console is not null && !string.IsNullOrWhiteSpace(console.UrlIcone))
+                {
+                    imageConsole = await ChargerImageDistanteAsync(console.UrlIcone);
+                }
+            }
+            catch
+            {
+                // L'icône de console reste facultative.
+            }
+
+            if (_dernierIdentifiantJeuAvecInfos != jeu.IdentifiantJeu)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(genreAffiche))
+            {
+                TexteTypeJeuEnCours.Text = genreAffiche;
+                TexteTypeJeuEnCours.Visibility = Visibility.Visible;
+            }
+
+            if (imageConsole is not null)
+            {
+                ImageConsoleJeuEnCours.Source = imageConsole;
+                ImageConsoleJeuEnCours.Visibility = Visibility.Visible;
+            }
+
+            LigneMetaJeuEnCours.Visibility =
+                ImageConsoleJeuEnCours.Visibility == Visibility.Visible
+                || TexteConsoleJeuEnCours.Visibility == Visibility.Visible
+                || TexteAnneeJeuEnCours.Visibility == Visibility.Visible
+                || TexteTypeJeuEnCours.Visibility == Visibility.Visible
+                || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+        }
+        catch
+        {
+            // Les enrichissements restent facultatifs.
+        }
     }
 
     /// <summary>
@@ -1880,13 +2078,13 @@ public partial class MainWindow : UiControls.FluentWindow
     /// <summary>
     /// Réapplique le dernier jeu sauvegardé pour éviter une fenêtre vide au démarrage.
     /// </summary>
-    private async Task AppliquerDernierJeuSauvegardeAsync()
+    private Task AppliquerDernierJeuSauvegardeAsync()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
 
         if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.Titre))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         DefinirTitreZoneJeu(jeuSauvegarde.EstJeuEnCours);
@@ -1926,10 +2124,34 @@ public partial class MainWindow : UiControls.FluentWindow
             ConstruireJeuUtilisateurDepuisEtatLocal(jeuSauvegarde);
         _identifiantSuccesGrilleTemporaire = null;
         _identifiantSuccesGrilleEpingle = null;
-        await Task.WhenAll(
-            MettreAJourMetaConsoleJeuEnCoursAsync(jeuLocalReconstruit),
-            AppliquerDerniereListeSuccesSauvegardeeAsync(jeuSauvegarde.IdentifiantJeu)
-        );
+        AppliquerMetaConsoleJeuEnCoursInitiale(jeuLocalReconstruit);
+        DemarrerEnrichissementMetaConsoleJeuEnCours(jeuLocalReconstruit);
+        DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.IdentifiantJeu);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Réapplique les succès sauvegardés sans bloquer l'affichage initial du dernier jeu.
+    /// </summary>
+    private void DemarrerRestaurationSuccesSauvegardesEnArrierePlan(int identifiantJeu)
+    {
+        _ = RestaurerSuccesSauvegardesEnArrierePlanAsync(identifiantJeu);
+    }
+
+    /// <summary>
+    /// Recharge la carte du succès courant et la grille sauvegardée après le rendu initial.
+    /// </summary>
+    private async Task RestaurerSuccesSauvegardesEnArrierePlanAsync(int identifiantJeu)
+    {
+        try
+        {
+            await AppliquerDernierSuccesSauvegardeAsync(identifiantJeu);
+            await AppliquerDerniereListeSuccesSauvegardeeAsync(identifiantJeu);
+        }
+        catch
+        {
+            // Les données sauvegardées enrichissent l'écran de démarrage, mais ne doivent pas le ralentir.
+        }
     }
 
     /// <summary>
@@ -2772,6 +2994,25 @@ public partial class MainWindow : UiControls.FluentWindow
         _signatureDernierJeuLocal = signatureJeuLocal;
         DemarrerDiagnosticChangementJeu(signatureJeuLocal, jeuLocal);
 
+        if (jeuLocal is not null && !JeuLocalEstFiable(jeuLocal))
+        {
+            if (_chargementJeuEnCoursActif)
+            {
+                JournaliserDiagnosticChangementJeu(
+                    "sonde_pendant_chargement",
+                    "emulateur_en_attente"
+                );
+                AppliquerEtatEmulateurEnAttente(jeuLocal);
+                _actualisationApiCibleeEnAttente = false;
+                return;
+            }
+
+            JournaliserDiagnosticChangementJeu("sonde_emulateur_en_attente");
+            AppliquerEtatEmulateurEnAttente(jeuLocal);
+            RedemarrerMinuteurActualisationApi();
+            return;
+        }
+
         if (_chargementJeuEnCoursActif)
         {
             if (jeuLocal is not null)
@@ -2877,9 +3118,11 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async Task ChargerJeuEnCoursAsync(
         bool afficherEtatChargement = true,
-        bool forcerChargementJeu = true
+        bool forcerChargementJeu = true,
+        bool sonderJeuLocal = true
     )
     {
+        App.JournaliserDemarrage("ChargerJeuEnCours début");
         JournaliserDiagnosticChangementJeu(
             "charger_jeu_debut",
             $"forcer={forcerChargementJeu};chargement={afficherEtatChargement}"
@@ -2910,18 +3153,25 @@ public partial class MainWindow : UiControls.FluentWindow
             }
 
             ProfilUtilisateurRetroAchievements profil =
-                await _clientRetroAchievements.ObtenirProfilUtilisateurAsync(
+                await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
 
+            App.JournaliserDemarrage("ChargerJeuEnCours apres Profil");
             JournaliserDiagnosticChangementJeu("charger_jeu_profil_charge");
             _profilUtilisateurAccessible = true;
             _dernierProfilUtilisateurCharge = profil;
             _dernierResumeUtilisateurCharge = null;
             DefinirEtatConnexion("Connecté");
-            await AppliquerProfilUtilisateurAsync(profil, forcerChargementJeu);
-            await ChargerSuccesRecentsAsync(profil);
+            await AppliquerProfilUtilisateurAsync(profil, forcerChargementJeu, sonderJeuLocal);
+            App.JournaliserDemarrage("ChargerJeuEnCours apres AppliquerProfil");
+            DemarrerChargementSuccesRecentsEnArrierePlan(
+                profil,
+                _versionChargementContenuJeu,
+                profil.IdentifiantDernierJeu
+            );
+            App.JournaliserDemarrage("ChargerJeuEnCours apres SuccesRecents");
             JournaliserDiagnosticChangementJeu("charger_jeu_fin");
         }
         catch (UtilisateurRetroAchievementsInaccessibleException exception)
@@ -2933,7 +3183,7 @@ public partial class MainWindow : UiControls.FluentWindow
             ReinitialiserContexteSurveillance();
             DefinirEtatConnexion("Profil inaccessible");
 
-            JeuDetecteLocalement? jeuLocal = _sondeJeuLocal.DetecterJeu();
+            JeuDetecteLocalement? jeuLocal = sonderJeuLocal ? _sondeJeuLocal.DetecterJeu() : null;
 
             if (jeuLocal is not null)
             {
@@ -2964,7 +3214,7 @@ public partial class MainWindow : UiControls.FluentWindow
             _dernierProfilUtilisateurCharge = null;
             _dernierResumeUtilisateurCharge = null;
             DefinirEtatConnexion("Hors ligne ou erreur API");
-            JeuDetecteLocalement? jeuLocal = _sondeJeuLocal.DetecterJeu();
+            JeuDetecteLocalement? jeuLocal = sonderJeuLocal ? _sondeJeuLocal.DetecterJeu() : null;
 
             if (jeuLocal is not null)
             {
@@ -2988,6 +3238,7 @@ public partial class MainWindow : UiControls.FluentWindow
         finally
         {
             _chargementJeuEnCoursActif = false;
+            App.JournaliserDemarrage("ChargerJeuEnCours fin");
 
             if (_actualisationApiCibleeEnAttente && ConfigurationConnexionEstComplete())
             {
@@ -3006,13 +3257,27 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async Task AppliquerProfilUtilisateurAsync(
         ProfilUtilisateurRetroAchievements profil,
-        bool forcerChargementJeu
+        bool forcerChargementJeu,
+        bool sonderJeuLocal
     )
     {
-        JeuDetecteLocalement? jeuLocalDetecte = _sondeJeuLocal.DetecterJeu();
+        JeuDetecteLocalement? jeuLocalDetecte = sonderJeuLocal
+            ? _sondeJeuLocal.DetecterJeu()
+            : null;
         await _serviceRcheevos.DefinirSourceLocaleAsync(jeuLocalDetecte);
-        bool emulateurLocalDetecte = jeuLocalDetecte is not null;
+        bool emulateurLocalDetecte = sonderJeuLocal && jeuLocalDetecte is not null;
         DefinirTitreZoneJeu(emulateurLocalDetecte);
+
+        if (
+            emulateurLocalDetecte
+            && jeuLocalDetecte is not null
+            && !JeuLocalEstFiable(jeuLocalDetecte)
+        )
+        {
+            AppliquerEtatEmulateurEnAttente(jeuLocalDetecte);
+            return;
+        }
+
         string messagePresence = string.IsNullOrWhiteSpace(profil.MessagePresenceRiche)
             ? "Aucune activité en cours."
             : profil.MessagePresenceRiche;
@@ -3049,7 +3314,7 @@ public partial class MainWindow : UiControls.FluentWindow
 
         if (identifiantJeuEffectif <= 0)
         {
-            JeuDetecteLocalement? jeuLocal = _sondeJeuLocal.DetecterJeu();
+            JeuDetecteLocalement? jeuLocal = sonderJeuLocal ? _sondeJeuLocal.DetecterJeu() : null;
 
             if (jeuLocal is not null)
             {
@@ -3121,20 +3386,71 @@ public partial class MainWindow : UiControls.FluentWindow
             return;
         }
 
+        int versionChargement = ++_versionChargementContenuJeu;
+        DemarrerChargementJeuUtilisateurEnArrierePlan(
+            identifiantJeuEffectif,
+            titreJeuProvisoire,
+            infosJeuDejaAfficheesPourCeJeu,
+            progressionDejaAfficheePourCeJeu,
+            versionChargement
+        );
+    }
+
+    /// <summary>
+    /// Lance le chargement détaillé du jeu sans bloquer la fenêtre principale.
+    /// </summary>
+    private void DemarrerChargementJeuUtilisateurEnArrierePlan(
+        int identifiantJeuEffectif,
+        string titreJeuProvisoire,
+        bool infosJeuDejaAfficheesPourCeJeu,
+        bool progressionDejaAfficheePourCeJeu,
+        int versionChargement
+    )
+    {
+        _ = ChargerJeuUtilisateurEnArrierePlanAsync(
+            identifiantJeuEffectif,
+            titreJeuProvisoire,
+            infosJeuDejaAfficheesPourCeJeu,
+            progressionDejaAfficheePourCeJeu,
+            versionChargement
+        );
+    }
+
+    /// <summary>
+    /// Charge les détails complets du jeu puis les applique seulement s'ils sont encore d'actualité.
+    /// </summary>
+    private async Task ChargerJeuUtilisateurEnArrierePlanAsync(
+        int identifiantJeuEffectif,
+        string titreJeuProvisoire,
+        bool infosJeuDejaAfficheesPourCeJeu,
+        bool progressionDejaAfficheePourCeJeu,
+        int versionChargement
+    )
+    {
         try
         {
             JeuUtilisateurRetroAchievements jeu =
-                await _clientRetroAchievements.ObtenirJeuEtProgressionUtilisateurAsync(
+                await ClientRetroAchievements.ObtenirJeuEtProgressionUtilisateurAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     identifiantJeuEffectif
                 );
 
+            if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
+            {
+                return;
+            }
+
             await AppliquerProgressionJeuAsync(jeu);
-            await CompleterValidationLocaleJeuAsync(jeu);
+            DemarrerValidationLocaleJeuEnArrierePlan(jeu);
         }
         catch
         {
+            if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
+            {
+                return;
+            }
+
             if (!infosJeuDejaAfficheesPourCeJeu)
             {
                 DefinirTitreJeuEnCours(titreJeuProvisoire);
@@ -3153,15 +3469,55 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
+    /// Vérifie qu'un chargement différé correspond encore au jeu actuellement attendu.
+    /// </summary>
+    private bool ChargementContenuJeuEstToujoursActuel(
+        int versionChargement,
+        int identifiantJeuEffectif
+    )
+    {
+        return versionChargement == _versionChargementContenuJeu
+            && identifiantJeuEffectif > 0
+            && _dernierIdentifiantJeuApi == identifiantJeuEffectif;
+    }
+
+    /// <summary>
+    /// Lance la validation locale du jeu sans bloquer le rendu initial de la carte principale.
+    /// </summary>
+    private void DemarrerValidationLocaleJeuEnArrierePlan(JeuUtilisateurRetroAchievements jeu)
+    {
+        _ = ValiderJeuLocalEnArrierePlanAsync(jeu);
+    }
+
+    /// <summary>
+    /// Exécute la validation locale en arrière-plan et ignore toute erreur pour ne pas pénaliser l'UI.
+    /// </summary>
+    private async Task ValiderJeuLocalEnArrierePlanAsync(JeuUtilisateurRetroAchievements jeu)
+    {
+        try
+        {
+            await CompleterValidationLocaleJeuAsync(jeu);
+        }
+        catch
+        {
+            // La validation locale enrichit l'affichage, mais ne doit jamais bloquer l'UX.
+        }
+    }
+
+    /// <summary>
     /// Charge les derniers succès débloqués et privilégie ceux du jeu en cours si possible.
     /// </summary>
-    private async Task ChargerSuccesRecentsAsync(ProfilUtilisateurRetroAchievements profil)
+    private async Task ChargerSuccesRecentsAsync(
+        ProfilUtilisateurRetroAchievements profil,
+        int versionChargement,
+        int identifiantJeuProfil
+    )
     {
         try
         {
             DateTimeOffset maintenant = DateTimeOffset.UtcNow;
             IReadOnlyList<SuccesRecentRetroAchievements> succesRecents =
-                await _clientRetroAchievements.ObtenirSuccesDebloquesEntreAsync(
+                await ClientRetroAchievements.ObtenirSuccesDebloquesEntreAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     maintenant.AddDays(-7),
@@ -3184,6 +3540,16 @@ public partial class MainWindow : UiControls.FluentWindow
 
                 if (succesJeuEnCours.Count > 0)
                 {
+                    if (
+                        !ChargementSuccesRecentsEstToujoursActuel(
+                            versionChargement,
+                            identifiantJeuProfil
+                        )
+                    )
+                    {
+                        return;
+                    }
+
                     AppliquerSuccesRecents(
                         [.. succesJeuEnCours.Take(3)],
                         $"Affichage des {Math.Min(3, succesJeuEnCours.Count)} derniers succès du jeu en cours."
@@ -3196,9 +3562,24 @@ public partial class MainWindow : UiControls.FluentWindow
 
             if (succesAffiches.Count == 0)
             {
+                if (
+                    !ChargementSuccesRecentsEstToujoursActuel(
+                        versionChargement,
+                        identifiantJeuProfil
+                    )
+                )
+                {
+                    return;
+                }
+
                 ReinitialiserSuccesRecents();
                 TexteEtatSuccesRecents.Text =
                     "Aucun succès récent n'a été détecté sur les 7 derniers jours.";
+                return;
+            }
+
+            if (!ChargementSuccesRecentsEstToujoursActuel(versionChargement, identifiantJeuProfil))
+            {
                 return;
             }
 
@@ -3209,9 +3590,61 @@ public partial class MainWindow : UiControls.FluentWindow
         }
         catch
         {
+            if (!ChargementSuccesRecentsEstToujoursActuel(versionChargement, identifiantJeuProfil))
+            {
+                return;
+            }
+
             ReinitialiserSuccesRecents();
             TexteEtatSuccesRecents.Text = "Impossible de charger les succès récents.";
         }
+    }
+
+    /// <summary>
+    /// Charge les succès récents sans bloquer le chargement principal.
+    /// </summary>
+    private void DemarrerChargementSuccesRecentsEnArrierePlan(
+        ProfilUtilisateurRetroAchievements profil,
+        int versionChargement,
+        int identifiantJeuProfil
+    )
+    {
+        _ = ChargerSuccesRecentsEnArrierePlanAsync(profil, versionChargement, identifiantJeuProfil);
+    }
+
+    /// <summary>
+    /// Ignore les résultats de succès récents si un chargement plus récent a déjà pris la main.
+    /// </summary>
+    private async Task ChargerSuccesRecentsEnArrierePlanAsync(
+        ProfilUtilisateurRetroAchievements profil,
+        int versionChargement,
+        int identifiantJeuProfil
+    )
+    {
+        try
+        {
+            await ChargerSuccesRecentsAsync(profil, versionChargement, identifiantJeuProfil);
+        }
+        catch
+        {
+            // Les succès récents restent annexes au rendu initial.
+        }
+    }
+
+    /// <summary>
+    /// Vérifie que les succès récents chargés correspondent encore au contexte de jeu courant.
+    /// </summary>
+    private bool ChargementSuccesRecentsEstToujoursActuel(
+        int versionChargement,
+        int identifiantJeuProfil
+    )
+    {
+        return versionChargement == _versionChargementContenuJeu
+            && (
+                identifiantJeuProfil <= 0
+                || _dernierIdentifiantJeuApi <= 0
+                || _dernierIdentifiantJeuApi == identifiantJeuProfil
+            );
     }
 
     /// <summary>
@@ -3224,9 +3657,11 @@ public partial class MainWindow : UiControls.FluentWindow
         _dernierIdentifiantJeuAvecInfos = jeu.IdentifiantJeu;
         _dernierIdentifiantJeuAvecProgression = jeu.IdentifiantJeu;
         _serviceRcheevos.DefinirJeuActif(jeu.IdentifiantJeu, jeu.IdentifiantConsole, jeu.Titre);
-        await MettreAJourVisuelsJeuEnCoursAsync(jeu);
+        AppliquerVisuelsJeuEnCoursInitiaux(jeu);
+        DemarrerEnrichissementVisuelsJeuEnCours(jeu);
         JournaliserDiagnosticChangementJeu("progression_visuels_ok");
-        await MettreAJourMetaConsoleJeuEnCoursAsync(jeu);
+        AppliquerMetaConsoleJeuEnCoursInitiale(jeu);
+        DemarrerEnrichissementMetaConsoleJeuEnCours(jeu);
 
         string detailsTempsJeu = string.Empty;
         string detailsRecompense = DeterminerStatutJeu(jeu);
@@ -3270,7 +3705,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             IReadOnlyList<HashJeuRetroAchievements> hashesOfficiels =
-                await _clientRetroAchievements.ObtenirHashesJeuAsync(
+                await ClientRetroAchievements.ObtenirHashesJeuAsync(
                     _configurationConnexion.CleApiWeb,
                     jeu.IdentifiantJeu
                 );
@@ -3345,7 +3780,7 @@ public partial class MainWindow : UiControls.FluentWindow
         try
         {
             IReadOnlyList<JeuRecemmentJoueRetroAchievements> jeuxRecents =
-                await _clientRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
+                await ClientRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
@@ -3392,7 +3827,7 @@ public partial class MainWindow : UiControls.FluentWindow
                 identifiantConsole
             );
             IReadOnlyList<JeuSystemeRetroAchievements> jeuxSysteme =
-                await _clientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
+                await ClientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
                     _configurationConnexion.CleApiWeb,
                     identifiantConsole
                 );
@@ -3427,7 +3862,7 @@ public partial class MainWindow : UiControls.FluentWindow
     )
     {
         IReadOnlyList<ConsoleRetroAchievements> consoles =
-            await _clientRetroAchievements.ObtenirConsolesAsync(_configurationConnexion.CleApiWeb);
+            await ClientRetroAchievements.ObtenirConsolesAsync(_configurationConnexion.CleApiWeb);
         List<string> nomsCandidats = DeterminerNomsConsolesCandidates(jeuLocal);
         List<int> identifiants = [];
 
@@ -3920,6 +4355,46 @@ public partial class MainWindow : UiControls.FluentWindow
         );
         TexteResumeProgressionJeuEnCours.Text = "-- / --";
         TextePourcentageJeuEnCours.Text = "Progression du jeu indisponible localement";
+        BarreProgressionJeuEnCours.Value = 0;
+    }
+
+    /// <summary>
+    /// Retourne vrai seulement si la sonde locale a identifié un jeu exploitable, pas seulement l'émulateur.
+    /// </summary>
+    private static bool JeuLocalEstFiable(JeuDetecteLocalement jeuLocal)
+    {
+        return jeuLocal.IdentifiantJeuRetroAchievements > 0
+            || !string.IsNullOrWhiteSpace(jeuLocal.CheminJeuRetenu)
+            || !string.IsNullOrWhiteSpace(jeuLocal.CheminJeuLigneCommande)
+            || !string.IsNullOrWhiteSpace(jeuLocal.CheminJeuEstime)
+            || !string.IsNullOrWhiteSpace(jeuLocal.TitreJeuEstime);
+    }
+
+    /// <summary>
+    /// Affiche un état d'attente quand l'émulateur est lancé mais qu'aucun jeu fiable n'est encore détecté.
+    /// </summary>
+    private void AppliquerEtatEmulateurEnAttente(JeuDetecteLocalement jeuLocal)
+    {
+        _dernierJeuLocalDetecte = jeuLocal;
+        _serviceRcheevos.ReinitialiserJeuActif();
+        _serviceRcheevos.ReinitialiserDefinitionsSucces();
+        _dernierIdentifiantJeuApi = 0;
+        _dernierIdentifiantJeuAvecInfos = 0;
+        _dernierIdentifiantJeuAvecProgression = 0;
+        _dernierTitreJeuApi = string.Empty;
+
+        TitreZoneJeuEnCours.Text = "Émulateur démarré (en attente d'un jeu)";
+        ReinitialiserImageJeuEnCours();
+        ReinitialiserCarrouselVisuelsJeuEnCours();
+        ReinitialiserMetaConsoleJeuEnCours();
+        ReinitialiserSuccesAffichesEtPersistes();
+        ReinitialiserGrilleTousSucces();
+        DefinirTempsJeuSousImage(string.Empty);
+        DefinirEtatJeuDansProgression("Progression");
+        DefinirTitreJeuEnCours(string.Empty);
+        DefinirDetailsJeuEnCours($"Émulateur : {jeuLocal.NomEmulateur}");
+        TexteResumeProgressionJeuEnCours.Text = "-- / --";
+        TextePourcentageJeuEnCours.Text = "En attente d'un jeu dans l'émulateur";
         BarreProgressionJeuEnCours.Value = 0;
     }
 

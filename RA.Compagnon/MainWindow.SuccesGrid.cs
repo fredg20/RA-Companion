@@ -361,6 +361,11 @@ public partial class MainWindow
         List<SuccesJeuUtilisateurRetroAchievements> succes
     )
     {
+        if (_identifiantJeuSuccesCourant != identifiantJeu)
+        {
+            return;
+        }
+
         JournaliserDiagnosticChangementJeu(
             "grille_debut",
             $"jeu={identifiantJeu};succes={succes.Count}"
@@ -401,6 +406,11 @@ public partial class MainWindow
                 };
             })
         );
+
+        if (_identifiantJeuSuccesCourant != identifiantJeu)
+        {
+            return;
+        }
 
         foreach (var badgeCharge in badgesCharges)
         {

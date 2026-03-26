@@ -13,9 +13,16 @@ public sealed class ServiceMemoireRetroArch
     public const int PortParDefaut = 55355;
 
     private static readonly TimeSpan DelaiReponseParDefaut = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan DelaiSondeVersion = TimeSpan.FromMilliseconds(90);
+    private static readonly TimeSpan DelaiSondeStatut = TimeSpan.FromMilliseconds(60);
+    private static readonly TimeSpan DureeCacheDiagnostic = TimeSpan.FromMilliseconds(500);
     private readonly string _hote;
     private readonly int _port;
     private readonly TimeSpan _delaiReponse;
+    private readonly object _verrouCacheDiagnostic = new();
+    private DiagnosticMemoireRetroArch? _diagnosticCache;
+    private DateTimeOffset _dateDiagnosticCache = DateTimeOffset.MinValue;
+    private bool _dernierDiagnosticEtaitNegatif;
 
     public ServiceMemoireRetroArch(
         string hote = HoteParDefaut,
@@ -49,15 +56,33 @@ public sealed class ServiceMemoireRetroArch
             return null;
         }
 
-        string version = await EnvoyerCommandeAsync("VERSION", cancellationToken);
+        DiagnosticMemoireRetroArch? diagnosticCache = ObtenirDiagnosticCache();
+
+        if (diagnosticCache is not null || EchecRecentEnCache())
+        {
+            return diagnosticCache;
+        }
+
+        string version = await EnvoyerCommandeAsync(
+            "VERSION",
+            cancellationToken,
+            DelaiSondeVersion
+        );
 
         if (string.IsNullOrWhiteSpace(version))
         {
+            MemoriserDiagnostic(null);
             return null;
         }
 
-        string statut = await EnvoyerCommandeAsync("GET_STATUS", cancellationToken);
-        return new DiagnosticMemoireRetroArch(_hote, _port, version, statut);
+        string statut = await EnvoyerCommandeAsync(
+            "GET_STATUS",
+            cancellationToken,
+            DelaiSondeStatut
+        );
+        DiagnosticMemoireRetroArch diagnostic = new(_hote, _port, version, statut);
+        MemoriserDiagnostic(diagnostic);
+        return diagnostic;
     }
 
     /// <summary>
@@ -85,7 +110,8 @@ public sealed class ServiceMemoireRetroArch
 
     private async Task<string> EnvoyerCommandeAsync(
         string commande,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        TimeSpan? delaiReponse = null
     )
     {
         try
@@ -98,7 +124,7 @@ public sealed class ServiceMemoireRetroArch
             await client.SendAsync(donnees, cancellationToken);
 
             Task<UdpReceiveResult> reception = client.ReceiveAsync(cancellationToken).AsTask();
-            Task delai = Task.Delay(_delaiReponse, cancellationToken);
+            Task delai = Task.Delay(delaiReponse ?? _delaiReponse, cancellationToken);
             Task termine = await Task.WhenAny(reception, delai);
 
             if (!ReferenceEquals(termine, reception))
@@ -116,6 +142,38 @@ public sealed class ServiceMemoireRetroArch
         catch (SocketException)
         {
             return string.Empty;
+        }
+    }
+
+    private DiagnosticMemoireRetroArch? ObtenirDiagnosticCache()
+    {
+        lock (_verrouCacheDiagnostic)
+        {
+            if (DateTimeOffset.UtcNow - _dateDiagnosticCache >= DureeCacheDiagnostic)
+            {
+                return null;
+            }
+
+            return _diagnosticCache;
+        }
+    }
+
+    private void MemoriserDiagnostic(DiagnosticMemoireRetroArch? diagnostic)
+    {
+        lock (_verrouCacheDiagnostic)
+        {
+            _diagnosticCache = diagnostic;
+            _dernierDiagnosticEtaitNegatif = diagnostic is null;
+            _dateDiagnosticCache = DateTimeOffset.UtcNow;
+        }
+    }
+
+    private bool EchecRecentEnCache()
+    {
+        lock (_verrouCacheDiagnostic)
+        {
+            return _dernierDiagnosticEtaitNegatif
+                && DateTimeOffset.UtcNow - _dateDiagnosticCache < DureeCacheDiagnostic;
         }
     }
 
