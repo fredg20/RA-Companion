@@ -142,7 +142,7 @@
             FontWeight="SemiBold"
             LineHeight="16"
             LineStackingStrategy="BlockLineHeight"
-            Text="RA-Compagnon - Suivi des rétrosuccès"
+            Text="RA-Compagnon - Suivi RetroAchievements"
             TextWrapping="NoWrap"
             TextAlignment="Center"
           />
@@ -199,12 +199,22 @@
             >
               <Grid>
                 <StackPanel x:Name="ContenuCarteConnexion">
-                  <TextBlock FontSize="24" FontWeight="SemiBold" Text="Démarrage" />
+                  <TextBlock
+                    FontSize="24"
+                    FontWeight="SemiBold"
+                    Text="Connexion RetroAchievements"
+                  />
                   <TextBlock
                     Margin="{StaticResource MargeBlocStandard}"
                     Opacity="0.78"
                     TextWrapping="Wrap"
-                    Text="Le projet utilise désormais WPF-UI via NuGet, avec une vraie FluentWindow comme base de départ."
+                    Text="Renseigne ton pseudo et ta clé Web API pour charger ton dernier jeu joué, ta progression et tes succès récents."
+                  />
+                  <TextBlock
+                    Margin="{StaticResource MargeBlocCompacte}"
+                    Opacity="0.62"
+                    TextWrapping="Wrap"
+                    Text="Utilise le bouton Connexion en haut à droite pour commencer."
                   />
                 </StackPanel>
               </Grid>
@@ -233,7 +243,7 @@
                     x:Name="TitreZoneJeuEnCours"
                     FontSize="28"
                     FontWeight="SemiBold"
-                    Text="Jeu en cours"
+                    Text="Dernier jeu joué"
                   />
                 </Grid>
 
@@ -722,7 +732,7 @@
                             HorizontalAlignment="Left"
                             Opacity="0.72"
                             TextWrapping="Wrap"
-                            Text="Progression"
+                            Text="Progression du jeu"
                           />
                           <TextBox
                             x:Name="TextePourcentageJeuEnCours"
@@ -769,9 +779,9 @@
                         x:Name="TexteEtatSuccesRecents"
                         Text="Les succès récents apparaîtront ici."
                       />
-                      <TextBlock x:Name="TexteSuccesRecent1" Text="Aucun succès chargé." />
-                      <TextBlock x:Name="TexteSuccesRecent2" Text="Aucun succès chargé." />
-                      <TextBlock x:Name="TexteSuccesRecent3" Text="Aucun succès chargé." />
+                      <TextBlock x:Name="TexteSuccesRecent1" Text="Aucun succès récent à afficher." />
+                      <TextBlock x:Name="TexteSuccesRecent2" Text="Aucun succès récent à afficher." />
+                      <TextBlock x:Name="TexteSuccesRecent3" Text="Aucun succès récent à afficher." />
                     </StackPanel>
                   </Grid>
                 </Border>

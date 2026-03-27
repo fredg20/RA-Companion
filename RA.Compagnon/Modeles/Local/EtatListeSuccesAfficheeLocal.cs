@@ -14,4 +14,16 @@ public sealed class EtatListeSuccesAfficheeLocal
     /// Liste des éléments de la grille des rétrosuccès.
     /// </summary>
     public List<ElementListeSuccesAfficheLocal> Succes { get; set; } = [];
+
+    public int Id
+    {
+        get => IdentifiantJeu;
+        set => IdentifiantJeu = value;
+    }
+
+    public List<ElementListeSuccesAfficheLocal> Achievements
+    {
+        get => Succes;
+        set => Succes = value;
+    }
 }

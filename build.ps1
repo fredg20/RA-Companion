@@ -1,49 +1,39 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 $racineProjet = Split-Path -Parent $MyInvocation.MyCommand.Path
-$cheminProjet = Join-Path $racineProjet "RA.Compagnon\RA.Compagnon.csproj"
-$dossierRelease = Join-Path $racineProjet "RA.Compagnon\bin\Release\net9.0-windows"
-$dossierDebug = Join-Path $racineProjet "RA.Compagnon\bin\Debug\net9.0-windows"
+$cheminSolution = Join-Path $racineProjet "RA.Compagnon.sln"
 $dossierSortie = Join-Path $racineProjet "dist\RA.Compagnon"
+$dossierSortieTemporaire = Join-Path $racineProjet "dist\RA.Compagnon.tmp"
 
-function Copier-BuildComplet {
-    param (
-        [string]$Source
-    )
-
-    if (Test-Path $dossierSortie) {
-        Remove-Item $dossierSortie -Recurse -Force
-    }
-
-    New-Item -ItemType Directory -Path $dossierSortie -Force | Out-Null
-    Copy-Item (Join-Path $Source "*") $dossierSortie -Recurse -Force
-}
-
-function Tenter-CompilationRelease {
-    & dotnet build $cheminProjet -c Release --no-restore
-    return $LASTEXITCODE -eq 0
-}
-
-# Évite les échecs de copie si l'application tourne encore.
+# Évite les échecs si l'application tourne encore.
 $processus = Get-Process -Name "RA.Compagnon" -ErrorAction SilentlyContinue
 if ($null -ne $processus) {
     $processus | Stop-Process -Force
 }
 
-$compilationReleaseReussie = Tenter-CompilationRelease
-
-if ($compilationReleaseReussie -and (Test-Path $dossierRelease)) {
-    Copier-BuildComplet -Source $dossierRelease
-    Write-Host "Build complet Release copié dans : $dossierSortie"
-    exit 0
+if (Test-Path $dossierSortieTemporaire) {
+    Remove-Item $dossierSortieTemporaire -Recurse -Force
 }
 
-if (Test-Path $dossierDebug) {
-    Copier-BuildComplet -Source $dossierDebug
-    Write-Warning "Compilation Release indisponible pour le moment. Dernière build locale copiée dans dist."
-    Write-Host "Build complet copié dans : $dossierSortie"
-    exit 0
+New-Item -ItemType Directory -Path $dossierSortieTemporaire -Force | Out-Null
+
+& dotnet build $cheminSolution `
+    -m:1 `
+    --no-restore `
+    /p:OutputPath="$dossierSortieTemporaire\\"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "La build vers dist a echoue."
 }
 
-throw "Aucune build exploitable n'est disponible pour alimenter le dossier dist."
+if (-not (Test-Path $dossierSortieTemporaire)) {
+    throw "La build a reussi mais le dossier dist attendu n'a pas ete genere."
+}
 
+if (Test-Path $dossierSortie) {
+    Remove-Item $dossierSortie -Recurse -Force
+}
+
+Move-Item -LiteralPath $dossierSortieTemporaire -Destination $dossierSortie
+
+Write-Host "Build genere dans : $dossierSortie"

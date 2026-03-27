@@ -1,11 +1,27 @@
 # RA-Compagnon
 
-Compagnon Windows pour suivre un compte RetroAchievements et afficher rapidement :
+Compagnon Windows pour suivre un compte RetroAchievements avec une interface simple, rapide et agreable.
 
-- le dernier jeu joue
-- sa progression
-- les retrosucces du jeu
-- les succes recents du compte
+## Vision
+
+`Compagnon` n'essaie pas d'etre un clone de `RetroAchievements Layout Manager`.
+
+Son positionnement est different :
+
+- offrir une experience plus claire et plus moderne
+- rendre la progression plus agreable a consulter
+- rester stable et rapide au quotidien
+- etre utile sans dependre d'un emulateur
+
+En une phrase :
+
+`Compagnon` est une application de bureau pensée pour suivre ses jeux et ses retrosucces avec confort.
+
+## Public vise
+
+- joueurs RetroAchievements sur PC
+- utilisateurs qui veulent retrouver rapidement leur progression
+- personnes qui preferent une application lisible, stable et simple a utiliser
 
 ## Etat actuel
 
@@ -18,7 +34,7 @@ Compagnon Windows pour suivre un compte RetroAchievements et afficher rapidement
 
 Le projet ne depend plus d'un emulateur ni d'une sonde locale.
 
-## Fonctionnalites
+## Fonctionnalites actuelles
 
 - affichage du dernier jeu joue
 - affichage du titre, de la console, de la date, du genre et du developpeur
@@ -28,6 +44,21 @@ Le projet ne depend plus d'un emulateur ni d'une sonde locale.
 - succes recents du compte
 - ordre de grille `Normal`, `Aleatoire`, `Facile`, `Difficile`
 - restauration locale au demarrage
+
+## Direction produit
+
+Les prochaines evolutions les plus naturelles sont :
+
+- ameliorer encore la lisibilite de l'interface
+- enrichir la navigation entre jeux et succes
+- ajouter des fonctions utiles sans complexifier l'application
+
+Ce que le projet ne cherche pas a faire pour l'instant :
+
+- detection live d'emulateur
+- dependance a `RetroArch` ou a un autre emulateur
+- logique memoire live
+- fonctions fragiles qui degradent la stabilite
 
 ## Stockage local
 
@@ -56,11 +87,13 @@ Fichiers principaux :
 
 ## Build
 
+Build de la solution :
+
 ```powershell
 dotnet build RA.Compagnon.sln -m:1
 ```
 
-Build copie dans `dist` :
+Generation du livrable dans `dist` :
 
 ```powershell
 ./build.ps1

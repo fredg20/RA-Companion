@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 using SystemControls = System.Windows.Controls;
 
@@ -9,22 +10,22 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /// <summary>
-    /// Réapplique le dernier jeu sauvegardé pour éviter une fenêtre vide au démarrage.
+    /// R�applique le dernier jeu sauvegard� pour �viter une fen�tre vide au d�marrage.
     /// </summary>
     private Task AppliquerDernierJeuSauvegardeAsync()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
 
-        if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.Titre))
+        if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.Title))
         {
             return Task.CompletedTask;
         }
 
-        DefinirTitreZoneJeu(jeuSauvegarde.EstJeuEnCours);
-        _dernierTitreJeuApi = jeuSauvegarde.Titre;
-        _dernierIdentifiantJeuAvecInfos = jeuSauvegarde.IdentifiantJeu;
-        _dernierIdentifiantJeuAvecProgression = jeuSauvegarde.IdentifiantJeu;
-        DefinirTitreJeuEnCours(jeuSauvegarde.Titre);
+        DefinirTitreZoneJeu();
+        _dernierTitreJeuApi = jeuSauvegarde.Title;
+        _dernierIdentifiantJeuAvecInfos = jeuSauvegarde.Id;
+        _dernierIdentifiantJeuAvecProgression = jeuSauvegarde.Id;
+        DefinirTitreJeuEnCours(jeuSauvegarde.Title);
         DefinirDetailsJeuEnCours(jeuSauvegarde.Details);
         DefinirTempsJeuSousImage(jeuSauvegarde.TempsJeuSousImage);
         DefinirEtatJeuDansProgression(jeuSauvegarde.EtatJeu);
@@ -41,18 +42,19 @@ public partial class MainWindow
         BarreProgressionJeuEnCours.Value = Math.Clamp(jeuSauvegarde.ValeurProgression, 0, 100);
 
         DefinirVisuelsJeuEnCours(
-            string.IsNullOrWhiteSpace(jeuSauvegarde.CheminImageBoite)
+            string.IsNullOrWhiteSpace(jeuSauvegarde.ImageBoxArt)
                 ? []
-                : [new VisuelJeuEnCours("Jaquette", jeuSauvegarde.CheminImageBoite)]
+                : [new VisuelJeuEnCours("Jaquette", jeuSauvegarde.ImageBoxArt)]
         );
 
-        JeuUtilisateurRetroAchievements jeuLocalReconstruit =
-            ConstruireJeuUtilisateurDepuisEtatLocal(jeuSauvegarde);
+        GameInfoAndUserProgressV2 jeuLocalReconstruit = ConstruireJeuUtilisateurDepuisEtatLocal(
+            jeuSauvegarde
+        );
         _identifiantSuccesGrilleTemporaire = null;
         _identifiantSuccesGrilleEpingle = null;
         AppliquerMetaConsoleJeuEnCoursInitiale(jeuLocalReconstruit);
         DemarrerEnrichissementMetaConsoleJeuEnCours(jeuLocalReconstruit);
-        DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.IdentifiantJeu);
+        DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.Id);
         return Task.CompletedTask;
     }
 
@@ -77,17 +79,17 @@ public partial class MainWindow
 
         if (
             succesSauvegarde is null
-            || succesSauvegarde.IdentifiantJeu != identifiantJeu
-            || string.IsNullOrWhiteSpace(succesSauvegarde.Titre)
+            || succesSauvegarde.Id != identifiantJeu
+            || string.IsNullOrWhiteSpace(succesSauvegarde.Title)
         )
         {
             return;
         }
 
         _identifiantSuccesGrilleEpingle = succesSauvegarde.EstEpingleManuellement
-            ? succesSauvegarde.IdentifiantSucces
+            ? succesSauvegarde.AchievementId
             : null;
-        TexteTitrePremierSuccesNonDebloque.Text = succesSauvegarde.Titre;
+        TexteTitrePremierSuccesNonDebloque.Text = succesSauvegarde.Title;
         TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
         TexteDescriptionPremierSuccesNonDebloque.Text = succesSauvegarde.Description;
         TexteDescriptionPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
@@ -133,7 +135,7 @@ public partial class MainWindow
         EtatListeSuccesAfficheeLocal? listeSauvegardee =
             _configurationConnexion.DerniereListeSuccesAffichee;
 
-        if (listeSauvegardee is null || listeSauvegardee.IdentifiantJeu != identifiantJeu)
+        if (listeSauvegardee is null || listeSauvegardee.Id != identifiantJeu)
         {
             return;
         }
@@ -141,13 +143,13 @@ public partial class MainWindow
         GrilleTousSuccesJeuEnCours.Children.Clear();
 
         SystemControls.Border[] badges = await Task.WhenAll(
-            listeSauvegardee.Succes.Select(succesSauvegarde =>
+            listeSauvegardee.Achievements.Select(succesSauvegarde =>
                 ConstruireBadgeGrilleSuccesAsync(
                     identifiantJeu,
-                    new SuccesJeuUtilisateurRetroAchievements
+                    new GameAchievementV2
                     {
-                        IdentifiantSucces = succesSauvegarde.IdentifiantSucces,
-                        Titre = succesSauvegarde.Titre,
+                        IdentifiantSucces = succesSauvegarde.AchievementId,
+                        Titre = succesSauvegarde.Title,
                     },
                     succesSauvegarde.CheminImageBadge
                 )
@@ -165,33 +167,33 @@ public partial class MainWindow
     }
 
     private Task SauvegarderDernierJeuAfficheAsync(
-        JeuUtilisateurRetroAchievements jeu,
+        GameInfoAndUserProgressV2 jeu,
         string detailsTempsJeu,
         string detailsEtatJeu
     )
     {
         _configurationConnexion.DernierJeuAffiche = new EtatJeuAfficheLocal
         {
-            IdentifiantJeu = jeu.IdentifiantJeu,
+            IdentifiantJeu = jeu.Id,
             EstJeuEnCours = string.Equals(
                 TitreZoneJeuEnCours.Text,
                 "Jeu en cours",
                 StringComparison.Ordinal
             ),
-            Titre = jeu.Titre,
+            Titre = jeu.Title,
             Details = TexteDetailsJeuEnCours.Text,
             ResumeProgression = TexteResumeProgressionJeuEnCours.Text,
             PourcentageProgression = TextePourcentageJeuEnCours.Text,
             ValeurProgression = BarreProgressionJeuEnCours.Value,
             TempsJeuSousImage = detailsTempsJeu,
             EtatJeu = detailsEtatJeu,
-            CheminImageBoite = jeu.CheminImageBoite,
-            IdentifiantConsole = jeu.IdentifiantConsole,
-            DateSortie = jeu.DateSortie,
+            CheminImageBoite = jeu.ImageBoxArt,
+            IdentifiantConsole = jeu.ConsoleId,
+            DateSortie = jeu.Released,
             Genre = jeu.Genre,
-            Developpeur = jeu.Developpeur,
+            Developpeur = jeu.Developer,
         };
-        GarantirCoherenceEtatPersistantJeu(jeu.IdentifiantJeu);
+        GarantirCoherenceEtatPersistantJeu(jeu.Id);
         _dernierJeuAfficheModifie = true;
         return Task.CompletedTask;
     }
@@ -211,7 +213,7 @@ public partial class MainWindow
     {
         if (
             _configurationConnexion.DernierSuccesAffiche is not null
-            && _configurationConnexion.DernierSuccesAffiche.IdentifiantJeu != identifiantJeu
+            && _configurationConnexion.DernierSuccesAffiche.Id != identifiantJeu
         )
         {
             _configurationConnexion.DernierSuccesAffiche = null;
@@ -220,7 +222,7 @@ public partial class MainWindow
 
         if (
             _configurationConnexion.DerniereListeSuccesAffichee is not null
-            && _configurationConnexion.DerniereListeSuccesAffichee.IdentifiantJeu != identifiantJeu
+            && _configurationConnexion.DerniereListeSuccesAffichee.Id != identifiantJeu
         )
         {
             _configurationConnexion.DerniereListeSuccesAffichee = null;
@@ -264,9 +266,9 @@ public partial class MainWindow
             return precedent is null && courant is null;
         }
 
-        return precedent.IdentifiantJeu == courant.IdentifiantJeu
-            && precedent.IdentifiantSucces == courant.IdentifiantSucces
-            && string.Equals(precedent.Titre, courant.Titre, StringComparison.Ordinal)
+        return precedent.Id == courant.Id
+            && precedent.AchievementId == courant.AchievementId
+            && string.Equals(precedent.Title, courant.Title, StringComparison.Ordinal)
             && string.Equals(precedent.Description, courant.Description, StringComparison.Ordinal)
             && string.Equals(
                 precedent.DetailsPoints,
@@ -293,20 +295,20 @@ public partial class MainWindow
         }
 
         if (
-            precedent.IdentifiantJeu != courant.IdentifiantJeu
-            || precedent.Succes.Count != courant.Succes.Count
+            precedent.Id != courant.Id
+            || precedent.Achievements.Count != courant.Achievements.Count
         )
         {
             return false;
         }
 
-        for (int index = 0; index < precedent.Succes.Count; index++)
+        for (int index = 0; index < precedent.Achievements.Count; index++)
         {
-            ElementListeSuccesAfficheLocal succesPrecedent = precedent.Succes[index];
-            ElementListeSuccesAfficheLocal succesCourant = courant.Succes[index];
+            ElementListeSuccesAfficheLocal succesPrecedent = precedent.Achievements[index];
+            ElementListeSuccesAfficheLocal succesCourant = courant.Achievements[index];
 
             if (
-                !string.Equals(succesPrecedent.Titre, succesCourant.Titre, StringComparison.Ordinal)
+                !string.Equals(succesPrecedent.Title, succesCourant.Title, StringComparison.Ordinal)
                 || !string.Equals(
                     succesPrecedent.CheminImageBadge,
                     succesCourant.CheminImageBadge,
@@ -332,35 +334,35 @@ public partial class MainWindow
         }
 
         return precedent.SignatureLocale == courant.SignatureLocale
-            && precedent.IdentifiantJeu == courant.IdentifiantJeu
+            && precedent.Id == courant.Id
             && precedent.EstJeuEnCours == courant.EstJeuEnCours
-            && precedent.Titre == courant.Titre
+            && precedent.Title == courant.Title
             && precedent.Details == courant.Details
             && precedent.ResumeProgression == courant.ResumeProgression
             && precedent.PourcentageProgression == courant.PourcentageProgression
             && Math.Abs(precedent.ValeurProgression - courant.ValeurProgression) < 0.01
             && precedent.TempsJeuSousImage == courant.TempsJeuSousImage
             && precedent.EtatJeu == courant.EtatJeu
-            && precedent.CheminImageBoite == courant.CheminImageBoite
-            && precedent.IdentifiantConsole == courant.IdentifiantConsole
-            && precedent.DateSortie == courant.DateSortie
+            && precedent.ImageBoxArt == courant.ImageBoxArt
+            && precedent.ConsoleId == courant.ConsoleId
+            && precedent.Released == courant.Released
             && precedent.Genre == courant.Genre
-            && precedent.Developpeur == courant.Developpeur;
+            && precedent.Developer == courant.Developer;
     }
 
-    private static JeuUtilisateurRetroAchievements ConstruireJeuUtilisateurDepuisEtatLocal(
+    private static GameInfoAndUserProgressV2 ConstruireJeuUtilisateurDepuisEtatLocal(
         EtatJeuAfficheLocal jeuSauvegarde
     )
     {
-        return new JeuUtilisateurRetroAchievements
+        return new GameInfoAndUserProgressV2
         {
-            IdentifiantJeu = jeuSauvegarde.IdentifiantJeu,
-            Titre = jeuSauvegarde.Titre,
-            IdentifiantConsole = jeuSauvegarde.IdentifiantConsole,
-            DateSortie = jeuSauvegarde.DateSortie,
+            IdentifiantJeu = jeuSauvegarde.Id,
+            Titre = jeuSauvegarde.Title,
+            IdentifiantConsole = jeuSauvegarde.ConsoleId,
+            DateSortie = jeuSauvegarde.Released,
             Genre = jeuSauvegarde.Genre,
-            Developpeur = jeuSauvegarde.Developpeur,
-            CheminImageBoite = jeuSauvegarde.CheminImageBoite,
+            Developpeur = jeuSauvegarde.Developer,
+            CheminImageBoite = jeuSauvegarde.ImageBoxArt,
         };
     }
 

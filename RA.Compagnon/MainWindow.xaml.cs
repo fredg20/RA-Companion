@@ -12,6 +12,8 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
@@ -20,7 +22,7 @@ using UiControls = Wpf.Ui.Controls;
 namespace RA.Compagnon;
 
 /// <summary>
-/// Fenêtre principale du compagnon RetroAchievements.
+/// Fen�tre principale du compagnon RetroAchievements.
 /// </summary>
 public partial class MainWindow : UiControls.FluentWindow
 {
@@ -30,7 +32,10 @@ public partial class MainWindow : UiControls.FluentWindow
         int IdentifiantJeu,
         int IdentifiantSucces,
         string UrlBadge
-    );
+    )
+    {
+        public int Id => IdentifiantSucces;
+    }
 
     private enum OrdreSuccesGrille
     {
@@ -95,15 +100,15 @@ public partial class MainWindow : UiControls.FluentWindow
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
     private int _versionChargementContenuJeu;
-    private ProfilUtilisateurRetroAchievements? _dernierProfilUtilisateurCharge;
-    private ResumeUtilisateurRetroAchievements? _dernierResumeUtilisateurCharge;
+    private UserProfileV2? _dernierProfilUtilisateurCharge;
+    private UserSummaryV2? _dernierResumeUtilisateurCharge;
     private string _dernierTitreJeuApi = string.Empty;
     private string _dernierePresenceRiche = string.Empty;
     private string _dernierPseudoCharge = string.Empty;
     private string _signatureAnimationTitreJeu = string.Empty;
     private string _signatureAnimationGrilleSucces = string.Empty;
     private string _signatureOrdreAleatoireSuccesGrille = string.Empty;
-    private string _etatConnexionCourant = "Non configuré";
+    private string _etatConnexionCourant = "Non configur�";
     private string _cheminImageJeuEnCoursDemande = string.Empty;
     private string _cheminImageJeuEnCoursAffiche = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
@@ -116,15 +121,15 @@ public partial class MainWindow : UiControls.FluentWindow
     private double _amplitudeAnimationGrilleSucces;
     private AnimationClock? _horlogeAnimationGrilleSucces;
     private Dictionary<int, int> _positionsAleatoiresSuccesGrille = [];
-    private List<SuccesJeuUtilisateurRetroAchievements> _succesJeuCourant = [];
+    private List<GameAchievementV2> _succesJeuCourant = [];
     private OrdreSuccesGrille _ordreSuccesGrilleCourant = OrdreSuccesGrille.Normal;
 
     /// <summary>
-    /// Initialise la fenêtre principale.
+    /// Initialise la fen�tre principale.
     /// </summary>
     public MainWindow()
     {
-        App.JournaliserDemarrage("MainWindow ctor début");
+        App.JournaliserDemarrage("MainWindow ctor d�but");
         InitializeComponent();
         App.JournaliserDemarrage("MainWindow ctor fin");
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
@@ -136,7 +141,7 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Charge l'icône applicative depuis le fichier ICO embarqué et l'applique à la fenêtre.
+    /// Charge l'ic�ne applicative depuis le fichier ICO embarqu� et l'applique � la fen�tre.
     /// </summary>
     private void AppliquerIconeApplication()
     {
@@ -158,7 +163,7 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Prépare les minuteurs qui pilotent l'actualisation API et l'UI locale.
+    /// Pr�pare les minuteurs qui pilotent l'actualisation API et l'UI locale.
     /// </summary>
     private void ConfigurerActualisationAutomatique()
     {
@@ -184,7 +189,7 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private async void FenetrePrincipaleChargee(object sender, RoutedEventArgs e)
     {
-        App.JournaliserDemarrage("FenetrePrincipaleChargee début");
+        App.JournaliserDemarrage("FenetrePrincipaleChargee d�but");
         Mouse.OverrideCursor = null;
 
         if (_connexionInitialeAffichee)
@@ -229,7 +234,7 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Sauvegarde la géométrie de la fenêtre au moment de la fermeture.
+    /// Sauvegarde la g�om�trie de la fen�tre au moment de la fermeture.
     /// </summary>
     private void FenetrePrincipale_Fermeture(object? sender, CancelEventArgs e)
     {
@@ -248,12 +253,12 @@ public partial class MainWindow : UiControls.FluentWindow
         }
         catch
         {
-            // Évite de bloquer la fermeture si la persistance locale échoue au tout dernier moment.
+            // �vite de bloquer la fermeture si la persistance locale �choue au tout dernier moment.
         }
     }
 
     /// <summary>
-    /// Réorganise l'interface quand la fenêtre devient trop étroite.
+    /// R�organise l'interface quand la fen�tre devient trop �troite.
     /// </summary>
     private void FenetrePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
@@ -263,7 +268,7 @@ public partial class MainWindow : UiControls.FluentWindow
     }
 
     /// <summary>
-    /// Réagit au changement de taille de la zone de contenu visible.
+    /// R�agit au changement de taille de la zone de contenu visible.
     /// </summary>
     private void ZonePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {

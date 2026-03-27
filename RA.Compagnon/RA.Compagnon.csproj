@@ -7,10 +7,20 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>..\rac.ico</ApplicationIcon>
+    <OutputPath>..\dist\RA.Compagnon\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="WPF-UI" Version="4.2.0" />
+    <Reference Include="Wpf.Ui">
+      <HintPath>lib\Wpf.Ui.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Wpf.Ui.Abstractions">
+      <HintPath>lib\Wpf.Ui.Abstractions.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

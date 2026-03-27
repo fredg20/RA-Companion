@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon;
@@ -10,7 +11,7 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /// <summary>
-    /// Réinitialise la zone du premier succès non débloqué.
+    /// R�initialise la zone du premier succ�s non d�bloqu�.
     /// </summary>
     private void ReinitialiserPremierSuccesNonDebloque()
     {
@@ -28,7 +29,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Réinitialise la grille de tous les rétrosuccès.
+    /// R�initialise la grille de tous les r�trosucc�s.
     /// </summary>
     private void ReinitialiserGrilleTousSucces()
     {
@@ -41,7 +42,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Efface les zones de rétrosuccès et leur état persisté pour éviter de garder ceux d'un ancien jeu.
+    /// Efface les zones de r�trosucc�s et leur �tat persist� pour �viter de garder ceux d'un ancien jeu.
     /// </summary>
     private void ReinitialiserSuccesAffichesEtPersistes()
     {
@@ -67,15 +68,13 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met à jour l'affichage des succès du jeu courant.
+    /// Met � jour l'affichage des succ�s du jeu courant.
     /// </summary>
-    private async Task MettreAJourSuccesJeuAsync(JeuUtilisateurRetroAchievements jeu)
+    private async Task MettreAJourSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
-        List<SuccesJeuUtilisateurRetroAchievements> succes =
+        List<GameAchievementV2> succes =
         [
-            .. jeu
-                .Succes.Values.OrderBy(item => item.OrdreAffichage)
-                .ThenBy(item => item.IdentifiantSucces),
+            .. jeu.Succes.Values.OrderBy(item => item.DisplayOrder).ThenBy(item => item.Id),
         ];
 
         _identifiantJeuSuccesCourant = jeu.IdentifiantJeu;
@@ -85,22 +84,22 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Charge la grille complète des succès sans bloquer l'affichage du succès principal.
+    /// Charge la grille compl�te des succ�s sans bloquer l'affichage du succ�s principal.
     /// </summary>
     private void DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(
         int identifiantJeu,
-        List<SuccesJeuUtilisateurRetroAchievements> succes
+        List<GameAchievementV2> succes
     )
     {
         _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes);
     }
 
     /// <summary>
-    /// Exécute le remplissage complet de la grille en arrière-plan et ignore les erreurs non critiques.
+    /// Ex�cute le remplissage complet de la grille en arri�re-plan et ignore les erreurs non critiques.
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesEnArrierePlanAsync(
         int identifiantJeu,
-        List<SuccesJeuUtilisateurRetroAchievements> succes
+        List<GameAchievementV2> succes
     )
     {
         try
@@ -109,82 +108,66 @@ public partial class MainWindow
         }
         catch
         {
-            // La grille complète enrichit l'interface, mais ne doit pas bloquer le rendu principal.
+            // La grille compl�te enrichit l'interface, mais ne doit pas bloquer le rendu principal.
         }
     }
 
     /// <summary>
-    /// Choisit le rétrosuccès en cours en suivant l'ordre réel de la grille quand aucun badge n'est sélectionné.
+    /// Choisit le r�trosucc�s en cours en suivant l'ordre r�el de la grille quand aucun badge n'est s�lectionn�.
     /// </summary>
     private (
-        SuccesJeuUtilisateurRetroAchievements? Succes,
+        GameAchievementV2? Succes,
         bool DoitSauvegarder,
         bool EstEpingleManuellement
-    ) SelectionnerSuccesEnCours(List<SuccesJeuUtilisateurRetroAchievements> succes)
+    ) SelectionnerSuccesEnCours(List<GameAchievementV2> succes)
     {
         if (_identifiantJeuSuccesCourant > 0)
         {
             if (_identifiantSuccesGrilleTemporaire.HasValue)
             {
-                SuccesJeuUtilisateurRetroAchievements? succesTemporaire = succes.FirstOrDefault(
-                    item => item.IdentifiantSucces == _identifiantSuccesGrilleTemporaire.Value
+                GameAchievementV2? succesTemporaire = succes.FirstOrDefault(item =>
+                    item.Id == _identifiantSuccesGrilleTemporaire.Value
                 );
 
                 if (succesTemporaire is not null)
                 {
-                    return (
-                        succesTemporaire,
-                        false,
-                        false
-                    );
+                    return (succesTemporaire, false, false);
                 }
             }
 
             if (_identifiantSuccesGrilleEpingle.HasValue)
             {
-                SuccesJeuUtilisateurRetroAchievements? succesEpingle = succes.FirstOrDefault(item =>
-                    item.IdentifiantSucces == _identifiantSuccesGrilleEpingle.Value
+                GameAchievementV2? succesEpingle = succes.FirstOrDefault(item =>
+                    item.Id == _identifiantSuccesGrilleEpingle.Value
                 );
 
                 if (succesEpingle is not null)
                 {
-                    return (
-                        succesEpingle,
-                        true,
-                        true
-                    );
+                    return (succesEpingle, true, true);
                 }
             }
         }
 
-        List<SuccesJeuUtilisateurRetroAchievements> succesNonDebloques =
+        List<GameAchievementV2> succesNonDebloques =
         [
             .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, succes)
                 .Where(item => !SuccesEstDebloque(item)),
         ];
-        SuccesJeuUtilisateurRetroAchievements? premierSuccesNonDebloque =
-            succesNonDebloques.FirstOrDefault();
+        GameAchievementV2? premierSuccesNonDebloque = succesNonDebloques.FirstOrDefault();
 
-        return (
-            premierSuccesNonDebloque,
-            true,
-            false
-        );
+        return (premierSuccesNonDebloque, true, false);
     }
 
     /// <summary>
-    /// Met à jour la carte du premier succès restant à débloquer.
+    /// Met � jour la carte du premier succ�s restant � d�bloquer.
     /// </summary>
     private async Task MettreAJourPremierSuccesNonDebloqueAsync(
         int identifiantJeu,
-        List<SuccesJeuUtilisateurRetroAchievements> succes
+        List<GameAchievementV2> succes
     )
     {
-        (
-            SuccesJeuUtilisateurRetroAchievements? premierSucces,
-            bool doitSauvegarder,
-            bool estEpingleManuellement
-        ) = SelectionnerSuccesEnCours(succes);
+        (GameAchievementV2? premierSucces, bool doitSauvegarder, bool estEpingleManuellement) =
+            SelectionnerSuccesEnCours(succes);
 
         await AppliquerSuccesEnCoursAsync(
             identifiantJeu,
@@ -195,11 +178,11 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique le succès choisi à la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
+    /// Applique le succ�s choisi � la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
     /// </summary>
     private async Task AppliquerSuccesEnCoursAsync(
         int identifiantJeu,
-        SuccesJeuUtilisateurRetroAchievements? succesSelectionne,
+        GameAchievementV2? succesSelectionne,
         bool doitSauvegarder,
         bool estEpingleManuellement
     )
@@ -209,11 +192,11 @@ public partial class MainWindow
             ImagePremierSuccesNonDebloque.Source = null;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
             TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteImagePremierSuccesNonDebloque.Text = "Tous les succès sont débloqués";
-            TexteTitrePremierSuccesNonDebloque.Text = "Jeu complété";
+            TexteImagePremierSuccesNonDebloque.Text = "Tous les succ�s sont d�bloqu�s";
+            TexteTitrePremierSuccesNonDebloque.Text = "Tous les succ�s sont obtenus";
             TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TexteDescriptionPremierSuccesNonDebloque.Text =
-                "Aucun succès restant à afficher pour ce jeu.";
+                "Ce jeu ne contient plus de succ�s � d�bloquer.";
             TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TextePointsPremierSuccesNonDebloque.Text = string.Empty;
             TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
@@ -232,7 +215,7 @@ public partial class MainWindow
         }
 
         bool succesDebloque = SuccesEstDebloque(succesSelectionne);
-        string urlBadge = ConstruireUrlBadgeDepuisNom(succesSelectionne.NomBadge, !succesDebloque);
+        string urlBadge = ConstruireUrlBadgeDepuisNom(succesSelectionne.BadgeName, !succesDebloque);
         ImageSource? imageSucces = await ChargerImageDistanteAsync(urlBadge);
 
         if (imageSucces is not null)
@@ -255,7 +238,7 @@ public partial class MainWindow
             TexteImagePremierSuccesNonDebloque.Text = "Visuel indisponible";
         }
 
-        TexteTitrePremierSuccesNonDebloque.Text = succesSelectionne.Titre;
+        TexteTitrePremierSuccesNonDebloque.Text = succesSelectionne.Title;
         TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
         string descriptionSucces = string.IsNullOrWhiteSpace(succesSelectionne.Description)
             ? "Aucune description disponible."
@@ -275,7 +258,7 @@ public partial class MainWindow
                 new EtatSuccesAfficheLocal
                 {
                     IdentifiantJeu = identifiantJeu,
-                    IdentifiantSucces = succesSelectionne.IdentifiantSucces,
+                    IdentifiantSucces = succesSelectionne.Id,
                     Titre = TexteTitrePremierSuccesNonDebloque.Text,
                     Description = TexteDescriptionPremierSuccesNonDebloque.Text,
                     DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
@@ -288,7 +271,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Construit l'URL publique d'un badge de succès.
+    /// Construit l'URL publique d'un badge de succ�s.
     /// </summary>
     private static string ConstruireUrlBadgeDepuisNom(string nomBadge, bool versionVerrouillee)
     {
@@ -314,25 +297,23 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Traduit le type technique d'un succès en libellé français.
+    /// Traduit le type technique d'un succ�s en libell� fran�ais.
     /// </summary>
     private static string TraduireTypeSucces(string type)
     {
         return (type ?? string.Empty).Trim().ToLowerInvariant() switch
         {
-            "progression" => "Succès de progression",
-            "win_condition" => "Succès de victoire",
-            "missable" => "Succès manquable",
+            "progression" => "Succ�s de progression",
+            "win_condition" => "Succ�s de victoire",
+            "missable" => "Succ�s manquable",
             _ => string.Empty,
         };
     }
 
     /// <summary>
-    /// Construit la ligne de points affichée pour un succès.
+    /// Construit la ligne de points affich�e pour un succ�s.
     /// </summary>
-    private static string ConstruireDetailsPointsSucces(
-        SuccesJeuUtilisateurRetroAchievements succes
-    )
+    private static string ConstruireDetailsPointsSucces(GameAchievementV2 succes)
     {
         List<string> segments = [];
         string typeSucces = TraduireTypeSucces(succes.Type);
@@ -347,16 +328,16 @@ public partial class MainWindow
             segments.Add($"{succes.Points.ToString(CultureInfo.CurrentCulture)} points");
         }
 
-        if (succes.Retropoints > 0)
+        if (succes.TrueRatio > 0)
         {
-            segments.Add($"{succes.Retropoints.ToString(CultureInfo.CurrentCulture)} rétropoints");
+            segments.Add($"{succes.TrueRatio.ToString(CultureInfo.CurrentCulture)} r�tropoints");
         }
 
-        return string.Join(" • ", segments);
+        return string.Join(" � ", segments);
     }
 
     /// <summary>
-    /// Convertit une image en niveaux de gris pour l'affichage des succès verrouillés.
+    /// Convertit une image en niveaux de gris pour l'affichage des succ�s verrouill�s.
     /// </summary>
     private static ImageSource ConvertirImageEnNoirEtBlanc(ImageSource image)
     {

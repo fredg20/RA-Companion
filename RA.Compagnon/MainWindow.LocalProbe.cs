@@ -1,4 +1,4 @@
-namespace RA.Compagnon;
+﻿namespace RA.Compagnon;
 
 public partial class MainWindow
 {
@@ -65,3 +65,4 @@ public partial class MainWindow
         _dernierResumeUtilisateurCharge = null;
     }
 }
+

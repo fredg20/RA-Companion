@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
@@ -11,7 +12,7 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /// <summary>
-    /// Met √† jour le visuel du jeu courant √† partir du box art retourn√© par l'API.
+    /// Met ‡ jour le visuel du jeu courant ‡ partir du box art retournÈ par l'API.
     /// </summary>
     private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
@@ -51,7 +52,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R√©initialise le visuel du jeu courant sur un √©tat neutre.
+    /// RÈinitialise le visuel du jeu courant sur un Ètat neutre.
     /// </summary>
     private void ReinitialiserImageJeuEnCours()
     {
@@ -227,7 +228,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R√©initialise le carrousel des visuels du jeu courant.
+    /// RÈinitialise le carrousel des visuels du jeu courant.
     /// </summary>
     private void ReinitialiserCarrouselVisuelsJeuEnCours()
     {
@@ -241,7 +242,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique les visuels disponibles du jeu courant au carrousel situ√© sous l'image.
+    /// Applique les visuels disponibles du jeu courant au carrousel situÈ sous l'image.
     /// </summary>
     private void DefinirVisuelsJeuEnCours(IReadOnlyList<VisuelJeuEnCours> visuels)
     {
@@ -272,7 +273,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met √† jour le grand visuel et l'√©tat du carrousel sous l'image.
+    /// Met ‡ jour le grand visuel et l'Ètat du carrousel sous l'image.
     /// </summary>
     private async Task MettreAJourAffichageVisuelJeuEnCoursAsync()
     {
@@ -314,7 +315,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Fait d√©filer automatiquement les autres visuels du jeu avec un fondu doux.
+    /// Fait dÈfiler automatiquement les autres visuels du jeu avec un fondu doux.
     /// </summary>
     private async void MinuteurRotationVisuelsJeuEnCours_Tick(object? sender, EventArgs e)
     {
@@ -329,19 +330,19 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche imm√©diatement les visuels essentiels du jeu courant.
+    /// Affiche immÈdiatement les visuels essentiels du jeu courant.
     /// </summary>
-    private void AppliquerVisuelsJeuEnCoursInitiaux(JeuUtilisateurRetroAchievements jeu)
+    private void AppliquerVisuelsJeuEnCoursInitiaux(GameInfoAndUserProgressV2 jeu)
     {
         List<VisuelJeuEnCours> visuels = [];
-        AjouterVisuelJeu(visuels, "Jaquette", jeu.CheminImageBoite);
+        AjouterVisuelJeu(visuels, "Jaquette", jeu.ImageBoxArt);
         DefinirVisuelsJeuEnCours(visuels);
     }
 
     /// <summary>
-    /// Enrichit ensuite les visuels du jeu avec des √©l√©ments secondaires comme le badge.
+    /// Enrichit ensuite les visuels du jeu avec des ÈlÈments secondaires comme le badge.
     /// </summary>
-    private void DemarrerEnrichissementVisuelsJeuEnCours(JeuUtilisateurRetroAchievements jeu)
+    private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         _ = EnrichirVisuelsJeuEnCoursAsync(jeu);
     }
@@ -349,19 +350,19 @@ public partial class MainWindow
     /// <summary>
     /// Charge le badge du jeu sans bloquer l'affichage initial.
     /// </summary>
-    private async Task EnrichirVisuelsJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    private async Task EnrichirVisuelsJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
         {
             string cheminBadge = await ObtenirCheminBadgeJeuAsync(jeu);
 
-            if (_dernierIdentifiantJeuAvecInfos != jeu.IdentifiantJeu)
+            if (_dernierIdentifiantJeuAvecInfos != jeu.Id)
             {
                 return;
             }
 
             List<VisuelJeuEnCours> visuels = [];
-            AjouterVisuelJeu(visuels, "Jaquette", jeu.CheminImageBoite);
+            AjouterVisuelJeu(visuels, "Jaquette", jeu.ImageBoxArt);
             AjouterVisuelJeu(visuels, "Badge", cheminBadge);
             DefinirVisuelsJeuEnCours(visuels);
         }
@@ -372,7 +373,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Ajoute un visuel de jeu s'il est exploitable et non d√©j√† pr√©sent.
+    /// Ajoute un visuel de jeu s'il est exploitable et non dÈj‡ prÈsent.
     /// </summary>
     private static void AjouterVisuelJeu(
         List<VisuelJeuEnCours> visuels,
@@ -398,14 +399,14 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R√©cup√®re le badge du jeu via le catalogue syst√®me si disponible.
+    /// RÈcupËre le badge du jeu via le catalogue systËme si disponible.
     /// </summary>
-    private async Task<string> ObtenirCheminBadgeJeuAsync(JeuUtilisateurRetroAchievements jeu)
+    private async Task<string> ObtenirCheminBadgeJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
         if (
             !ConfigurationConnexionEstComplete()
-            || jeu.IdentifiantJeu <= 0
-            || jeu.IdentifiantConsole <= 0
+            || jeu.Id <= 0
+            || jeu.ConsoleId <= 0
         )
         {
             return string.Empty;
@@ -413,15 +414,15 @@ public partial class MainWindow
 
         try
         {
-            IReadOnlyList<JeuSystemeRetroAchievements> jeuxSysteme =
+            IReadOnlyList<GameListEntryV2> jeuxSysteme =
                 await ClientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
                     _configurationConnexion.CleApiWeb,
-                    jeu.IdentifiantConsole
+                    jeu.ConsoleId
                 );
 
             return jeuxSysteme
-                    .FirstOrDefault(item => item.IdentifiantJeu == jeu.IdentifiantJeu)
-                    ?.CheminImageIcone
+                    .FirstOrDefault(item => item.Id == jeu.Id)
+                    ?.ImageIcon
                 ?? string.Empty;
         }
         catch
@@ -430,3 +431,7 @@ public partial class MainWindow
         }
     }
 }
+
+
+
+

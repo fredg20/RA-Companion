@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 
 namespace RA.Compagnon;
 
@@ -51,3 +51,4 @@ public partial class MainWindow
         _chronometreDiagnosticChangementJeu = null;
     }
 }
+

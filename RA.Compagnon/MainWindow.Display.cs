@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.Achievement;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
@@ -10,7 +12,7 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /// <summary>
-    /// Réinitialise l'affichage des métadonnées sous le titre du jeu courant.
+    /// R�initialise l'affichage des m�tadonn�es sous le titre du jeu courant.
     /// </summary>
     private void ReinitialiserMetaConsoleJeuEnCours()
     {
@@ -28,14 +30,14 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met à jour l'année du jeu, sa console, son type, son développeur et l'icône officielle.
+    /// Met � jour l'ann�e du jeu, sa console, son type, son d�veloppeur et l'ic�ne officielle.
     /// </summary>
-    private async Task MettreAJourMetaConsoleJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    private async Task MettreAJourMetaConsoleJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         ReinitialiserMetaConsoleJeuEnCours();
 
-        string anneeJeu = ExtraireAnneeJeu(jeu.DateSortie);
-        DefinirTitreJeuEnCours(jeu.Titre);
+        string anneeJeu = ExtraireAnneeJeu(jeu.Released);
+        DefinirTitreJeuEnCours(jeu.Title);
 
         if (!string.IsNullOrWhiteSpace(anneeJeu))
         {
@@ -43,9 +45,9 @@ public partial class MainWindow
             TexteAnneeJeuEnCours.Visibility = Visibility.Visible;
         }
 
-        if (!string.IsNullOrWhiteSpace(jeu.NomConsole))
+        if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
         {
-            TexteConsoleJeuEnCours.Text = jeu.NomConsole.Trim();
+            TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
             TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
         }
 
@@ -60,25 +62,22 @@ public partial class MainWindow
                 : Visibility.Visible;
         }
 
-        if (!string.IsNullOrWhiteSpace(jeu.Developpeur))
+        if (!string.IsNullOrWhiteSpace(jeu.Developer))
         {
-            TexteDeveloppeurJeuEnCours.Text = jeu.Developpeur.Trim();
+            TexteDeveloppeurJeuEnCours.Text = jeu.Developer.Trim();
             TexteDeveloppeurJeuEnCours.Visibility = Visibility.Visible;
         }
 
         try
         {
-            IReadOnlyList<ConsoleRetroAchievements> consoles =
-                await ClientRetroAchievements.ObtenirConsolesAsync(
-                    _configurationConnexion.CleApiWeb
-                );
-            ConsoleRetroAchievements? console = consoles.FirstOrDefault(item =>
-                item.IdentifiantConsole == jeu.IdentifiantConsole
+            IReadOnlyList<ConsoleV2> consoles = await ClientRetroAchievements.ObtenirConsolesAsync(
+                _configurationConnexion.CleApiWeb
             );
+            ConsoleV2? console = consoles.FirstOrDefault(item => item.ConsoleId == jeu.ConsoleId);
 
-            if (console is not null && !string.IsNullOrWhiteSpace(console.UrlIcone))
+            if (console is not null && !string.IsNullOrWhiteSpace(console.IconUrl))
             {
-                ImageSource? imageConsole = await ChargerImageDistanteAsync(console.UrlIcone);
+                ImageSource? imageConsole = await ChargerImageDistanteAsync(console.IconUrl);
 
                 if (imageConsole is not null)
                 {
@@ -89,7 +88,7 @@ public partial class MainWindow
         }
         catch
         {
-            // L'icône de console reste facultative. En cas d'échec, on conserve au moins l'année.
+            // L'ic�ne de console reste facultative. En cas d'�chec, on conserve au moins l'ann�e.
         }
 
         LigneMetaJeuEnCours.Visibility =
@@ -101,14 +100,14 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche immédiatement les métadonnées déjà connues du jeu sans attendre les enrichissements lents.
+    /// Affiche imm�diatement les m�tadonn�es d�j� connues du jeu sans attendre les enrichissements lents.
     /// </summary>
-    private void AppliquerMetaConsoleJeuEnCoursInitiale(JeuUtilisateurRetroAchievements jeu)
+    private void AppliquerMetaConsoleJeuEnCoursInitiale(GameInfoAndUserProgressV2 jeu)
     {
         ReinitialiserMetaConsoleJeuEnCours();
 
-        string anneeJeu = ExtraireAnneeJeu(jeu.DateSortie);
-        DefinirTitreJeuEnCours(jeu.Titre);
+        string anneeJeu = ExtraireAnneeJeu(jeu.Released);
+        DefinirTitreJeuEnCours(jeu.Title);
 
         if (!string.IsNullOrWhiteSpace(anneeJeu))
         {
@@ -116,9 +115,9 @@ public partial class MainWindow
             TexteAnneeJeuEnCours.Visibility = Visibility.Visible;
         }
 
-        if (!string.IsNullOrWhiteSpace(jeu.NomConsole))
+        if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
         {
-            TexteConsoleJeuEnCours.Text = jeu.NomConsole.Trim();
+            TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
             TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
         }
 
@@ -128,9 +127,9 @@ public partial class MainWindow
             TexteTypeJeuEnCours.Visibility = Visibility.Visible;
         }
 
-        if (!string.IsNullOrWhiteSpace(jeu.Developpeur))
+        if (!string.IsNullOrWhiteSpace(jeu.Developer))
         {
-            TexteDeveloppeurJeuEnCours.Text = jeu.Developpeur.Trim();
+            TexteDeveloppeurJeuEnCours.Text = jeu.Developer.Trim();
             TexteDeveloppeurJeuEnCours.Visibility = Visibility.Visible;
         }
 
@@ -144,17 +143,17 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Lance les enrichissements secondaires des métadonnées sans bloquer le rendu initial.
+    /// Lance les enrichissements secondaires des m�tadonn�es sans bloquer le rendu initial.
     /// </summary>
-    private void DemarrerEnrichissementMetaConsoleJeuEnCours(JeuUtilisateurRetroAchievements jeu)
+    private void DemarrerEnrichissementMetaConsoleJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         _ = EnrichirMetaConsoleJeuEnCoursAsync(jeu);
     }
 
     /// <summary>
-    /// Traduit le genre et charge l'icône de console après l'affichage initial.
+    /// Traduit le genre et charge l'ic�ne de console apr�s l'affichage initial.
     /// </summary>
-    private async Task EnrichirMetaConsoleJeuEnCoursAsync(JeuUtilisateurRetroAchievements jeu)
+    private async Task EnrichirMetaConsoleJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
         {
@@ -171,25 +170,25 @@ public partial class MainWindow
 
             try
             {
-                IReadOnlyList<ConsoleRetroAchievements> consoles =
+                IReadOnlyList<ConsoleV2> consoles =
                     await ClientRetroAchievements.ObtenirConsolesAsync(
                         _configurationConnexion.CleApiWeb
                     );
-                ConsoleRetroAchievements? console = consoles.FirstOrDefault(item =>
-                    item.IdentifiantConsole == jeu.IdentifiantConsole
+                ConsoleV2? console = consoles.FirstOrDefault(item =>
+                    item.ConsoleId == jeu.ConsoleId
                 );
 
-                if (console is not null && !string.IsNullOrWhiteSpace(console.UrlIcone))
+                if (console is not null && !string.IsNullOrWhiteSpace(console.IconUrl))
                 {
-                    imageConsole = await ChargerImageDistanteAsync(console.UrlIcone);
+                    imageConsole = await ChargerImageDistanteAsync(console.IconUrl);
                 }
             }
             catch
             {
-                // L'icône de console reste facultative.
+                // L'ic�ne de console reste facultative.
             }
 
-            if (_dernierIdentifiantJeuAvecInfos != jeu.IdentifiantJeu)
+            if (_dernierIdentifiantJeuAvecInfos != jeu.Id)
             {
                 return;
             }
@@ -222,7 +221,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met à jour la ligne de détails sous le type et le développeur du jeu.
+    /// Met � jour la ligne de d�tails sous le type et le d�veloppeur du jeu.
     /// </summary>
     private void DefinirDetailsJeuEnCours(string details)
     {
@@ -233,7 +232,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met à jour le temps de jeu affiché sous l'image du jeu.
+    /// Met � jour le temps de jeu affich� sous l'image du jeu.
     /// </summary>
     private void DefinirTempsJeuSousImage(string tempsJeu)
     {
@@ -244,32 +243,22 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met à jour l'état du jeu dans l'en-tête de la carte de progression.
+    /// Met � jour l'�tat du jeu dans l'en-t�te de la carte de progression.
     /// </summary>
     private void DefinirEtatJeuDansProgression(string etat)
     {
-        TexteEtatJeuDansProgression.Text = string.IsNullOrWhiteSpace(etat) ? "Progression" : etat;
+        TexteEtatJeuDansProgression.Text = string.IsNullOrWhiteSpace(etat)
+            ? "Progression du jeu"
+            : etat;
     }
 
-    /// <summary>
-    /// Met à jour le titre de la zone principale selon la détection locale d'un émulateur.
-    /// </summary>
-    private void DefinirTitreZoneJeu(bool emulateurLocalDetecte)
+    private void DefinirTitreZoneJeu()
     {
-        bool basculeVersDernierJeuJoue =
-            string.Equals(TitreZoneJeuEnCours.Text, "Jeu en cours", StringComparison.Ordinal)
-            && !emulateurLocalDetecte;
-
-        TitreZoneJeuEnCours.Text = emulateurLocalDetecte ? "Jeu en cours" : "Dernier jeu joué";
-
-        if (basculeVersDernierJeuJoue)
-        {
-            _ = PersisterDernierJeuAfficheSiNecessaireAsync();
-        }
+        TitreZoneJeuEnCours.Text = "Dernier jeu jou�";
     }
 
     /// <summary>
-    /// Recalcule la découpe arrondie de l'image du jeu quand sa taille change.
+    /// Recalcule la d�coupe arrondie de l'image du jeu quand sa taille change.
     /// </summary>
     private void ImageJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
     {
@@ -277,7 +266,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Recalcule la découpe arrondie du badge du premier succès quand sa taille change.
+    /// Recalcule la d�coupe arrondie du badge du premier succ�s quand sa taille change.
     /// </summary>
     private void ImagePremierSuccesNonDebloque_TailleChangee(object sender, SizeChangedEventArgs e)
     {
@@ -285,7 +274,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche le visuel précédent du jeu courant.
+    /// Affiche le visuel pr�c�dent du jeu courant.
     /// </summary>
     private async void VisuelJeuPrecedent_Click(object sender, RoutedEventArgs e)
     {
@@ -313,7 +302,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Recalcule le défilement du titre quand sa taille ou celle de son conteneur change.
+    /// Recalcule le d�filement du titre quand sa taille ou celle de son conteneur change.
     /// </summary>
     private void TitreJeuEnCours_MiseEnPageChangee(object sender, SizeChangedEventArgs e)
     {
@@ -322,7 +311,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique les coins arrondis à l'image du jeu courant selon sa taille réelle.
+    /// Applique les coins arrondis � l'image du jeu courant selon sa taille r�elle.
     /// </summary>
     private void AppliquerCoinsArrondisImageJeuEnCours()
     {
@@ -331,7 +320,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique les coins arrondis au badge du premier succès selon sa taille réelle.
+    /// Applique les coins arrondis au badge du premier succ�s selon sa taille r�elle.
     /// </summary>
     private void AppliquerCoinsArrondisImagePremierSuccesNonDebloque()
     {
@@ -339,7 +328,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique une découpe arrondie à une image selon sa taille réelle.
+    /// Applique une d�coupe arrondie � une image selon sa taille r�elle.
     /// </summary>
     private void AppliquerCoinsArrondisImage(SystemControls.Image image)
     {
@@ -357,7 +346,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Déclenche un cycle périodique d'actualisation API.
+    /// D�clenche un cycle p�riodique d'actualisation API.
     /// </summary>
     private async void ActualisationApi_Tick(object? sender, EventArgs e)
     {
@@ -376,31 +365,28 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Réinitialise la section des succès récents sur un état neutre.
+    /// R�initialise la section des succ�s r�cents sur un �tat neutre.
     /// </summary>
     private void ReinitialiserSuccesRecents()
     {
-        TexteEtatSuccesRecents.Text = "Les succès récents apparaîtront ici.";
-        TexteSuccesRecent1.Text = "Aucun succès chargé.";
-        TexteSuccesRecent2.Text = "Aucun succès chargé.";
-        TexteSuccesRecent3.Text = "Aucun succès chargé.";
+        TexteEtatSuccesRecents.Text = "Les derniers succ�s de ce compte appara�tront ici.";
+        TexteSuccesRecent1.Text = "Aucun succ�s r�cent � afficher.";
+        TexteSuccesRecent2.Text = "Aucun succ�s r�cent � afficher.";
+        TexteSuccesRecent3.Text = "Aucun succ�s r�cent � afficher.";
     }
 
     /// <summary>
-    /// Remplit les lignes de la section des succès récents.
+    /// Remplit les lignes de la section des succ�s r�cents.
     /// </summary>
-    private void AppliquerSuccesRecents(
-        List<SuccesRecentRetroAchievements> succesRecents,
-        string texteEtat
-    )
+    private void AppliquerSuccesRecents(List<AchievementUnlockV2> succesRecents, string texteEtat)
     {
         TexteEtatSuccesRecents.Text = texteEtat;
 
         string[] lignes =
         [
-            "Aucun autre succès récent.",
-            "Aucun autre succès récent.",
-            "Aucun autre succès récent.",
+            "Aucun autre succ�s r�cent.",
+            "Aucun autre succ�s r�cent.",
+            "Aucun autre succ�s r�cent.",
         ];
 
         for (int index = 0; index < Math.Min(3, succesRecents.Count); index++)
@@ -414,28 +400,28 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Construit une ligne d'affichage lisible pour un succès récent.
+    /// Construit une ligne d'affichage lisible pour un succ�s r�cent.
     /// </summary>
-    private static string ConstruireLigneSucces(SuccesRecentRetroAchievements succes)
+    private static string ConstruireLigneSucces(AchievementUnlockV2 succes)
     {
-        string mode = succes.ModeHardcore ? "Hardcore" : "Standard";
-        DateTimeOffset dateDeblocage = ConvertirDateSucces(succes.DateDeblocage);
+        string mode = succes.HardcoreMode ? "Hardcore" : "Standard";
+        DateTimeOffset dateDeblocage = ConvertirDateSucces(succes.Date);
         string dateFormatee =
             dateDeblocage == DateTimeOffset.MinValue
                 ? "Date inconnue"
                 : dateDeblocage.ToLocalTime().ToString("g", CultureInfo.CurrentCulture);
-        string titreJeu = string.IsNullOrWhiteSpace(succes.TitreJeu)
+        string titreJeu = string.IsNullOrWhiteSpace(succes.TitleJeu)
             ? "Jeu inconnu"
-            : succes.TitreJeu;
+            : succes.TitleJeu;
         string description = string.IsNullOrWhiteSpace(succes.Description)
             ? string.Empty
             : $"\n{succes.Description}";
 
-        return $"{succes.Titre} - {succes.Points} pts - {mode}\n{titreJeu} - {dateFormatee}{description}";
+        return $"{succes.Title} - {succes.Points} pts - {mode}\n{titreJeu} - {dateFormatee}{description}";
     }
 
     /// <summary>
-    /// Convertit la date d'un succès récent en horodatage exploitable pour le tri.
+    /// Convertit la date d'un succ�s r�cent en horodatage exploitable pour le tri.
     /// </summary>
     private static DateTimeOffset ConvertirDateSucces(string dateApi)
     {
@@ -492,11 +478,11 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Réinitialise la section "Jeu en cours" sur un état neutre.
+    /// R�initialise la section "Jeu en cours" sur un �tat neutre.
     /// </summary>
     private void ReinitialiserJeuEnCours()
     {
-        DefinirTitreZoneJeu(true);
+        DefinirTitreZoneJeu();
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
         ReinitialiserCarrouselVisuelsJeuEnCours();
@@ -509,13 +495,13 @@ public partial class MainWindow
         DefinirTitreJeuEnCours(string.Empty);
         DefinirDetailsJeuEnCours(string.Empty);
         TexteResumeProgressionJeuEnCours.Text = "-- / --";
-        TextePourcentageJeuEnCours.Text = "Aucun jeu pour afficher une progression";
+        TextePourcentageJeuEnCours.Text = "Connecte ton compte pour afficher ton activit�.";
         BarreProgressionJeuEnCours.Value = 0;
         ReinitialiserSuccesRecents();
     }
 
     /// <summary>
-    /// Indique si la progression affichée peut être conservée pour le même jeu.
+    /// Indique si la progression affich�e peut �tre conserv�e pour le m�me jeu.
     /// </summary>
     private bool PeutConserverProgressionAffichee(int identifiantJeu)
     {
@@ -523,7 +509,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Indique si les informations visibles du jeu peuvent être conservées pour le même jeu.
+    /// Indique si les informations visibles du jeu peuvent �tre conserv�es pour le m�me jeu.
     /// </summary>
     private bool PeutConserverInfosJeuAffichees(int identifiantJeu)
     {
@@ -531,7 +517,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Extrait l'année de sortie d'un jeu à partir du champ API de date.
+    /// Extrait l'ann�e de sortie d'un jeu � partir du champ API de date.
     /// </summary>
     private static string ExtraireAnneeJeu(string dateSortie)
     {
@@ -568,16 +554,16 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Détermine le statut lisible du jeu selon HighestAwardKind, avec repli sur les compteurs pour completed/mastered.
+    /// D�termine le statut lisible du jeu selon HighestAwardKind, avec repli sur les compteurs pour completed/mastered.
     /// </summary>
-    private static string DeterminerStatutJeu(JeuUtilisateurRetroAchievements jeu)
+    private static string DeterminerStatutJeu(GameInfoAndUserProgressV2 jeu)
     {
-        string etatApi = jeu.PlusHauteRecompense.Trim().ToLowerInvariant();
+        string etatApi = jeu.HighestAwardKind.Trim().ToLowerInvariant();
 
         string etatDirect = etatApi switch
         {
-            "mastered" => "Jeu maîtrisé",
-            "completed" => "Jeu complété",
+            "mastered" => "Jeu ma�tris�",
+            "completed" => "Jeu compl�t�",
             "beaten" => "Jeu battu",
             "beaten-hardcore" => "Jeu battu en hardcore",
             "beaten-softcore" => "Jeu battu en softcore",
@@ -589,25 +575,25 @@ public partial class MainWindow
             return etatDirect;
         }
 
-        if (jeu.NombreSucces > 0 && jeu.NombreSuccesObtenusHardcore == jeu.NombreSucces)
+        if (jeu.NumAchievements > 0 && jeu.NumAwardedToUserHardcore == jeu.NumAchievements)
         {
-            return "Jeu maîtrisé";
+            return "Jeu ma�tris�";
         }
 
         if (
-            jeu.NombreSucces > 0
-            && jeu.NombreSuccesObtenus == jeu.NombreSucces
-            && jeu.NombreSuccesObtenusHardcore < jeu.NombreSucces
+            jeu.NumAchievements > 0
+            && jeu.NumAwardedToUser == jeu.NumAchievements
+            && jeu.NumAwardedToUserHardcore < jeu.NumAchievements
         )
         {
-            return "Jeu complété";
+            return "Jeu compl�t�";
         }
 
         return "Progression en cours";
     }
 
     /// <summary>
-    /// Formate une durée exprimée en minutes en texte français lisible.
+    /// Formate une dur�e exprim�e en minutes en texte fran�ais lisible.
     /// </summary>
     private static string FormaterTempsJeuTotal(int totalMinutes)
     {
@@ -640,7 +626,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Convertit une chaîne de pourcentage de l'API en valeur numérique exploitable.
+    /// Convertit une cha�ne de pourcentage de l'API en valeur num�rique exploitable.
     /// </summary>
     private static double ExtrairePourcentage(string pourcentageApi)
     {
@@ -679,11 +665,11 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Normalise l'affichage texte du pourcentage de complétion.
+    /// Normalise l'affichage texte du pourcentage de compl�tion.
     /// </summary>
     private static string NormaliserPourcentage(string pourcentageApi)
     {
         double valeur = ExtrairePourcentage(pourcentageApi);
-        return $"{valeur:0.##} % complété";
+        return $"{valeur:0.##} % compl�t�";
     }
 }

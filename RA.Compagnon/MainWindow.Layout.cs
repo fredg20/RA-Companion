@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -351,3 +351,4 @@ public partial class MainWindow
         return new CornerRadius(valeurParDefaut);
     }
 }
+

@@ -1,15 +1,16 @@
 using RA.Compagnon.Modeles.Api;
+using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    private async Task<JeuRecemmentJoueRetroAchievements?> ObtenirDernierJeuJoueAsync()
+    private async Task<RecentlyPlayedGameV2?> ObtenirDernierJeuJoueAsync()
     {
         try
         {
-            IReadOnlyList<JeuRecemmentJoueRetroAchievements> jeuxRecents =
+            IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents =
                 await ClientRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
@@ -42,3 +43,7 @@ public partial class MainWindow
     }
 
 }
+
+
+
+

@@ -79,4 +79,40 @@ public sealed class EtatJeuAfficheLocal
     /// Développeur affiché sous l'année.
     /// </summary>
     public string Developpeur { get; set; } = string.Empty;
+
+    public int Id
+    {
+        get => IdentifiantJeu;
+        set => IdentifiantJeu = value;
+    }
+
+    public string Title
+    {
+        get => Titre;
+        set => Titre = value;
+    }
+
+    public string ImageBoxArt
+    {
+        get => CheminImageBoite;
+        set => CheminImageBoite = value;
+    }
+
+    public int ConsoleId
+    {
+        get => IdentifiantConsole;
+        set => IdentifiantConsole = value;
+    }
+
+    public string Released
+    {
+        get => DateSortie;
+        set => DateSortie = value;
+    }
+
+    public string Developer
+    {
+        get => Developpeur;
+        set => Developpeur = value;
+    }
 }

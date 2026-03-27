@@ -19,4 +19,16 @@ public sealed class ElementListeSuccesAfficheLocal
     /// URL du badge affiché dans la grille.
     /// </summary>
     public string CheminImageBadge { get; set; } = string.Empty;
+
+    public int AchievementId
+    {
+        get => IdentifiantSucces;
+        set => IdentifiantSucces = value;
+    }
+
+    public string Title
+    {
+        get => Titre;
+        set => Titre = value;
+    }
 }

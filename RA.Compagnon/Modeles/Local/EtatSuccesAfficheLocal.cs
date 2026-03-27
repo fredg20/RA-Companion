@@ -44,4 +44,22 @@ public sealed class EtatSuccesAfficheLocal
     /// Texte de remplacement affiché quand aucun visuel n'est disponible.
     /// </summary>
     public string TexteVisuel { get; set; } = string.Empty;
+
+    public int Id
+    {
+        get => IdentifiantJeu;
+        set => IdentifiantJeu = value;
+    }
+
+    public int AchievementId
+    {
+        get => IdentifiantSucces;
+        set => IdentifiantSucces = value;
+    }
+
+    public string Title
+    {
+        get => Titre;
+        set => Titre = value;
+    }
 }
