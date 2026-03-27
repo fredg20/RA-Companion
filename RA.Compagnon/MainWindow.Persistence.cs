@@ -1,8 +1,8 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 using SystemControls = System.Windows.Controls;
 
 namespace RA.Compagnon;
@@ -10,7 +10,7 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /// <summary>
-    /// R�applique le dernier jeu sauvegard� pour �viter une fen�tre vide au d�marrage.
+    /// Réapplique le dernier jeu sauvegardé pour éviter une fenêtre vide au démarrage.
     /// </summary>
     private Task AppliquerDernierJeuSauvegardeAsync()
     {
@@ -103,6 +103,12 @@ public partial class MainWindow
         )
             ? Visibility.Collapsed
             : Visibility.Visible;
+        TexteFaisabilitePremierSuccesNonDebloque.Text = succesSauvegarde.DetailsFaisabilite;
+        TexteFaisabilitePremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesSauvegarde.DetailsFaisabilite
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
         {
             ImageSource? imageSucces = await ChargerImageDistanteAsync(
@@ -146,12 +152,16 @@ public partial class MainWindow
             listeSauvegardee.Achievements.Select(succesSauvegarde =>
                 ConstruireBadgeGrilleSuccesAsync(
                     identifiantJeu,
-                    new GameAchievementV2
+                    new SuccesGrilleAffiche
                     {
                         IdentifiantSucces = succesSauvegarde.AchievementId,
                         Titre = succesSauvegarde.Title,
-                    },
-                    succesSauvegarde.CheminImageBadge
+                        UrlBadge = succesSauvegarde.CheminImageBadge,
+                        EstDebloque = !succesSauvegarde.CheminImageBadge.Contains(
+                            "_lock",
+                            StringComparison.OrdinalIgnoreCase
+                        ),
+                    }
                 )
             )
         );
@@ -273,6 +283,11 @@ public partial class MainWindow
             && string.Equals(
                 precedent.DetailsPoints,
                 courant.DetailsPoints,
+                StringComparison.Ordinal
+            )
+            && string.Equals(
+                precedent.DetailsFaisabilite,
+                courant.DetailsFaisabilite,
                 StringComparison.Ordinal
             )
             && precedent.EstEpingleManuellement == courant.EstEpingleManuellement

@@ -3,8 +3,8 @@
 public partial class MainWindow
 {
     /// <summary>
-     /// Active uniquement les rafraîchissements API.
-     /// </summary>
+    /// Active uniquement les rafraîchissements API.
+    /// </summary>
     private void DemarrerActualisationAutomatique()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -65,4 +65,3 @@ public partial class MainWindow
         _dernierResumeUtilisateurCharge = null;
     }
 }
-

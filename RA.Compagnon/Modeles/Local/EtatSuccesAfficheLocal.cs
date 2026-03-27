@@ -31,6 +31,11 @@ public sealed class EtatSuccesAfficheLocal
     public string DetailsPoints { get; set; } = string.Empty;
 
     /// <summary>
+    /// Indication de faisabilité affichée sous les détails du succès.
+    /// </summary>
+    public string DetailsFaisabilite { get; set; } = string.Empty;
+
+    /// <summary>
     /// Indique si ce succès a été épinglé manuellement depuis la grille.
     /// </summary>
     public bool EstEpingleManuellement { get; set; }

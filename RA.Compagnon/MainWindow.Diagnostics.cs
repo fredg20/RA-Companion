@@ -51,4 +51,3 @@ public partial class MainWindow
         _chronometreDiagnosticChangementJeu = null;
     }
 }
-

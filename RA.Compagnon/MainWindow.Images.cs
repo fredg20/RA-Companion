@@ -136,4 +136,3 @@ public partial class MainWindow
         return Path.Combine(dossierCache, nomFichier);
     }
 }
-

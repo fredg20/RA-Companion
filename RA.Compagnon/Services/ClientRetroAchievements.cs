@@ -1,17 +1,18 @@
-using System.IO;
+Ôªøusing System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Achievement;
+using RA.Compagnon.Modeles.Api.V2.Feed;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Api.V2.System;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
 /// <summary>
-/// Encapsule les appels minimaux ‡ l'API RetroAchievements pour le MVP.
+/// Encapsule les appels minimaux √† l'API RetroAchievements pour le MVP.
 /// </summary>
 public sealed class ClientRetroAchievements
 {
@@ -39,7 +40,7 @@ public sealed class ClientRetroAchievements
     private static readonly Dictionary<string, JeuUtilisateurCache> _cacheJeuxUtilisateur = [];
 
     /// <summary>
-    /// RÈcupËre le profil utilisateur minimal nÈcessaire ‡ l'affichage du jeu en cours.
+    /// R√©cup√®re le profil utilisateur minimal n√©cessaire √† l'affichage du jeu en cours.
     /// </summary>
     public static async Task<UserProfileV2> ObtenirProfilUtilisateurAsync(
         string pseudo,
@@ -55,7 +56,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -85,10 +86,10 @@ public sealed class ClientRetroAchievements
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
         UserProfileV2? profil = await JsonSerializer.DeserializeAsync<UserProfileV2>(
-                fluxReponse,
-                OptionsJson,
-                jetonAnnulation
-            );
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
 
         if (profil is null || string.IsNullOrWhiteSpace(profil.User))
         {
@@ -99,7 +100,7 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre le rÈsumÈ utilisateur utile ‡ l'en-tÍte de la modale compte.
+    /// R√©cup√®re le r√©sum√© utilisateur utile √† l'en-t√™te de la modale compte.
     /// </summary>
     public static async Task<UserSummaryV2> ObtenirResumeUtilisateurAsync(
         string pseudo,
@@ -115,7 +116,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -145,15 +146,15 @@ public sealed class ClientRetroAchievements
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
         UserSummaryV2? resume = await JsonSerializer.DeserializeAsync<UserSummaryV2>(
-                fluxReponse,
-                OptionsJson,
-                jetonAnnulation
-            );
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
 
         if (resume is null)
         {
             throw new InvalidOperationException(
-                "La rÈponse du rÈsumÈ utilisateur RetroAchievements est vide."
+                "La r√©ponse du r√©sum√© utilisateur RetroAchievements est vide."
             );
         }
 
@@ -161,7 +162,172 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre les donnÈes du jeu ciblÈ ainsi que la progression de l'utilisateur.
+    /// R√©cup√®re les points hardcore et softcore d'un utilisateur.
+    /// </summary>
+    public static async Task<UserPointsV2> ObtenirPointsUtilisateurAsync(
+        string pseudo,
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+
+        string cheminRequete =
+            $"API_GetUserPoints.php?u={Uri.EscapeDataString(pseudo)}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        UserPointsV2? points = await JsonSerializer.DeserializeAsync<UserPointsV2>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return points ?? new UserPointsV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re les r√©compenses visibles d'un utilisateur.
+    /// </summary>
+    public static async Task<UserAwardsResponseV2> ObtenirRecompensesUtilisateurAsync(
+        string pseudo,
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+
+        string cheminRequete =
+            $"API_GetUserAwards.php?u={Uri.EscapeDataString(pseudo)}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        UserAwardsResponseV2? recompenses =
+            await JsonSerializer.DeserializeAsync<UserAwardsResponseV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            );
+
+        return recompenses ?? new UserAwardsResponseV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re la progression d'un utilisateur sur une liste pr√©cise de jeux.
+    /// </summary>
+    public static async Task<UserProgressResponseV2> ObtenirProgressionUtilisateurAsync(
+        string pseudo,
+        string cleApiWeb,
+        IEnumerable<int> identifiantsJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+
+        List<int> ids = [.. identifiantsJeu.Where(id => id > 0).Distinct()];
+
+        if (ids.Count == 0)
+        {
+            throw new ArgumentException(
+                "Au moins un identifiant de jeu valide est requis.",
+                nameof(identifiantsJeu)
+            );
+        }
+
+        string listeIds = string.Join(",", ids);
+        string cheminRequete =
+            $"API_GetUserProgress.php?u={Uri.EscapeDataString(pseudo)}&i={Uri.EscapeDataString(listeIds)}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        UserProgressResponseV2? progression =
+            await JsonSerializer.DeserializeAsync<UserProgressResponseV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            );
+
+        return progression ?? new UserProgressResponseV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re les claims d'un utilisateur.
+    /// </summary>
+    public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsUtilisateurAsync(
+        string pseudo,
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+
+        string cheminRequete =
+            $"API_GetUserClaims.php?u={Uri.EscapeDataString(pseudo)}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<UserClaimV2>? claims = await JsonSerializer.DeserializeAsync<List<UserClaimV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return claims ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re les demandes de sets d'un utilisateur.
+    /// </summary>
+    public static async Task<UserSetRequestsResponseV2> ObtenirDemandesSetsUtilisateurAsync(
+        string pseudo,
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+
+        string cheminRequete =
+            $"API_GetUserSetRequests.php?u={Uri.EscapeDataString(pseudo)}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        UserSetRequestsResponseV2? demandes =
+            await JsonSerializer.DeserializeAsync<UserSetRequestsResponseV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            );
+
+        return demandes ?? new UserSetRequestsResponseV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re les donn√©es du jeu cibl√© ainsi que la progression de l'utilisateur.
     /// </summary>
     public static async Task<GameInfoAndUserProgressV2> ObtenirJeuEtProgressionUtilisateurAsync(
         string pseudo,
@@ -178,7 +344,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -225,13 +391,13 @@ public sealed class ClientRetroAchievements
 
         if (jeu is null)
         {
-            throw new InvalidOperationException("La rÈponse du jeu RetroAchievements est vide.");
+            throw new InvalidOperationException("La r√©ponse du jeu RetroAchievements est vide.");
         }
 
         if (string.IsNullOrWhiteSpace(jeu.Title))
         {
             throw new InvalidOperationException(
-                "Les donnÈes du jeu RetroAchievements sont incomplËtes."
+                "Les donn√©es du jeu RetroAchievements sont incompl√®tes."
             );
         }
 
@@ -241,7 +407,299 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre les empreintes officielles connues par RetroAchievements pour un jeu donnÈ.
+    /// R√©cup√®re le r√©sum√© simple d'un jeu.
+    /// </summary>
+    public static async Task<GameSummaryV2> ObtenirResumeJeuAsync(
+        string cleApiWeb,
+        int identifiantJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+        ValiderIdentifiantJeu(identifiantJeu);
+
+        string cheminRequete =
+            $"API_GetGame.php?i={identifiantJeu}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        GameSummaryV2? jeu = await JsonSerializer.DeserializeAsync<GameSummaryV2>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return jeu ?? new GameSummaryV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re les d√©tails √©tendus d'un jeu.
+    /// </summary>
+    public static async Task<GameExtendedDetailsV2> ObtenirDetailsEtendusJeuAsync(
+        string cleApiWeb,
+        int identifiantJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+        ValiderIdentifiantJeu(identifiantJeu);
+
+        string cheminRequete =
+            $"API_GetGameExtended.php?i={identifiantJeu}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        GameExtendedDetailsV2? jeu = await JsonSerializer.DeserializeAsync<GameExtendedDetailsV2>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return jeu ?? new GameExtendedDetailsV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re les statistiques de progression d'un jeu.
+    /// </summary>
+    public static async Task<GameProgressionV2> ObtenirProgressionJeuAsync(
+        string cleApiWeb,
+        int identifiantJeu,
+        bool prefererHardcore = false,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+        ValiderIdentifiantJeu(identifiantJeu);
+
+        string parametreHardcore = prefererHardcore ? "&h=1" : string.Empty;
+        string cheminRequete =
+            $"API_GetGameProgression.php?i={identifiantJeu}{parametreHardcore}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        GameProgressionV2? progression = await JsonSerializer.DeserializeAsync<GameProgressionV2>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return progression ?? new GameProgressionV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re la distribution des d√©blocages d'un jeu.
+    /// </summary>
+    public static async Task<GameUnlockDistributionV2> ObtenirDistributionSuccesJeuAsync(
+        string cleApiWeb,
+        int identifiantJeu,
+        bool hardcore = false,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+        ValiderIdentifiantJeu(identifiantJeu);
+
+        string parametreHardcore = hardcore ? "&h=1" : string.Empty;
+        string cheminRequete =
+            $"API_GetAchievementDistribution.php?i={identifiantJeu}{parametreHardcore}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        GameUnlockDistributionV2? distribution =
+            await JsonSerializer.DeserializeAsync<GameUnlockDistributionV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            );
+
+        return distribution ?? new GameUnlockDistributionV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re le rang et le score d'un utilisateur sur un jeu.
+    /// </summary>
+    public static async Task<IReadOnlyList<GameRankAndScoreEntryV2>> ObtenirRangEtScoreJeuAsync(
+        string pseudo,
+        string cleApiWeb,
+        int identifiantJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderIdentificationUtilisateur(pseudo, cleApiWeb);
+        ValiderIdentifiantJeu(identifiantJeu);
+
+        string cheminRequete =
+            $"API_GetUserGameRankAndScore.php?u={Uri.EscapeDataString(pseudo)}&g={identifiantJeu}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<GameRankAndScoreEntryV2>? resultats = await JsonSerializer.DeserializeAsync<
+            List<GameRankAndScoreEntryV2>
+        >(fluxReponse, OptionsJson, jetonAnnulation);
+
+        return resultats ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re les r√©compenses de jeu r√©cemment attribu√©es sur le site.
+    /// </summary>
+    public static async Task<RecentGameAwardsResponseV2> ObtenirRecompensesJeuxRecentesAsync(
+        string cleApiWeb,
+        DateOnly? dateDepart = null,
+        int nombreResultats = 25,
+        int decalage = 0,
+        string? naturesRecompense = null,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        string cheminRequete =
+            $"API_GetRecentGameAwards.php?c={nombreResultats}&o={decalage}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        if (dateDepart is not null)
+        {
+            cheminRequete += $"&d={dateDepart.Value:yyyy-MM-dd}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(naturesRecompense))
+        {
+            cheminRequete += $"&k={Uri.EscapeDataString(naturesRecompense)}";
+        }
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        RecentGameAwardsResponseV2? recompenses =
+            await JsonSerializer.DeserializeAsync<RecentGameAwardsResponseV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            );
+
+        return recompenses ?? new RecentGameAwardsResponseV2();
+    }
+
+    /// <summary>
+    /// R√©cup√®re l'ensemble des claims actives du site.
+    /// </summary>
+    public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsActivesAsync(
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        string cheminRequete = $"API_GetActiveClaims.php?y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<UserClaimV2>? claims = await JsonSerializer.DeserializeAsync<List<UserClaimV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return claims ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re l'ensemble des claims inactives du site pour un type donn√©.
+    /// </summary>
+    public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsInactivesAsync(
+        string cleApiWeb,
+        int natureClaim = 1,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        if (natureClaim <= 0)
+        {
+            throw new ArgumentException("La nature de claim est invalide.", nameof(natureClaim));
+        }
+
+        string cheminRequete =
+            $"API_GetClaims.php?k={natureClaim}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<UserClaimV2>? claims = await JsonSerializer.DeserializeAsync<List<UserClaimV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return claims ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re le top 10 des utilisateurs class√©s par points hardcore.
+    /// </summary>
+    public static async Task<IReadOnlyList<TopRankedUserV2>> ObtenirTopDixUtilisateursAsync(
+        string cleApiWeb,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        string cheminRequete = $"API_GetTopTenUsers.php?y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<TopRankedUserV2>? utilisateurs = await JsonSerializer.DeserializeAsync<
+            List<TopRankedUserV2>
+        >(fluxReponse, OptionsJson, jetonAnnulation);
+
+        return utilisateurs ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re les empreintes officielles connues par RetroAchievements pour un jeu donn√©.
     /// </summary>
     public static async Task<IReadOnlyList<GameHashV2>> ObtenirHashesJeuAsync(
         string cleApiWeb,
@@ -252,7 +710,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -275,22 +733,19 @@ public sealed class ClientRetroAchievements
         reponse.EnsureSuccessStatusCode();
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
-        GameHashesResponseV2? hashes =
-            await JsonSerializer.DeserializeAsync<GameHashesResponseV2>(
-                fluxReponse,
-                OptionsJson,
-                jetonAnnulation
-            );
+        GameHashesResponseV2? hashes = await JsonSerializer.DeserializeAsync<GameHashesResponseV2>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
 
         return hashes?.Results ?? [];
     }
 
     /// <summary>
-    /// RÈcupËre la liste complËte des jeux d'un systËme avec leurs hashes officiels.
+    /// R√©cup√®re la liste compl√®te des jeux d'un syst√®me avec leurs hashes officiels.
     /// </summary>
-    public static async Task<
-        IReadOnlyList<GameListEntryV2>
-    > ObtenirJeuxSystemeAvecHashesAsync(
+    public static async Task<IReadOnlyList<GameListEntryV2>> ObtenirJeuxSystemeAvecHashesAsync(
         string cleApiWeb,
         int identifiantConsole,
         CancellationToken jetonAnnulation = default
@@ -299,7 +754,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -330,9 +785,11 @@ public sealed class ClientRetroAchievements
         reponse.EnsureSuccessStatusCode();
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
-        List<GameListEntryV2>? jeux = await JsonSerializer.DeserializeAsync<
-            List<GameListEntryV2>
-        >(fluxReponse, OptionsJson, jetonAnnulation);
+        List<GameListEntryV2>? jeux = await JsonSerializer.DeserializeAsync<List<GameListEntryV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
 
         IReadOnlyList<GameListEntryV2> resultat = jeux ?? [];
         _cacheJeuxSysteme[identifiantConsole] = new JeuxSystemeCachees(resultat);
@@ -340,7 +797,7 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre la liste des consoles et leur icÙne officielle, avec cache mÈmoire local.
+    /// R√©cup√®re la liste des consoles et leur ic√¥ne officielle, avec cache m√©moire local.
     /// </summary>
     public static async Task<IReadOnlyList<ConsoleV2>> ObtenirConsolesAsync(
         string cleApiWeb,
@@ -350,7 +807,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -372,9 +829,11 @@ public sealed class ClientRetroAchievements
         reponse.EnsureSuccessStatusCode();
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
-        List<ConsoleV2>? consoles = await JsonSerializer.DeserializeAsync<
-            List<ConsoleV2>
-        >(fluxReponse, OptionsJson, jetonAnnulation);
+        List<ConsoleV2>? consoles = await JsonSerializer.DeserializeAsync<List<ConsoleV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
 
         _cacheConsoles = consoles ?? [];
         _dateMiseEnCacheConsoles = DateTimeOffset.UtcNow;
@@ -382,12 +841,100 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre la liste des jeux rÈcemment jouÈs pour retrouver un dernier jeu
-    /// lorsqu'aucun jeu actif n'est remontÈ.
+    /// R√©cup√®re la liste compl√®te des syst√®mes RetroAchievements.
     /// </summary>
-    public static async Task<
-        IReadOnlyList<RecentlyPlayedGameV2>
-    > ObtenirJeuxRecemmentJouesAsync(
+    public static async Task<IReadOnlyList<SystemEntryV2>> ObtenirSystemesAsync(
+        string cleApiWeb,
+        bool seulementActifs = false,
+        bool seulementSystemesDeJeu = false,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        string cheminRequete = $"API_GetConsoleIDs.php?y={Uri.EscapeDataString(cleApiWeb)}";
+
+        if (seulementActifs)
+        {
+            cheminRequete += "&a=1";
+        }
+
+        if (seulementSystemesDeJeu)
+        {
+            cheminRequete += "&g=1";
+        }
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<SystemEntryV2>? systemes = await JsonSerializer.DeserializeAsync<List<SystemEntryV2>>(
+            fluxReponse,
+            OptionsJson,
+            jetonAnnulation
+        );
+
+        return systemes ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re la liste compl√®te des jeux d'un syst√®me, avec ou sans hashes.
+    /// </summary>
+    public static async Task<IReadOnlyList<SystemGameEntryV2>> ObtenirJeuxSystemeAsync(
+        string cleApiWeb,
+        int identifiantConsole,
+        bool seulementJeuxAvecSucces = false,
+        bool inclureHashes = false,
+        int nombreResultats = 0,
+        int decalage = 0,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        ValiderCleApi(cleApiWeb);
+
+        if (identifiantConsole <= 0)
+        {
+            throw new ArgumentException(
+                "L'identifiant de la console est invalide.",
+                nameof(identifiantConsole)
+            );
+        }
+
+        string cheminRequete =
+            $"API_GetGameList.php?i={identifiantConsole}&o={decalage}&c={nombreResultats}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        if (seulementJeuxAvecSucces)
+        {
+            cheminRequete += "&f=1";
+        }
+
+        if (inclureHashes)
+        {
+            cheminRequete += "&h=1";
+        }
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        List<SystemGameEntryV2>? jeux = await JsonSerializer.DeserializeAsync<
+            List<SystemGameEntryV2>
+        >(fluxReponse, OptionsJson, jetonAnnulation);
+
+        return jeux ?? [];
+    }
+
+    /// <summary>
+    /// R√©cup√®re la liste des jeux r√©cemment jou√©s pour retrouver un dernier jeu
+    /// lorsqu'aucun jeu actif n'est remont√©.
+    /// </summary>
+    public static async Task<IReadOnlyList<RecentlyPlayedGameV2>> ObtenirJeuxRecemmentJouesAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -401,7 +948,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -424,11 +971,9 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// RÈcupËre les succËs dÈbloquÈs par un utilisateur sur une plage de temps.
+    /// R√©cup√®re les succ√®s d√©bloqu√©s par un utilisateur sur une plage de temps.
     /// </summary>
-    public static async Task<
-        IReadOnlyList<AchievementUnlockV2>
-    > ObtenirSuccesDebloquesEntreAsync(
+    public static async Task<IReadOnlyList<AchievementUnlockV2>> ObtenirSuccesDebloquesEntreAsync(
         string pseudo,
         string cleApiWeb,
         DateTimeOffset debut,
@@ -444,7 +989,7 @@ public sealed class ClientRetroAchievements
         if (string.IsNullOrWhiteSpace(cleApiWeb))
         {
             throw new ArgumentException(
-                "La clÈ API RetroAchievements est obligatoire.",
+                "La cl√© API RetroAchievements est obligatoire.",
                 nameof(cleApiWeb)
             );
         }
@@ -470,7 +1015,7 @@ public sealed class ClientRetroAchievements
     }
 
     /// <summary>
-    /// DÈtecte quelques formulations courantes indiquant que l'utilisateur n'existe pas
+    /// D√©tecte quelques formulations courantes indiquant que l'utilisateur n'existe pas
     /// ou n'est pas accessible.
     /// </summary>
     private static bool ContientIndicationUtilisateurInaccessible(string contenuErreur)
@@ -490,8 +1035,40 @@ public sealed class ClientRetroAchievements
             || contenuNormalise.Contains("no user", StringComparison.Ordinal);
     }
 
+    private static void ValiderIdentificationUtilisateur(string pseudo, string cleApiWeb)
+    {
+        if (string.IsNullOrWhiteSpace(pseudo))
+        {
+            throw new ArgumentException("Le pseudo utilisateur est obligatoire.", nameof(pseudo));
+        }
+
+        ValiderCleApi(cleApiWeb);
+    }
+
+    private static void ValiderCleApi(string cleApiWeb)
+    {
+        if (string.IsNullOrWhiteSpace(cleApiWeb))
+        {
+            throw new ArgumentException(
+                "La cl√© API RetroAchievements est obligatoire.",
+                nameof(cleApiWeb)
+            );
+        }
+    }
+
+    private static void ValiderIdentifiantJeu(int identifiantJeu)
+    {
+        if (identifiantJeu <= 0)
+        {
+            throw new ArgumentException(
+                "L'identifiant du jeu est invalide.",
+                nameof(identifiantJeu)
+            );
+        }
+    }
+
     /// <summary>
-    /// ReprÈsente une liste de jeux systËme gardÈe en mÈmoire pendant une durÈe Ètendue.
+    /// Repr√©sente une liste de jeux syst√®me gard√©e en m√©moire pendant une dur√©e √©tendue.
     /// </summary>
     private sealed class JeuxSystemeCachees
     {
@@ -506,8 +1083,3 @@ public sealed class ClientRetroAchievements
         public DateTimeOffset DateMiseEnCacheUtc { get; }
     }
 }
-
-
-
-
-

@@ -1,5 +1,4 @@
-using RA.Compagnon.Modeles.Api;
-using RA.Compagnon.Modeles.Api.V2.User;
+﻿using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
@@ -11,7 +10,7 @@ public partial class MainWindow
         try
         {
             IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents =
-                await ClientRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
+                await _serviceUtilisateurRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
@@ -41,9 +40,4 @@ public partial class MainWindow
 
         return string.Empty;
     }
-
 }
-
-
-
-

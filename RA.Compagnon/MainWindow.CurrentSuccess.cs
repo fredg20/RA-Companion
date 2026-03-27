@@ -1,17 +1,17 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon;
 
 public partial class MainWindow
 {
     /// <summary>
-    /// R�initialise la zone du premier succ�s non d�bloqu�.
+    /// Réinitialise la zone du premier succès non débloqué.
     /// </summary>
     private void ReinitialiserPremierSuccesNonDebloque()
     {
@@ -26,10 +26,13 @@ public partial class MainWindow
         TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
         TextePointsPremierSuccesNonDebloque.Text = string.Empty;
         TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+        TexteFaisabilitePremierSuccesNonDebloque.Text = string.Empty;
+        TexteFaisabilitePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+        MettreAJourNavigationSuccesEnCours(null);
     }
 
     /// <summary>
-    /// R�initialise la grille de tous les r�trosucc�s.
+    /// Réinitialise la grille de tous les rétrosuccès.
     /// </summary>
     private void ReinitialiserGrilleTousSucces()
     {
@@ -42,7 +45,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Efface les zones de r�trosucc�s et leur �tat persist� pour �viter de garder ceux d'un ancien jeu.
+    /// Efface les zones de rétrosuccès et leur état persisté pour éviter de garder ceux d'un ancien jeu.
     /// </summary>
     private void ReinitialiserSuccesAffichesEtPersistes()
     {
@@ -68,7 +71,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met � jour l'affichage des succ�s du jeu courant.
+    /// Met • jour l'affichage des succès du jeu courant.
     /// </summary>
     private async Task MettreAJourSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
@@ -84,7 +87,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Charge la grille compl�te des succ�s sans bloquer l'affichage du succ�s principal.
+    /// Charge la grille complète des succès sans bloquer l'affichage du succès principal.
     /// </summary>
     private void DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(
         int identifiantJeu,
@@ -95,7 +98,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Ex�cute le remplissage complet de la grille en arri�re-plan et ignore les erreurs non critiques.
+    /// Exécute le remplissage complet de la grille en arrière-plan et ignore les erreurs non critiques.
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesEnArrierePlanAsync(
         int identifiantJeu,
@@ -108,12 +111,12 @@ public partial class MainWindow
         }
         catch
         {
-            // La grille compl�te enrichit l'interface, mais ne doit pas bloquer le rendu principal.
+            // La grille complète enrichit l'interface, mais ne doit pas bloquer le rendu principal.
         }
     }
 
     /// <summary>
-    /// Choisit le r�trosucc�s en cours en suivant l'ordre r�el de la grille quand aucun badge n'est s�lectionn�.
+    /// Choisit le rétrosuccès en cours en suivant l'ordre réel de la grille quand aucun badge n'est sélectionné.
     /// </summary>
     private (
         GameAchievementV2? Succes,
@@ -159,7 +162,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met � jour la carte du premier succ�s restant � d�bloquer.
+    /// Met • jour la carte du premier succès restant • débloquer.
     /// </summary>
     private async Task MettreAJourPremierSuccesNonDebloqueAsync(
         int identifiantJeu,
@@ -178,7 +181,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique le succ�s choisi � la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
+    /// Applique le succès choisi à la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
     /// </summary>
     private async Task AppliquerSuccesEnCoursAsync(
         int identifiantJeu,
@@ -192,14 +195,17 @@ public partial class MainWindow
             ImagePremierSuccesNonDebloque.Source = null;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
             TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteImagePremierSuccesNonDebloque.Text = "Tous les succ�s sont d�bloqu�s";
-            TexteTitrePremierSuccesNonDebloque.Text = "Tous les succ�s sont obtenus";
+            TexteImagePremierSuccesNonDebloque.Text = "Tous les succès sont débloqués";
+            TexteTitrePremierSuccesNonDebloque.Text = "Tous les succès sont obtenus";
             TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TexteDescriptionPremierSuccesNonDebloque.Text =
-                "Ce jeu ne contient plus de succ�s � d�bloquer.";
+                "Ce jeu ne contient plus de succès • débloquer.";
             TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TextePointsPremierSuccesNonDebloque.Text = string.Empty;
             TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            TexteFaisabilitePremierSuccesNonDebloque.Text = string.Empty;
+            TexteFaisabilitePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            MettreAJourNavigationSuccesEnCours(null);
             SauvegarderDernierSuccesAffiche(
                 new EtatSuccesAfficheLocal
                 {
@@ -208,22 +214,26 @@ public partial class MainWindow
                     Titre = TexteTitrePremierSuccesNonDebloque.Text,
                     Description = TexteDescriptionPremierSuccesNonDebloque.Text,
                     DetailsPoints = string.Empty,
+                    DetailsFaisabilite = string.Empty,
                     TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
                 }
             );
             return;
         }
 
-        bool succesDebloque = SuccesEstDebloque(succesSelectionne);
-        string urlBadge = ConstruireUrlBadgeDepuisNom(succesSelectionne.BadgeName, !succesDebloque);
-        ImageSource? imageSucces = await ChargerImageDistanteAsync(urlBadge);
+        SuccesAffiche succesAffiche = _servicePresentationSucces.Construire(
+            succesSelectionne,
+            _succesJeuCourant,
+            identifiantJeu
+        );
+        ImageSource? imageSucces = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
 
         if (imageSucces is not null)
         {
-            ImagePremierSuccesNonDebloque.Source = succesDebloque
+            ImagePremierSuccesNonDebloque.Source = succesAffiche.EstDebloque
                 ? imageSucces
                 : ConvertirImageEnNoirEtBlanc(imageSucces);
-            ImagePremierSuccesNonDebloque.Opacity = succesDebloque ? 1 : 0.58;
+            ImagePremierSuccesNonDebloque.Opacity = succesAffiche.EstDebloque ? 1 : 0.58;
             ImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
             TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
             AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
@@ -238,20 +248,26 @@ public partial class MainWindow
             TexteImagePremierSuccesNonDebloque.Text = "Visuel indisponible";
         }
 
-        TexteTitrePremierSuccesNonDebloque.Text = succesSelectionne.Title;
+        TexteTitrePremierSuccesNonDebloque.Text = succesAffiche.Titre;
         TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-        string descriptionSucces = string.IsNullOrWhiteSpace(succesSelectionne.Description)
-            ? "Aucune description disponible."
-            : await _serviceTraductionTexte.TraduireVersFrancaisAsync(
-                succesSelectionne.Description
-            );
+        string descriptionSucces = await _serviceTraductionTexte.TraduireVersFrancaisAsync(
+            succesAffiche.Description
+        );
         TexteDescriptionPremierSuccesNonDebloque.Text = descriptionSucces.Trim();
         TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
-        string detailsPoints = ConstruireDetailsPointsSucces(succesSelectionne);
-        TextePointsPremierSuccesNonDebloque.Text = detailsPoints;
-        TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(detailsPoints)
+        TextePointsPremierSuccesNonDebloque.Text = succesAffiche.DetailsPoints;
+        TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesAffiche.DetailsPoints
+        )
             ? Visibility.Collapsed
             : Visibility.Visible;
+        TexteFaisabilitePremierSuccesNonDebloque.Text = succesAffiche.DetailsFaisabilite;
+        TexteFaisabilitePremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+            succesAffiche.DetailsFaisabilite
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        MettreAJourNavigationSuccesEnCours(succesSelectionne);
         if (doitSauvegarder)
         {
             SauvegarderDernierSuccesAffiche(
@@ -262,82 +278,152 @@ public partial class MainWindow
                     Titre = TexteTitrePremierSuccesNonDebloque.Text,
                     Description = TexteDescriptionPremierSuccesNonDebloque.Text,
                     DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
+                    DetailsFaisabilite = TexteFaisabilitePremierSuccesNonDebloque.Text,
                     EstEpingleManuellement = estEpingleManuellement,
-                    CheminImageBadge = urlBadge,
+                    CheminImageBadge = succesAffiche.UrlBadge,
                     TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
                 }
             );
         }
     }
 
-    /// <summary>
-    /// Construit l'URL publique d'un badge de succ�s.
-    /// </summary>
-    private static string ConstruireUrlBadgeDepuisNom(string nomBadge, bool versionVerrouillee)
+    private async void BoutonSuccesEnCoursPrecedent_Click(object sender, RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(nomBadge))
+        e.Handled = true;
+        await NaviguerSuccesEnCoursAsync(-1);
+    }
+
+    private async void BoutonSuccesEnCoursSuivant_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        await NaviguerSuccesEnCoursAsync(1);
+    }
+
+    private async Task NaviguerSuccesEnCoursAsync(int direction)
+    {
+        if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count <= 1)
         {
-            return string.Empty;
+            return;
         }
 
-        string badgeNettoye = nomBadge.Trim();
+        List<GameAchievementV2> succesOrdonnes =
+        [
+            .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, _succesJeuCourant),
+        ];
 
-        if (badgeNettoye.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        GameAchievementV2? succesCourant = ObtenirSuccesEnCoursSelectionne(succesOrdonnes);
+
+        if (succesCourant is null)
         {
-            return badgeNettoye;
+            return;
         }
 
-        if (badgeNettoye.StartsWith('/'))
+        int indexCourant = succesOrdonnes.FindIndex(item => item.Id == succesCourant.Id);
+
+        if (indexCourant < 0)
         {
-            return ConstruireUrlImageRetroAchievements(badgeNettoye);
+            return;
         }
 
-        string suffixe = versionVerrouillee ? "_lock" : string.Empty;
-        return $"https://i.retroachievements.org/Badge/{badgeNettoye}{suffixe}.png";
+        int indexCible = Math.Clamp(indexCourant + direction, 0, succesOrdonnes.Count - 1);
+
+        if (indexCible == indexCourant)
+        {
+            return;
+        }
+
+        GameAchievementV2 succesCible = succesOrdonnes[indexCible];
+        _identifiantSuccesGrilleEpingle = succesCible.Id;
+        _identifiantSuccesGrilleTemporaire = null;
+        _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
+        RafraichirStyleBadgesGrilleSucces();
+
+        await AppliquerSuccesEnCoursAsync(_identifiantJeuSuccesCourant, succesCible, true, true);
+    }
+
+    private GameAchievementV2? ObtenirSuccesEnCoursSelectionne(
+        List<GameAchievementV2> succesOrdonnes
+    )
+    {
+        if (_identifiantSuccesGrilleTemporaire.HasValue)
+        {
+            GameAchievementV2? succesTemporaire = succesOrdonnes.FirstOrDefault(item =>
+                item.Id == _identifiantSuccesGrilleTemporaire.Value
+            );
+
+            if (succesTemporaire is not null)
+            {
+                return succesTemporaire;
+            }
+        }
+
+        if (_identifiantSuccesGrilleEpingle.HasValue)
+        {
+            GameAchievementV2? succesEpingle = succesOrdonnes.FirstOrDefault(item =>
+                item.Id == _identifiantSuccesGrilleEpingle.Value
+            );
+
+            if (succesEpingle is not null)
+            {
+                return succesEpingle;
+            }
+        }
+
+        return SelectionnerSuccesEnCours(succesOrdonnes).Succes;
+    }
+
+    private void MettreAJourNavigationSuccesEnCours(GameAchievementV2? succesSelectionne)
+    {
+        if (BoutonSuccesEnCoursPrecedent is null || BoutonSuccesEnCoursSuivant is null)
+        {
+            return;
+        }
+
+        if (
+            _identifiantJeuSuccesCourant <= 0
+            || _succesJeuCourant.Count <= 1
+            || succesSelectionne is null
+        )
+        {
+            BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Collapsed;
+            BoutonSuccesEnCoursSuivant.Visibility = Visibility.Collapsed;
+            BoutonSuccesEnCoursPrecedent.IsEnabled = false;
+            BoutonSuccesEnCoursSuivant.IsEnabled = false;
+            TexteChevronSuccesEnCoursPrecedent.Opacity = 1;
+            TexteChevronSuccesEnCoursSuivant.Opacity = 1;
+            return;
+        }
+
+        List<GameAchievementV2> succesOrdonnes =
+        [
+            .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, _succesJeuCourant),
+        ];
+        int indexCourant = succesOrdonnes.FindIndex(item => item.Id == succesSelectionne.Id);
+
+        if (indexCourant < 0)
+        {
+            BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Collapsed;
+            BoutonSuccesEnCoursSuivant.Visibility = Visibility.Collapsed;
+            BoutonSuccesEnCoursPrecedent.IsEnabled = false;
+            BoutonSuccesEnCoursSuivant.IsEnabled = false;
+            TexteChevronSuccesEnCoursPrecedent.Opacity = 1;
+            TexteChevronSuccesEnCoursSuivant.Opacity = 1;
+            return;
+        }
+
+        BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Visible;
+        BoutonSuccesEnCoursSuivant.Visibility = Visibility.Visible;
+        BoutonSuccesEnCoursPrecedent.IsEnabled = indexCourant > 0;
+        BoutonSuccesEnCoursSuivant.IsEnabled = indexCourant < succesOrdonnes.Count - 1;
+        TexteChevronSuccesEnCoursPrecedent.Opacity = BoutonSuccesEnCoursPrecedent.IsEnabled
+            ? 1
+            : 0.38;
+        TexteChevronSuccesEnCoursSuivant.Opacity = BoutonSuccesEnCoursSuivant.IsEnabled ? 1 : 0.38;
     }
 
     /// <summary>
-    /// Traduit le type technique d'un succ�s en libell� fran�ais.
-    /// </summary>
-    private static string TraduireTypeSucces(string type)
-    {
-        return (type ?? string.Empty).Trim().ToLowerInvariant() switch
-        {
-            "progression" => "Succ�s de progression",
-            "win_condition" => "Succ�s de victoire",
-            "missable" => "Succ�s manquable",
-            _ => string.Empty,
-        };
-    }
-
-    /// <summary>
-    /// Construit la ligne de points affich�e pour un succ�s.
-    /// </summary>
-    private static string ConstruireDetailsPointsSucces(GameAchievementV2 succes)
-    {
-        List<string> segments = [];
-        string typeSucces = TraduireTypeSucces(succes.Type);
-
-        if (!string.IsNullOrWhiteSpace(typeSucces))
-        {
-            segments.Add(typeSucces);
-        }
-
-        if (succes.Points > 0)
-        {
-            segments.Add($"{succes.Points.ToString(CultureInfo.CurrentCulture)} points");
-        }
-
-        if (succes.TrueRatio > 0)
-        {
-            segments.Add($"{succes.TrueRatio.ToString(CultureInfo.CurrentCulture)} r�tropoints");
-        }
-
-        return string.Join(" � ", segments);
-    }
-
-    /// <summary>
-    /// Convertit une image en niveaux de gris pour l'affichage des succ�s verrouill�s.
+    /// Convertit une image en niveaux de gris pour l'affichage des succès verrouillés.
     /// </summary>
     private static ImageSource ConvertirImageEnNoirEtBlanc(ImageSource image)
     {

@@ -351,4 +351,3 @@ public partial class MainWindow
         return new CornerRadius(valeurParDefaut);
     }
 }
-

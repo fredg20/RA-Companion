@@ -19,6 +19,12 @@ public sealed class GameAchievementV2
     [JsonPropertyName("TrueRatio")]
     public int TrueRatio { get; set; }
 
+    [JsonPropertyName("NumAwarded")]
+    public int NumAwarded { get; set; }
+
+    [JsonPropertyName("NumAwardedHardcore")]
+    public int NumAwardedHardcore { get; set; }
+
     [JsonPropertyName("BadgeName")]
     public string BadgeName { get; set; } = string.Empty;
 

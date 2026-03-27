@@ -1,11 +1,11 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 using UiControls = Wpf.Ui.Controls;
@@ -51,7 +51,7 @@ public partial class MainWindow
                 MaxWidth = LargeurContenuModaleConnexion,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Password = _configurationConnexion.CleApiWeb,
-                PlaceholderText = "Cl� API",
+                PlaceholderText = "Clé API",
             };
 
             SystemControls.TextBlock texteErreur = new()
@@ -87,7 +87,7 @@ public partial class MainWindow
                         MaxWidth = LargeurContenuModaleConnexion,
                         Opacity = 0.84,
                         Text =
-                            "Entre ton pseudo et ta cl� Web API pour synchroniser ton dernier jeu jou�, ta progression et tes succ�s r�cents.",
+                            "Entre ton pseudo et ta clé Web API pour synchroniser ton dernier jeu joué, ta progression et tes succès récents.",
                         TextWrapping = TextWrapping.Wrap,
                         Margin = new Thickness(0, 0, 0, 14),
                     },
@@ -100,7 +100,7 @@ public partial class MainWindow
                         Margin = new Thickness(0, 10, 0, 0),
                         Opacity = 0.68,
                         Text =
-                            "Tu peux retrouver cette cl� depuis ton compte RetroAchievements, dans la section d�di�e � l'API Web.",
+                            "Tu peux retrouver cette clé depuis ton compte RetroAchievements, dans la section dédiée à l'API Web.",
                         TextWrapping = TextWrapping.Wrap,
                     },
                     texteErreur,
@@ -161,14 +161,14 @@ public partial class MainWindow
 
             if (string.IsNullOrWhiteSpace(pseudo) || string.IsNullOrWhiteSpace(cleApi))
             {
-                texteErreur.Text = "Renseigne ton pseudo et ta cl� Web API pour continuer.";
+                texteErreur.Text = "Renseigne ton pseudo et ta clé Web API pour continuer.";
                 texteErreur.Visibility = Visibility.Visible;
                 continue;
             }
 
             try
             {
-                await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(pseudo, cleApi);
+                await _serviceUtilisateurRetroAchievements.ObtenirProfilAsync(pseudo, cleApi);
             }
             catch (UtilisateurRetroAchievementsInaccessibleException exception)
             {
@@ -179,8 +179,8 @@ public partial class MainWindow
             catch (Exception exception)
             {
                 string messageErreur = string.IsNullOrWhiteSpace(exception.Message)
-                    ? "Impossible de v�rifier ce compte pour le moment. V�rifie ta connexion et r�essaie."
-                    : $"Impossible de v�rifier ce compte pour le moment. {exception.Message}";
+                    ? "Impossible de vérifier ce compte pour le moment. Vérifie ta connexion et réessaie."
+                    : $"Impossible de vérifier ce compte pour le moment. {exception.Message}";
                 texteErreur.Text = messageErreur;
                 texteErreur.Visibility = Visibility.Visible;
                 continue;
@@ -221,15 +221,18 @@ public partial class MainWindow
 
     private async Task AfficherModaleCompteAsync()
     {
-        UserProfileV2? profil = await ObtenirProfilUtilisateurPourModaleAsync();
-        UserSummaryV2? resume = await ObtenirResumeUtilisateurPourModaleAsync();
+        DonneesCompteUtilisateur donnees = await ObtenirDonneesComptePourModaleAsync();
+        CompteAffiche compte = _servicePresentationCompte.Construire(
+            donnees,
+            _configurationConnexion.Pseudo
+        );
         SystemControls.StackPanel contenu = new()
         {
             Width = 460,
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = new Thickness(0),
         };
-        contenu.Children.Add(ConstruireEnTeteAvatarCompte(profil));
+        contenu.Children.Add(ConstruireEnTeteAvatarCompte(compte));
         contenu.Children.Add(
             new SystemControls.TextBlock
             {
@@ -238,11 +241,11 @@ public partial class MainWindow
                 FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
-                Text = ObtenirTitreCompteAffiche(profil),
+                Text = compte.Titre,
                 TextWrapping = TextWrapping.Wrap,
             }
         );
-        if (!string.IsNullOrWhiteSpace(profil?.Motto))
+        if (!string.IsNullOrWhiteSpace(compte.Devise))
         {
             contenu.Children.Add(
                 new SystemControls.TextBlock
@@ -253,7 +256,7 @@ public partial class MainWindow
                     FontStyle = FontStyles.Italic,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
-                    Text = profil.Motto,
+                    Text = compte.Devise,
                     TextWrapping = TextWrapping.Wrap,
                 }
             );
@@ -263,34 +266,25 @@ public partial class MainWindow
             {
                 Margin = new Thickness(0, 12, 0, 12),
                 Opacity = 0.82,
-                Text =
-                    "Retrouve ici les informations principales de ton compte et g�re ta connexion en toute simplicit�.",
+                Text = compte.Introduction,
                 TextAlignment = TextAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,
             }
         );
-        contenu.Children.Add(
-            ConstruireBlocCompte("Compte", ConstruireLignesCompte(profil, resume))
-        );
-        contenu.Children.Add(ConstruireSeparateurBlocCompte());
-        contenu.Children.Add(
-            ConstruireBlocCompte("Progression", ConstruireLignesProgressionCompte(profil, resume))
-        );
-        IReadOnlyList<(string Libelle, string Valeur)> lignesActivite =
-            ConstruireLignesActiviteCompte(profil, resume);
-
-        if (lignesActivite.Count > 0)
+        for (int indexSection = 0; indexSection < compte.Sections.Count; indexSection++)
         {
-            contenu.Children.Add(ConstruireSeparateurBlocCompte());
-            contenu.Children.Add(ConstruireBlocCompte("Activit�", lignesActivite));
+            if (indexSection > 0)
+            {
+                contenu.Children.Add(ConstruireSeparateurBlocCompte());
+            }
+
+            contenu.Children.Add(ConstruireBlocCompte(compte.Sections[indexSection]));
         }
 
-        if (resume is not null && resume.RecentlyPlayed.Count > 0)
+        if (compte.JeuxRecemmentJoues.Count > 0)
         {
             contenu.Children.Add(ConstruireSeparateurBlocCompte());
-            contenu.Children.Add(
-                ConstruireBlocJeuxRecemmentJoues(resume.RecentlyPlayed.Take(3).ToList())
-            );
+            contenu.Children.Add(ConstruireBlocJeuxRecemmentJoues(compte.JeuxRecemmentJoues));
         }
         SystemControls.Border conteneurContenu = new()
         {
@@ -334,68 +328,51 @@ public partial class MainWindow
 
         if (resultat == UiControls.ContentDialogResult.Secondary)
         {
-            OuvrirProfilRetroAchievements(profil?.User ?? _configurationConnexion.Pseudo);
+            OuvrirProfilRetroAchievements(compte.NomUtilisateur);
         }
     }
 
-    private async Task<UserSummaryV2?> ObtenirResumeUtilisateurPourModaleAsync()
+    private async Task<DonneesCompteUtilisateur> ObtenirDonneesComptePourModaleAsync()
     {
-        if (_dernierResumeUtilisateurCharge is not null)
-        {
-            return _dernierResumeUtilisateurCharge;
-        }
-
         if (!ConfigurationConnexionEstComplete())
         {
-            return null;
+            return new DonneesCompteUtilisateur
+            {
+                Profil = _dernierProfilUtilisateurCharge,
+                Resume = _dernierResumeUtilisateurCharge,
+            };
         }
 
-        try
+        DonneesCompteUtilisateur donnees =
+            await _serviceUtilisateurRetroAchievements.ObtenirDonneesCompteAsync(
+                _configurationConnexion.Pseudo,
+                _configurationConnexion.CleApiWeb
+            );
+
+        UserProfileV2? profil = donnees.Profil ?? _dernierProfilUtilisateurCharge;
+        UserSummaryV2? resume = donnees.Resume ?? _dernierResumeUtilisateurCharge;
+
+        if (profil is not null)
         {
-            _dernierResumeUtilisateurCharge =
-                await ClientRetroAchievements.ObtenirResumeUtilisateurAsync(
-                    _configurationConnexion.Pseudo,
-                    _configurationConnexion.CleApiWeb
-                );
-            return _dernierResumeUtilisateurCharge;
+            _dernierProfilUtilisateurCharge = profil;
         }
-        catch
+
+        if (resume is not null)
         {
-            return null;
+            _dernierResumeUtilisateurCharge = resume;
         }
+
+        return new DonneesCompteUtilisateur
+        {
+            Profil = profil,
+            Resume = resume,
+            Points = donnees.Points,
+            Recompenses = donnees.Recompenses,
+            Progression = donnees.Progression,
+        };
     }
 
-    private async Task<UserProfileV2?> ObtenirProfilUtilisateurPourModaleAsync()
-    {
-        if (_dernierProfilUtilisateurCharge is not null)
-        {
-            return _dernierProfilUtilisateurCharge;
-        }
-
-        if (!ConfigurationConnexionEstComplete())
-        {
-            return null;
-        }
-
-        try
-        {
-            _dernierProfilUtilisateurCharge =
-                await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(
-                    _configurationConnexion.Pseudo,
-                    _configurationConnexion.CleApiWeb
-                );
-            return _dernierProfilUtilisateurCharge;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private SystemControls.Border ConstruireBlocCompte(
-        string titre,
-        IReadOnlyList<(string Libelle, string Valeur)> lignes
-    )
+    private SystemControls.Border ConstruireBlocCompte(SectionInformationsAffichee section)
     {
         SystemControls.StackPanel pile = new()
         {
@@ -407,7 +384,7 @@ public partial class MainWindow
                     Margin = new Thickness(0, 0, 0, 8),
                     FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
-                    Text = titre,
+                    Text = section.Titre,
                 },
             },
         };
@@ -420,7 +397,7 @@ public partial class MainWindow
             new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
         );
 
-        for (int index = 0; index < lignes.Count; index++)
+        for (int index = 0; index < section.Lignes.Count; index++)
         {
             grille.RowDefinitions.Add(
                 new SystemControls.RowDefinition { Height = GridLength.Auto }
@@ -443,7 +420,7 @@ public partial class MainWindow
             {
                 Margin = new Thickness(10, 8, 10, 8),
                 FontWeight = FontWeights.SemiBold,
-                Text = lignes[index].Libelle,
+                Text = section.Lignes[index].Libelle,
                 TextWrapping = TextWrapping.Wrap,
             };
             SystemControls.Grid.SetRow(libelle, index);
@@ -453,7 +430,7 @@ public partial class MainWindow
             SystemControls.TextBlock valeur = new()
             {
                 Margin = new Thickness(10, 8, 10, 8),
-                Text = lignes[index].Valeur,
+                Text = section.Lignes[index].Valeur,
                 TextWrapping = TextWrapping.Wrap,
             };
             SystemControls.Grid.SetRow(valeur, index);
@@ -466,7 +443,7 @@ public partial class MainWindow
         return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
-    private FrameworkElement ConstruireEnTeteAvatarCompte(UserProfileV2? profil)
+    private FrameworkElement ConstruireEnTeteAvatarCompte(CompteAffiche compte)
     {
         SystemControls.Border conteneur = new()
         {
@@ -481,7 +458,7 @@ public partial class MainWindow
         };
 
         SystemControls.Image? imageAvatar = ConstruireImageAvatarCompte(
-            profil,
+            compte.UrlAvatar,
             80,
             80,
             new Thickness(0)
@@ -509,57 +486,11 @@ public partial class MainWindow
                 FontSize = 28,
                 FontWeight = FontWeights.SemiBold,
                 Opacity = 0.82,
-                Text = string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)
+                Text = string.IsNullOrWhiteSpace(compte.Titre)
                     ? "?"
-                    : _configurationConnexion.Pseudo[..1].ToUpperInvariant(),
+                    : compte.Titre[..1].ToUpperInvariant(),
             },
         };
-    }
-
-    private IReadOnlyList<(string Libelle, string Valeur)> ConstruireLignesCompte(
-        UserProfileV2? profil,
-        UserSummaryV2? resume
-    )
-    {
-        List<(string Libelle, string Valeur)> lignes = [];
-
-        AjouterLigneSiValeurUtile(lignes, "Membre depuis", FormaterDateProfil(profil?.MemberSince));
-        AjouterLigneSiValeurUtile(
-            lignes,
-            "Dernier jeu jou�",
-            DeterminerDernierJeuAffiche(profil, resume)
-        );
-
-        return lignes;
-    }
-
-    private static IReadOnlyList<(string Libelle, string Valeur)> ConstruireLignesActiviteCompte(
-        UserProfileV2? profil,
-        UserSummaryV2? resume
-    )
-    {
-        List<(string Libelle, string Valeur)> lignes = [];
-
-        AjouterLigneSiValeurUtile(lignes, "Rich Presence", profil?.RichPresenceMsg);
-        AjouterLigneSiValeurUtile(lignes, "Succ�s r�cents", FormaterResumeSuccesRecents(resume));
-
-        return lignes;
-    }
-
-    private static IReadOnlyList<(string Libelle, string Valeur)> ConstruireLignesProgressionCompte(
-        UserProfileV2? profil,
-        UserSummaryV2? resume
-    )
-    {
-        return
-        [
-            ("Points", FormaterNombre(resume?.TotalPoints ?? profil?.TotalPoints)),
-            ("TruePoints", FormaterNombre(resume?.TotalTruePoints ?? profil?.TotalTruePoints)),
-            (
-                "Classement",
-                ConstruireResumePositionCompte(resume).Replace("Position : ", string.Empty)
-            ),
-        ];
     }
 
     private static SystemControls.Separator ConstruireSeparateurBlocCompte()
@@ -568,7 +499,7 @@ public partial class MainWindow
     }
 
     private SystemControls.Border ConstruireBlocJeuxRecemmentJoues(
-        IReadOnlyList<RecentlyPlayedGameV2> jeux
+        IReadOnlyList<JeuRecentAffiche> jeux
     )
     {
         SystemControls.StackPanel pile = new()
@@ -581,12 +512,12 @@ public partial class MainWindow
                     Margin = new Thickness(0, 0, 0, 8),
                     FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
-                    Text = "Jeux r�cemment jou�s",
+                    Text = "Jeux récemment joués",
                 },
             },
         };
 
-        foreach (RecentlyPlayedGameV2 jeu in jeux)
+        foreach (JeuRecentAffiche jeu in jeux)
         {
             pile.Children.Add(
                 new SystemControls.Border
@@ -609,7 +540,7 @@ public partial class MainWindow
                             {
                                 Margin = new Thickness(0, 4, 0, 0),
                                 Opacity = 0.72,
-                                Text = ConstruireSousTitreJeuRecent(jeu),
+                                Text = jeu.SousTitre,
                                 TextWrapping = TextWrapping.Wrap,
                             },
                         },
@@ -619,189 +550,6 @@ public partial class MainWindow
         }
 
         return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
-    }
-
-    private static string FormaterDateProfil(string? dateProfil)
-    {
-        if (string.IsNullOrWhiteSpace(dateProfil))
-        {
-            return "Indisponible";
-        }
-
-        if (
-            DateTime.TryParseExact(
-                dateProfil,
-                "yyyy-MM-dd HH:mm:ss",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                out DateTime date
-            )
-        )
-        {
-            return date.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("fr-CA"));
-        }
-
-        if (
-            DateTime.TryParse(
-                dateProfil,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AllowWhiteSpaces,
-                out date
-            )
-        )
-        {
-            return date.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("fr-CA"));
-        }
-
-        return dateProfil;
-    }
-
-    private static string FormaterNombre(int? valeur)
-    {
-        return valeur.HasValue ? valeur.Value.ToString(CultureInfo.CurrentCulture) : "Indisponible";
-    }
-
-    private static string ConstruireResumePositionCompte(UserSummaryV2? resume)
-    {
-        if (resume is null || resume.Rank <= 0 || resume.TotalRanked <= 0)
-        {
-            return "Position : indisponible";
-        }
-
-        return $"Position : {resume.Rank.ToString(CultureInfo.CurrentCulture)} sur {resume.TotalRanked.ToString(CultureInfo.CurrentCulture)}";
-    }
-
-    private string ObtenirTitreCompteAffiche(UserProfileV2? profil)
-    {
-        if (!string.IsNullOrWhiteSpace(profil?.User))
-        {
-            return profil.User;
-        }
-
-        return ObtenirLibelleBoutonCompte();
-    }
-
-    private static string FormaterDerniereActivite(UserSummaryV2? resume)
-    {
-        UserLastActivityV2? activite = resume?.LastActivity;
-
-        if (activite is null)
-        {
-            return "Indisponible";
-        }
-
-        if (activite.Horodatage is long horodatage && horodatage > 0)
-        {
-            return DateTimeOffset
-                .FromUnixTimeSeconds(horodatage)
-                .ToLocalTime()
-                .ToString("g", CultureInfo.GetCultureInfo("fr-CA"));
-        }
-
-        if (!string.IsNullOrWhiteSpace(activite.DerniereMiseAJour))
-        {
-            if (
-                DateTimeOffset.TryParse(
-                    activite.DerniereMiseAJour,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal,
-                    out DateTimeOffset date
-                )
-            )
-            {
-                return date.ToLocalTime().ToString("g", CultureInfo.GetCultureInfo("fr-CA"));
-            }
-
-            return activite.DerniereMiseAJour;
-        }
-
-        return "Indisponible";
-    }
-
-    private static string FormaterResumeSuccesRecents(UserSummaryV2? resume)
-    {
-        if (resume is null)
-        {
-            return string.Empty;
-        }
-
-        int nombreSucces = resume.RecentAchievements.Sum(item => item.Value?.Count ?? 0);
-
-        if (nombreSucces <= 0)
-        {
-            return string.Empty;
-        }
-
-        if (nombreSucces == 1)
-        {
-            return "1 succ�s r�cent";
-        }
-
-        return $"{nombreSucces.ToString(CultureInfo.CurrentCulture)} succ�s r�cents";
-    }
-
-    private static string DeterminerDernierJeuAffiche(UserProfileV2? profil, UserSummaryV2? resume)
-    {
-        if (!string.IsNullOrWhiteSpace(resume?.LastGame?.Titre))
-        {
-            return resume.LastGame.Titre;
-        }
-
-        if (!string.IsNullOrWhiteSpace(profil?.LastGame))
-        {
-            return profil.LastGame;
-        }
-
-        return string.Empty;
-    }
-
-    private static string ConstruireSousTitreJeuRecent(RecentlyPlayedGameV2 jeu)
-    {
-        List<string> segments = [];
-
-        if (!string.IsNullOrWhiteSpace(jeu.NomConsole))
-        {
-            segments.Add(jeu.NomConsole);
-        }
-
-        if (!string.IsNullOrWhiteSpace(jeu.DernierePartie))
-        {
-            segments.Add(jeu.DernierePartie);
-        }
-
-        return segments.Count == 0 ? "Activit� r�cente" : string.Join(" � ", segments);
-    }
-
-    private static void AjouterLigneSiValeurUtile(
-        ICollection<(string Libelle, string Valeur)> lignes,
-        string libelle,
-        string? valeur
-    )
-    {
-        if (string.IsNullOrWhiteSpace(valeur))
-        {
-            return;
-        }
-
-        string valeurNettoyee = valeur.Trim();
-
-        if (
-            valeurNettoyee.Equals("Indisponible", StringComparison.OrdinalIgnoreCase)
-            || valeurNettoyee.Equals(
-                "Informations indisponibles",
-                StringComparison.OrdinalIgnoreCase
-            )
-        )
-        {
-            return;
-        }
-
-        lignes.Add((libelle, valeurNettoyee));
-    }
-
-    private static string ConstruireUrlAvatar(UserProfileV2 profil)
-    {
-        return ConstruireUrlImageRetroAchievements(profil.UserPic);
     }
 
     private static string ConstruireUrlProfilRetroAchievements(string nomUtilisateur)
@@ -845,14 +593,12 @@ public partial class MainWindow
     }
 
     private static SystemControls.Image? ConstruireImageAvatarCompte(
-        UserProfileV2? profil,
+        string? urlAvatar,
         double largeur = 44,
         double hauteur = 44,
         Thickness? marge = null
     )
     {
-        string urlAvatar = profil is null ? string.Empty : ConstruireUrlAvatar(profil);
-
         if (string.IsNullOrWhiteSpace(urlAvatar) || urlAvatar == "Indisponible")
         {
             return null;
@@ -1040,7 +786,7 @@ public partial class MainWindow
     {
         if (string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo))
         {
-            _etatConnexionCourant = "Non configur�";
+            _etatConnexionCourant = "Non configuré";
             BoutonCompteUtilisateur.Content = "Connexion";
         }
         else

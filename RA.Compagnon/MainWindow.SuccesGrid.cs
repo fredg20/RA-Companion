@@ -1,17 +1,17 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
 namespace RA.Compagnon;
 
 /// <summary>
-/// Regroupe la logique de la grille des r�trosucc�s affich�e dans la carte du jeu courant.
+/// Regroupe la logique de la grille des rétrosuccès affichée dans la carte du jeu courant.
 /// </summary>
 public partial class MainWindow
 {
@@ -26,11 +26,11 @@ public partial class MainWindow
         }
 
         menu.PlacementTarget = sender as FrameworkElement;
-        menu.IsOpen = true;
+        menu.IsOpen = !menu.IsOpen;
     }
 
     /// <summary>
-    /// Applique l'ordre normal correspondant � la page web du jeu.
+    /// Applique l'ordre normal correspondant à la page web du jeu.
     /// </summary>
     private async void OrdreSuccesGrilleNormal_Click(object sender, RoutedEventArgs e)
     {
@@ -53,7 +53,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met � jour l'ordre d'affichage des badges et recharge la grille si n�cessaire.
+    /// Met à jour l'ordre d'affichage des badges et recharge la grille si nécessaire.
     /// </summary>
     private async Task ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille nouvelOrdre)
     {
@@ -91,57 +91,6 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Met � jour le libell� du bouton et l'�tat coch� du menu selon l'ordre courant.
-    /// </summary>
-    private void MettreAJourLibelleOrdreSuccesGrille()
-    {
-        string libelle = _ordreSuccesGrilleCourant switch
-        {
-            OrdreSuccesGrille.Aleatoire => "Al�atoire",
-            _ => "Normal",
-        };
-
-        if (BoutonOrdreSuccesGrille is not null)
-        {
-            BoutonOrdreSuccesGrille.Content = libelle;
-        }
-
-        if (MenuItemOrdreSuccesNormal is null)
-        {
-            return;
-        }
-
-        bool modeNormal = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Normal;
-        bool modeAleatoire = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Aleatoire;
-
-        if (ContourOrdreSuccesNormal is not null)
-        {
-            Brush contourActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-            Brush contourInactif = new SolidColorBrush(Color.FromArgb(140, 255, 255, 255));
-            Brush centreActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-
-            ContourOrdreSuccesNormal.Stroke = modeNormal ? contourActif : contourInactif;
-            CentreOrdreSuccesNormal.Fill = centreActif;
-            CentreOrdreSuccesNormal.Visibility = modeNormal
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-        }
-
-        if (ContourOrdreSuccesAleatoire is not null)
-        {
-            Brush contourActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-            Brush contourInactif = new SolidColorBrush(Color.FromArgb(140, 255, 255, 255));
-            Brush centreActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-
-            ContourOrdreSuccesAleatoire.Stroke = modeAleatoire ? contourActif : contourInactif;
-            CentreOrdreSuccesAleatoire.Fill = centreActif;
-            CentreOrdreSuccesAleatoire.Visibility = modeAleatoire
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-        }
-    }
-
     private void InvaliderOrdreAleatoireSuccesGrille()
     {
         _identifiantJeuOrdreAleatoireSuccesGrille = 0;
@@ -153,7 +102,7 @@ public partial class MainWindow
     {
         string libelle = _ordreSuccesGrilleCourant switch
         {
-            OrdreSuccesGrille.Aleatoire => "Al�atoire",
+            OrdreSuccesGrille.Aleatoire => "Aléatoire",
             OrdreSuccesGrille.Facile => "Facile",
             OrdreSuccesGrille.Difficile => "Difficile",
             _ => "Normal",
@@ -298,30 +247,6 @@ public partial class MainWindow
         _signatureOrdreAleatoireSuccesGrille = signature;
     }
 
-    /// <summary>
-    /// Retourne la liste des succ�s dans l'ordre actuellement choisi pour la grille.
-    /// </summary>
-    private List<GameAchievementV2> OrdonnerSuccesPourGrille(
-        int identifiantJeu,
-        IEnumerable<GameAchievementV2> succes
-    )
-    {
-        return _ordreSuccesGrilleCourant switch
-        {
-            OrdreSuccesGrille.Aleatoire => OrdonnerSuccesPourGrilleAleatoire(
-                identifiantJeu,
-                succes
-            ),
-            _ =>
-            [
-                .. succes
-                    .OrderBy(item => SuccesEstDebloque(item) ? 1 : 0)
-                    .ThenBy(item => item.DisplayOrder)
-                    .ThenBy(item => item.Id),
-            ],
-        };
-    }
-
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleAleatoire(
         int identifiantJeu,
         IEnumerable<GameAchievementV2> succes
@@ -348,7 +273,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Remplit la grille de tous les succ�s avec leurs badges.
+    /// Remplit la grille de tous les succès avec leurs badges.
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesAsync(
         int identifiantJeu,
@@ -381,23 +306,18 @@ public partial class MainWindow
         var badgesCharges = await Task.WhenAll(
             succesOrdonnes.Select(async succesJeu =>
             {
-                string urlBadge = ConstruireUrlBadgeDepuisNom(
-                    succesJeu.BadgeName,
-                    !SuccesEstDebloque(succesJeu)
+                SuccesGrilleAffiche succesAffiche = _servicePresentationSucces.ConstruirePourGrille(
+                    succesJeu
                 );
 
                 return new
                 {
-                    Badge = await ConstruireBadgeGrilleSuccesAsync(
-                        identifiantJeu,
-                        succesJeu,
-                        urlBadge
-                    ),
+                    Badge = await ConstruireBadgeGrilleSuccesAsync(identifiantJeu, succesAffiche),
                     Etat = new ElementListeSuccesAfficheLocal
                     {
                         IdentifiantSucces = succesJeu.Id,
-                        Titre = succesJeu.Title,
-                        CheminImageBadge = urlBadge,
+                        Titre = succesAffiche.Titre,
+                        CheminImageBadge = succesAffiche.UrlBadge,
                     },
                 };
             })
@@ -424,16 +344,14 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Construit un badge de la grille des r�trosucc�s � partir de son titre et de son visuel.
+    /// Construit un badge de la grille des rétrosuccès à partir de son titre et de son visuel.
     /// </summary>
     private async Task<SystemControls.Border> ConstruireBadgeGrilleSuccesAsync(
         int identifiantJeu,
-        GameAchievementV2 succes,
-        string urlBadge
+        SuccesGrilleAffiche succesAffiche
     )
     {
-        string titre = succes.Title;
-        ImageSource? imageBadge = await ChargerImageDistanteAsync(urlBadge);
+        ImageSource? imageBadge = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
         SystemControls.Border conteneur = new()
         {
             Width = TailleBadgeGrilleSucces,
@@ -444,8 +362,12 @@ public partial class MainWindow
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(0),
             Cursor = Cursors.Hand,
-            ToolTip = titre,
-            Tag = new BadgeSuccesGrilleContexte(identifiantJeu, succes.Id, urlBadge),
+            ToolTip = succesAffiche.Titre,
+            Tag = new BadgeSuccesGrilleContexte(
+                identifiantJeu,
+                succesAffiche.IdentifiantSucces,
+                succesAffiche.UrlBadge
+            ),
         };
         conteneur.MouseEnter += BadgeGrilleSucces_EntreeSouris;
         conteneur.MouseLeave += BadgeGrilleSucces_SortieSouris;
@@ -459,7 +381,7 @@ public partial class MainWindow
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Opacity = 0.62,
-                Text = titre,
+                Text = succesAffiche.Titre,
                 TextAlignment = TextAlignment.Center,
                 TextWrapping = TextWrapping.Wrap,
             };
@@ -468,11 +390,14 @@ public partial class MainWindow
 
         SystemControls.Image imageSucces = new()
         {
-            Source = imageBadge,
+            Source = succesAffiche.EstDebloque
+                ? imageBadge
+                : ConvertirImageEnNoirEtBlanc(imageBadge),
             Width = 34,
             Height = 34,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
+            Opacity = succesAffiche.EstDebloque ? 1 : 0.58,
             Stretch = Stretch.Uniform,
         };
 
@@ -484,7 +409,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique un style visuel discret au badge �pingl� ou s�lectionn� temporairement.
+    /// Applique un style visuel discret au badge épinglé ou sélectionné temporairement.
     /// </summary>
     private void AppliquerStyleBadgeEpingle(SystemControls.Border badge)
     {
@@ -524,7 +449,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R�applique l'indice visuel d'�pingle sur tous les badges visibles.
+    /// Réapplique l'indice visuel d'épingle sur tous les badges visibles.
     /// </summary>
     private void RafraichirStyleBadgesGrilleSucces()
     {
@@ -538,7 +463,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// �pingle durablement un succ�s de la grille dans la carte principale.
+    /// Épingle durablement un succès de la grille dans la carte principale.
     /// </summary>
     private async void BadgeGrilleSucces_ClicGauche(object sender, MouseButtonEventArgs e)
     {
@@ -547,7 +472,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche temporairement un succ�s de la grille dans la carte principale.
+    /// Affiche temporairement un succès de la grille dans la carte principale.
     /// </summary>
     private async void BadgeGrilleSucces_ClicDroit(object sender, MouseButtonEventArgs e)
     {
@@ -556,7 +481,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche un succ�s de la grille dans la carte principale en mode temporaire ou �pingl�.
+    /// Affiche un succès de la grille dans la carte principale en mode temporaire ou épinglé.
     /// </summary>
     private async Task AfficherSuccesGrilleSelectionneAsync(object sender, bool permanent)
     {
@@ -614,7 +539,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Termine l'affichage temporaire d'un succ�s s�lectionn� dans la grille.
+    /// Termine l'affichage temporaire d'un succès sélectionné dans la grille.
     /// </summary>
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)
     {
@@ -654,7 +579,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Indique si un succ�s du jeu a d�j� �t� obtenu par l'utilisateur.
+    /// Indique si un succès du jeu a déjà été obtenu par l'utilisateur.
     /// </summary>
     private static bool SuccesEstDebloque(GameAchievementV2 succes)
     {
@@ -663,7 +588,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Recalcule le gap de la grille des succ�s selon la largeur disponible.
+    /// Recalcule le gap de la grille des succès selon la largeur disponible.
     /// </summary>
     private void ConteneurGrilleTousSuccesJeuEnCours_TailleChangee(
         object sender,
@@ -675,7 +600,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R�partit les badges sur la largeur disponible avec un espacement adaptatif.
+    /// Répartit les badges sur la largeur disponible avec un espacement adaptatif.
     /// </summary>
     private void MettreAJourDispositionGrilleTousSucces()
     {

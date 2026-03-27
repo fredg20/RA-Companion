@@ -22,8 +22,17 @@ public sealed class GameInfoAndUserProgressV2
     [JsonPropertyName("Developer")]
     public string Developer { get; set; } = string.Empty;
 
+    [JsonPropertyName("Publisher")]
+    public string Publisher { get; set; } = string.Empty;
+
     [JsonPropertyName("Genre")]
     public string Genre { get; set; } = string.Empty;
+
+    [JsonPropertyName("ImageTitle")]
+    public string ImageTitle { get; set; } = string.Empty;
+
+    [JsonPropertyName("ImageIngame")]
+    public string ImageIngame { get; set; } = string.Empty;
 
     [JsonPropertyName("ImageBoxArt")]
     public string ImageBoxArt { get; set; } = string.Empty;
@@ -39,6 +48,9 @@ public sealed class GameInfoAndUserProgressV2
 
     [JsonPropertyName("NumAwardedToUserHardcore")]
     public int NumAwardedToUserHardcore { get; set; }
+
+    [JsonPropertyName("NumDistinctPlayers")]
+    public int NumDistinctPlayers { get; set; }
 
     [JsonPropertyName("UserCompletion")]
     public string UserCompletion { get; set; } = string.Empty;
@@ -85,10 +97,28 @@ public sealed class GameInfoAndUserProgressV2
         set => Developer = value;
     }
 
+    public string Editeur
+    {
+        get => Publisher;
+        set => Publisher = value;
+    }
+
     public string CheminImageBoite
     {
         get => ImageBoxArt;
         set => ImageBoxArt = value;
+    }
+
+    public string CheminImageTitre
+    {
+        get => ImageTitle;
+        set => ImageTitle = value;
+    }
+
+    public string CheminImageEnJeu
+    {
+        get => ImageIngame;
+        set => ImageIngame = value;
     }
 
     public Dictionary<string, GameAchievementV2> Succes

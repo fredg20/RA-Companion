@@ -1,0 +1,21 @@
+namespace RA.Compagnon.Modeles.Presentation;
+
+/// <summary>
+/// Représente le contenu prêt à afficher de la modale Compte.
+/// </summary>
+public sealed class CompteAffiche
+{
+    public string NomUtilisateur { get; init; } = string.Empty;
+
+    public string Titre { get; init; } = string.Empty;
+
+    public string Devise { get; init; } = string.Empty;
+
+    public string Introduction { get; init; } = string.Empty;
+
+    public string UrlAvatar { get; init; } = string.Empty;
+
+    public IReadOnlyList<SectionInformationsAffichee> Sections { get; init; } = [];
+
+    public IReadOnlyList<JeuRecentAffiche> JeuxRecemmentJoues { get; init; } = [];
+}

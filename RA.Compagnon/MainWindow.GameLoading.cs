@@ -1,11 +1,11 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Achievement;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
@@ -17,7 +17,7 @@ public partial class MainWindow
         bool forcerChargementJeu = true
     )
     {
-        App.JournaliserDemarrage("ChargerJeuEnCours d�but");
+        App.JournaliserDemarrage("ChargerJeuEnCours début");
         JournaliserDiagnosticChangementJeu(
             "charger_jeu_debut",
             $"forcer={forcerChargementJeu};chargement={afficherEtatChargement}"
@@ -47,7 +47,7 @@ public partial class MainWindow
                 ReinitialiserSuccesRecents();
             }
 
-            UserProfileV2 profil = await ClientRetroAchievements.ObtenirProfilUtilisateurAsync(
+            UserProfileV2 profil = await _serviceUtilisateurRetroAchievements.ObtenirProfilAsync(
                 _configurationConnexion.Pseudo,
                 _configurationConnexion.CleApiWeb
             );
@@ -57,9 +57,9 @@ public partial class MainWindow
             _profilUtilisateurAccessible = true;
             _dernierProfilUtilisateurCharge = profil;
             _dernierResumeUtilisateurCharge = null;
-            DefinirEtatConnexion("Connect�");
+            DefinirEtatConnexion("Connecté");
             await AppliquerProfilUtilisateurAsync(profil, forcerChargementJeu);
-            App.JournaliserDemarrage("ChargerJeuEnCours apres AppliquerProfil");
+            App.JournaliserDemarrage("ChargerJeuEnCours apres uppliquerProfil");
             DemarrerChargementSuccesRecentsEnArrierePlan(
                 profil,
                 _versionChargementContenuJeu,
@@ -73,6 +73,7 @@ public partial class MainWindow
             _profilUtilisateurAccessible = false;
             _dernierProfilUtilisateurCharge = null;
             _dernierResumeUtilisateurCharge = null;
+            _dernieresDonneesJeuAffichees = null;
             _minuteurActualisationApi.Stop();
             ReinitialiserContexteSurveillance();
             DefinirEtatConnexion("Profil inaccessible");
@@ -89,12 +90,13 @@ public partial class MainWindow
             BarreProgressionJeuEnCours.Value = 0;
             ReinitialiserSuccesRecents();
             TexteEtatSuccesRecents.Text =
-                "Impossible de charger les succ�s r�cents pour ce compte.";
+                "Impossible de charger les succès récents pour ce compte.";
         }
         catch (Exception)
         {
             _dernierProfilUtilisateurCharge = null;
             _dernierResumeUtilisateurCharge = null;
+            _dernieresDonneesJeuAffichees = null;
             DefinirEtatConnexion("Hors ligne ou erreur API");
 
             if (afficherEtatChargement)
@@ -137,7 +139,7 @@ public partial class MainWindow
         DefinirTitreZoneJeu();
 
         string messagePresence = string.IsNullOrWhiteSpace(profil.RichPresenceMsg)
-            ? "Aucune activit� d�tect�e."
+            ? "Aucune activité détectée."
             : profil.RichPresenceMsg;
         int identifiantJeuEffectif = profil.LastGameId;
         RecentlyPlayedGameV2? dernierJeuJoue = null;
@@ -160,7 +162,7 @@ public partial class MainWindow
             DefinirTitreJeuEnCours(string.Empty);
             DefinirDetailsJeuEnCours(string.Empty);
             TexteResumeProgressionJeuEnCours.Text = "-- / --";
-            TextePourcentageJeuEnCours.Text = "Aucun jeu r�cent � afficher.";
+            TextePourcentageJeuEnCours.Text = "uucun jeu récent à afficher.";
             BarreProgressionJeuEnCours.Value = 0;
             return;
         }
@@ -206,6 +208,7 @@ public partial class MainWindow
             && string.Equals(_dernierPseudoCharge, profil.User, StringComparison.Ordinal)
             && !string.IsNullOrWhiteSpace(_dernierTitreJeuApi);
 
+        await SynchroniserPseudoUtilisateurDepuisProfilAsync(profil);
         _dernierIdentifiantJeuApi = identifiantJeuEffectif;
         _dernierePresenceRiche = messagePresence;
         _dernierPseudoCharge = profil.User;
@@ -224,6 +227,24 @@ public partial class MainWindow
             progressionDejaAfficheePourCeJeu,
             versionChargement
         );
+    }
+
+    private async Task SynchroniserPseudoUtilisateurDepuisProfilAsync(UserProfileV2 profil)
+    {
+        string pseudoApi = profil.User?.Trim() ?? string.Empty;
+
+        if (
+            string.IsNullOrWhiteSpace(pseudoApi)
+            || string.Equals(_configurationConnexion.Pseudo, pseudoApi, StringComparison.Ordinal)
+        )
+        {
+            return;
+        }
+
+        _configurationConnexion.Pseudo = pseudoApi;
+        MettreAJourResumeConnexion();
+        await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
+        await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
     }
 
     private void DemarrerChargementJeuUtilisateurEnArrierePlan(
@@ -253,19 +274,33 @@ public partial class MainWindow
     {
         try
         {
-            GameInfoAndUserProgressV2 jeu =
-                await ClientRetroAchievements.ObtenirJeuEtProgressionUtilisateurAsync(
+            Task<DonneesJeuAffiche> donneesJeuTask =
+                _serviceJeuRetroAchievements.ObtenirDonneesJeuAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     identifiantJeuEffectif
                 );
+            Task<DonneesCommunauteJeu> donneesCommunauteTask =
+                _serviceCommunauteRetroAchievements.ObtenirDonneesJeuAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    identifiantJeuEffectif
+                );
+
+            await Task.WhenAll(donneesJeuTask, donneesCommunauteTask);
+            DonneesJeuAffiche donneesJeu = await donneesJeuTask;
+            donneesJeu.Communaute = await donneesCommunauteTask;
+            donneesJeu.CommunauteAffichee = _servicePresentationCommunaute.Construire(
+                donneesJeu.Communaute
+            );
+            GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
 
             if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
             {
                 return;
             }
 
-            await AppliquerProgressionJeuAsync(jeu);
+            await AppliquerProgressionJeuAsync(donneesJeu);
         }
         catch
         {
@@ -310,63 +345,13 @@ public partial class MainWindow
         try
         {
             DateTimeOffset maintenant = DateTimeOffset.UtcNow;
-            IReadOnlyList<AchievementUnlockV2> succesRecents =
-                await ClientRetroAchievements.ObtenirSuccesDebloquesEntreAsync(
+            DonneesActiviteRecente activiteRecente =
+                await _serviceActiviteRetroAchievements.ObtenirActiviteRecenteAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     maintenant.AddDays(-7),
                     maintenant
                 );
-
-            IEnumerable<AchievementUnlockV2> succesTries = succesRecents.OrderByDescending(succes =>
-                ConvertirDateSucces(succes.Date)
-            );
-
-            if (profil.LastGameId > 0)
-            {
-                List<AchievementUnlockV2> succesJeuEnCours =
-                [
-                    .. succesTries.Where(succes => succes.GameId == profil.LastGameId),
-                ];
-
-                if (succesJeuEnCours.Count > 0)
-                {
-                    if (
-                        !ChargementSuccesRecentsEstToujoursActuel(
-                            versionChargement,
-                            identifiantJeuProfil
-                        )
-                    )
-                    {
-                        return;
-                    }
-
-                    AppliquerSuccesRecents(
-                        [.. succesJeuEnCours.Take(3)],
-                        $"Affichage des {Math.Min(3, succesJeuEnCours.Count)} derniers succ�s du jeu en cours."
-                    );
-                    return;
-                }
-            }
-
-            List<AchievementUnlockV2> succesAffiches = [.. succesTries.Take(3)];
-
-            if (succesAffiches.Count == 0)
-            {
-                if (
-                    !ChargementSuccesRecentsEstToujoursActuel(
-                        versionChargement,
-                        identifiantJeuProfil
-                    )
-                )
-                {
-                    return;
-                }
-
-                ReinitialiserSuccesRecents();
-                TexteEtatSuccesRecents.Text = "Aucun succ�s r�cent sur les 7 derniers jours.";
-                return;
-            }
 
             if (!ChargementSuccesRecentsEstToujoursActuel(versionChargement, identifiantJeuProfil))
             {
@@ -374,8 +359,7 @@ public partial class MainWindow
             }
 
             AppliquerSuccesRecents(
-                succesAffiches,
-                $"Affichage des {succesAffiches.Count} derniers succ�s connus."
+                _servicePresentationActivite.Construire(activiteRecente, profil.LastGameId)
             );
         }
         catch
@@ -385,8 +369,7 @@ public partial class MainWindow
                 return;
             }
 
-            ReinitialiserSuccesRecents();
-            TexteEtatSuccesRecents.Text = "Impossible de charger les succ�s r�cents.";
+            AppliquerSuccesRecents(_servicePresentationActivite.ConstruireErreur());
         }
     }
 
@@ -425,33 +408,32 @@ public partial class MainWindow
             );
     }
 
-    private async Task AppliquerProgressionJeuAsync(GameInfoAndUserProgressV2 jeu)
+    private async Task AppliquerProgressionJeuAsync(DonneesJeuAffiche donneesJeu)
     {
+        GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
+        JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(donneesJeu);
         JournaliserDiagnosticChangementJeu("progression_debut", $"jeu={jeu.Id}");
         _dernierTitreJeuApi = jeu.Title;
         _dernierIdentifiantJeuAvecInfos = jeu.Id;
         _dernierIdentifiantJeuAvecProgression = jeu.Id;
+        _dernieresDonneesJeuAffichees = donneesJeu;
         AppliquerVisuelsJeuEnCoursInitiaux(jeu);
         DemarrerEnrichissementVisuelsJeuEnCours(jeu);
         JournaliserDiagnosticChangementJeu("progression_visuels_ok");
         AppliquerMetaConsoleJeuEnCoursInitiale(jeu);
         DemarrerEnrichissementMetaConsoleJeuEnCours(jeu);
 
-        string detailsTempsJeu = string.Empty;
-        string detailsRecompense = DeterminerStatutJeu(jeu);
-
-        DefinirTempsJeuSousImage(detailsTempsJeu);
-        DefinirEtatJeuDansProgression(detailsRecompense);
-        DefinirDetailsJeuEnCours(string.Empty);
+        DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
+        DefinirEtatJeuDansProgression(jeuAffiche.Statut);
+        DefinirDetailsJeuEnCours(jeuAffiche.Details);
         await MettreAJourSuccesJeuAsync(jeu);
         JournaliserDiagnosticChangementJeu("progression_succes_ok");
 
-        TexteResumeProgressionJeuEnCours.Text = $"{jeu.NumAwardedToUser} / {jeu.NumAchievements}";
-        TextePourcentageJeuEnCours.Text = NormaliserPourcentage(jeu.UserCompletion);
-        BarreProgressionJeuEnCours.Value = ExtrairePourcentage(jeu.UserCompletion);
+        TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
+        TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
+        BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
 
-        await SauvegarderDernierJeuAfficheAsync(jeu, detailsTempsJeu, detailsRecompense);
+        await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);
         JournaliserDiagnosticChangementJeu("progression_fin");
     }
 }
-

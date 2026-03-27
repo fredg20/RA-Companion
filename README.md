@@ -1,68 +1,68 @@
-# RA-Compagnon
+﻿# RA-Compagnon
 
-Compagnon Windows pour suivre un compte RetroAchievements avec une interface simple, rapide et agreable.
+Compagnon Windows pour suivre un compte RetroAchievements avec une interface simple, rapide et agréable.
 
 ## Vision
 
-`Compagnon` n'essaie pas d'etre un clone de `RetroAchievements Layout Manager`.
+`Compagnon` n'essaie pas d'être un clone de `RetroAchievements Layout Manager`.
 
-Son positionnement est different :
+Son positionnement est différent :
 
-- offrir une experience plus claire et plus moderne
-- rendre la progression plus agreable a consulter
+- offrir une expérience plus claire et plus moderne
+- rendre la progression plus agréable à consulter
 - rester stable et rapide au quotidien
-- etre utile sans dependre d'un emulateur
+- être utile sans dépendre d'un émulateur
 
 En une phrase :
 
-`Compagnon` est une application de bureau pensée pour suivre ses jeux et ses retrosucces avec confort.
+`Compagnon` est une application de bureau pensée pour suivre ses jeux et ses rétrosuccès avec confort.
 
-## Public vise
+## Public visé
 
 - joueurs RetroAchievements sur PC
 - utilisateurs qui veulent retrouver rapidement leur progression
-- personnes qui preferent une application lisible, stable et simple a utiliser
+- personnes qui préfèrent une application lisible, stable et simple à utiliser
 
-## Etat actuel
+## État actuel
 
-`RA-Compagnon` est maintenant centre sur :
+`RA-Compagnon` est maintenant centré sur :
 
-- les appels a l'API RetroAchievements
+- les appels à l'API RetroAchievements
 - la persistance locale
-- la restauration rapide au demarrage
-- l'affichage du jeu et des retrosucces
+- la restauration rapide au démarrage
+- l'affichage du jeu et des rétrosuccès
 
-Le projet ne depend plus d'un emulateur ni d'une sonde locale.
+Le projet ne dépend plus d'un émulateur ni d'une sonde locale.
 
-## Fonctionnalites actuelles
+## Fonctionnalités actuelles
 
-- affichage du dernier jeu joue
-- affichage du titre, de la console, de la date, du genre et du developpeur
+- affichage du dernier jeu joué
+- affichage du titre, de la console, de la date, du genre et du développeur
 - affichage des visuels du jeu
-- affichage d'un retrosucces mis en avant
-- grille complete des retrosucces du jeu
-- succes recents du compte
-- ordre de grille `Normal`, `Aleatoire`, `Facile`, `Difficile`
-- restauration locale au demarrage
+- affichage d'un rétrosuccès mis en avant
+- grille complète des rétrosuccès du jeu
+- succès récents du compte
+- ordre de grille `Normal`, `Aléatoire`, `Facile`, `Difficile`
+- restauration locale au démarrage
 
 ## Direction produit
 
-Les prochaines evolutions les plus naturelles sont :
+Les prochaines évolutions les plus naturelles sont :
 
-- ameliorer encore la lisibilite de l'interface
-- enrichir la navigation entre jeux et succes
+- améliorer encore la lisibilité de l'interface
+- enrichir la navigation entre jeux et succès
 - ajouter des fonctions utiles sans complexifier l'application
 
-Ce que le projet ne cherche pas a faire pour l'instant :
+Ce que le projet ne cherche pas à faire pour l'instant :
 
-- detection live d'emulateur
-- dependance a `RetroArch` ou a un autre emulateur
-- logique memoire live
-- fonctions fragiles qui degradent la stabilite
+- détection en direct d'émulateur
+- dépendance à `RetroArch` ou à un autre émulateur
+- logique de mémoire en direct
+- fonctions fragiles qui dégradent la stabilité
 
 ## Stockage local
 
-Les donnees utilisateur sont stockees dans :
+Les données utilisateur sont stockées dans :
 
 `%AppData%\RA-Compagnon`
 
@@ -78,12 +78,12 @@ Fichiers principaux :
 ## Structure
 
 - `RA.Compagnon/MainWindow.xaml` : interface principale
-- `RA.Compagnon/MainWindow.xaml.cs` : point d'entree de la fenetre
+- `RA.Compagnon/MainWindow.xaml.cs` : point d'entrée de la fenêtre
 - `RA.Compagnon/Services/ClientRetroAchievements.cs` : appels API
 - `RA.Compagnon/Services/ServiceConfigurationLocale.cs` : persistance locale
 - `RA.Compagnon/Services/ServiceTraductionTexte.cs` : traduction de certains textes
-- `RA.Compagnon/Modeles/Api` : modeles API
-- `RA.Compagnon/Modeles/Local` : modeles locaux
+- `RA.Compagnon/Modeles/Api` : modèles API
+- `RA.Compagnon/Modeles/Local` : modèles locaux
 
 ## Build
 
@@ -93,7 +93,7 @@ Build de la solution :
 dotnet build RA.Compagnon.sln -m:1
 ```
 
-Generation du livrable dans `dist` :
+Génération du livrable dans `dist` :
 
 ```powershell
 ./build.ps1

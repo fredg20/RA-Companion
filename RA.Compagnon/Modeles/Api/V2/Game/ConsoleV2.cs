@@ -37,4 +37,3 @@ public sealed class ConsoleV2
         set => IconUrl = value;
     }
 }
-

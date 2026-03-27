@@ -1,9 +1,10 @@
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
-using RA.Compagnon.Modeles.Api;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
@@ -11,8 +12,14 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
+    private static readonly string CheminJournalVisuelsJeu = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RA-Compagnon",
+        "journal-visuels-jeu.log"
+    );
+
     /// <summary>
-    /// Met � jour le visuel du jeu courant � partir du box art retourn� par l'API.
+    /// Met ï¿½ jour le visuel du jeu courant ï¿½ partir du box art retournï¿½ par l'API.
     /// </summary>
     private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
@@ -52,10 +59,15 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R�initialise le visuel du jeu courant sur un �tat neutre.
+    /// Rï¿½initialise le visuel du jeu courant sur un ï¿½tat neutre.
     /// </summary>
     private void ReinitialiserImageJeuEnCours()
     {
+        _largeurMaxVisuelJeuEnCours = 0;
+        _hauteurMaxVisuelJeuEnCours = 0;
+        ConteneurImageJeuEnCours.MinWidth = 0;
+        ConteneurImageJeuEnCours.MinHeight = 0;
+        ColonneImageJeuEnCours.MinWidth = 0;
         ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, null);
         if (ImageJeuEnCours.Effect is BlurEffect effetImageJeu)
         {
@@ -228,7 +240,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// R�initialise le carrousel des visuels du jeu courant.
+    /// Rï¿½initialise le carrousel des visuels du jeu courant.
     /// </summary>
     private void ReinitialiserCarrouselVisuelsJeuEnCours()
     {
@@ -236,13 +248,13 @@ public partial class MainWindow
         _visuelsJeuEnCours.Clear();
         _indexVisuelJeuEnCours = 0;
         TexteVisuelJeuEnCours.Text = string.Empty;
-        CarrouselVisuelsJeuEnCours.Visibility = Visibility.Collapsed;
+        ZoneSousImageJeuEnCours.Visibility = Visibility.Collapsed;
         BoutonVisuelJeuPrecedent.Visibility = Visibility.Collapsed;
         BoutonVisuelJeuSuivant.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
-    /// Applique les visuels disponibles du jeu courant au carrousel situ� sous l'image.
+    /// Applique les visuels disponibles du jeu courant au carrousel situï¿½ sous l'image.
     /// </summary>
     private void DefinirVisuelsJeuEnCours(IReadOnlyList<VisuelJeuEnCours> visuels)
     {
@@ -273,7 +285,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Met � jour le grand visuel et l'�tat du carrousel sous l'image.
+    /// Met ï¿½ jour le grand visuel et l'ï¿½tat du carrousel sous l'image.
     /// </summary>
     private async Task MettreAJourAffichageVisuelJeuEnCoursAsync()
     {
@@ -291,12 +303,9 @@ public partial class MainWindow
         await MettreAJourImageJeuEnCoursAsync(visuel.CheminImage);
         TexteVisuelJeuEnCours.Text =
             $"{visuel.Libelle} {_indexVisuelJeuEnCours + 1}/{_visuelsJeuEnCours.Count}";
-        CarrouselVisuelsJeuEnCours.Visibility =
-            _visuelsJeuEnCours.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-        BoutonVisuelJeuPrecedent.Visibility =
-            _visuelsJeuEnCours.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-        BoutonVisuelJeuSuivant.Visibility =
-            _visuelsJeuEnCours.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        ZoneSousImageJeuEnCours.Visibility = Visibility.Collapsed;
+        BoutonVisuelJeuPrecedent.Visibility = Visibility.Collapsed;
+        BoutonVisuelJeuSuivant.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
@@ -315,7 +324,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Fait d�filer automatiquement les autres visuels du jeu avec un fondu doux.
+    /// Fait dï¿½filer automatiquement les autres visuels du jeu avec un fondu doux.
     /// </summary>
     private async void MinuteurRotationVisuelsJeuEnCours_Tick(object? sender, EventArgs e)
     {
@@ -330,7 +339,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Affiche imm�diatement les visuels essentiels du jeu courant.
+    /// Affiche immï¿½diatement les visuels essentiels du jeu courant.
     /// </summary>
     private void AppliquerVisuelsJeuEnCoursInitiaux(GameInfoAndUserProgressV2 jeu)
     {
@@ -340,7 +349,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Enrichit ensuite les visuels du jeu avec des �l�ments secondaires comme le badge.
+    /// Enrichit ensuite les visuels du jeu avec des ï¿½lï¿½ments secondaires comme le badge.
     /// </summary>
     private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
@@ -354,6 +363,7 @@ public partial class MainWindow
     {
         try
         {
+            UserSummaryV2? resume = await ObtenirResumeUtilisateurPourVisuelsAsync();
             string cheminBadge = await ObtenirCheminBadgeJeuAsync(jeu);
 
             if (_dernierIdentifiantJeuAvecInfos != jeu.Id)
@@ -363,7 +373,9 @@ public partial class MainWindow
 
             List<VisuelJeuEnCours> visuels = [];
             AjouterVisuelJeu(visuels, "Jaquette", jeu.ImageBoxArt);
+            AjouterVisuelsSecondairesJeu(visuels, jeu, resume);
             AjouterVisuelJeu(visuels, "Badge", cheminBadge);
+            JournaliserVisuelsJeu(jeu, resume, cheminBadge, visuels);
             DefinirVisuelsJeuEnCours(visuels);
         }
         catch
@@ -373,7 +385,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Ajoute un visuel de jeu s'il est exploitable et non d�j� pr�sent.
+    /// Ajoute un visuel de jeu s'il est exploitable et non dï¿½jï¿½ prï¿½sent.
     /// </summary>
     private static void AjouterVisuelJeu(
         List<VisuelJeuEnCours> visuels,
@@ -398,16 +410,118 @@ public partial class MainWindow
         visuels.Add(new VisuelJeuEnCours(libelle, cheminImage.Trim()));
     }
 
+    private static void AjouterVisuelsSecondairesJeu(
+        List<VisuelJeuEnCours> visuels,
+        GameInfoAndUserProgressV2 jeu,
+        UserSummaryV2? resume
+    )
+    {
+        AjouterVisuelJeu(visuels, "Titre", jeu.CheminImageTitre);
+        AjouterVisuelJeu(visuels, "En jeu", jeu.CheminImageEnJeu);
+
+        if (resume?.LastGame?.IdentifiantJeu == jeu.Id)
+        {
+            AjouterVisuelJeu(visuels, "Titre", resume.LastGame.CheminImageTitre);
+            AjouterVisuelJeu(visuels, "En jeu", resume.LastGame.CheminImageEnJeu);
+        }
+
+        RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
+            item.IdentifiantJeu == jeu.Id
+        );
+
+        if (jeuRecent is null)
+        {
+            return;
+        }
+
+        AjouterVisuelJeu(visuels, "Titre", jeuRecent.CheminImageTitre);
+        AjouterVisuelJeu(visuels, "En jeu", jeuRecent.CheminImageEnJeu);
+    }
+
     /// <summary>
-    /// R�cup�re le badge du jeu via le catalogue syst�me si disponible.
+    /// Rï¿½cupï¿½re le badge du jeu via le catalogue systï¿½me si disponible.
     /// </summary>
+    private static void AjouterVisuelJeu(List<VisuelJeuEnCours> visuels, VisuelJeuEnCours? visuel)
+    {
+        if (visuel is null)
+        {
+            return;
+        }
+
+        AjouterVisuelJeu(visuels, visuel.Libelle, visuel.CheminImage);
+    }
+
+    private async Task<VisuelJeuEnCours?> ObtenirVisuelSecondaireJeuAsync(
+        GameInfoAndUserProgressV2 jeu
+    )
+    {
+        UserSummaryV2? resume = await ObtenirResumeUtilisateurPourVisuelsAsync();
+
+        if (resume?.LastGame?.IdentifiantJeu == jeu.Id)
+        {
+            return ConstruireVisuelSecondaire(
+                resume.LastGame.CheminImageTitre,
+                resume.LastGame.CheminImageEnJeu
+            );
+        }
+
+        RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
+            item.IdentifiantJeu == jeu.Id
+        );
+
+        return jeuRecent is null
+            ? null
+            : ConstruireVisuelSecondaire(jeuRecent.CheminImageTitre, jeuRecent.CheminImageEnJeu);
+    }
+
+    private async Task<UserSummaryV2?> ObtenirResumeUtilisateurPourVisuelsAsync()
+    {
+        if (_dernierResumeUtilisateurCharge is not null)
+        {
+            return _dernierResumeUtilisateurCharge;
+        }
+
+        if (!ConfigurationConnexionEstComplete())
+        {
+            return null;
+        }
+
+        try
+        {
+            _dernierResumeUtilisateurCharge =
+                await _serviceUtilisateurRetroAchievements.ObtenirResumeAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb
+                );
+            return _dernierResumeUtilisateurCharge;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static VisuelJeuEnCours? ConstruireVisuelSecondaire(
+        string? cheminImageTitre,
+        string? cheminImageEnJeu
+    )
+    {
+        if (!string.IsNullOrWhiteSpace(cheminImageTitre))
+        {
+            return new VisuelJeuEnCours("Titre", cheminImageTitre.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(cheminImageEnJeu))
+        {
+            return new VisuelJeuEnCours("En jeu", cheminImageEnJeu.Trim());
+        }
+
+        return null;
+    }
+
     private async Task<string> ObtenirCheminBadgeJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
-        if (
-            !ConfigurationConnexionEstComplete()
-            || jeu.Id <= 0
-            || jeu.ConsoleId <= 0
-        )
+        if (!ConfigurationConnexionEstComplete() || jeu.Id <= 0 || jeu.ConsoleId <= 0)
         {
             return string.Empty;
         }
@@ -415,23 +529,54 @@ public partial class MainWindow
         try
         {
             IReadOnlyList<GameListEntryV2> jeuxSysteme =
-                await ClientRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
+                await _serviceCatalogueRetroAchievements.ObtenirJeuxSystemeAvecHashesAsync(
                     _configurationConnexion.CleApiWeb,
                     jeu.ConsoleId
                 );
 
-            return jeuxSysteme
-                    .FirstOrDefault(item => item.Id == jeu.Id)
-                    ?.ImageIcon
-                ?? string.Empty;
+            return jeuxSysteme.FirstOrDefault(item => item.Id == jeu.Id)?.ImageIcon ?? string.Empty;
         }
         catch
         {
             return string.Empty;
         }
     }
+
+    private static void JournaliserVisuelsJeu(
+        GameInfoAndUserProgressV2 jeu,
+        UserSummaryV2? resume,
+        string cheminBadge,
+        IReadOnlyList<VisuelJeuEnCours> visuels
+    )
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalVisuelsJeu)!);
+
+            LastGameV2? dernierJeu = resume?.LastGame;
+            RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
+                item.IdentifiantJeu == jeu.Id
+            );
+
+            string details =
+                $"jeu={jeu.Id};titre={jeu.Title};"
+                + $"box={jeu.ImageBoxArt};"
+                + $"lastGameId={dernierJeu?.IdentifiantJeu ?? 0};"
+                + $"lastTitle={dernierJeu?.CheminImageTitre ?? string.Empty};"
+                + $"lastIngame={dernierJeu?.CheminImageEnJeu ?? string.Empty};"
+                + $"recentTitle={jeuRecent?.CheminImageTitre ?? string.Empty};"
+                + $"recentIngame={jeuRecent?.CheminImageEnJeu ?? string.Empty};"
+                + $"badge={cheminBadge};"
+                + $"visuels={string.Join(" | ", visuels.Select(visuel => $"{visuel.Libelle}:{visuel.CheminImage}"))}";
+
+            File.AppendAllText(
+                CheminJournalVisuelsJeu,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {details}{Environment.NewLine}"
+            );
+        }
+        catch
+        {
+            // Ignore un échec de journalisation pour ne pas gêner l'application.
+        }
+    }
 }
-
-
-
-

@@ -2,6 +2,7 @@
   x:Class="RA.Compagnon.App"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
   StartupUri="MainWindow.xaml"
 >
   <Application.Resources>
@@ -9,10 +10,82 @@
       <CornerRadius x:Key="RayonCoinsPetit">8</CornerRadius>
       <CornerRadius x:Key="RayonCoinsStandard">12</CornerRadius>
       <CornerRadius x:Key="RayonCoinsGrand">16</CornerRadius>
+      <Thickness x:Key="MargeFenetreHaut">0</Thickness>
+      <Thickness x:Key="MargeFenetreIntermediaire">0</Thickness>
+      <Thickness x:Key="MargeFenetreContenu">0</Thickness>
+      <Thickness x:Key="PaddingFenetrePrincipale">12</Thickness>
+      <Thickness x:Key="MargeBlocStandard">0,12,0,0</Thickness>
+      <Thickness x:Key="MargeBlocCompacte">0,8,0,0</Thickness>
+      <Thickness x:Key="MargeInterneDroite">8,0,0,0</Thickness>
+      <Thickness x:Key="MargeInterneIcone">0,0,8,0</Thickness>
+      <Thickness x:Key="MargeGrilleDense">0,16,0,0</Thickness>
+      <GridLength x:Key="EspaceColonnesPrincipal">16</GridLength>
+      <GridLength x:Key="EspaceRangeesPrincipal">12</GridLength>
+
+      <Style x:Key="StyleSectionArrondie" TargetType="{x:Type Border}">
+        <Setter Property="Padding" Value="16" />
+        <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsStandard}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#1FFFFFFF" />
+        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+      </Style>
+
+      <Style x:Key="StylePastilleArrondie" TargetType="{x:Type Border}">
+        <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsPetit}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+        <Setter Property="Opacity" Value="0.65" />
+      </Style>
+
+      <Style x:Key="StyleSousCarteJeu" TargetType="{x:Type Border}">
+        <Setter Property="Padding" Value="12" />
+        <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsPetit}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="#18FFFFFF" />
+        <Setter Property="Background" Value="#12000000" />
+      </Style>
+
+      <Style x:Key="StyleLibelleJeu" TargetType="{x:Type TextBlock}">
+        <Setter Property="Opacity" Value="0.66" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Text" Value="Libellé" />
+      </Style>
+
+      <Style x:Key="StyleTexteCopiable" TargetType="{x:Type TextBox}">
+        <Setter Property="IsReadOnly" Value="True" />
+        <Setter Property="IsReadOnlyCaretVisible" Value="False" />
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource SystemAccentColorBrush}" />
+        <Setter Property="SelectionOpacity" Value="0.35" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Focusable" Value="True" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Cursor" Value="IBeam" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type TextBox}">
+              <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" />
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
 
       <ResourceDictionary.MergedDictionaries>
-        <ui:ThemesDictionary Theme="Dark" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" />
-        <ui:ControlsDictionary xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" />
+        <ui:ThemesDictionary Theme="Dark" />
+        <ui:ControlsDictionary />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
