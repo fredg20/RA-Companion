@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
+using RA.Compagnon.Services;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
@@ -69,6 +70,10 @@ public partial class App : Application
             WindowBackdropType.Mica,
             updateAccent: true
         );
+
+        ServiceSondeLocaleEmulateurs.ReinitialiserJournalSession();
+        ServiceSondeRichPresence.ReinitialiserJournalSession();
+        ServiceResolutionJeuLocal.ReinitialiserJournalSession();
 
         base.OnStartup(e);
         JournaliserDemarrage("OnStartup fin");

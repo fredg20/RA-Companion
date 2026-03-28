@@ -1,4 +1,5 @@
 using System.Globalization;
+using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
@@ -8,12 +9,15 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationCompte
 {
+    private readonly ServiceSondeRichPresence _serviceSondeRichPresence = new();
+
     public CompteAffiche Construire(DonneesCompteUtilisateur donnees, string pseudoParDefaut)
     {
         string nomUtilisateur = donnees.Profil?.User?.Trim() ?? pseudoParDefaut.Trim();
         string titre = string.IsNullOrWhiteSpace(nomUtilisateur) ? "Compte" : nomUtilisateur;
         string devise = donnees.Profil?.Motto?.Trim() ?? string.Empty;
         string urlAvatar = ConstruireUrlAvatar(donnees.Profil?.UserPic);
+        EtatRichPresence etatRichPresence = _serviceSondeRichPresence.Sonder(donnees);
 
         List<SectionInformationsAffichee> sections = [];
 
@@ -128,7 +132,11 @@ public sealed class ServicePresentationCompte
         }
 
         List<LigneInformationAffichee> lignesActivite = [];
-        AjouterLigneSiValeurUtile(lignesActivite, "Rich Presence", donnees.Profil?.RichPresenceMsg);
+        AjouterLigneSiValeurUtile(
+            lignesActivite,
+            "Rich Presence",
+            etatRichPresence.MessageRichPresence
+        );
         AjouterLigneSiValeurUtile(
             lignesActivite,
             "Succès récents",
@@ -157,6 +165,8 @@ public sealed class ServicePresentationCompte
         {
             NomUtilisateur = nomUtilisateur,
             Titre = titre,
+            Statut = etatRichPresence.StatutAffiche,
+            SousStatut = etatRichPresence.SousStatutAffiche,
             Devise = devise,
             Introduction =
                 "Retrouve ici les informations principales de ton compte et gère ta connexion en toute simplicité.",
@@ -218,9 +228,7 @@ public sealed class ServicePresentationCompte
         return valeur.HasValue ? valeur.Value.ToString(CultureInfo.CurrentCulture) : string.Empty;
     }
 
-    private static string ConstruireResumePositionCompte(
-        RA.Compagnon.Modeles.Api.V2.User.UserSummaryV2? resume
-    )
+    private static string ConstruireResumePositionCompte(UserSummaryV2? resume)
     {
         if (resume is null || resume.Rank <= 0 || resume.TotalRanked <= 0)
         {
@@ -230,9 +238,7 @@ public sealed class ServicePresentationCompte
         return $"{resume.Rank.ToString(CultureInfo.CurrentCulture)} sur {resume.TotalRanked.ToString(CultureInfo.CurrentCulture)}";
     }
 
-    private static string FormaterResumeSuccesRecents(
-        RA.Compagnon.Modeles.Api.V2.User.UserSummaryV2? resume
-    )
+    private static string FormaterResumeSuccesRecents(UserSummaryV2? resume)
     {
         if (resume is null)
         {
@@ -258,12 +264,15 @@ public sealed class ServicePresentationCompte
             return donnees.Resume.LastGame.Titre;
         }
 
-        return donnees.Profil?.LastGame?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(donnees.Profil?.LastGame))
+        {
+            return donnees.Profil.LastGame.Trim();
+        }
+
+        return string.Empty;
     }
 
-    private static string ConstruireSousTitreJeuRecent(
-        RA.Compagnon.Modeles.Api.V2.User.RecentlyPlayedGameV2 jeu
-    )
+    private static string ConstruireSousTitreJeuRecent(RecentlyPlayedGameV2 jeu)
     {
         List<string> segments = [];
 

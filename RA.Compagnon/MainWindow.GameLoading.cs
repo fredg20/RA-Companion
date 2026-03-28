@@ -75,6 +75,8 @@ public partial class MainWindow
             _dernierResumeUtilisateurCharge = null;
             _dernieresDonneesJeuAffichees = null;
             _minuteurActualisationApi.Stop();
+            _minuteurActualisationRichPresence.Stop();
+            _minuteurSondeLocaleEmulateurs.Stop();
             ReinitialiserContexteSurveillance();
             DefinirEtatConnexion("Profil inaccessible");
 
@@ -119,7 +121,16 @@ public partial class MainWindow
             _chargementJeuEnCoursActif = false;
             App.JournaliserDemarrage("ChargerJeuEnCours fin");
 
-            if (_actualisationApiCibleeEnAttente && ConfigurationConnexionEstComplete())
+            if (_identifiantJeuLocalResolutEnAttente > 0 && ConfigurationConnexionEstComplete())
+            {
+                int identifiantJeuLocalResolut = _identifiantJeuLocalResolutEnAttente;
+                string titreJeuLocalResolut = _titreJeuLocalResolutEnAttente;
+                _identifiantJeuLocalResolutEnAttente = 0;
+                _titreJeuLocalResolutEnAttente = string.Empty;
+                ChargerJeuResolutLocal(identifiantJeuLocalResolut, titreJeuLocalResolut);
+                RedemarrerMinuteurActualisationApi();
+            }
+            else if (_actualisationApiCibleeEnAttente && ConfigurationConnexionEstComplete())
             {
                 _actualisationApiCibleeEnAttente = false;
                 _ = Dispatcher.InvokeAsync(async () =>
@@ -171,6 +182,17 @@ public partial class MainWindow
             profil.LastGame,
             dernierJeuJoue?.Title
         );
+
+        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true && _identifiantJeuLocalActif > 0)
+        {
+            identifiantJeuEffectif = _identifiantJeuLocalActif;
+
+            if (!string.IsNullOrWhiteSpace(_titreJeuLocalActif))
+            {
+                titreJeuProvisoire = _titreJeuLocalActif;
+            }
+        }
+
         string titreAffichageInitial = string.IsNullOrWhiteSpace(_dernierTitreJeuApi)
             ? titreJeuProvisoire
             : _dernierTitreJeuApi;

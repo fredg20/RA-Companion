@@ -362,6 +362,8 @@ public partial class MainWindow
             _dernierResumeUtilisateurCharge = resume;
         }
 
+        MettreAJourNoticeCompteEntete();
+
         return new DonneesCompteUtilisateur
         {
             Profil = profil,
@@ -793,6 +795,8 @@ public partial class MainWindow
         {
             BoutonCompteUtilisateur.Content = ObtenirLibelleBoutonCompte();
         }
+
+        MettreAJourNoticeCompteEntete();
     }
 
     private string ObtenirLibelleBoutonCompte()
@@ -800,6 +804,171 @@ public partial class MainWindow
         return string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)
             ? "Connexion"
             : _configurationConnexion.Pseudo;
+    }
+
+    private void MettreAJourNoticeCompteEntete()
+    {
+        if (
+            ZoneEtatCompteUtilisateur is null
+            || BadgeEtatCompteUtilisateur is null
+            || TexteEtatCompteUtilisateur is null
+            || TexteSousEtatCompteUtilisateur is null
+        )
+        {
+            return;
+        }
+
+        if (!ConfigurationConnexionEstComplete())
+        {
+            ZoneEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
+            TexteSousEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
+            TexteEtatCompteUtilisateur.Text = string.Empty;
+            TexteSousEtatCompteUtilisateur.Text = string.Empty;
+            ZoneEtatCompteUtilisateur.ToolTip = null;
+            _signatureDerniereNoticeCompteJournalisee = string.Empty;
+            return;
+        }
+
+        int identifiantJeuAffiche = DeterminerIdentifiantJeuNoticeCompte();
+        string texteIdentifiantJeu = identifiantJeuAffiche > 0
+            ? identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)
+            : string.Empty;
+
+        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true)
+        {
+            TexteEtatCompteUtilisateur.Text = "En jeu";
+            TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeu;
+            TexteSousEtatCompteUtilisateur.Visibility = string.IsNullOrWhiteSpace(
+                texteIdentifiantJeu
+            )
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+            (Brush fondLocal, Brush bordureLocale) = ObtenirCouleursNoticeCompteEntete("En jeu");
+            BadgeEtatCompteUtilisateur.Background = fondLocal;
+            BadgeEtatCompteUtilisateur.BorderBrush = bordureLocale;
+            ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
+            ZoneEtatCompteUtilisateur.ToolTip = string.IsNullOrWhiteSpace(texteIdentifiantJeu)
+                ? "En jeu (détection locale)"
+                : $"En jeu{Environment.NewLine}{texteIdentifiantJeu}";
+            JournaliserNoticeCompteEntete("En jeu", texteIdentifiantJeu, "local");
+            return;
+        }
+
+        CompteAffiche compte = _servicePresentationCompte.Construire(
+            new DonneesCompteUtilisateur
+            {
+                Profil = _dernierProfilUtilisateurCharge,
+                Resume = _dernierResumeUtilisateurCharge,
+            },
+            _configurationConnexion.Pseudo
+        );
+
+        if (string.IsNullOrWhiteSpace(compte.Statut))
+        {
+            ZoneEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
+            TexteSousEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
+            TexteEtatCompteUtilisateur.Text = string.Empty;
+            TexteSousEtatCompteUtilisateur.Text = string.Empty;
+            ZoneEtatCompteUtilisateur.ToolTip = null;
+            return;
+        }
+
+        TexteEtatCompteUtilisateur.Text = compte.Statut.Trim();
+
+        bool afficherSousStatut = !string.IsNullOrWhiteSpace(texteIdentifiantJeu);
+        TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeu;
+        TexteSousEtatCompteUtilisateur.Visibility = afficherSousStatut
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        (Brush fond, Brush bordure) = ObtenirCouleursNoticeCompteEntete(compte.Statut);
+        BadgeEtatCompteUtilisateur.Background = fond;
+        BadgeEtatCompteUtilisateur.BorderBrush = bordure;
+        ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
+        ZoneEtatCompteUtilisateur.ToolTip = afficherSousStatut
+            ? $"{compte.Statut}{Environment.NewLine}{texteIdentifiantJeu}"
+            : compte.Statut;
+        JournaliserNoticeCompteEntete(compte.Statut, texteIdentifiantJeu, "api");
+    }
+
+    private int DeterminerIdentifiantJeuNoticeCompte()
+    {
+        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true && _identifiantJeuLocalActif > 0)
+        {
+            return _identifiantJeuLocalActif;
+        }
+
+        if (_dernierIdentifiantJeuApi > 0)
+        {
+            return _dernierIdentifiantJeuApi;
+        }
+
+        if (_dernierResumeUtilisateurCharge?.LastGameId > 0)
+        {
+            return _dernierResumeUtilisateurCharge.LastGameId;
+        }
+
+        if (_dernierProfilUtilisateurCharge?.LastGameId > 0)
+        {
+            return _dernierProfilUtilisateurCharge.LastGameId;
+        }
+
+        return 0;
+    }
+
+    private static (Brush Fond, Brush Bordure) ObtenirCouleursNoticeCompteEntete(string statut)
+    {
+        if (statut.Contains("En jeu", StringComparison.OrdinalIgnoreCase))
+        {
+            return (
+                new SolidColorBrush(Color.FromArgb(36, 58, 188, 116)),
+                new SolidColorBrush(Color.FromArgb(96, 58, 188, 116))
+            );
+        }
+
+        if (statut.Contains("Actif", StringComparison.OrdinalIgnoreCase))
+        {
+            return (
+                new SolidColorBrush(Color.FromArgb(24, 120, 200, 255)),
+                new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
+            );
+        }
+
+        if (statut.Contains("Inactif", StringComparison.OrdinalIgnoreCase))
+        {
+            return (
+                new SolidColorBrush(Color.FromArgb(22, 160, 160, 160)),
+                new SolidColorBrush(Color.FromArgb(56, 160, 160, 160))
+            );
+        }
+
+        return (
+            new SolidColorBrush(Color.FromArgb(24, 120, 200, 255)),
+            new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
+        );
+    }
+
+    private void JournaliserNoticeCompteEntete(string statut, string identifiantJeu, string source)
+    {
+        string signature = $"{source}|{statut}|{identifiantJeu}";
+
+        if (
+            string.Equals(
+                _signatureDerniereNoticeCompteJournalisee,
+                signature,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            return;
+        }
+
+        _signatureDerniereNoticeCompteJournalisee = signature;
+        ServiceResolutionJeuLocal.JournaliserEvenementInterface(
+            "notice_compte",
+            $"source={source};statut={statut};gameId={identifiantJeu}"
+        );
     }
 
     private void DefinirEtatConnexion(string etatConnexion)

@@ -9,6 +9,10 @@ public sealed class CompteAffiche
 
     public string Titre { get; init; } = string.Empty;
 
+    public string Statut { get; init; } = string.Empty;
+
+    public string SousStatut { get; init; } = string.Empty;
+
     public string Devise { get; init; } = string.Empty;
 
     public string Introduction { get; init; } = string.Empty;
