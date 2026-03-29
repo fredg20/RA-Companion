@@ -74,6 +74,8 @@ public partial class App : Application
         ServiceSondeLocaleEmulateurs.ReinitialiserJournalSession();
         ServiceSondeRichPresence.ReinitialiserJournalSession();
         ServiceResolutionJeuLocal.ReinitialiserJournalSession();
+        ServiceDetectionSuccesJeu.ReinitialiserJournalSession();
+        RA.Compagnon.MainWindow.ReinitialiserJournalDiagnosticPerformance();
 
         base.OnStartup(e);
         JournaliserDemarrage("OnStartup fin");

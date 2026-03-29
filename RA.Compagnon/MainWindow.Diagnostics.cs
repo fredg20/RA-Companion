@@ -16,6 +16,39 @@ public partial class MainWindow
         "journal-performance-jeu.log"
     );
 
+    public static void ReinitialiserJournalDiagnosticPerformance()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalDiagnosticPerformance)!);
+            File.WriteAllText(
+                CheminJournalDiagnosticPerformance,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
+            );
+        }
+        catch
+        {
+            // Ce journal reste purement diagnostique.
+        }
+    }
+
+    private void DemarrerDiagnosticChangementJeu(string signature, string? details = null)
+    {
+        if (!ActiverJournalDiagnosticChangementJeu || string.IsNullOrWhiteSpace(signature))
+        {
+            return;
+        }
+
+        if (string.Equals(_signatureDiagnosticChangementJeu, signature, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _signatureDiagnosticChangementJeu = signature;
+        _chronometreDiagnosticChangementJeu = System.Diagnostics.Stopwatch.StartNew();
+        JournaliserDiagnosticChangementJeu("diagnostic_debut", details ?? signature);
+    }
+
     private void JournaliserDiagnosticChangementJeu(string etape, string? details = null)
     {
         if (!ActiverJournalDiagnosticChangementJeu || _chronometreDiagnosticChangementJeu is null)

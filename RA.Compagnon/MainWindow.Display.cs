@@ -344,7 +344,16 @@ public partial class MainWindow
     /// </summary>
     private void TitreJeuEnCours_MiseEnPageChangee(object sender, SizeChangedEventArgs e)
     {
-        _signatureAnimationTitreJeu = string.Empty;
+        if (!ReferenceEquals(sender, ConteneurTitreJeuEnCours))
+        {
+            return;
+        }
+
+        if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.5)
+        {
+            return;
+        }
+
         PlanifierMiseAJourAnimationTitreJeuEnCours();
     }
 
@@ -477,6 +486,8 @@ public partial class MainWindow
         ReinitialiserImageJeuEnCours();
         ReinitialiserPremierSuccesNonDebloque();
         ReinitialiserGrilleTousSucces();
+        _identifiantJeuSuccesObserve = 0;
+        _etatSuccesObserves = [];
         ReinitialiserMetaConsoleJeuEnCours();
         DefinirTempsJeuSousImage(string.Empty);
         DefinirEtatJeuDansProgression(string.Empty);

@@ -86,6 +86,23 @@ public partial class MainWindow
         DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes);
     }
 
+    private void DemarrerMiseAJourSuccesJeuEnArrierePlan(GameInfoAndUserProgressV2 jeu)
+    {
+        _ = MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
+    }
+
+    private async Task MettreAJourSuccesJeuEnArrierePlanAsync(GameInfoAndUserProgressV2 jeu)
+    {
+        try
+        {
+            await MettreAJourSuccesJeuAsync(jeu);
+        }
+        catch
+        {
+            // Les succès enrichissent l'affichage, mais ne doivent pas bloquer la carte principale.
+        }
+    }
+
     /// <summary>
     /// Charge la grille complète des succès sans bloquer l'affichage du succès principal.
     /// </summary>

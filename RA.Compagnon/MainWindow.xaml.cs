@@ -48,6 +48,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private static readonly TimeSpan IntervalleActualisationApi = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan IntervalleActualisationRichPresence = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan IntervalleSondeLocaleEmulateurs = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan IntervallePresenceLocaleCompte = TimeSpan.FromMilliseconds(
+        250
+    );
     private static readonly TimeSpan IntervalleMasquageBarreDefilement = TimeSpan.FromSeconds(1.2);
     private static readonly TimeSpan IntervalleRepriseAnimationGrilleSucces = TimeSpan.FromSeconds(
         1.3
@@ -61,8 +64,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double MargeInterieureModaleConnexion = 16;
     private const double LargeurZoneDetectionBarreDefilement = 18;
     private const double TaillePoliceTitreJeuNormale = 26;
-    private const double VitesseDefilementTitreJeuPixelsParSeconde = 18;
-    private const double SeuilDeclenchementDefilementTitreJeu = 4;
+    private const double TaillePoliceTitreJeuMinimale = 18;
     private const double TailleBadgeGrilleSucces = 34;
     private const double EspaceMinimalGrilleSucces = 6;
     private const double HauteurMinimaleGrilleSucces = 0;
@@ -70,7 +72,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double SeuilDeclenchementDefilementGrilleSucces = 4;
     private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
     private const double RayonFlouTransitionImageJeuEnCours = 14;
-    private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(8);
 
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();
     private readonly ServiceTraductionTexte _serviceTraductionTexte = new();
@@ -80,9 +82,14 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServiceActiviteRetroAchievements _serviceActiviteRetroAchievements = new();
     private readonly ServiceCommunauteRetroAchievements _serviceCommunauteRetroAchievements = new();
     private readonly ServiceCatalogueRetroAchievements _serviceCatalogueRetroAchievements = new();
+    private readonly ServiceCatalogueJeuxLocal _serviceCatalogueJeuxLocal = new();
+    private readonly ServiceEtatUtilisateurJeuxLocal _serviceEtatUtilisateurJeuxLocal = new();
     private readonly ServiceSondeLocaleEmulateurs _serviceSondeLocaleEmulateurs = new();
     private readonly ServiceSondeRichPresence _serviceSondeRichPresence = new();
     private readonly ServiceResolutionJeuLocal _serviceResolutionJeuLocal = new();
+    private readonly ServiceDetectionSuccesJeu _serviceDetectionSuccesJeu = new();
+    private readonly ServiceDetectionSuccesUtilisateurLocal _serviceDetectionSuccesUtilisateurLocal =
+        new();
     private readonly ServicePresentationCompte _servicePresentationCompte = new();
     private readonly ServicePresentationJeu _servicePresentationJeu = new();
     private readonly ServicePresentationSucces _servicePresentationSucces = new();
@@ -90,6 +97,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServicePresentationCommunaute _servicePresentationCommunaute = new();
     private readonly DispatcherTimer _minuteurActualisationApi = new(DispatcherPriority.Background);
     private readonly DispatcherTimer _minuteurActualisationRichPresence = new(
+        DispatcherPriority.Background
+    );
+    private readonly DispatcherTimer _minuteurPresenceLocaleCompte = new(
         DispatcherPriority.Background
     );
     private readonly DispatcherTimer _minuteurSondeLocaleEmulateurs = new(
@@ -111,6 +121,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private bool _chargementJeuEnCoursActif;
     private bool _actualisationApiCibleeEnAttente;
     private bool _surveillanceRichPresenceEnCours;
+    private bool _surveillancePresenceLocaleCompteEnCours;
     private bool _surveillanceLocaleEmulateursEnCours;
     private bool _profilUtilisateurAccessible = true;
     private bool _dernierJeuAfficheModifie;
@@ -153,9 +164,15 @@ public partial class MainWindow : UiControls.FluentWindow
     private AnimationClock? _horlogeAnimationGrilleSucces;
     private Dictionary<int, int> _positionsAleatoiresSuccesGrille = [];
     private IReadOnlyList<ConsoleV2> _consolesResolutionLocale = [];
+    private Dictionary<int, EtatObservationSuccesLocal> _etatSuccesObserves = [];
     private List<GameAchievementV2> _succesJeuCourant = [];
     private OrdreSuccesGrille _ordreSuccesGrilleCourant = OrdreSuccesGrille.Normal;
     private EtatSondeLocaleEmulateur? _dernierEtatSondeLocaleEmulateurs;
+    private bool _presenceLocaleCompteActive;
+    private DateTimeOffset _horodatageDernierePresenceLocaleCompteValide;
+    private DateTimeOffset _horodatageDerniereDetectionLocaleValide;
+    private DateTimeOffset _horodatageDerniereResolutionJeuLocalValide;
+    private int _identifiantJeuSuccesObserve;
     private int _identifiantJeuLocalActif;
     private string _titreJeuLocalActif = string.Empty;
     private int _identifiantJeuLocalResolutEnAttente;
@@ -209,6 +226,9 @@ public partial class MainWindow : UiControls.FluentWindow
 
         _minuteurActualisationRichPresence.Interval = IntervalleActualisationRichPresence;
         _minuteurActualisationRichPresence.Tick += ActualisationRichPresence_Tick;
+
+        _minuteurPresenceLocaleCompte.Interval = IntervallePresenceLocaleCompte;
+        _minuteurPresenceLocaleCompte.Tick += ActualisationPresenceLocaleCompte_Tick;
 
         _minuteurSondeLocaleEmulateurs.Interval = IntervalleSondeLocaleEmulateurs;
         _minuteurSondeLocaleEmulateurs.Tick += ActualisationSondeLocaleEmulateurs_Tick;

@@ -436,6 +436,11 @@ public partial class MainWindow
         }
 
         _signatureAnimationTitreJeu = string.Empty;
+        if (TexteTitreJeuEnCours.RenderTransform is TranslateTransform translation)
+        {
+            translation.BeginAnimation(TranslateTransform.XProperty, null);
+            translation.X = 0;
+        }
         TexteTitreJeuEnCours.Text = titre;
         TexteTitreJeuEnCours.Width = double.NaN;
         TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
@@ -443,7 +448,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Recalcule l'animation horizontale du titre de jeu si sa largeur dépasse l'espace disponible.
+    /// Anime horizontalement le titre quand il dépasse de son conteneur.
     /// </summary>
     private void MettreAJourAnimationTitreJeuEnCours()
     {
@@ -462,9 +467,8 @@ public partial class MainWindow
         TexteTitreJeuEnCours.RenderTransform = translation;
         translation.BeginAnimation(TranslateTransform.XProperty, null);
         translation.X = 0;
-        TexteTitreJeuEnCours.Width = double.NaN;
         TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
-        double largeurTitreSouhaitee = MesurerLargeurTitreJeuEnCours();
+        double largeurTitreSouhaitee = MesurerLargeurTitreJeuEnCours(TaillePoliceTitreJeuNormale);
         double largeurDisponible = ConteneurTitreJeuEnCours.ActualWidth;
 
         if (largeurTitreSouhaitee <= 0 || largeurDisponible <= 0)
@@ -472,16 +476,12 @@ public partial class MainWindow
             return;
         }
 
-        double amplitude = Math.Max(0, largeurTitreSouhaitee - largeurDisponible + 12);
-
+        const double seuilDeclenchement = 6;
+        const double vitessePixelsParSeconde = 42;
+        TimeSpan pause = TimeSpan.FromSeconds(1.1);
+        double debordement = Math.Max(0, largeurTitreSouhaitee - largeurDisponible);
         string signatureAnimation =
-            $"{TexteTitreJeuEnCours.Text}|{Math.Round(largeurTitreSouhaitee, 1, MidpointRounding.AwayFromZero)}|{Math.Round(largeurDisponible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(amplitude, 1, MidpointRounding.AwayFromZero)}";
-
-        if (amplitude <= SeuilDeclenchementDefilementTitreJeu)
-        {
-            _signatureAnimationTitreJeu = signatureAnimation;
-            return;
-        }
+            $"{TexteTitreJeuEnCours.Text}|{Math.Round(largeurTitreSouhaitee, 1, MidpointRounding.AwayFromZero)}|{Math.Round(largeurDisponible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(debordement, 1, MidpointRounding.AwayFromZero)}";
 
         if (
             string.Equals(_signatureAnimationTitreJeu, signatureAnimation, StringComparison.Ordinal)
@@ -495,12 +495,12 @@ public partial class MainWindow
         TexteTitreJeuEnCours.Width = largeurTitreSouhaitee;
         System.Windows.Controls.Canvas.SetLeft(TexteTitreJeuEnCours, 0);
 
-        double dureeTrajetSecondes = Math.Clamp(
-            amplitude / VitesseDefilementTitreJeuPixelsParSeconde,
-            4,
-            16
-        );
-        TimeSpan pause = TimeSpan.FromSeconds(1.2);
+        if (debordement <= seuilDeclenchement)
+        {
+            return;
+        }
+
+        double dureeTrajetSecondes = Math.Clamp(debordement / vitessePixelsParSeconde, 2.4, 14);
         TimeSpan trajet = TimeSpan.FromSeconds(dureeTrajetSecondes);
         DoubleAnimationUsingKeyFrames animation = new() { RepeatBehavior = RepeatBehavior.Forever };
 
@@ -508,25 +508,19 @@ public partial class MainWindow
         animation.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause)));
         animation.KeyFrames.Add(
             new EasingDoubleKeyFrame(
-                -amplitude,
+                -debordement,
                 KeyTime.FromTimeSpan(pause + trajet),
                 new SineEase { EasingMode = EasingMode.EaseInOut }
             )
         );
         animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(-amplitude, KeyTime.FromTimeSpan(pause + trajet + pause))
+            new EasingDoubleKeyFrame(-debordement, KeyTime.FromTimeSpan(pause + trajet + pause))
         );
         animation.KeyFrames.Add(
             new EasingDoubleKeyFrame(
                 0,
                 KeyTime.FromTimeSpan(pause + trajet + pause + trajet),
                 new SineEase { EasingMode = EasingMode.EaseInOut }
-            )
-        );
-        animation.KeyFrames.Add(
-            new EasingDoubleKeyFrame(
-                0,
-                KeyTime.FromTimeSpan(pause + trajet + pause + trajet + pause)
             )
         );
 
@@ -557,7 +551,7 @@ public partial class MainWindow
     /// <summary>
     /// Mesure la largeur réelle du titre indépendamment du layout WPF courant.
     /// </summary>
-    private double MesurerLargeurTitreJeuEnCours()
+    private double MesurerLargeurTitreJeuEnCours(double taillePolice)
     {
         string texte = TexteTitreJeuEnCours.Text ?? string.Empty;
 
@@ -577,7 +571,7 @@ public partial class MainWindow
                 TexteTitreJeuEnCours.FontWeight,
                 TexteTitreJeuEnCours.FontStretch
             ),
-            TexteTitreJeuEnCours.FontSize,
+            taillePolice,
             Brushes.Transparent,
             pixelsParDip
         );

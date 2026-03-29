@@ -11,7 +11,7 @@ Son positionnement est différent :
 - offrir une expérience plus claire et plus moderne
 - rendre la progression plus agréable à consulter
 - rester stable et rapide au quotidien
-- être utile sans dépendre d'un émulateur
+- être utile même sans dépendre uniquement d'un émulateur
 
 En une phrase :
 
@@ -28,11 +28,12 @@ En une phrase :
 `RA-Compagnon` est maintenant centré sur :
 
 - les appels à l'API RetroAchievements
+- la détection locale légère d'émulateur pour accélérer l'affichage du jeu courant
 - la persistance locale
 - la restauration rapide au démarrage
 - l'affichage du jeu et des rétrosuccès
 
-Le projet ne dépend plus d'un émulateur ni d'une sonde locale.
+L'application reste utilisable sans émulateur, mais sait désormais exploiter une sonde locale quand elle est disponible.
 
 ## Fonctionnalités actuelles
 
@@ -42,8 +43,29 @@ Le projet ne dépend plus d'un émulateur ni d'une sonde locale.
 - affichage d'un rétrosuccès mis en avant
 - grille complète des rétrosuccès du jeu
 - succès récents du compte
+- détection locale du jeu en cours via certains émulateurs pris en charge
 - ordre de grille `Normal`, `Aléatoire`, `Facile`, `Difficile`
 - restauration locale au démarrage
+
+## Validation émulateurs
+
+Validation confirmée :
+
+- `Flycast`
+  - détection locale du processus
+  - extraction du titre du jeu depuis la fenêtre
+  - résolution rapide vers le `Game ID` RetroAchievements
+  - priorité locale correcte tant que l'émulateur est ouvert
+- `DuckStation`
+  - détection locale du processus
+  - extraction du titre du jeu via fenêtre, automatisation ou fallback local
+  - résolution vers le `Game ID` RetroAchievements
+  - maintien de l'état local même si le titre disparaît temporairement
+- `PCSX2`
+  - détection locale du processus
+  - filtrage des fenêtres de dialogue et outils internes
+  - extraction du titre du vrai jeu depuis la fenêtre
+  - résolution vers le `Game ID` RetroAchievements, y compris via le catalogue local
 
 ## Direction produit
 
@@ -55,8 +77,6 @@ Les prochaines évolutions les plus naturelles sont :
 
 Ce que le projet ne cherche pas à faire pour l'instant :
 
-- détection en direct d'émulateur
-- dépendance à `RetroArch` ou à un autre émulateur
 - logique de mémoire en direct
 - fonctions fragiles qui dégradent la stabilité
 

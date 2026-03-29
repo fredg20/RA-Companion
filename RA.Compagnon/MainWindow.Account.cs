@@ -830,11 +830,12 @@ public partial class MainWindow
         }
 
         int identifiantJeuAffiche = DeterminerIdentifiantJeuNoticeCompte();
-        string texteIdentifiantJeu = identifiantJeuAffiche > 0
-            ? identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)
-            : string.Empty;
+        string texteIdentifiantJeu =
+            identifiantJeuAffiche > 0
+                ? identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)
+                : string.Empty;
 
-        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true)
+        if (EtatLocalEmulateurEstActifPourNotice())
         {
             TexteEtatCompteUtilisateur.Text = "En jeu";
             TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeu;
@@ -894,9 +895,9 @@ public partial class MainWindow
 
     private int DeterminerIdentifiantJeuNoticeCompte()
     {
-        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true && _identifiantJeuLocalActif > 0)
+        if (EtatLocalEmulateurEstActifPourNotice())
         {
-            return _identifiantJeuLocalActif;
+            return _identifiantJeuLocalActif > 0 ? _identifiantJeuLocalActif : 0;
         }
 
         if (_dernierIdentifiantJeuApi > 0)

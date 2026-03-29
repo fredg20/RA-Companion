@@ -82,7 +82,7 @@ public partial class MainWindow
 
         Directory.CreateDirectory(Path.GetDirectoryName(cheminCache)!);
         await File.WriteAllBytesAsync(cheminCache, contenu);
-        return ChargerImageDepuisOctets(contenu);
+        return await Task.Run(() => ChargerImageDepuisOctets(contenu));
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ public partial class MainWindow
         try
         {
             byte[] contenu = await File.ReadAllBytesAsync(cheminCache);
-            return ChargerImageDepuisOctets(contenu);
+            return await Task.Run(() => ChargerImageDepuisOctets(contenu));
         }
         catch
         {

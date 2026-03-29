@@ -1,9 +1,11 @@
-﻿using System.IO;
+﻿using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Achievement;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
@@ -183,7 +185,7 @@ public partial class MainWindow
             dernierJeuJoue?.Title
         );
 
-        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true && _identifiantJeuLocalActif > 0)
+        if (EtatLocalJeuEstActif())
         {
             identifiantJeuEffectif = _identifiantJeuLocalActif;
 
@@ -202,6 +204,8 @@ public partial class MainWindow
 
         if (!infosJeuDejaAfficheesPourCeJeu)
         {
+            ReinitialiserCarrouselVisuelsJeuEnCours();
+            ReinitialiserImageJeuEnCours();
             DefinirDetailsJeuEnCours(string.Empty);
             DefinirTempsJeuSousImage(string.Empty);
             DefinirEtatJeuDansProgression(string.Empty);
@@ -241,6 +245,10 @@ public partial class MainWindow
             return;
         }
 
+        DemarrerDiagnosticChangementJeu(
+            $"api:{identifiantJeuEffectif}",
+            $"source=api;jeu={identifiantJeuEffectif};titre={titreJeuProvisoire}"
+        );
         int versionChargement = ++_versionChargementContenuJeu;
         DemarrerChargementJeuUtilisateurEnArrierePlan(
             identifiantJeuEffectif,
@@ -296,26 +304,12 @@ public partial class MainWindow
     {
         try
         {
-            Task<DonneesJeuAffiche> donneesJeuTask =
-                _serviceJeuRetroAchievements.ObtenirDonneesJeuAsync(
+            DonneesJeuAffiche donneesJeu =
+                await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     identifiantJeuEffectif
                 );
-            Task<DonneesCommunauteJeu> donneesCommunauteTask =
-                _serviceCommunauteRetroAchievements.ObtenirDonneesJeuAsync(
-                    _configurationConnexion.Pseudo,
-                    _configurationConnexion.CleApiWeb,
-                    identifiantJeuEffectif
-                );
-
-            await Task.WhenAll(donneesJeuTask, donneesCommunauteTask);
-            DonneesJeuAffiche donneesJeu = await donneesJeuTask;
-            donneesJeu.Communaute = await donneesCommunauteTask;
-            donneesJeu.CommunauteAffichee = _servicePresentationCommunaute.Construire(
-                donneesJeu.Communaute
-            );
-            GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
 
             if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
             {
@@ -323,6 +317,13 @@ public partial class MainWindow
             }
 
             await AppliquerProgressionJeuAsync(donneesJeu);
+
+            _ = EnrichirJeuEnArrierePlanAsync(
+                identifiantJeuEffectif,
+                versionChargement,
+                donneesJeu
+            );
+            _ = EnrichirCommunauteJeuEnArrierePlanAsync(identifiantJeuEffectif, versionChargement);
         }
         catch
         {
@@ -345,6 +346,91 @@ public partial class MainWindow
                 TextePourcentageJeuEnCours.Text = "Impossible de charger la progression du jeu.";
                 BarreProgressionJeuEnCours.Value = 0;
             }
+        }
+    }
+
+    private async Task EnrichirJeuEnArrierePlanAsync(
+        int identifiantJeuEffectif,
+        int versionChargement,
+        DonneesJeuAffiche donneesJeu
+    )
+    {
+        try
+        {
+            DonneesJeuAffiche donneesEnrichies =
+                await _serviceJeuRetroAchievements.EnrichirDonneesJeuAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    donneesJeu
+                );
+
+            if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
+            {
+                return;
+            }
+
+            if (_dernieresDonneesJeuAffichees?.Jeu.Id != identifiantJeuEffectif)
+            {
+                return;
+            }
+
+            DonneesJeuAffiche donneesCourantes = _dernieresDonneesJeuAffichees;
+            donneesEnrichies.Communaute = donneesCourantes.Communaute;
+            donneesEnrichies.CommunauteAffichee = donneesCourantes.CommunauteAffichee;
+            _dernieresDonneesJeuAffichees = donneesEnrichies;
+
+            GameInfoAndUserProgressV2 jeu = donneesEnrichies.Jeu;
+            JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(donneesEnrichies);
+
+            _dernierTitreJeuApi = jeu.Title;
+            AppliquerMetaConsoleJeuEnCoursInitiale(jeu);
+            DemarrerEnrichissementMetaConsoleJeuEnCours(jeu);
+            DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
+            DefinirEtatJeuDansProgression(jeuAffiche.Statut);
+            DefinirDetailsJeuEnCours(jeuAffiche.Details);
+        }
+        catch
+        {
+            // Les enrichissements secondaires ne doivent pas ralentir ni casser le rendu principal.
+        }
+    }
+
+    private async Task EnrichirCommunauteJeuEnArrierePlanAsync(
+        int identifiantJeuEffectif,
+        int versionChargement
+    )
+    {
+        try
+        {
+            DonneesCommunauteJeu donneesCommunaute =
+                await _serviceCommunauteRetroAchievements.ObtenirDonneesJeuAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    identifiantJeuEffectif
+                );
+
+            if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
+            {
+                return;
+            }
+
+            if (_dernieresDonneesJeuAffichees?.Jeu.Id != identifiantJeuEffectif)
+            {
+                return;
+            }
+
+            _dernieresDonneesJeuAffichees.Communaute = donneesCommunaute;
+            _dernieresDonneesJeuAffichees.CommunauteAffichee =
+                _servicePresentationCommunaute.Construire(donneesCommunaute);
+
+            JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(
+                _dernieresDonneesJeuAffichees
+            );
+            DefinirDetailsJeuEnCours(jeuAffiche.Details);
+        }
+        catch
+        {
+            // Les données communautaires restent secondaires et ne doivent pas casser l'affichage principal.
         }
     }
 
@@ -448,14 +534,114 @@ public partial class MainWindow
         DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
         DefinirEtatJeuDansProgression(jeuAffiche.Statut);
         DefinirDetailsJeuEnCours(jeuAffiche.Details);
-        await MettreAJourSuccesJeuAsync(jeu);
-        JournaliserDiagnosticChangementJeu("progression_succes_ok");
-
         TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
         TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
         BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
 
         await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);
+        await DetecterNouveauxSuccesJeuAsync(jeu);
+        DemarrerMiseAJourCachesJeuLocaux(jeu);
+        DemarrerMiseAJourSuccesJeuEnArrierePlan(jeu);
+        JournaliserDiagnosticChangementJeu("progression_succes_ok");
         JournaliserDiagnosticChangementJeu("progression_fin");
+    }
+
+    private void DemarrerMiseAJourCachesJeuLocaux(GameInfoAndUserProgressV2 jeu)
+    {
+        _ = MettreAJourCachesJeuLocauxAsync(jeu);
+    }
+
+    private async Task MettreAJourCachesJeuLocauxAsync(GameInfoAndUserProgressV2 jeu)
+    {
+        try
+        {
+            string? titreObserveLocal =
+                _identifiantJeuLocalActif == jeu.Id ? _titreJeuLocalActif : null;
+
+            await _serviceCatalogueJeuxLocal.EnregistrerJeuAsync(jeu, titreObserveLocal);
+            _ = await _serviceEtatUtilisateurJeuxLocal.EnregistrerEtatJeuAsync(jeu);
+        }
+        catch
+        {
+            // Le cache local reste purement opportuniste.
+        }
+    }
+
+    private async Task DetecterNouveauxSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
+    {
+        List<GameAchievementV2> succesCourants = [.. jeu.Succes.Values];
+
+        if (_identifiantJeuSuccesObserve != jeu.Id)
+        {
+            await DetecterNouveauxSuccesJeuDepuisCacheLocalAsync(jeu);
+            _identifiantJeuSuccesObserve = jeu.Id;
+            _etatSuccesObserves = _serviceDetectionSuccesJeu.CapturerEtat(succesCourants);
+            ServiceDetectionSuccesJeu.JournaliserInitialisation(
+                jeu.Id,
+                jeu.Title,
+                succesCourants.Count
+            );
+            return;
+        }
+
+        IReadOnlyList<SuccesDebloqueDetecte> nouveauxSucces =
+            _serviceDetectionSuccesJeu.DetecterNouveauxSucces(
+                jeu.Id,
+                jeu.Title,
+                _etatSuccesObserves,
+                succesCourants
+            );
+
+        foreach (SuccesDebloqueDetecte succes in nouveauxSucces)
+        {
+            ServiceDetectionSuccesJeu.JournaliserDetection(succes, "session");
+        }
+
+        _etatSuccesObserves = _serviceDetectionSuccesJeu.CapturerEtat(succesCourants);
+    }
+
+    private async Task DetecterNouveauxSuccesJeuDepuisCacheLocalAsync(GameInfoAndUserProgressV2 jeu)
+    {
+        EtatJeuUtilisateurLocal? precedent = await _serviceEtatUtilisateurJeuxLocal.ObtenirJeuAsync(
+            jeu.Id
+        );
+
+        if (precedent is null)
+        {
+            return;
+        }
+
+        EtatJeuUtilisateurLocal courant = ServiceEtatUtilisateurJeuxLocal.ConstruireEtatJeu(jeu);
+        IReadOnlyList<EtatSuccesUtilisateurLocal> nouveauxSucces =
+            _serviceDetectionSuccesUtilisateurLocal.DetecterNouveauxSucces(precedent, courant);
+
+        foreach (EtatSuccesUtilisateurLocal succesLocal in nouveauxSucces)
+        {
+            if (
+                !jeu.Succes.TryGetValue(
+                    succesLocal.AchievementId.ToString(CultureInfo.InvariantCulture),
+                    out GameAchievementV2? succesJeu
+                ) || succesJeu is null
+            )
+            {
+                continue;
+            }
+
+            ServiceDetectionSuccesJeu.JournaliserDetection(
+                new SuccesDebloqueDetecte
+                {
+                    IdentifiantJeu = jeu.Id,
+                    TitreJeu = jeu.Title?.Trim() ?? string.Empty,
+                    IdentifiantSucces = succesJeu.Id,
+                    TitreSucces = succesJeu.Title?.Trim() ?? string.Empty,
+                    Points = succesJeu.Points,
+                    Hardcore = succesLocal.EstHardcore,
+                    DateObtention = succesLocal.EstHardcore
+                        ? succesLocal.DateDeblocageHardcoreUtc
+                        : succesLocal.DateDeblocageUtc,
+                },
+                "cache_local"
+            );
+        }
     }
 }

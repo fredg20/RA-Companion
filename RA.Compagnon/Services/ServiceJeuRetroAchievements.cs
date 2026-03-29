@@ -1,4 +1,8 @@
+using System.Collections.Concurrent;
+using System.Text.Json;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Catalogue;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
@@ -8,13 +12,39 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServiceJeuRetroAchievements
 {
-    public async Task<DonneesJeuAffiche> ObtenirDonneesJeuAsync(
+    private static readonly TimeSpan DureeCacheDonneesRapides = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan DureeCacheDonneesEnrichies = TimeSpan.FromMinutes(5);
+    private static readonly JsonSerializerOptions OptionsClone = new();
+    private readonly ConcurrentDictionary<
+        string,
+        EntreeCacheJeu<DonneesJeuAffiche>
+    > _cacheJeuxRapides = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<
+        string,
+        EntreeCacheJeu<DonneesJeuAffiche>
+    > _cacheJeuxEnrichis = new(StringComparer.Ordinal);
+
+    public async Task<DonneesJeuAffiche> ObtenirDonneesJeuRapidesAsync(
         string pseudo,
         string cleApiWeb,
         int identifiantJeu,
         CancellationToken jetonAnnulation = default
     )
     {
+        string cleCache = ConstruireCleCache(pseudo, identifiantJeu);
+
+        if (
+            TenterObtenirDepuisCache(
+                _cacheJeuxRapides,
+                cleCache,
+                DureeCacheDonneesRapides,
+                out DonneesJeuAffiche? donneesCachees
+            ) && donneesCachees is not null
+        )
+        {
+            return donneesCachees;
+        }
+
         GameInfoAndUserProgressV2 jeu =
             await ClientRetroAchievements.ObtenirJeuEtProgressionUtilisateurAsync(
                 pseudo,
@@ -23,17 +53,46 @@ public sealed class ServiceJeuRetroAchievements
                 jetonAnnulation
             );
 
+        DonneesJeuAffiche donnees = new() { Jeu = jeu };
+        _cacheJeuxRapides[cleCache] = new EntreeCacheJeu<DonneesJeuAffiche>(Cloner(donnees));
+        return donnees;
+    }
+
+    public async Task<DonneesJeuAffiche> EnrichirDonneesJeuAsync(
+        string pseudo,
+        string cleApiWeb,
+        DonneesJeuAffiche donneesJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
+        string cleCache = ConstruireCleCache(pseudo, jeu.Id);
+
+        if (
+            TenterObtenirDepuisCache(
+                _cacheJeuxEnrichis,
+                cleCache,
+                DureeCacheDonneesEnrichies,
+                out DonneesJeuAffiche? donneesCachees
+            ) && donneesCachees is not null
+        )
+        {
+            donneesCachees.Communaute = donneesJeu.Communaute;
+            donneesCachees.CommunauteAffichee = donneesJeu.CommunauteAffichee;
+            return donneesCachees;
+        }
+
         Task<GameExtendedDetailsV2?> detailsTask = TenterAsync(() =>
             ClientRetroAchievements.ObtenirDetailsEtendusJeuAsync(
                 cleApiWeb,
-                identifiantJeu,
+                jeu.Id,
                 jetonAnnulation
             )
         );
         Task<GameProgressionV2?> progressionTask = TenterAsync(() =>
             ClientRetroAchievements.ObtenirProgressionJeuAsync(
                 cleApiWeb,
-                identifiantJeu,
+                jeu.Id,
                 false,
                 jetonAnnulation
             )
@@ -42,7 +101,7 @@ public sealed class ServiceJeuRetroAchievements
             ClientRetroAchievements.ObtenirRangEtScoreJeuAsync(
                 pseudo,
                 cleApiWeb,
-                identifiantJeu,
+                jeu.Id,
                 jetonAnnulation
             )
         );
@@ -55,13 +114,17 @@ public sealed class ServiceJeuRetroAchievements
 
         HydraterJeu(jeu, details);
 
-        return new DonneesJeuAffiche
+        DonneesJeuAffiche resultat = new()
         {
             Jeu = jeu,
             DetailsEtendus = details,
             Progression = progression,
             RangsEtScores = rangsEtScores,
+            Communaute = donneesJeu.Communaute,
+            CommunauteAffichee = donneesJeu.CommunauteAffichee,
         };
+        _cacheJeuxEnrichis[cleCache] = new EntreeCacheJeu<DonneesJeuAffiche>(Cloner(resultat));
+        return resultat;
     }
 
     private static void HydraterJeu(GameInfoAndUserProgressV2 jeu, GameExtendedDetailsV2? details)
@@ -164,5 +227,107 @@ public sealed class ServiceJeuRetroAchievements
         {
             return default;
         }
+    }
+
+    private static bool TenterObtenirDepuisCache(
+        ConcurrentDictionary<string, EntreeCacheJeu<DonneesJeuAffiche>> cache,
+        string cleCache,
+        TimeSpan dureeValidite,
+        out DonneesJeuAffiche? donnees
+    )
+    {
+        if (
+            cache.TryGetValue(cleCache, out EntreeCacheJeu<DonneesJeuAffiche>? entree)
+            && DateTimeOffset.UtcNow - entree.DateMajUtc <= dureeValidite
+        )
+        {
+            donnees = Cloner(entree.Valeur);
+            return donnees is not null;
+        }
+
+        donnees = null;
+        return false;
+    }
+
+    private static string ConstruireCleCache(string pseudo, int identifiantJeu)
+    {
+        return $"{pseudo.Trim()}|{identifiantJeu}";
+    }
+
+    private static T Cloner<T>(T source)
+    {
+        byte[] donnees = JsonSerializer.SerializeToUtf8Bytes(source, OptionsClone);
+        return JsonSerializer.Deserialize<T>(donnees, OptionsClone)!;
+    }
+
+    private sealed record EntreeCacheJeu<T>(T Valeur)
+    {
+        public DateTimeOffset DateMajUtc { get; } = DateTimeOffset.UtcNow;
+    }
+
+    public DonneesJeuAffiche? ConstruireDonneesJeuDepuisCacheLocal(
+        JeuCatalogueLocal? jeuCatalogue,
+        EtatJeuUtilisateurLocal? etatUtilisateur
+    )
+    {
+        if (jeuCatalogue is null || jeuCatalogue.GameId <= 0)
+        {
+            return null;
+        }
+
+        Dictionary<int, EtatSuccesUtilisateurLocal> etatsSucces =
+            etatUtilisateur?.Succes.ToDictionary(item => item.AchievementId) ?? [];
+
+        Dictionary<string, GameAchievementV2> succes = [];
+
+        foreach (SuccesCatalogueLocal succesCatalogue in jeuCatalogue.Succes)
+        {
+            etatsSucces.TryGetValue(
+                succesCatalogue.AchievementId,
+                out EtatSuccesUtilisateurLocal? etatSucces
+            );
+
+            GameAchievementV2 succesJeu = new()
+            {
+                Id = succesCatalogue.AchievementId,
+                Title = succesCatalogue.Titre,
+                Description = succesCatalogue.Description,
+                Points = succesCatalogue.Points,
+                BadgeName = succesCatalogue.BadgeName,
+                Type = succesCatalogue.Type,
+                DateEarned = etatSucces?.DateDeblocageUtc ?? string.Empty,
+                DateEarnedHardcore = etatSucces?.DateDeblocageHardcoreUtc ?? string.Empty,
+            };
+            succes[succesJeu.Id.ToString()] = succesJeu;
+        }
+
+        int nbSucces = succes.Count;
+        int nbSuccesDebloques =
+            etatUtilisateur?.NbSuccesDebloques
+            ?? etatsSucces.Values.Count(item => item.EstDebloque);
+        int nbSuccesHardcore =
+            etatUtilisateur?.NbSuccesDebloquesHardcore
+            ?? etatsSucces.Values.Count(item => item.EstHardcore);
+        double progression =
+            etatUtilisateur?.ProgressionPourcentage
+            ?? (nbSucces <= 0 ? 0 : (double)nbSuccesDebloques / nbSucces * 100d);
+
+        GameInfoAndUserProgressV2 jeu = new()
+        {
+            Id = jeuCatalogue.GameId,
+            Title = jeuCatalogue.Titre,
+            ConsoleId = jeuCatalogue.ConsoleId,
+            ConsoleName = jeuCatalogue.NomConsole,
+            ImageBoxArt = jeuCatalogue.ImageBoxArt,
+            ImageTitle = jeuCatalogue.ImageTitre,
+            ImageIngame = jeuCatalogue.ImageEnJeu,
+            Achievements = succes,
+            NumAchievements = nbSucces,
+            NumAwardedToUser = nbSuccesDebloques,
+            NumAwardedToUserHardcore = nbSuccesHardcore,
+            UserCompletion = $"{progression:0.##}%",
+        };
+
+        return new DonneesJeuAffiche { Jeu = jeu };
     }
 }

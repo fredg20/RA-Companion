@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
@@ -82,10 +83,36 @@ public sealed class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
+    public JeuLocalResolut? ResoudreDepuisCatalogueLocal(
+        string titreJeuLocal,
+        IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal,
+        IEnumerable<int> identifiantsConsoleCandidats
+    )
+    {
+        JeuLocalResolut? resolution = TrouverDansCatalogueLocal(
+            titreJeuLocal,
+            jeuxCatalogueLocal,
+            identifiantsConsoleCandidats
+        );
+        JeuLocalResolut? resolutionRetenue =
+            resolution?.ScoreConfiance >= SeuilConfianceCatalogue ? resolution : null;
+        JournaliserResolution(
+            mode: "catalogue_local_rapide",
+            titreJeuLocal: titreJeuLocal,
+            nombreJeuxRecents: 0,
+            nombreConsolesCandidates: identifiantsConsoleCandidats.Distinct().Count(id => id > 0),
+            meilleureResolutionJeuxRecents: null,
+            meilleureResolutionCatalogue: resolution,
+            resolutionRetenue: resolutionRetenue
+        );
+        return resolutionRetenue;
+    }
+
     public async Task<JeuLocalResolut?> ResoudreAsync(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents,
         IEnumerable<int> identifiantsConsoleCandidats,
+        IReadOnlyList<JeuCatalogueLocal>? jeuxCatalogueLocal,
         Func<int, CancellationToken, Task<IReadOnlyList<GameListEntryV2>>> chargerJeuxSystemeAsync,
         CancellationToken jetonAnnulation = default
     )
@@ -114,6 +141,16 @@ public sealed class ServiceResolutionJeuLocal
         }
 
         JeuLocalResolut? meilleureResolutionCatalogue = null;
+        JeuLocalResolut? resolutionCatalogueLocal = TrouverDansCatalogueLocal(
+            titreJeuLocal,
+            jeuxCatalogueLocal ?? [],
+            identifiantsConsoleCandidats
+        );
+
+        if (resolutionCatalogueLocal is not null)
+        {
+            meilleureResolutionCatalogue = resolutionCatalogueLocal;
+        }
 
         foreach (
             int identifiantConsole in identifiantsConsoleCandidats.Distinct().Where(id => id > 0)
@@ -188,6 +225,56 @@ public sealed class ServiceResolutionJeuLocal
                 TitreLocal = titreJeuLocal.Trim(),
                 TitreRetroAchievements = jeu.Titre?.Trim() ?? string.Empty,
                 Source = "jeux_recents",
+                ScoreConfiance = score,
+            };
+
+            if (
+                meilleureResolution is null
+                || resolution.ScoreConfiance > meilleureResolution.ScoreConfiance
+            )
+            {
+                meilleureResolution = resolution;
+            }
+        }
+
+        return meilleureResolution;
+    }
+
+    private static JeuLocalResolut? TrouverDansCatalogueLocal(
+        string titreJeuLocal,
+        IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal,
+        IEnumerable<int> identifiantsConsoleCandidats
+    )
+    {
+        HashSet<int> consolesCandidates = [.. identifiantsConsoleCandidats.Where(id => id > 0)];
+        JeuLocalResolut? meilleureResolution = null;
+
+        foreach (JeuCatalogueLocal jeu in jeuxCatalogueLocal)
+        {
+            if (consolesCandidates.Count > 0 && !consolesCandidates.Contains(jeu.ConsoleId))
+            {
+                continue;
+            }
+
+            double score = CalculerScoreTitre(titreJeuLocal, jeu.Titre);
+
+            foreach (string titreAlternatif in jeu.TitresAlternatifs)
+            {
+                score = Math.Max(score, CalculerScoreTitre(titreJeuLocal, titreAlternatif));
+            }
+
+            if (score <= 0)
+            {
+                continue;
+            }
+
+            JeuLocalResolut resolution = new()
+            {
+                IdentifiantJeu = jeu.GameId,
+                IdentifiantConsole = jeu.ConsoleId,
+                TitreLocal = titreJeuLocal.Trim(),
+                TitreRetroAchievements = jeu.Titre.Trim(),
+                Source = "catalogue_local",
                 ScoreConfiance = score,
             };
 
@@ -283,7 +370,27 @@ public sealed class ServiceResolutionJeuLocal
         double couvertureLocal = (double)intersection / ensembleLocal.Count;
         double couvertureCandidat = (double)intersection / ensembleCandidat.Count;
         double couverture = Math.Min(couvertureLocal, couvertureCandidat);
+        double couverturePetitEnsemble =
+            (double)intersection / Math.Min(ensembleLocal.Count, ensembleCandidat.Count);
         double prefixe = RatioPrefixeCommun(local, candidat);
+
+        if (
+            couverturePetitEnsemble >= 1
+            && intersection >= 3
+            && couvertureLocal >= 0.75
+            && couvertureCandidat >= 0.75
+            && Math.Abs(ensembleLocal.Count - ensembleCandidat.Count) <= 2
+            && prefixe >= 0.45
+        )
+        {
+            double scoreAbrege =
+                0.9
+                + (0.05 * Math.Min(couvertureLocal, couvertureCandidat))
+                + (0.03 * prefixe)
+                + (0.02 * RatioLongueur(local, candidat));
+
+            return Math.Min(1, scoreAbrege);
+        }
 
         return (jaccard * 0.45) + (couverture * 0.4) + (prefixe * 0.15);
     }
@@ -330,7 +437,9 @@ public sealed class ServiceResolutionJeuLocal
             return 0;
         }
 
-        return (double)texteCourt.Length / texteLong.Length;
+        int plusCourt = Math.Min(texteCourt.Length, texteLong.Length);
+        int plusLong = Math.Max(texteCourt.Length, texteLong.Length);
+        return (double)plusCourt / plusLong;
     }
 
     private static double RatioPrefixeCommun(string premier, string second)

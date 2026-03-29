@@ -103,8 +103,7 @@ public partial class MainWindow
             ImageJeuEnCours.Source = imageJeu;
             ImageJeuEnCours.Visibility = Visibility.Visible;
             ImageJeuEnCours.Opacity = 0;
-            BlurEffect effetEntreeInitiale = new() { Radius = RayonFlouTransitionImageJeuEnCours };
-            ImageJeuEnCours.Effect = effetEntreeInitiale;
+            ImageJeuEnCours.Effect = null;
             AppliquerCoinsArrondisImageJeuEnCours();
             TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
 
@@ -112,24 +111,10 @@ public partial class MainWindow
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+                Duration = TimeSpan.FromMilliseconds(320),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
             };
-
-            DoubleAnimation animationFlouEntreeInitiale = new()
-            {
-                From = RayonFlouTransitionImageJeuEnCours,
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
-            };
-
-            animationFlouEntreeInitiale.Completed += (_, _) => ImageJeuEnCours.Effect = null;
             ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduEntreeInitiale);
-            effetEntreeInitiale.BeginAnimation(
-                BlurEffect.RadiusProperty,
-                animationFlouEntreeInitiale
-            );
             _cheminImageJeuEnCoursAffiche = urlImage;
             return;
         }
@@ -157,13 +142,11 @@ public partial class MainWindow
         }
 
         ImageJeuEnCours.Visibility = Visibility.Visible;
-        BlurEffect effetSortie = new() { Radius = 0 };
-        ImageJeuEnCours.Effect = effetSortie;
+        ImageJeuEnCours.Effect = null;
         ImageJeuEnCoursTransition.Source = imageJeu;
         ImageJeuEnCoursTransition.Visibility = Visibility.Visible;
         ImageJeuEnCoursTransition.Opacity = 0;
-        BlurEffect effetEntree = new() { Radius = RayonFlouTransitionImageJeuEnCours };
-        ImageJeuEnCoursTransition.Effect = effetEntree;
+        ImageJeuEnCoursTransition.Effect = null;
         AppliquerCoinsArrondisImageJeuEnCours();
         TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
 
@@ -171,15 +154,7 @@ public partial class MainWindow
         {
             From = 1,
             To = 0,
-            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
-        };
-
-        DoubleAnimation animationFlouSortie = new()
-        {
-            From = 0,
-            To = RayonFlouTransitionImageJeuEnCours,
-            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            Duration = TimeSpan.FromMilliseconds(320),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
         };
 
@@ -187,15 +162,7 @@ public partial class MainWindow
         {
             From = 0,
             To = 1,
-            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
-        };
-
-        DoubleAnimation animationFlouEntree = new()
-        {
-            From = RayonFlouTransitionImageJeuEnCours,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
+            Duration = TimeSpan.FromMilliseconds(320),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
         };
 
@@ -224,7 +191,6 @@ public partial class MainWindow
             _cheminImageJeuEnCoursAffiche = urlImage;
 
             ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, null);
-            effetEntree.BeginAnimation(BlurEffect.RadiusProperty, null);
             ImageJeuEnCoursTransition.Source = null;
             ImageJeuEnCoursTransition.Clip = null;
             ImageJeuEnCoursTransition.Visibility = Visibility.Collapsed;
@@ -234,9 +200,7 @@ public partial class MainWindow
         };
 
         ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduSortie);
-        effetSortie.BeginAnimation(BlurEffect.RadiusProperty, animationFlouSortie);
         ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
-        effetEntree.BeginAnimation(BlurEffect.RadiusProperty, animationFlouEntree);
     }
 
     /// <summary>

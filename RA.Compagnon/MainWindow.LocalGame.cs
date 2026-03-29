@@ -1,5 +1,8 @@
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Catalogue;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
@@ -67,6 +70,7 @@ public partial class MainWindow
         TextePourcentageJeuEnCours.Text = "Détection locale en cours...";
         BarreProgressionJeuEnCours.Value = 0;
     }
+
     private void ChargerJeuResolutLocal(int identifiantJeu, string titreJeuProvisoire)
     {
         if (identifiantJeu <= 0)
@@ -84,6 +88,8 @@ public partial class MainWindow
 
         if (!infosJeuDejaAfficheesPourCeJeu)
         {
+            ReinitialiserCarrouselVisuelsJeuEnCours();
+            ReinitialiserImageJeuEnCours();
             DefinirTitreJeuEnCours(titreAffichage);
             DefinirDetailsJeuEnCours(string.Empty);
             DefinirEtatJeuDansProgression(string.Empty);
@@ -97,6 +103,10 @@ public partial class MainWindow
             BarreProgressionJeuEnCours.Value = 0;
         }
 
+        DemarrerDiagnosticChangementJeu(
+            $"local:{identifiantJeu}",
+            $"source=local;jeu={identifiantJeu};titre={titreAffichage}"
+        );
         JournaliserDiagnosticChangementJeu("jeu_local_resolu", $"jeu={identifiantJeu}");
         ServiceResolutionJeuLocal.JournaliserEvenementInterface(
             "jeu_local_applique",
@@ -107,6 +117,7 @@ public partial class MainWindow
         _dernierIdentifiantJeuApi = identifiantJeu;
         MettreAJourNoticeCompteEntete();
         int versionChargement = ++_versionChargementContenuJeu;
+        DemarrerPrechargementJeuDepuisCacheLocal(identifiantJeu, versionChargement);
         DemarrerChargementJeuUtilisateurEnArrierePlan(
             identifiantJeu,
             titreAffichage,
@@ -114,5 +125,41 @@ public partial class MainWindow
             progressionDejaAfficheePourCeJeu,
             versionChargement
         );
+    }
+
+    private void DemarrerPrechargementJeuDepuisCacheLocal(int identifiantJeu, int versionChargement)
+    {
+        _ = PrechargerJeuDepuisCacheLocalAsync(identifiantJeu, versionChargement);
+    }
+
+    private async Task PrechargerJeuDepuisCacheLocalAsync(int identifiantJeu, int versionChargement)
+    {
+        try
+        {
+            JeuCatalogueLocal? jeuCatalogue = await _serviceCatalogueJeuxLocal.ObtenirJeuAsync(
+                identifiantJeu
+            );
+            EtatJeuUtilisateurLocal? etatUtilisateur =
+                await _serviceEtatUtilisateurJeuxLocal.ObtenirJeuAsync(identifiantJeu);
+            DonneesJeuAffiche? donneesJeu =
+                _serviceJeuRetroAchievements.ConstruireDonneesJeuDepuisCacheLocal(
+                    jeuCatalogue,
+                    etatUtilisateur
+                );
+
+            if (
+                donneesJeu is null
+                || !ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeu)
+            )
+            {
+                return;
+            }
+
+            await AppliquerProgressionJeuAsync(donneesJeu);
+        }
+        catch
+        {
+            // Le préchargement local reste opportuniste.
+        }
     }
 }
