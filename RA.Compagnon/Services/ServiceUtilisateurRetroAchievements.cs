@@ -8,7 +8,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServiceUtilisateurRetroAchievements
 {
-    public async Task<UserProfileV2> ObtenirProfilAsync(
+    public static async Task<UserProfileV2> ObtenirProfilAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -21,7 +21,7 @@ public sealed class ServiceUtilisateurRetroAchievements
         );
     }
 
-    public async Task<DonneesCompteUtilisateur> ObtenirDonneesCompteAsync(
+    public static async Task<DonneesCompteUtilisateur> ObtenirDonneesCompteAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -85,7 +85,7 @@ public sealed class ServiceUtilisateurRetroAchievements
         };
     }
 
-    public async Task<UserSummaryV2?> ObtenirResumeAsync(
+    public static async Task<UserSummaryV2?> ObtenirResumeAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -100,7 +100,7 @@ public sealed class ServiceUtilisateurRetroAchievements
         );
     }
 
-    public async Task<IReadOnlyList<RecentlyPlayedGameV2>> ObtenirJeuxRecemmentJouesAsync(
+    public static async Task<IReadOnlyList<RecentlyPlayedGameV2>> ObtenirJeuxRecemmentJouesAsync(
         string pseudo,
         string cleApiWeb,
         CancellationToken jetonAnnulation = default

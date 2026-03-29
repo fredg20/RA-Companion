@@ -149,15 +149,9 @@ public sealed class ClientRetroAchievements
             fluxReponse,
             OptionsJson,
             jetonAnnulation
-        );
-
-        if (resume is null)
-        {
-            throw new InvalidOperationException(
+        ) ?? throw new InvalidOperationException(
                 "La réponse du résumé utilisateur RetroAchievements est vide."
             );
-        }
-
         return resume;
     }
 
@@ -262,7 +256,7 @@ public sealed class ClientRetroAchievements
                 jetonAnnulation
             );
 
-        return progression ?? new UserProgressResponseV2();
+        return progression ?? [];
     }
 
     /// <summary>
@@ -387,13 +381,7 @@ public sealed class ClientRetroAchievements
                 fluxReponse,
                 OptionsJson,
                 jetonAnnulation
-            );
-
-        if (jeu is null)
-        {
-            throw new InvalidOperationException("La réponse du jeu RetroAchievements est vide.");
-        }
-
+            ) ?? throw new InvalidOperationException("La réponse du jeu RetroAchievements est vide.");
         if (string.IsNullOrWhiteSpace(jeu.Title))
         {
             throw new InvalidOperationException(
@@ -532,7 +520,7 @@ public sealed class ClientRetroAchievements
                 jetonAnnulation
             );
 
-        return distribution ?? new GameUnlockDistributionV2();
+        return distribution ?? [];
     }
 
     /// <summary>
@@ -1070,16 +1058,10 @@ public sealed class ClientRetroAchievements
     /// <summary>
     /// Représente une liste de jeux système gardée en mémoire pendant une durée étendue.
     /// </summary>
-    private sealed class JeuxSystemeCachees
+    private sealed class JeuxSystemeCachees(IReadOnlyList<GameListEntryV2> jeux)
     {
-        public JeuxSystemeCachees(IReadOnlyList<GameListEntryV2> jeux)
-        {
-            Jeux = jeux;
-            DateMiseEnCacheUtc = DateTimeOffset.UtcNow;
-        }
+        public IReadOnlyList<GameListEntryV2> Jeux { get; } = jeux;
 
-        public IReadOnlyList<GameListEntryV2> Jeux { get; }
-
-        public DateTimeOffset DateMiseEnCacheUtc { get; }
+        public DateTimeOffset DateMiseEnCacheUtc { get; } = DateTimeOffset.UtcNow;
     }
 }

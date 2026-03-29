@@ -448,7 +448,7 @@ public partial class MainWindow
     /// </summary>
     private void ReinitialiserSuccesRecents()
     {
-        AppliquerSuccesRecents(_servicePresentationActivite.ConstruireEtatNeutre());
+        AppliquerSuccesRecents(ServicePresentationActivite.ConstruireEtatNeutre());
     }
 
     /// <summary>

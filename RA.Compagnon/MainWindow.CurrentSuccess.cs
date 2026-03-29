@@ -238,7 +238,7 @@ public partial class MainWindow
             return;
         }
 
-        SuccesAffiche succesAffiche = _servicePresentationSucces.Construire(
+        SuccesAffiche succesAffiche = Services.ServicePresentationSucces.Construire(
             succesSelectionne,
             _succesJeuCourant,
             identifiantJeu

@@ -14,7 +14,7 @@ public partial class MainWindow
         try
         {
             IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents =
-                await _serviceUtilisateurRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
+                await ServiceUtilisateurRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );
@@ -83,6 +83,21 @@ public partial class MainWindow
         string titreAffichage = string.IsNullOrWhiteSpace(titreJeuProvisoire)
             ? _dernierTitreJeuApi
             : titreJeuProvisoire.Trim();
+        bool memeJeuLocalDejaApplique =
+            identifiantJeu == _identifiantJeuLocalActif
+            && identifiantJeu == _dernierIdentifiantJeuApi
+            && string.Equals(
+                _titreJeuLocalActif,
+                titreAffichage,
+                StringComparison.OrdinalIgnoreCase
+            )
+            && (_chargementJeuEnCoursActif || infosJeuDejaAfficheesPourCeJeu);
+
+        if (memeJeuLocalDejaApplique)
+        {
+            MettreAJourNoticeCompteEntete();
+            return;
+        }
 
         DefinirTitreZoneJeu();
 
@@ -142,7 +157,7 @@ public partial class MainWindow
             EtatJeuUtilisateurLocal? etatUtilisateur =
                 await _serviceEtatUtilisateurJeuxLocal.ObtenirJeuAsync(identifiantJeu);
             DonneesJeuAffiche? donneesJeu =
-                _serviceJeuRetroAchievements.ConstruireDonneesJeuDepuisCacheLocal(
+                ServiceJeuRetroAchievements.ConstruireDonneesJeuDepuisCacheLocal(
                     jeuCatalogue,
                     etatUtilisateur
                 );

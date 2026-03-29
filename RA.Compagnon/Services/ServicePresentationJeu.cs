@@ -9,7 +9,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationJeu
 {
-    public JeuAffiche Construire(DonneesJeuAffiche donneesJeu)
+    public static JeuAffiche Construire(DonneesJeuAffiche donneesJeu)
     {
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
 

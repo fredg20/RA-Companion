@@ -8,10 +8,9 @@ using RA.Compagnon.Modeles.Catalogue;
 
 namespace RA.Compagnon.Services;
 
-public sealed class ServiceCatalogueJeuxLocal
+public sealed partial class ServiceCatalogueJeuxLocal
 {
     private static readonly JsonSerializerOptions OptionsJson = new() { WriteIndented = true };
-    private static readonly Regex RegexParentheses = new(@"\s*\([^)]*\)", RegexOptions.Compiled);
     private const string ExtensionTemporaire = ".tmp";
     private readonly SemaphoreSlim _verrou = new(1, 1);
     private CatalogueJeuxLocal? _catalogue;
@@ -240,7 +239,7 @@ public sealed class ServiceCatalogueJeuxLocal
 
     private static string EnleverParentheses(string? titre)
     {
-        return RegexParentheses.Replace(titre ?? string.Empty, string.Empty).Trim();
+        return ParenthesesRegex().Replace(titre ?? string.Empty, string.Empty).Trim();
     }
 
     private static string NormaliserTitre(string? valeur)
@@ -259,7 +258,17 @@ public sealed class ServiceCatalogueJeuxLocal
                     != UnicodeCategory.NonSpacingMark
                 )
         );
-        string alphanumerique = Regex.Replace(sansAccents, @"[^a-z0-9]+", " ");
-        return Regex.Replace(alphanumerique, @"\s+", " ").Trim();
+        string alphanumerique = CaracteresNonAlphaNumeriquesRegex()
+            .Replace(sansAccents, " ");
+        return EspacesMultiplesRegex().Replace(alphanumerique, " ").Trim();
     }
+
+    [GeneratedRegex(@"\s*\([^)]*\)", RegexOptions.CultureInvariant)]
+    private static partial Regex ParenthesesRegex();
+
+    [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
+    private static partial Regex CaracteresNonAlphaNumeriquesRegex();
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex EspacesMultiplesRegex();
 }

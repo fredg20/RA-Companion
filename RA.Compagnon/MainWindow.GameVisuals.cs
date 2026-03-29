@@ -453,7 +453,7 @@ public partial class MainWindow
         try
         {
             _dernierResumeUtilisateurCharge =
-                await _serviceUtilisateurRetroAchievements.ObtenirResumeAsync(
+                await ServiceUtilisateurRetroAchievements.ObtenirResumeAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb
                 );

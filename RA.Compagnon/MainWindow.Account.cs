@@ -168,7 +168,7 @@ public partial class MainWindow
 
             try
             {
-                await _serviceUtilisateurRetroAchievements.ObtenirProfilAsync(pseudo, cleApi);
+                await ServiceUtilisateurRetroAchievements.ObtenirProfilAsync(pseudo, cleApi);
             }
             catch (UtilisateurRetroAchievementsInaccessibleException exception)
             {
@@ -222,7 +222,7 @@ public partial class MainWindow
     private async Task AfficherModaleCompteAsync()
     {
         DonneesCompteUtilisateur donnees = await ObtenirDonneesComptePourModaleAsync();
-        CompteAffiche compte = _servicePresentationCompte.Construire(
+        CompteAffiche compte = ServicePresentationCompte.Construire(
             donnees,
             _configurationConnexion.Pseudo
         );
@@ -344,7 +344,7 @@ public partial class MainWindow
         }
 
         DonneesCompteUtilisateur donnees =
-            await _serviceUtilisateurRetroAchievements.ObtenirDonneesCompteAsync(
+            await ServiceUtilisateurRetroAchievements.ObtenirDonneesCompteAsync(
                 _configurationConnexion.Pseudo,
                 _configurationConnexion.CleApiWeb
             );
@@ -445,7 +445,7 @@ public partial class MainWindow
         return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
-    private FrameworkElement ConstruireEnTeteAvatarCompte(CompteAffiche compte)
+    private static SystemControls.Border ConstruireEnTeteAvatarCompte(CompteAffiche compte)
     {
         SystemControls.Border conteneur = new()
         {
@@ -834,13 +834,16 @@ public partial class MainWindow
             identifiantJeuAffiche > 0
                 ? identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)
                 : string.Empty;
+        string texteIdentifiantJeuAffiche = string.IsNullOrWhiteSpace(texteIdentifiantJeu)
+            ? string.Empty
+            : $"Game ID {texteIdentifiantJeu}";
 
         if (EtatLocalEmulateurEstActifPourNotice())
         {
             TexteEtatCompteUtilisateur.Text = "En jeu";
-            TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeu;
+            TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeuAffiche;
             TexteSousEtatCompteUtilisateur.Visibility = string.IsNullOrWhiteSpace(
-                texteIdentifiantJeu
+                texteIdentifiantJeuAffiche
             )
                 ? Visibility.Collapsed
                 : Visibility.Visible;
@@ -849,14 +852,16 @@ public partial class MainWindow
             BadgeEtatCompteUtilisateur.Background = fondLocal;
             BadgeEtatCompteUtilisateur.BorderBrush = bordureLocale;
             ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
-            ZoneEtatCompteUtilisateur.ToolTip = string.IsNullOrWhiteSpace(texteIdentifiantJeu)
+            ZoneEtatCompteUtilisateur.ToolTip = string.IsNullOrWhiteSpace(
+                texteIdentifiantJeuAffiche
+            )
                 ? "En jeu (détection locale)"
-                : $"En jeu{Environment.NewLine}{texteIdentifiantJeu}";
+                : $"En jeu{Environment.NewLine}{texteIdentifiantJeuAffiche}";
             JournaliserNoticeCompteEntete("En jeu", texteIdentifiantJeu, "local");
             return;
         }
 
-        CompteAffiche compte = _servicePresentationCompte.Construire(
+        CompteAffiche compte = ServicePresentationCompte.Construire(
             new DonneesCompteUtilisateur
             {
                 Profil = _dernierProfilUtilisateurCharge,
@@ -877,8 +882,8 @@ public partial class MainWindow
 
         TexteEtatCompteUtilisateur.Text = compte.Statut.Trim();
 
-        bool afficherSousStatut = !string.IsNullOrWhiteSpace(texteIdentifiantJeu);
-        TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeu;
+        bool afficherSousStatut = !string.IsNullOrWhiteSpace(texteIdentifiantJeuAffiche);
+        TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeuAffiche;
         TexteSousEtatCompteUtilisateur.Visibility = afficherSousStatut
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -888,7 +893,7 @@ public partial class MainWindow
         BadgeEtatCompteUtilisateur.BorderBrush = bordure;
         ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
         ZoneEtatCompteUtilisateur.ToolTip = afficherSousStatut
-            ? $"{compte.Statut}{Environment.NewLine}{texteIdentifiantJeu}"
+            ? $"{compte.Statut}{Environment.NewLine}{texteIdentifiantJeuAffiche}"
             : compte.Statut;
         JournaliserNoticeCompteEntete(compte.Statut, texteIdentifiantJeu, "api");
     }

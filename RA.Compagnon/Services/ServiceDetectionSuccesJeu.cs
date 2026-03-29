@@ -38,7 +38,7 @@ public sealed class ServiceDetectionSuccesJeu
         }
     }
 
-    public IReadOnlyList<SuccesDebloqueDetecte> DetecterNouveauxSucces(
+    public static IReadOnlyList<SuccesDebloqueDetecte> DetecterNouveauxSucces(
         int identifiantJeu,
         string titreJeu,
         IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent,
@@ -93,7 +93,7 @@ public sealed class ServiceDetectionSuccesJeu
         return resultats;
     }
 
-    public Dictionary<int, EtatObservationSuccesLocal> CapturerEtat(
+    public static Dictionary<int, EtatObservationSuccesLocal> CapturerEtat(
         IReadOnlyCollection<GameAchievementV2> succesCourants
     )
     {

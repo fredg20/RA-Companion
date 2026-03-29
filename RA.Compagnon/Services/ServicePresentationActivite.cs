@@ -9,7 +9,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationActivite
 {
-    public ActiviteRecenteAffichee ConstruireEtatNeutre()
+    public static ActiviteRecenteAffichee ConstruireEtatNeutre()
     {
         return new ActiviteRecenteAffichee
         {
@@ -23,7 +23,7 @@ public sealed class ServicePresentationActivite
         };
     }
 
-    public ActiviteRecenteAffichee ConstruireErreur()
+    public static ActiviteRecenteAffichee ConstruireErreur()
     {
         return new ActiviteRecenteAffichee
         {
@@ -37,7 +37,7 @@ public sealed class ServicePresentationActivite
         };
     }
 
-    public ActiviteRecenteAffichee Construire(
+    public static ActiviteRecenteAffichee Construire(
         DonneesActiviteRecente activiteRecente,
         int identifiantJeuCourant
     )
@@ -89,7 +89,7 @@ public sealed class ServicePresentationActivite
     }
 
     private static ActiviteRecenteAffichee ConstruireDepuisSucces(
-        IReadOnlyList<AchievementUnlockV2> succesRecents,
+        List<AchievementUnlockV2> succesRecents,
         string texteEtat
     )
     {

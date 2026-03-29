@@ -17,30 +17,30 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Chemin complet du fichier dédié aux informations utilisateur.
     /// </summary>
-    public string CheminFichierUtilisateur =>
+    public static string CheminFichierUtilisateur =>
         Path.Combine(ObtenirDossierConfiguration(), "user.json");
 
     /// <summary>
     /// Chemin complet du fichier de configuration.
     /// </summary>
-    public string CheminFichierConfiguration =>
+    public static string CheminFichierConfiguration =>
         Path.Combine(ObtenirDossierConfiguration(), "configuration.json");
 
     /// <summary>
     /// Chemin complet du fichier dédié au dernier jeu affiché.
     /// </summary>
-    public string CheminFichierJeu => Path.Combine(ObtenirDossierConfiguration(), "game.json");
+    public static string CheminFichierJeu => Path.Combine(ObtenirDossierConfiguration(), "game.json");
 
     /// <summary>
     /// Chemin complet du fichier dédié au dernier rétrosuccès affiché.
     /// </summary>
-    public string CheminFichierSucces =>
+    public static string CheminFichierSucces =>
         Path.Combine(ObtenirDossierConfiguration(), "achievement.json");
 
     /// <summary>
     /// Chemin complet du fichier dédié à la grille des rétrosuccès affichés.
     /// </summary>
-    public string CheminFichierListeSucces =>
+    public static string CheminFichierListeSucces =>
         Path.Combine(ObtenirDossierConfiguration(), "achievements_list.json");
 
     /// <summary>
@@ -145,7 +145,7 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Charge l'état de l'utilisateur depuis le fichier dédié ou l'ancien fichier de configuration.
     /// </summary>
-    private async Task<EtatUtilisateurLocal?> ChargerEtatUtilisateurAsync()
+    private static async Task<EtatUtilisateurLocal?> ChargerEtatUtilisateurAsync()
     {
         if (File.Exists(CheminFichierUtilisateur))
         {
@@ -184,7 +184,7 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Charge l'état du dernier jeu affiché depuis le fichier dédié ou l'ancien fichier de configuration.
     /// </summary>
-    private async Task<EtatJeuAfficheLocal?> ChargerEtatJeuAsync()
+    private static async Task<EtatJeuAfficheLocal?> ChargerEtatJeuAsync()
     {
         if (File.Exists(CheminFichierJeu))
         {
@@ -228,7 +228,7 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Charge l'état du dernier rétrosuccès affiché depuis son fichier dédié.
     /// </summary>
-    private async Task<EtatSuccesAfficheLocal?> ChargerEtatSuccesAsync()
+    private static async Task<EtatSuccesAfficheLocal?> ChargerEtatSuccesAsync()
     {
         return File.Exists(CheminFichierSucces)
             ? await ChargerJsonAsync<EtatSuccesAfficheLocal>(CheminFichierSucces)
@@ -238,7 +238,7 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Charge l'état de la dernière grille de rétrosuccès affichée depuis son fichier dédié.
     /// </summary>
-    private async Task<EtatListeSuccesAfficheeLocal?> ChargerEtatListeSuccesAsync()
+    private static async Task<EtatListeSuccesAfficheeLocal?> ChargerEtatListeSuccesAsync()
     {
         return File.Exists(CheminFichierListeSucces)
             ? await ChargerJsonAsync<EtatListeSuccesAfficheeLocal>(CheminFichierListeSucces)

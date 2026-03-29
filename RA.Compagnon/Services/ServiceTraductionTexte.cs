@@ -8,13 +8,10 @@ namespace RA.Compagnon.Services;
 /// <summary>
 /// Traduit des libellés courts vers le français en s'appuyant sur Google Translate.
 /// </summary>
-public sealed class ServiceTraductionTexte
+public sealed partial class ServiceTraductionTexte
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
-    private static readonly Regex RegexSegmentsEntreGuillemets = new(
-        "\"[^\"]+\"|«\\s*[^»]+\\s*»",
-        RegexOptions.Compiled
-    );
+    private static readonly Regex RegexSegmentsEntreGuillemets = MyRegex();
     private readonly Dictionary<string, string> _cacheTraductions = new(
         StringComparer.OrdinalIgnoreCase
     );
@@ -111,7 +108,7 @@ public sealed class ServiceTraductionTexte
 
     private static string ProtegerSegmentsEntreGuillemets(
         string texte,
-        IDictionary<string, string> segmentsProteges
+        Dictionary<string, string> segmentsProteges
     )
     {
         int index = 0;
@@ -141,4 +138,7 @@ public sealed class ServiceTraductionTexte
 
         return resultat;
     }
+
+    [GeneratedRegex("\"[^\"]+\"|«\\s*[^»]+\\s*»", RegexOptions.Compiled)]
+    private static partial Regex MyRegex();
 }

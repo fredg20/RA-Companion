@@ -4,7 +4,7 @@ namespace RA.Compagnon.Services;
 
 public sealed class ServiceDetectionSuccesUtilisateurLocal
 {
-    public IReadOnlyList<EtatSuccesUtilisateurLocal> DetecterNouveauxSucces(
+    public static IReadOnlyList<EtatSuccesUtilisateurLocal> DetecterNouveauxSucces(
         EtatJeuUtilisateurLocal? precedent,
         EtatJeuUtilisateurLocal courant
     )

@@ -77,13 +77,8 @@ public sealed class ServiceHachageJeuLocal
     /// <summary>
     /// Mémorise une empreinte calculée pour éviter un recalcul inutile.
     /// </summary>
-    private sealed class EmpreinteJeuLocalCachee
+    private sealed class EmpreinteJeuLocalCachee(EmpreinteJeuLocal empreinte)
     {
-        public EmpreinteJeuLocalCachee(EmpreinteJeuLocal empreinte)
-        {
-            Empreinte = empreinte;
-        }
-
-        public EmpreinteJeuLocal Empreinte { get; }
+        public EmpreinteJeuLocal Empreinte { get; } = empreinte;
     }
 }

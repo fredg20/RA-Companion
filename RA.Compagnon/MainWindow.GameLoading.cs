@@ -49,7 +49,7 @@ public partial class MainWindow
                 ReinitialiserSuccesRecents();
             }
 
-            UserProfileV2 profil = await _serviceUtilisateurRetroAchievements.ObtenirProfilAsync(
+            UserProfileV2 profil = await ServiceUtilisateurRetroAchievements.ObtenirProfilAsync(
                 _configurationConnexion.Pseudo,
                 _configurationConnexion.CleApiWeb
             );
@@ -380,7 +380,7 @@ public partial class MainWindow
             _dernieresDonneesJeuAffichees = donneesEnrichies;
 
             GameInfoAndUserProgressV2 jeu = donneesEnrichies.Jeu;
-            JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(donneesEnrichies);
+            JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(donneesEnrichies);
 
             _dernierTitreJeuApi = jeu.Title;
             AppliquerMetaConsoleJeuEnCoursInitiale(jeu);
@@ -421,9 +421,9 @@ public partial class MainWindow
 
             _dernieresDonneesJeuAffichees.Communaute = donneesCommunaute;
             _dernieresDonneesJeuAffichees.CommunauteAffichee =
-                _servicePresentationCommunaute.Construire(donneesCommunaute);
+                ServicePresentationCommunaute.Construire(donneesCommunaute);
 
-            JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(
+            JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(
                 _dernieresDonneesJeuAffichees
             );
             DefinirDetailsJeuEnCours(jeuAffiche.Details);
@@ -454,7 +454,7 @@ public partial class MainWindow
         {
             DateTimeOffset maintenant = DateTimeOffset.UtcNow;
             DonneesActiviteRecente activiteRecente =
-                await _serviceActiviteRetroAchievements.ObtenirActiviteRecenteAsync(
+                await ServiceActiviteRetroAchievements.ObtenirActiviteRecenteAsync(
                     _configurationConnexion.Pseudo,
                     _configurationConnexion.CleApiWeb,
                     maintenant.AddDays(-7),
@@ -467,7 +467,7 @@ public partial class MainWindow
             }
 
             AppliquerSuccesRecents(
-                _servicePresentationActivite.Construire(activiteRecente, profil.LastGameId)
+                ServicePresentationActivite.Construire(activiteRecente, profil.LastGameId)
             );
         }
         catch
@@ -477,7 +477,7 @@ public partial class MainWindow
                 return;
             }
 
-            AppliquerSuccesRecents(_servicePresentationActivite.ConstruireErreur());
+            AppliquerSuccesRecents(ServicePresentationActivite.ConstruireErreur());
         }
     }
 
@@ -519,7 +519,7 @@ public partial class MainWindow
     private async Task AppliquerProgressionJeuAsync(DonneesJeuAffiche donneesJeu)
     {
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
-        JeuAffiche jeuAffiche = _servicePresentationJeu.Construire(donneesJeu);
+        JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(donneesJeu);
         JournaliserDiagnosticChangementJeu("progression_debut", $"jeu={jeu.Id}");
         _dernierTitreJeuApi = jeu.Title;
         _dernierIdentifiantJeuAvecInfos = jeu.Id;
@@ -575,7 +575,7 @@ public partial class MainWindow
         {
             await DetecterNouveauxSuccesJeuDepuisCacheLocalAsync(jeu);
             _identifiantJeuSuccesObserve = jeu.Id;
-            _etatSuccesObserves = _serviceDetectionSuccesJeu.CapturerEtat(succesCourants);
+            _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
             ServiceDetectionSuccesJeu.JournaliserInitialisation(
                 jeu.Id,
                 jeu.Title,
@@ -585,7 +585,7 @@ public partial class MainWindow
         }
 
         IReadOnlyList<SuccesDebloqueDetecte> nouveauxSucces =
-            _serviceDetectionSuccesJeu.DetecterNouveauxSucces(
+            ServiceDetectionSuccesJeu.DetecterNouveauxSucces(
                 jeu.Id,
                 jeu.Title,
                 _etatSuccesObserves,
@@ -597,7 +597,7 @@ public partial class MainWindow
             ServiceDetectionSuccesJeu.JournaliserDetection(succes, "session");
         }
 
-        _etatSuccesObserves = _serviceDetectionSuccesJeu.CapturerEtat(succesCourants);
+        _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
     }
 
     private async Task DetecterNouveauxSuccesJeuDepuisCacheLocalAsync(GameInfoAndUserProgressV2 jeu)
@@ -613,7 +613,7 @@ public partial class MainWindow
 
         EtatJeuUtilisateurLocal courant = ServiceEtatUtilisateurJeuxLocal.ConstruireEtatJeu(jeu);
         IReadOnlyList<EtatSuccesUtilisateurLocal> nouveauxSucces =
-            _serviceDetectionSuccesUtilisateurLocal.DetecterNouveauxSucces(precedent, courant);
+            ServiceDetectionSuccesUtilisateurLocal.DetecterNouveauxSucces(precedent, courant);
 
         foreach (EtatSuccesUtilisateurLocal succesLocal in nouveauxSucces)
         {

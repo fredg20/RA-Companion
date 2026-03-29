@@ -12,7 +12,7 @@ namespace RA.Compagnon.Services;
 /// <summary>
 /// Résout un titre local détecté vers un identifiant de jeu RetroAchievements avec prudence.
 /// </summary>
-public sealed class ServiceResolutionJeuLocal
+public sealed partial class ServiceResolutionJeuLocal
 {
     private const double SeuilConfianceJeuxRecents = 0.84;
     private const double SeuilConfianceCatalogue = 0.92;
@@ -63,7 +63,7 @@ public sealed class ServiceResolutionJeuLocal
         }
     }
 
-    public JeuLocalResolut? ResoudreDepuisJeuxRecents(
+    public static JeuLocalResolut? ResoudreDepuisJeuxRecents(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents
     )
@@ -83,7 +83,7 @@ public sealed class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
-    public JeuLocalResolut? ResoudreDepuisCatalogueLocal(
+    public static JeuLocalResolut? ResoudreDepuisCatalogueLocal(
         string titreJeuLocal,
         IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal,
         IEnumerable<int> identifiantsConsoleCandidats
@@ -108,7 +108,7 @@ public sealed class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
-    public async Task<JeuLocalResolut?> ResoudreAsync(
+    public static async Task<JeuLocalResolut?> ResoudreAsync(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents,
         IEnumerable<int> identifiantsConsoleCandidats,
@@ -125,7 +125,9 @@ public sealed class ServiceResolutionJeuLocal
                 mode: "complet",
                 titreJeuLocal: titreJeuLocal,
                 nombreJeuxRecents: jeuxRecents.Count,
-                nombreConsolesCandidates: identifiantsConsoleCandidats.Distinct().Count(id => id > 0),
+                nombreConsolesCandidates: identifiantsConsoleCandidats
+                    .Distinct()
+                    .Count(id => id > 0),
                 meilleureResolutionJeuxRecents: null,
                 meilleureResolutionCatalogue: null,
                 resolutionRetenue: null
@@ -343,12 +345,18 @@ public sealed class ServiceResolutionJeuLocal
             return 1;
         }
 
-        if (local.Contains(candidat, StringComparison.Ordinal))
+        if (
+            PeutUtiliserRaccourciContient(candidat)
+            && local.Contains(candidat, StringComparison.Ordinal)
+        )
         {
             return 0.94 + (0.05 * RatioLongueur(candidat, local));
         }
 
-        if (candidat.Contains(local, StringComparison.Ordinal))
+        if (
+            PeutUtiliserRaccourciContient(local)
+            && candidat.Contains(local, StringComparison.Ordinal)
+        )
         {
             return 0.94 + (0.05 * RatioLongueur(local, candidat));
         }
@@ -395,6 +403,23 @@ public sealed class ServiceResolutionJeuLocal
         return (jaccard * 0.45) + (couverture * 0.4) + (prefixe * 0.15);
     }
 
+    private static bool PeutUtiliserRaccourciContient(string titreNormalise)
+    {
+        if (string.IsNullOrWhiteSpace(titreNormalise))
+        {
+            return false;
+        }
+
+        string[] jetons = titreNormalise.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (jetons.Length >= 2)
+        {
+            return true;
+        }
+
+        return titreNormalise.Length >= 4;
+    }
+
     private static string NormaliserTitre(string titre)
     {
         if (string.IsNullOrWhiteSpace(titre))
@@ -404,11 +429,11 @@ public sealed class ServiceResolutionJeuLocal
 
         string resultat = titre.Trim().ToLowerInvariant();
         resultat = resultat.Replace("&", " and ", StringComparison.Ordinal);
-        resultat = Regex.Replace(resultat, @"[\(\[].*?[\)\]]", " ");
+        resultat = ContenuEntreCrochetsOuParenthesesRegex().Replace(resultat, " ");
         resultat = SupprimerDiacritiques(resultat);
-        resultat = Regex.Replace(resultat, @"[^a-z0-9]+", " ");
-        resultat = Regex.Replace(resultat, @"\b(the|a|an)\b", " ");
-        resultat = Regex.Replace(resultat, @"\s+", " ").Trim();
+        resultat = CaracteresNonAlphaNumeriquesRegex().Replace(resultat, " ");
+        resultat = ArticlesAnglaisRegex().Replace(resultat, " ");
+        resultat = EspacesMultiplesRegex().Replace(resultat, " ").Trim();
         return resultat;
     }
 
@@ -498,4 +523,16 @@ public sealed class ServiceResolutionJeuLocal
             ? string.Empty
             : valeur.Replace("\r", " ").Replace("\n", " ").Trim();
     }
+
+    [GeneratedRegex(@"[\(\[].*?[\)\]]", RegexOptions.CultureInvariant)]
+    private static partial Regex ContenuEntreCrochetsOuParenthesesRegex();
+
+    [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
+    private static partial Regex CaracteresNonAlphaNumeriquesRegex();
+
+    [GeneratedRegex(@"\b(the|a|an)\b", RegexOptions.CultureInvariant)]
+    private static partial Regex ArticlesAnglaisRegex();
+
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex EspacesMultiplesRegex();
 }

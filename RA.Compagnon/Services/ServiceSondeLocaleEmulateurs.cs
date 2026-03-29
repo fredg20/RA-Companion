@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Automation;
 using RA.Compagnon.Modeles.Local;
@@ -12,14 +13,22 @@ namespace RA.Compagnon.Services;
 /// <summary>
 /// Détecte localement les principaux émulateurs connus à partir des processus et titres de fenêtre.
 /// </summary>
-public sealed class ServiceSondeLocaleEmulateurs
+public sealed partial class ServiceSondeLocaleEmulateurs
 {
+    private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
+
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
     private const int ProcessCommandLineInformation = 60;
     private static readonly Lock VerrouCacheDuckStation = new();
+    private static readonly Lock VerrouCacheRALibretro = new();
+    private static readonly Lock VerrouCacheRetroArch = new();
     private static string _dernierRepertoireDuckStation = string.Empty;
     private static DateTime _dernierHorodatageCacheGamelistUtc = DateTime.MinValue;
     private static Dictionary<string, string> _cacheSerialVersCheminDuckStation = [];
+    private static RenseignementJeuRA? _dernierRenseignementRALibretro;
+    private static DateTime _dernierHorodatageRenseignementRALibretroUtc = DateTime.MinValue;
+    private static RenseignementJeuRA? _dernierRenseignementRetroArch;
+    private static DateTime _dernierHorodatageRenseignementRetroArchUtc = DateTime.MinValue;
 
     private sealed record DefinitionEmulateur(
         string NomEmulateur,
@@ -34,21 +43,14 @@ public sealed class ServiceSondeLocaleEmulateurs
             ["retroarch"],
             (_, titre) => ExtraireTitreAvecSeparateurs(titre, "RetroArch", "RetroArch ")
         ),
+        new("RALibretro", ["ralibretro"], ExtraireTitreRALibretro),
         new(
             "DuckStation",
             ["duckstation", "duckstation-qt", "duckstation-nogui", "duckstation-sdl"],
             ExtraireTitreDuckStation
         ),
-        new(
-            "PCSX2",
-            ["pcsx2", "pcsx2-qt"],
-            ExtraireTitrePCSX2
-        ),
-        new(
-            "PPSSPP",
-            ["ppsspp", "ppssppwindows", "ppssppwindows64"],
-            (_, titre) => ExtraireTitreAvecSeparateurs(titre, "PPSSPP")
-        ),
+        new("PCSX2", ["pcsx2", "pcsx2-qt"], ExtraireTitrePCSX2),
+        new("PPSSPP", ["ppsspp", "ppssppwindows", "ppssppwindows64"], ExtraireTitrePPSSPP),
         new(
             "Dolphin",
             [
@@ -60,12 +62,8 @@ public sealed class ServiceSondeLocaleEmulateurs
             ],
             ExtraireTitreDolphin
         ),
+        new("LunaProject64", ["project64"], ExtraireTitreProject64),
         new("Flycast", ["flycast"], (_, titre) => ExtraireTitreAvecSeparateurs(titre, "Flycast")),
-        new(
-            "Project64",
-            ["project64"],
-            (_, titre) => ExtraireTitreAvecSeparateurs(titre, "Project64", "Project 64")
-        ),
     ];
 
     private static readonly string CheminJournalSondeLocale = Path.Combine(
@@ -138,13 +136,15 @@ public sealed class ServiceSondeLocaleEmulateurs
         return etatAucun;
     }
 
-    public bool SonderPresenceEmulateur()
+    public static bool SonderPresenceEmulateur()
     {
         try
         {
             Process[] processus = Process.GetProcesses();
             return Definitions.Any(definition =>
-                processus.Any(processusCourant => CorrespondNomProcessus(processusCourant, definition))
+                processus.Any(processusCourant =>
+                    CorrespondNomProcessus(processusCourant, definition)
+                )
             );
         }
         catch
@@ -172,7 +172,65 @@ public sealed class ServiceSondeLocaleEmulateurs
         IReadOnlyList<string> titresFenetres = LireTitresFenetresVisibles(processusCible);
         string titreFenetre = ChoisirTitreFenetre(definition, processusCible, titresFenetres);
         string titreJeuProbable = definition.ExtraireTitreJeu(processusCible, titreFenetre);
+        int identifiantJeuProbable = 0;
         string informationsDiagnostic = string.Empty;
+
+        if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuProject64DepuisRACache();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic =
+                    $"racacheGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+            }
+        }
+        else if (string.Equals(definition.NomEmulateur, "RALibretro", StringComparison.Ordinal))
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRALibretroDepuisRACache();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic =
+                    $"racacheGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+            }
+
+            if (identifiantJeuProbable <= 0)
+            {
+                titreJeuProbable = string.Empty;
+            }
+        }
+        else if (string.Equals(definition.NomEmulateur, "RetroArch", StringComparison.Ordinal))
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRetroArchDepuisLog();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic =
+                    $"logGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+            }
+        }
 
         if (
             string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
@@ -186,7 +244,7 @@ public sealed class ServiceSondeLocaleEmulateurs
         }
 
         string signature =
-            $"{definition.NomEmulateur}|{processusCible.ProcessName}|{titreFenetre}|{titreJeuProbable}|{informationsDiagnostic}";
+            $"{definition.NomEmulateur}|{processusCible.ProcessName}|{titreFenetre}|{titreJeuProbable}|{identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}|{informationsDiagnostic}";
 
         return new EtatSondeLocaleEmulateur
         {
@@ -195,6 +253,7 @@ public sealed class ServiceSondeLocaleEmulateurs
             NomProcessus = processusCible.ProcessName,
             TitreFenetre = titreFenetre,
             TitreJeuProbable = titreJeuProbable,
+            IdentifiantJeuProbable = identifiantJeuProbable,
             InformationsDiagnostic = informationsDiagnostic,
             Signature = signature,
             HorodatageUtc = DateTimeOffset.UtcNow,
@@ -210,10 +269,11 @@ public sealed class ServiceSondeLocaleEmulateurs
             return true;
         }
 
-        // DuckStation et PCSX2 ont des variantes de fenêtres/outils qui rendent le fallback
-        // par titre trop bruyant (navigateurs, installateur, dialogues internes, etc.).
+        // RetroArch, DuckStation et PCSX2 ont des variantes de fenêtres/outils qui rendent
+        // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
         if (
-            string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
+            string.Equals(definition.NomEmulateur, "RetroArch", StringComparison.Ordinal)
+            || string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
             || string.Equals(definition.NomEmulateur, "PCSX2", StringComparison.Ordinal)
         )
         {
@@ -329,7 +389,7 @@ public sealed class ServiceSondeLocaleEmulateurs
             );
         }
 
-        resultat = Regex.Replace(resultat, @"\s+", " ").Trim();
+        resultat = EspacesMultiplesRegex().Replace(resultat, " ").Trim();
         return resultat;
     }
 
@@ -390,6 +450,27 @@ public sealed class ServiceSondeLocaleEmulateurs
         return titreNettoye;
     }
 
+    private static string ExtraireTitrePPSSPP(Process _, string titreFenetre)
+    {
+        string titre = ExtraireTitreAvecSeparateurs(titreFenetre, "PPSSPP");
+
+        if (string.IsNullOrWhiteSpace(titre))
+        {
+            return string.Empty;
+        }
+
+        string titreNettoye = titre.Trim();
+
+        // PPSSPP affiche souvent le serial PSP devant le vrai titre.
+        titreNettoye = PrefixeSerialPpssppRegex().Replace(titreNettoye, string.Empty).Trim();
+
+        titreNettoye = titreNettoye.Replace("Â®", string.Empty, StringComparison.Ordinal);
+        titreNettoye = titreNettoye.Replace("®", string.Empty, StringComparison.Ordinal);
+        titreNettoye = EspacesMultiplesRegex().Replace(titreNettoye, " ").Trim();
+
+        return titreNettoye;
+    }
+
     private static string ExtraireTitreDolphin(Process _, string titreFenetre)
     {
         string titre = ExtraireTitreAvecSeparateurs(
@@ -412,14 +493,89 @@ public sealed class ServiceSondeLocaleEmulateurs
             return string.Empty;
         }
 
-        titreNettoye = Regex.Replace(
-            titreNettoye,
-            @"\s*\(([A-Z0-9]{4,8})\)\s*$",
-            string.Empty,
-            RegexOptions.IgnoreCase
-        ).Trim();
+        titreNettoye = SuffixeCodeJeuDolphinRegex().Replace(titreNettoye, string.Empty).Trim();
 
         return titreNettoye;
+    }
+
+    private static string ExtraireTitreProject64(Process _, string titreFenetre)
+    {
+        return ExtraireTitreProject64DepuisFenetre(titreFenetre);
+    }
+
+    private static string ExtraireTitreRALibretro(Process _, string titreFenetre)
+    {
+        string titre = ExtraireTitreRALibretroDepuisFenetre(titreFenetre);
+
+        if (!string.IsNullOrWhiteSpace(titre))
+        {
+            return titre;
+        }
+
+        RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRALibretroDepuisRACache();
+
+        if (renseignementJeu is not null && !string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+        {
+            return renseignementJeu.TitreJeu;
+        }
+
+        string cheminConfiguration = TrouverCheminConfigurationRALibretro();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminConfiguration, Encoding.UTF8)
+            );
+
+            if (
+                document.RootElement.TryGetProperty("recent", out JsonElement recent)
+                && recent.ValueKind == JsonValueKind.Array
+                && recent.GetArrayLength() > 0
+                && recent[0].TryGetProperty("path", out JsonElement path)
+                && path.ValueKind == JsonValueKind.String
+            )
+            {
+                string cheminJeu = path.GetString()?.Trim() ?? string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(cheminJeu))
+                {
+                    return NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+                }
+            }
+        }
+        catch
+        {
+            // Le JSON local reste un fallback opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string ExtraireTitreRALibretroDepuisFenetre(string titreFenetre)
+    {
+        string titre = titreFenetre.Trim();
+
+        if (string.IsNullOrWhiteSpace(titre))
+        {
+            return string.Empty;
+        }
+
+        if (
+            titre.StartsWith("RALibretro", StringComparison.OrdinalIgnoreCase)
+            || titre.StartsWith("RALibRetro", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            // Les fenetres RALibretro exposent surtout version/core/system/profil.
+            // Le nom du jeu fiable vient du RACache ou du JSON recent.
+            return string.Empty;
+        }
+
+        return NettoyerNomFichierJeu(titre);
     }
 
     private static bool EstDialogueDolphin(string titre)
@@ -431,14 +587,14 @@ public sealed class ServiceSondeLocaleEmulateurs
 
         string titreNormalise = titre.Trim().ToLowerInvariant();
 
-        return titreNormalise is
-            "selectionner un dossier"
-            or "sélectionner un dossier"
-            or "select a folder"
-            or "select a directory"
-            or "ouvrir"
-            or "open"
-            or "browse for folder";
+        return titreNormalise
+            is "selectionner un dossier"
+                or "sélectionner un dossier"
+                or "select a folder"
+                or "select a directory"
+                or "ouvrir"
+                or "open"
+                or "browse for folder";
     }
 
     private static bool EstDialoguePCSX2(string titre)
@@ -460,18 +616,63 @@ public sealed class ServiceSondeLocaleEmulateurs
             return true;
         }
 
-        return titreNormalise is
-            "mise a jour automatique"
-            or "lancer un disque"
-            or "telecharger des jaquettes"
-            or "parametres pcsx2"
-            or "selectionner un dossier"
-            or "scanner les sous-dossiers ?"
-            or "confirmer l'extinction"
-            or "attention : memory card occupee"
-            or "ouvrir"
-            or "open"
-            or "browse for folder";
+        return titreNormalise
+            is "mise a jour automatique"
+                or "lancer un disque"
+                or "telecharger des jaquettes"
+                or "parametres pcsx2"
+                or "selectionner un dossier"
+                or "scanner les sous-dossiers ?"
+                or "confirmer l'extinction"
+                or "attention : memory card occupee"
+                or "ouvrir"
+                or "open"
+                or "browse for folder";
+    }
+
+    private static string ExtraireTitreProject64DepuisFenetre(string titreFenetre)
+    {
+        if (string.IsNullOrWhiteSpace(titreFenetre))
+        {
+            return string.Empty;
+        }
+
+        string[] morceaux = titreFenetre.Split(
+            " - ",
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
+        );
+
+        if (
+            morceaux.Length >= 3
+            && morceaux[0].Contains("Project64", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            if (EstBlocVersionProject64(morceaux[1]))
+            {
+                if (morceaux.Length == 3)
+                {
+                    // Format "LunaProject64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
+                    return string.Empty;
+                }
+
+                string candidat = morceaux.Length >= 4 ? morceaux[^2] : morceaux[^1];
+                return NettoyerTitreJeu(candidat, ["Project64", "LunaProject64"]);
+            }
+
+            return NettoyerTitreJeu(morceaux[^1], ["Project64", "LunaProject64"]);
+        }
+
+        return ExtraireTitreAvecSeparateurs(titreFenetre, "Project64", "LunaProject64");
+    }
+
+    private static bool EstBlocVersionProject64(string valeur)
+    {
+        if (string.IsNullOrWhiteSpace(valeur))
+        {
+            return false;
+        }
+
+        return BlocVersionProject64Regex().IsMatch(valeur.Trim());
     }
 
     private static string ExtraireTitreDuckStationDepuisAutomatisation(Process processus)
@@ -558,7 +759,7 @@ public sealed class ServiceSondeLocaleEmulateurs
             return 0;
         }
 
-        if (Regex.IsMatch(valeurMinuscule, @"^\d+(\.\d+)*$"))
+        if (ValeurNumeriqueSeuleRegex().IsMatch(valeurMinuscule))
         {
             return 0;
         }
@@ -575,7 +776,7 @@ public sealed class ServiceSondeLocaleEmulateurs
             score += 0.4;
         }
 
-        if (Regex.IsMatch(valeur, @"[A-Za-z].*[A-Za-z]"))
+        if (ContientDeuxLettresRegex().IsMatch(valeur))
         {
             score += 0.4;
         }
@@ -608,7 +809,7 @@ public sealed class ServiceSondeLocaleEmulateurs
                 CheminJournalSondeLocale,
                 string.Create(
                     CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};gameId={etat.IdentifiantJeuProbable.ToString(CultureInfo.InvariantCulture)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
                 )
             );
         }
@@ -639,7 +840,10 @@ public sealed class ServiceSondeLocaleEmulateurs
                         return true;
                     }
 
-                    GetWindowThreadProcessId(handle, out uint identifiantProcessusFenetre);
+                    if (GetWindowThreadProcessId(handle, out uint identifiantProcessusFenetre) == 0)
+                    {
+                        return true;
+                    }
 
                     if (identifiantProcessusFenetre != unchecked((uint)processus.Id))
                     {
@@ -728,6 +932,35 @@ public sealed class ServiceSondeLocaleEmulateurs
         return constructeur.ToString().Normalize(NormalizationForm.FormC).Trim().ToLowerInvariant();
     }
 
+    private static string NormaliserTitreComparaisonSouple(string valeur)
+    {
+        string normalise = NormaliserTexteComparaison(valeur);
+
+        if (string.IsNullOrWhiteSpace(normalise))
+        {
+            return string.Empty;
+        }
+
+        normalise = TexteEntreParenthesesRegex().Replace(normalise, " ");
+        normalise = CaracteresNonAlphaNumeriquesRegex().Replace(normalise, " ");
+        return EspacesMultiplesRegex().Replace(normalise, " ").Trim();
+    }
+
+    private static bool TitresSemblables(string titreA, string titreB)
+    {
+        string normaliseA = NormaliserTitreComparaisonSouple(titreA);
+        string normaliseB = NormaliserTitreComparaisonSouple(titreB);
+
+        if (string.IsNullOrWhiteSpace(normaliseA) || string.IsNullOrWhiteSpace(normaliseB))
+        {
+            return false;
+        }
+
+        return string.Equals(normaliseA, normaliseB, StringComparison.Ordinal)
+            || normaliseA.Contains(normaliseB, StringComparison.Ordinal)
+            || normaliseB.Contains(normaliseA, StringComparison.Ordinal);
+    }
+
     private static string ConstruireDiagnosticDuckStation(
         Process processus,
         IReadOnlyList<string> titresFenetres
@@ -744,7 +977,9 @@ public sealed class ServiceSondeLocaleEmulateurs
 
             if (processus.MainWindowHandle != IntPtr.Zero)
             {
-                AutomationElement fenetre = AutomationElement.FromHandle(processus.MainWindowHandle);
+                AutomationElement fenetre = AutomationElement.FromHandle(
+                    processus.MainWindowHandle
+                );
                 AutomationElementCollection elements = fenetre.FindAll(
                     TreeScope.Descendants,
                     Condition.TrueCondition
@@ -798,13 +1033,12 @@ public sealed class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            int tailleRetour = 0;
             int statut = NtQueryInformationProcess(
                 processus.Handle,
                 ProcessCommandLineInformation,
                 IntPtr.Zero,
                 0,
-                out tailleRetour
+                out int tailleRetour
             );
 
             if (tailleRetour <= 0 && statut != unchecked((int)0xC0000004))
@@ -857,11 +1091,7 @@ public sealed class ServiceSondeLocaleEmulateurs
             return string.Empty;
         }
 
-        MatchCollection correspondances = Regex.Matches(
-            ligneCommande,
-            "\"([^\"]+)\"|([^\\s]+)",
-            RegexOptions.CultureInvariant
-        );
+        MatchCollection correspondances = JetonsLigneCommandeRegex().Matches(ligneCommande);
 
         string[] extensionsJeuPossibles =
         [
@@ -878,12 +1108,11 @@ public sealed class ServiceSondeLocaleEmulateurs
 
         foreach (Match correspondance in correspondances.Cast<Match>().Reverse())
         {
-            string valeur =
-                correspondance.Groups[1].Success
-                    ? correspondance.Groups[1].Value
-                    : correspondance.Groups[2].Value;
+            string valeur = correspondance.Groups[1].Success
+                ? correspondance.Groups[1].Value
+                : correspondance.Groups[2].Value;
 
-            if (string.IsNullOrWhiteSpace(valeur) || valeur.StartsWith("-", StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(valeur) || valeur.StartsWith('-'))
             {
                 continue;
             }
@@ -902,6 +1131,555 @@ public sealed class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    private static RenseignementJeuRA? LireRenseignementJeuRetroArchDepuisLog()
+    {
+        try
+        {
+            string repertoireLogs = TrouverRepertoireLogsRetroArch();
+
+            if (string.IsNullOrWhiteSpace(repertoireLogs))
+            {
+                return null;
+            }
+
+            DirectoryInfo repertoire = new(repertoireLogs);
+            FileInfo? fichierLog = repertoire
+                .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
+                .Where(fichier => fichier.Length > 0)
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            fichierLog ??= repertoire
+                .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
+                .Where(fichier => fichier.Length > 0)
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            if (fichierLog is null)
+            {
+                return LireRenseignementJeuRetroArchDepuisCache();
+            }
+
+            if (DateTime.UtcNow - fichierLog.LastWriteTimeUtc > TimeSpan.FromMinutes(15))
+            {
+                return LireRenseignementJeuRetroArchDepuisCache();
+            }
+
+            foreach (
+                string ligne in LireToutesLesLignesAvecPartage(fichierLog.FullName)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceIdentifie = RetroArchGameIdentifieRegex().Match(ligne);
+
+                if (
+                    correspondanceIdentifie.Success
+                    && int.TryParse(
+                        correspondanceIdentifie.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuIdentifie
+                    )
+                )
+                {
+                    string titreJeu = correspondanceIdentifie.Groups[2].Value.Trim();
+                    return MemoriserRenseignementRetroArch(
+                        new RenseignementJeuRA(identifiantJeuIdentifie, titreJeu)
+                    );
+                }
+
+                Match correspondanceSession = RetroArchSessionJeuRegex().Match(ligne);
+
+                if (
+                    correspondanceSession.Success
+                    && int.TryParse(
+                        correspondanceSession.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuSession
+                    )
+                )
+                {
+                    return MemoriserRenseignementRetroArch(
+                        new RenseignementJeuRA(identifiantJeuSession, string.Empty)
+                    );
+                }
+            }
+        }
+        catch
+        {
+            // Le log RetroArch reste une aide locale facultative.
+        }
+
+        return LireRenseignementJeuRetroArchDepuisCache();
+    }
+
+    private static RenseignementJeuRA? MemoriserRenseignementRetroArch(
+        RenseignementJeuRA renseignement
+    )
+    {
+        lock (VerrouCacheRetroArch)
+        {
+            _dernierRenseignementRetroArch = renseignement;
+            _dernierHorodatageRenseignementRetroArchUtc = DateTime.UtcNow;
+            return _dernierRenseignementRetroArch;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRetroArchDepuisCache()
+    {
+        lock (VerrouCacheRetroArch)
+        {
+            if (
+                _dernierRenseignementRetroArch is null
+                || DateTime.UtcNow - _dernierHorodatageRenseignementRetroArchUtc
+                    > TimeSpan.FromSeconds(10)
+            )
+            {
+                return null;
+            }
+
+            return _dernierRenseignementRetroArch;
+        }
+    }
+
+    private static List<string> LireToutesLesLignesAvecPartage(string cheminFichier)
+    {
+        try
+        {
+            using FileStream flux = new(
+                cheminFichier,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete
+            );
+            using StreamReader lecteur = new(
+                flux,
+                Encoding.UTF8,
+                detectEncodingFromByteOrderMarks: true
+            );
+            List<string> lignes = [];
+
+            while (!lecteur.EndOfStream)
+            {
+                string? ligne = lecteur.ReadLine();
+
+                if (ligne is not null)
+                {
+                    lignes.Add(ligne);
+                }
+            }
+
+            return lignes;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static string TrouverRepertoireLogsRetroArch()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RetroArch", "logs"),
+            Path.Combine(documents, "RetroArch", "logs"),
+            Path.Combine(appData, "RetroArch", "logs"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisRACache()
+    {
+        try
+        {
+            string repertoireRACache = TrouverRepertoireRACacheProject64();
+
+            if (string.IsNullOrWhiteSpace(repertoireRACache))
+            {
+                return null;
+            }
+
+            string cheminJournal = Path.Combine(repertoireRACache, "RALog.txt");
+            if (File.Exists(cheminJournal))
+            {
+                DateTime horodatageJournal = File.GetLastWriteTimeUtc(cheminJournal);
+
+                if (DateTime.UtcNow - horodatageJournal <= TimeSpan.FromMinutes(15))
+                {
+                    int identifiantJeu = LireDernierIdentifiantJeuDepuisJournalRA(cheminJournal);
+
+                    if (identifiantJeu > 0)
+                    {
+                        return LireRenseignementJeuProject64DepuisFichierData(
+                                repertoireRACache,
+                                identifiantJeu
+                            ) ?? new RenseignementJeuRA(identifiantJeu, string.Empty);
+                    }
+                }
+            }
+
+            return LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisRACache()
+    {
+        try
+        {
+            string repertoireRACache = TrouverRepertoireRACacheRALibretro();
+            RenseignementJeuRA? renseignementConfiguration =
+                LireRenseignementJeuRALibretroDepuisConfiguration();
+
+            if (string.IsNullOrWhiteSpace(repertoireRACache))
+            {
+                return renseignementConfiguration ?? LireRenseignementJeuRALibretroDepuisCache();
+            }
+
+            // Pour RALibretro, le fichier Data/<GameId>.json le plus recent est le signal
+            // le plus fiable du jeu courant pendant les transitions de session.
+            RenseignementJeuRA? dernierRenseignement =
+                LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
+
+            if (dernierRenseignement is not null)
+            {
+                if (
+                    string.IsNullOrWhiteSpace(dernierRenseignement.TitreJeu)
+                    && renseignementConfiguration is not null
+                    && !string.IsNullOrWhiteSpace(renseignementConfiguration.TitreJeu)
+                )
+                {
+                    dernierRenseignement = dernierRenseignement with
+                    {
+                        TitreJeu = renseignementConfiguration.TitreJeu,
+                    };
+                }
+
+                return MemoriserRenseignementRALibretro(dernierRenseignement);
+            }
+
+            string cheminJournal = Path.Combine(repertoireRACache, "RALog.txt");
+
+            if (File.Exists(cheminJournal))
+            {
+                DateTime horodatageJournal = File.GetLastWriteTimeUtc(cheminJournal);
+
+                if (DateTime.UtcNow - horodatageJournal <= TimeSpan.FromMinutes(15))
+                {
+                    int identifiantJeu = LireDernierIdentifiantJeuDepuisJournalRA(cheminJournal);
+
+                    if (identifiantJeu > 0)
+                    {
+                        RenseignementJeuRA renseignement =
+                            LireRenseignementJeuProject64DepuisFichierData(
+                                repertoireRACache,
+                                identifiantJeu
+                            ) ?? new RenseignementJeuRA(identifiantJeu, string.Empty);
+
+                        if (
+                            renseignementConfiguration is not null
+                            && !string.IsNullOrWhiteSpace(renseignementConfiguration.TitreJeu)
+                            && !string.IsNullOrWhiteSpace(renseignement.TitreJeu)
+                            && !TitresSemblables(
+                                renseignementConfiguration.TitreJeu,
+                                renseignement.TitreJeu
+                            )
+                        )
+                        {
+                            return renseignementConfiguration;
+                        }
+
+                        if (
+                            string.IsNullOrWhiteSpace(renseignement.TitreJeu)
+                            && renseignementConfiguration is not null
+                            && !string.IsNullOrWhiteSpace(renseignementConfiguration.TitreJeu)
+                        )
+                        {
+                            renseignement = renseignement with
+                            {
+                                TitreJeu = renseignementConfiguration.TitreJeu,
+                            };
+                        }
+
+                        return MemoriserRenseignementRALibretro(renseignement);
+                    }
+                }
+            }
+
+            return renseignementConfiguration ?? LireRenseignementJeuRALibretroDepuisCache();
+        }
+        catch
+        {
+            return LireRenseignementJeuRALibretroDepuisCache();
+        }
+    }
+
+    private static RenseignementJeuRA? MemoriserRenseignementRALibretro(
+        RenseignementJeuRA renseignement
+    )
+    {
+        lock (VerrouCacheRALibretro)
+        {
+            _dernierRenseignementRALibretro = renseignement;
+            _dernierHorodatageRenseignementRALibretroUtc = DateTime.UtcNow;
+            return _dernierRenseignementRALibretro;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisCache()
+    {
+        lock (VerrouCacheRALibretro)
+        {
+            if (
+                _dernierRenseignementRALibretro is null
+                || DateTime.UtcNow - _dernierHorodatageRenseignementRALibretroUtc
+                    > TimeSpan.FromSeconds(5)
+            )
+            {
+                return null;
+            }
+
+            return _dernierRenseignementRALibretro;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisConfiguration()
+    {
+        string cheminConfiguration = TrouverCheminConfigurationRALibretro();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminConfiguration, Encoding.UTF8)
+            );
+
+            if (
+                !document.RootElement.TryGetProperty("recent", out JsonElement recent)
+                || recent.ValueKind != JsonValueKind.Array
+                || recent.GetArrayLength() == 0
+            )
+            {
+                return null;
+            }
+
+            JsonElement premierRecent = recent[0];
+
+            if (
+                !premierRecent.TryGetProperty("path", out JsonElement path)
+                || path.ValueKind != JsonValueKind.String
+            )
+            {
+                return null;
+            }
+
+            string cheminJeu = path.GetString()?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(cheminJeu))
+            {
+                return null;
+            }
+
+            string titreJeu = NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+            return string.IsNullOrWhiteSpace(titreJeu) ? null : new RenseignementJeuRA(0, titreJeu);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string TrouverRepertoireRACacheProject64()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
+            Path.Combine(documents, "Luna_Project64", "RACache"),
+            Path.Combine(appData, "Luna-Project64", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    private static string TrouverRepertoireRACacheRALibretro()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RALibretro", "RACache"),
+            Path.Combine(documents, "RALibretro", "RACache"),
+            Path.Combine(appData, "RALibretro", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    private static string TrouverCheminConfigurationRALibretro()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RALibretro", "RALibretro.json"),
+            Path.Combine(documents, "RALibretro", "RALibretro.json"),
+            Path.Combine(appData, "RALibretro", "RALibretro.json"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    private static int LireDernierIdentifiantJeuDepuisJournalRA(string cheminJournal)
+    {
+        try
+        {
+            List<string> lignes = LireToutesLesLignesAvecPartage(cheminJournal);
+
+            foreach (string ligne in lignes.AsEnumerable().Reverse())
+            {
+                Match correspondance = JournalGameIdRegex().Match(ligne);
+
+                if (
+                    correspondance.Success
+                    && int.TryParse(
+                        correspondance.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeu
+                    )
+                )
+                {
+                    return identifiantJeu;
+                }
+            }
+        }
+        catch
+        {
+            // Le journal RA reste une aide locale facultative.
+        }
+
+        return 0;
+    }
+
+    private static RenseignementJeuRA? LireDernierRenseignementJeuProject64DepuisData(
+        string repertoireRACache
+    )
+    {
+        try
+        {
+            string repertoireData = Path.Combine(repertoireRACache, "Data");
+
+            if (!Directory.Exists(repertoireData))
+            {
+                return null;
+            }
+
+            FileInfo? fichierJeuRecent = new DirectoryInfo(repertoireData)
+                .EnumerateFiles("*.json", SearchOption.TopDirectoryOnly)
+                .Where(fichier => FichierDonneesJeuRegex().IsMatch(fichier.Name))
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            if (fichierJeuRecent is null)
+            {
+                return null;
+            }
+
+            if (DateTime.UtcNow - fichierJeuRecent.LastWriteTimeUtc > TimeSpan.FromMinutes(15))
+            {
+                return null;
+            }
+
+            string nomBase = Path.GetFileNameWithoutExtension(fichierJeuRecent.Name);
+
+            if (
+                !int.TryParse(
+                    nomBase,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int identifiantJeu
+                )
+            )
+            {
+                return null;
+            }
+
+            return LireRenseignementJeuProject64DepuisFichierData(
+                repertoireRACache,
+                identifiantJeu
+            );
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisFichierData(
+        string repertoireRACache,
+        int identifiantJeu
+    )
+    {
+        try
+        {
+            string cheminDonneesJeu = Path.Combine(
+                repertoireRACache,
+                "Data",
+                $"{identifiantJeu}.json"
+            );
+
+            if (!File.Exists(cheminDonneesJeu))
+            {
+                return null;
+            }
+
+            string contenu = string.Join(
+                Environment.NewLine,
+                LireToutesLesLignesAvecPartage(cheminDonneesJeu)
+            );
+
+            if (string.IsNullOrWhiteSpace(contenu))
+            {
+                return null;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(contenu);
+            string titreJeu = string.Empty;
+
+            if (
+                document.RootElement.TryGetProperty("Title", out JsonElement titre)
+                && titre.ValueKind == JsonValueKind.String
+            )
+            {
+                titreJeu = titre.GetString()?.Trim() ?? string.Empty;
+            }
+
+            return new RenseignementJeuRA(identifiantJeu, titreJeu);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static string NettoyerNomFichierJeu(string nomFichier)
     {
         if (string.IsNullOrWhiteSpace(nomFichier))
@@ -911,7 +1689,7 @@ public sealed class ServiceSondeLocaleEmulateurs
 
         string resultat = nomFichier.Trim();
         resultat = resultat.Replace('_', ' ');
-        resultat = Regex.Replace(resultat, @"\s+", " ").Trim();
+        resultat = EspacesMultiplesRegex().Replace(resultat, " ").Trim();
         return resultat;
     }
 
@@ -949,9 +1727,9 @@ public sealed class ServiceSondeLocaleEmulateurs
             }
 
             string nomBase = Path.GetFileNameWithoutExtension(memcardRecente.Name);
-            nomBase = Regex.Replace(nomBase, @"_[12]$", string.Empty);
+            nomBase = SuffixeSlotCarteMemoireRegex().Replace(nomBase, string.Empty);
 
-            if (Regex.IsMatch(nomBase, @"^[A-Z]{4}-\d{5}$", RegexOptions.CultureInvariant))
+            if (SerialJeuPlayStationRegex().IsMatch(nomBase))
             {
                 string cheminJeu = ResoudreCheminJeuDuckStationDepuisSerial(
                     repertoireDuckStation,
@@ -1040,7 +1818,9 @@ public sealed class ServiceSondeLocaleEmulateurs
         }
     }
 
-    private static Dictionary<string, string> ConstruireCacheSerialDuckStation(string cheminGamelist)
+    private static Dictionary<string, string> ConstruireCacheSerialDuckStation(
+        string cheminGamelist
+    )
     {
         string[] chaines = ExtraireChainesLisiblesDepuisBinaire(cheminGamelist, 4);
         Dictionary<string, string> correspondances = new(StringComparer.OrdinalIgnoreCase);
@@ -1061,7 +1841,10 @@ public sealed class ServiceSondeLocaleEmulateurs
         return correspondances;
     }
 
-    private static string[] ExtraireChainesLisiblesDepuisBinaire(string cheminFichier, int longueurMin)
+    private static string[] ExtraireChainesLisiblesDepuisBinaire(
+        string cheminFichier,
+        int longueurMin
+    )
     {
         byte[] bytes = File.ReadAllBytes(cheminFichier);
         List<string> chaines = [];
@@ -1118,29 +1901,94 @@ public sealed class ServiceSondeLocaleEmulateurs
 
     private static bool EstSerialJeuPlayStation(string valeur)
     {
-        return !string.IsNullOrWhiteSpace(valeur)
-            && Regex.IsMatch(valeur, @"^[A-Z]{4}-\d{5}$", RegexOptions.CultureInvariant);
+        return !string.IsNullOrWhiteSpace(valeur) && SerialJeuPlayStationRegex().IsMatch(valeur);
     }
 
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+    [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    private static partial Regex EspacesMultiplesRegex();
 
-    [DllImport("user32.dll")]
+    [GeneratedRegex(@"^v?\d+(\.\d+)+$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    private static partial Regex BlocVersionProject64Regex();
+
+    [GeneratedRegex(@"^\d+(\.\d+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex ValeurNumeriqueSeuleRegex();
+
+    [GeneratedRegex(@"[A-Za-z].*[A-Za-z]", RegexOptions.CultureInvariant)]
+    private static partial Regex ContientDeuxLettresRegex();
+
+    [GeneratedRegex(@"\([^)]*\)", RegexOptions.CultureInvariant)]
+    private static partial Regex TexteEntreParenthesesRegex();
+
+    [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
+    private static partial Regex CaracteresNonAlphaNumeriquesRegex();
+
+    [GeneratedRegex("\"([^\"]+)\"|([^\\s]+)", RegexOptions.CultureInvariant)]
+    private static partial Regex JetonsLigneCommandeRegex();
+
+    [GeneratedRegex(
+        @"(?:Identified game:\s*|Loading game\s+|Starting (?:new )?session for game\s+)(\d+)",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex JournalGameIdRegex();
+
+    [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
+    private static partial Regex FichierDonneesJeuRegex();
+
+    [GeneratedRegex(
+        @"(?:^|[_\-\s])(?:slot|card)\s*\d+$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex SuffixeSlotCarteMemoireRegex();
+
+    [GeneratedRegex(
+        @"^(?:S[CLN][A-Z]{2}|PBPX)[-_ ]?\d{3,5}(?:[-_ ]?\d{2,3})?$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex SerialJeuPlayStationRegex();
+
+    [GeneratedRegex(
+        @"^[A-Z]{4}\d{5}\s*:\s*",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PrefixeSerialPpssppRegex();
+
+    [GeneratedRegex(
+        @"\s*\(([A-Z0-9]{4,8})\)\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex SuffixeCodeJeuDolphinRegex();
+
+    [GeneratedRegex(
+        @"\[RCHEEVOS\]\s+Identified game:\s*(\d+)\s+""([^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RetroArchGameIdentifieRegex();
+
+    [GeneratedRegex(
+        @"\[RCHEEVOS\]\s+Starting session for game\s+(\d+)",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RetroArchSessionJeuRegex();
+
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsWindowVisible(IntPtr hWnd);
+    [LibraryImport("user32.dll")]
+    private static partial bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll")]
+    private static partial bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
-    [DllImport("user32.dll")]
-    private static extern int GetWindowTextLength(IntPtr hWnd);
+    [LibraryImport("user32.dll")]
+    private static partial int GetWindowTextLength(IntPtr hWnd);
 
-    [DllImport("user32.dll")]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+    [LibraryImport("user32.dll")]
+    private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-    [DllImport("ntdll.dll")]
-    private static extern int NtQueryInformationProcess(
+    [LibraryImport("ntdll.dll")]
+    private static partial int NtQueryInformationProcess(
         IntPtr processHandle,
         int processInformationClass,
         IntPtr processInformation,

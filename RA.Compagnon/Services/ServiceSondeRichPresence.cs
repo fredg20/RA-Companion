@@ -38,7 +38,7 @@ public sealed class ServiceSondeRichPresence
         }
     }
 
-    public EtatRichPresence Sonder(DonneesCompteUtilisateur donnees, bool journaliser = true)
+    public static EtatRichPresence Sonder(DonneesCompteUtilisateur donnees, bool journaliser = true)
     {
         string messageRichPresenceResume = donnees.Resume?.RichPresenceMsg?.Trim() ?? string.Empty;
         string messageRichPresenceProfil = donnees.Profil?.RichPresenceMsg?.Trim() ?? string.Empty;

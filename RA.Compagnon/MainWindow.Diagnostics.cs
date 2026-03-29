@@ -61,7 +61,7 @@ public partial class MainWindow
             Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalDiagnosticPerformance)!);
             File.AppendAllText(
                 CheminJournalDiagnosticPerformance,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] +{_chronometreDiagnosticChangementJeu.Elapsed.TotalMilliseconds, 6:0} ms | {etape}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] +{_chronometreDiagnosticChangementJeu.Elapsed.TotalMilliseconds,6:0} ms | {etape}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
             );
         }
         catch

@@ -9,15 +9,13 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationCompte
 {
-    private readonly ServiceSondeRichPresence _serviceSondeRichPresence = new();
-
-    public CompteAffiche Construire(DonneesCompteUtilisateur donnees, string pseudoParDefaut)
+    public static CompteAffiche Construire(DonneesCompteUtilisateur donnees, string pseudoParDefaut)
     {
         string nomUtilisateur = donnees.Profil?.User?.Trim() ?? pseudoParDefaut.Trim();
         string titre = string.IsNullOrWhiteSpace(nomUtilisateur) ? "Compte" : nomUtilisateur;
         string devise = donnees.Profil?.Motto?.Trim() ?? string.Empty;
         string urlAvatar = ConstruireUrlAvatar(donnees.Profil?.UserPic);
-        EtatRichPresence etatRichPresence = _serviceSondeRichPresence.Sonder(donnees);
+        EtatRichPresence etatRichPresence = ServiceSondeRichPresence.Sonder(donnees);
 
         List<SectionInformationsAffichee> sections = [];
 
@@ -290,7 +288,7 @@ public sealed class ServicePresentationCompte
     }
 
     private static void AjouterLigneSiValeurUtile(
-        ICollection<LigneInformationAffichee> lignes,
+        List<LigneInformationAffichee> lignes,
         string libelle,
         string? valeur
     )

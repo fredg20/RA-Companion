@@ -119,7 +119,7 @@ public partial class MainWindow
     /// <summary>
     /// Aucun amorçage local : l'application reste entièrement autonome.
     /// </summary>
-    private Task AmorcerEtatJeuLocalAuDemarrageAsync()
+    private static Task AmorcerEtatJeuLocalAuDemarrageAsync()
     {
         return Task.CompletedTask;
     }
@@ -174,7 +174,7 @@ public partial class MainWindow
 
         try
         {
-            UserSummaryV2? resume = await _serviceUtilisateurRetroAchievements.ObtenirResumeAsync(
+            UserSummaryV2? resume = await ServiceUtilisateurRetroAchievements.ObtenirResumeAsync(
                 _configurationConnexion.Pseudo,
                 _configurationConnexion.CleApiWeb
             );
@@ -186,7 +186,7 @@ public partial class MainWindow
 
             _dernierResumeUtilisateurCharge = resume;
 
-            EtatRichPresence etat = _serviceSondeRichPresence.Sonder(
+            EtatRichPresence etat = ServiceSondeRichPresence.Sonder(
                 new DonneesCompteUtilisateur
                 {
                     Profil = _dernierProfilUtilisateurCharge,
@@ -248,8 +248,8 @@ public partial class MainWindow
 
         try
         {
-            bool presenceActive = await Task.Run(() =>
-                _serviceSondeLocaleEmulateurs.SonderPresenceEmulateur()
+            bool presenceActive = await Task.Run(
+                ServiceSondeLocaleEmulateurs.SonderPresenceEmulateur
             );
 
             if (presenceActive)
@@ -342,8 +342,51 @@ public partial class MainWindow
 
             AppliquerTitreJeuLocalProvisoire(etat);
 
+            if (etat.IdentifiantJeuProbable > 0)
+            {
+                string titreJeuRacache = string.IsNullOrWhiteSpace(etat.TitreJeuProbable)
+                    ? $"Game ID {etat.IdentifiantJeuProbable}"
+                    : etat.TitreJeuProbable;
+                string signatureResolutionDirecte =
+                    $"{etat.NomEmulateur}|{etat.IdentifiantJeuProbable}|racache_direct";
+
+                if (
+                    !string.Equals(
+                        _signatureDernierJeuLocalResolut,
+                        signatureResolutionDirecte,
+                        StringComparison.Ordinal
+                    )
+                    || _identifiantJeuLocalActif != etat.IdentifiantJeuProbable
+                )
+                {
+                    _signatureDernierJeuLocalResolut = signatureResolutionDirecte;
+                    _identifiantJeuLocalActif = etat.IdentifiantJeuProbable;
+                    _titreJeuLocalActif = titreJeuRacache;
+                    _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.UtcNow;
+
+                    if (_chargementJeuEnCoursActif)
+                    {
+                        _identifiantJeuLocalResolutEnAttente = etat.IdentifiantJeuProbable;
+                        _titreJeuLocalResolutEnAttente = titreJeuRacache;
+                        return;
+                    }
+
+                    ChargerJeuResolutLocal(etat.IdentifiantJeuProbable, titreJeuRacache);
+                }
+
+                return;
+            }
+
+            if (string.Equals(etat.NomEmulateur, "RALibretro", StringComparison.Ordinal))
+            {
+                // Pour RALibretro, le titre fenetre/JSON recent peut rester sur l'ancien jeu
+                // pendant une transition. On attend donc le prochain Game ID RA au lieu
+                // de lancer un matching par titre potentiellement faux.
+                return;
+            }
+
             JeuLocalResolut? jeuResolutImmediate =
-                _serviceResolutionJeuLocal.ResoudreDepuisJeuxRecents(
+                ServiceResolutionJeuLocal.ResoudreDepuisJeuxRecents(
                     etat.TitreJeuProbable,
                     _dernierResumeUtilisateurCharge?.RecentlyPlayed ?? []
                 );
@@ -471,7 +514,7 @@ public partial class MainWindow
         IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal =
             await _serviceCatalogueJeuxLocal.ObtenirJeuxAsync(identifiantsConsoleCandidats);
         JeuLocalResolut? resolutionCatalogueLocal =
-            _serviceResolutionJeuLocal.ResoudreDepuisCatalogueLocal(
+            ServiceResolutionJeuLocal.ResoudreDepuisCatalogueLocal(
                 titreJeuLocal,
                 jeuxCatalogueLocal,
                 identifiantsConsoleCandidats
@@ -487,7 +530,7 @@ public partial class MainWindow
             try
             {
                 jeuxRecents =
-                    await _serviceUtilisateurRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
+                    await ServiceUtilisateurRetroAchievements.ObtenirJeuxRecemmentJouesAsync(
                         _configurationConnexion.Pseudo,
                         _configurationConnexion.CleApiWeb
                     );
@@ -508,7 +551,7 @@ public partial class MainWindow
             $"emulateur={etat.NomEmulateur};titreLocal={titreJeuLocal};jeuxRecents={jeuxRecents.Count};consoles={string.Join(",", identifiantsConsoleCandidats.OrderBy(id => id))}"
         );
 
-        return await _serviceResolutionJeuLocal.ResoudreAsync(
+        return await ServiceResolutionJeuLocal.ResoudreAsync(
             titreJeuLocal,
             jeuxRecents,
             identifiantsConsoleCandidats,
@@ -585,14 +628,16 @@ public partial class MainWindow
             return [];
         }
 
-        return nomEmulateur.Trim().ToLowerInvariant() switch
+        string nomEmulateurNormalise = nomEmulateur.Trim().ToLowerInvariant();
+
+        return nomEmulateurNormalise switch
         {
             "flycast" => ["dreamcast", "naomi", "atomiswave"],
             "duckstation" => ["playstation", "sony playstation", "ps1", "psx", "ps one"],
             "pcsx2" => ["playstation 2", "ps2"],
             "ppsspp" => ["playstation portable", "psp"],
             "dolphin" => ["gamecube", "nintendo gamecube", "wii", "nintendo wii", "wiiware"],
-            "project64" => ["nintendo 64", "n64"],
+            "lunaproject64" => ["nintendo 64", "n64"],
             _ => [],
         };
     }

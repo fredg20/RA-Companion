@@ -66,6 +66,33 @@ Validation confirmée :
   - filtrage des fenêtres de dialogue et outils internes
   - extraction du titre du vrai jeu depuis la fenêtre
   - résolution vers le `Game ID` RetroAchievements, y compris via le catalogue local
+- `PPSSPP`
+  - détection locale du processus
+  - extraction du titre du jeu depuis la fenêtre avec nettoyage du serial PSP
+  - résolution vers le `Game ID` RetroAchievements
+  - appui sur le catalogue local quand il est déjà disponible
+- `Luna's Project64`
+  - détection locale du processus `Project64`
+  - lecture prioritaire du `Game ID` RetroAchievements depuis le `RACache`
+  - fallback sur le titre de fenêtre `LunaProject64` quand nécessaire
+  - application directe du bon jeu sans dépendre uniquement d'un matching par titre
+- `RetroArch`
+  - détection locale du processus `retroarch`
+  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier log horodaté
+  - mise à jour correcte du `Game ID` lors des changements de jeu
+  - application locale du bon jeu même quand la fenêtre n'expose pas le titre
+- `RALibretro`
+  - détection locale du processus `RALibretro`
+  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier fichier `Data/<GameID>.json` modifié dans le `RACache`
+  - suivi correct des changements de jeu successifs
+  - application locale du bon jeu sans dépendre du titre de fenêtre
+
+Exclusion confirmée :
+
+- `BizHawk`
+  - détection de jeu possible par titre ou ROM récente, mais pas de source locale fiable pour le `Game ID`
+  - pas de `RACache`, pas de log RA exploitable, pas de `Game ID` lisible dans les fichiers `.State.rap` ou `SaveRAM`
+  - support volontairement exclu pour éviter des détections fragiles
 
 ## Direction produit
 

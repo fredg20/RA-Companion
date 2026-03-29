@@ -9,7 +9,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationSucces
 {
-    public SuccesGrilleAffiche ConstruirePourGrille(GameAchievementV2 succes)
+    public static SuccesGrilleAffiche ConstruirePourGrille(GameAchievementV2 succes)
     {
         bool estDebloque = EstDebloque(succes);
 
@@ -22,7 +22,7 @@ public sealed class ServicePresentationSucces
         };
     }
 
-    public SuccesAffiche Construire(
+    public static SuccesAffiche Construire(
         GameAchievementV2 succes,
         IReadOnlyCollection<GameAchievementV2> succesJeu,
         int identifiantJeu

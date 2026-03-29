@@ -8,7 +8,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServicePresentationCommunaute
 {
-    public CommunauteJeuAffichee Construire(DonneesCommunauteJeu communaute)
+    public static CommunauteJeuAffichee Construire(DonneesCommunauteJeu communaute)
     {
         List<string> segments = [];
 

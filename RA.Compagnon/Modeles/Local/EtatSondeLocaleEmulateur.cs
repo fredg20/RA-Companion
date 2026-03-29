@@ -15,6 +15,8 @@ public sealed class EtatSondeLocaleEmulateur
 
     public string TitreJeuProbable { get; init; } = string.Empty;
 
+    public int IdentifiantJeuProbable { get; init; }
+
     public string InformationsDiagnostic { get; init; } = string.Empty;
 
     public string Signature { get; init; } = string.Empty;

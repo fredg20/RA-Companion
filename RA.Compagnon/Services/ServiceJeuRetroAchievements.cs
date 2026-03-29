@@ -265,7 +265,7 @@ public sealed class ServiceJeuRetroAchievements
         public DateTimeOffset DateMajUtc { get; } = DateTimeOffset.UtcNow;
     }
 
-    public DonneesJeuAffiche? ConstruireDonneesJeuDepuisCacheLocal(
+    public static DonneesJeuAffiche? ConstruireDonneesJeuDepuisCacheLocal(
         JeuCatalogueLocal? jeuCatalogue,
         EtatJeuUtilisateurLocal? etatUtilisateur
     )

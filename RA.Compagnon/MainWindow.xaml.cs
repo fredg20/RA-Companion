@@ -85,16 +85,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServiceCatalogueJeuxLocal _serviceCatalogueJeuxLocal = new();
     private readonly ServiceEtatUtilisateurJeuxLocal _serviceEtatUtilisateurJeuxLocal = new();
     private readonly ServiceSondeLocaleEmulateurs _serviceSondeLocaleEmulateurs = new();
-    private readonly ServiceSondeRichPresence _serviceSondeRichPresence = new();
-    private readonly ServiceResolutionJeuLocal _serviceResolutionJeuLocal = new();
     private readonly ServiceDetectionSuccesJeu _serviceDetectionSuccesJeu = new();
     private readonly ServiceDetectionSuccesUtilisateurLocal _serviceDetectionSuccesUtilisateurLocal =
         new();
-    private readonly ServicePresentationCompte _servicePresentationCompte = new();
-    private readonly ServicePresentationJeu _servicePresentationJeu = new();
-    private readonly ServicePresentationSucces _servicePresentationSucces = new();
-    private readonly ServicePresentationActivite _servicePresentationActivite = new();
-    private readonly ServicePresentationCommunaute _servicePresentationCommunaute = new();
     private readonly DispatcherTimer _minuteurActualisationApi = new(DispatcherPriority.Background);
     private readonly DispatcherTimer _minuteurActualisationRichPresence = new(
         DispatcherPriority.Background

@@ -306,7 +306,7 @@ public partial class MainWindow
         var badgesCharges = await Task.WhenAll(
             succesOrdonnes.Select(async succesJeu =>
             {
-                SuccesGrilleAffiche succesAffiche = _servicePresentationSucces.ConstruirePourGrille(
+                SuccesGrilleAffiche succesAffiche = ServicePresentationSucces.ConstruirePourGrille(
                     succesJeu
                 );
 

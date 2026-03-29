@@ -9,7 +9,7 @@ namespace RA.Compagnon.Services;
 /// </summary>
 public sealed class ServiceActiviteRetroAchievements
 {
-    public async Task<DonneesActiviteRecente> ObtenirActiviteRecenteAsync(
+    public static async Task<DonneesActiviteRecente> ObtenirActiviteRecenteAsync(
         string pseudo,
         string cleApiWeb,
         DateTimeOffset debut,

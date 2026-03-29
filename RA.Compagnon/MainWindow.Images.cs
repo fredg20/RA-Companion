@@ -104,7 +104,7 @@ public partial class MainWindow
     /// <summary>
     /// Construit une image WPF figée à partir d'octets.
     /// </summary>
-    private static ImageSource? ChargerImageDepuisOctets(byte[] contenu)
+    private static BitmapImage? ChargerImageDepuisOctets(byte[] contenu)
     {
         if (contenu.Length == 0)
         {
