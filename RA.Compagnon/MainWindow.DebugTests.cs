@@ -107,6 +107,22 @@ public partial class MainWindow
                 );
             }
 
+            SignalSuccesLocal? signalSourceLocale =
+                ServiceTestSuccesDebug.ConstruireSignalSourceLocale(scenario);
+
+            if (signalSourceLocale is not null)
+            {
+                ServiceTestSuccesDebug.JournaliserEvenement(
+                    ServiceCatalogueEmulateursLocaux.SurveillanceSuccesActive(
+                        scenario.NomEmulateur
+                    )
+                        ? "test_succes_signal_source_locale"
+                        : "test_succes_signal_source_locale_simule",
+                    $"source={scenario.SourceSimulee};typeSource={scenario.TypeSourceLocale};emulateur={scenario.NomEmulateur};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
+                );
+                await TraiterSignalSuccesLocalAsync(signalSourceLocale);
+            }
+
             return;
         }
 

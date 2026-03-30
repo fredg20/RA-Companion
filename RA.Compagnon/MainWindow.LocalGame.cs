@@ -48,9 +48,17 @@ public partial class MainWindow
     private void AppliquerTitreJeuLocalProvisoire(EtatSondeLocaleEmulateur etat)
     {
         string titreJeuProbable = etat.TitreJeuProbable?.Trim() ?? string.Empty;
+        if (
+            !_serviceOrchestrateurEtatJeu.PeutAfficherEtatLocalProvisoire(
+                etat.IdentifiantJeuProbable
+            )
+        )
+        {
+            return;
+        }
 
-        // Quand le bon jeu est déjà chargé avec sa progression/ses succès, on évite
-        // de réécraser l'UI avec l'état transitoire "Détection locale en cours...".
+        // Quand le bon jeu est deja charge avec sa progression et ses succes,
+        // on evite de reecraser l'UI avec un etat transitoire.
         if (
             etat.IdentifiantJeuProbable > 0
             && (
@@ -83,9 +91,11 @@ public partial class MainWindow
         DefinirDetailsJeuEnCours(string.Empty);
         DefinirEtatJeuDansProgression(string.Empty);
         DefinirTempsJeuSousImage(string.Empty);
-        TexteResumeProgressionJeuEnCours.Text = "-- / --";
-        TextePourcentageJeuEnCours.Text = "Détection locale en cours...";
-        BarreProgressionJeuEnCours.Value = 0;
+        EnregistrerPhaseDetectionLocaleOrchestrateur(
+            0,
+            titreJeuProbable,
+            string.IsNullOrWhiteSpace(etat.NomEmulateur) ? "local" : etat.NomEmulateur
+        );
     }
 
     private void ChargerJeuResolutLocal(int identifiantJeu, string titreJeuProvisoire)
@@ -110,6 +120,10 @@ public partial class MainWindow
             )
             && (_chargementJeuEnCoursActif || infosJeuDejaAfficheesPourCeJeu);
 
+        memeJeuLocalDejaApplique |= _serviceOrchestrateurEtatJeu.MemeJeuAfficheOuEnChargement(
+            identifiantJeu
+        );
+
         if (memeJeuLocalDejaApplique)
         {
             MettreAJourNoticeCompteEntete();
@@ -128,16 +142,15 @@ public partial class MainWindow
             DefinirTempsJeuSousImage(string.Empty);
         }
 
-        if (!progressionDejaAfficheePourCeJeu)
-        {
-            TexteResumeProgressionJeuEnCours.Text = "-- / --";
-            TextePourcentageJeuEnCours.Text = "Confirmation du jeu local...";
-            BarreProgressionJeuEnCours.Value = 0;
-        }
-
         DemarrerDiagnosticChangementJeu(
             $"local:{identifiantJeu}",
             $"source=local;jeu={identifiantJeu};titre={titreAffichage}"
+        );
+        EnregistrerPhaseDetectionLocaleOrchestrateur(
+            identifiantJeu,
+            titreAffichage,
+            "local",
+            !progressionDejaAfficheePourCeJeu
         );
         JournaliserDiagnosticChangementJeu("jeu_local_resolu", $"jeu={identifiantJeu}");
         ServiceResolutionJeuLocal.JournaliserEvenementInterface(
@@ -149,6 +162,7 @@ public partial class MainWindow
         _dernierIdentifiantJeuApi = identifiantJeu;
         MettreAJourNoticeCompteEntete();
         int versionChargement = ++_versionChargementContenuJeu;
+        DemarrerPipelineChargementJeu(identifiantJeu, titreAffichage, versionChargement);
         DemarrerPrechargementJeuDepuisCacheLocal(identifiantJeu, versionChargement);
         DemarrerChargementJeuUtilisateurEnArrierePlan(
             identifiantJeu,
@@ -191,7 +205,7 @@ public partial class MainWindow
         }
         catch
         {
-            // Le préchargement local reste opportuniste.
+            // Le prechargement local reste opportuniste.
         }
     }
 }

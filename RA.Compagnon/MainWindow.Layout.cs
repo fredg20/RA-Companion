@@ -51,9 +51,9 @@ public partial class MainWindow
     /// </summary>
     private SystemControls.Primitives.ScrollBar? ObtenirBarreDefilementVerticaleListeSucces()
     {
-        if (_barreDefilementVerticaleListeSucces is not null)
+        if (_etatListeSuccesUi.BarreDefilementVerticale is not null)
         {
-            return _barreDefilementVerticaleListeSucces;
+            return _etatListeSuccesUi.BarreDefilementVerticale;
         }
 
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -61,11 +61,13 @@ public partial class MainWindow
             return null;
         }
 
-        _barreDefilementVerticaleListeSucces =
-            TrouverDescendants<SystemControls.Primitives.ScrollBar>(ConteneurGrilleTousSuccesJeuEnCours)
+        _etatListeSuccesUi.BarreDefilementVerticale =
+            TrouverDescendants<SystemControls.Primitives.ScrollBar>(
+                    ConteneurGrilleTousSuccesJeuEnCours
+                )
                 .FirstOrDefault(barre => barre.Orientation == SystemControls.Orientation.Vertical);
 
-        return _barreDefilementVerticaleListeSucces;
+        return _etatListeSuccesUi.BarreDefilementVerticale;
     }
 
     /// <summary>
@@ -248,7 +250,7 @@ public partial class MainWindow
     /// </summary>
     private void ConteneurGrilleTousSuccesJeuEnCours_SortieSouris(object sender, MouseEventArgs e)
     {
-        if (_interactionListeSuccesActive && Mouse.LeftButton == MouseButtonState.Pressed)
+        if (_etatListeSuccesUi.InteractionActive && Mouse.LeftButton == MouseButtonState.Pressed)
         {
             return;
         }
@@ -256,7 +258,7 @@ public partial class MainWindow
         DefinirVisibiliteBarreDefilementListeSucces(visible: false);
         JournaliserDiagnosticListeSucces("liste_mouseleave");
 
-        if (!_survolBadgeGrilleSuccesActif)
+        if (!_etatListeSuccesUi.SurvolBadgeActif)
         {
             _minuteurRepriseAnimationGrilleSucces.Stop();
             _minuteurRepriseAnimationGrilleSucces.Start();
@@ -271,8 +273,8 @@ public partial class MainWindow
         MouseButtonEventArgs e
     )
     {
-        _interactionListeSuccesActive = true;
-        _dernierOffsetInteractionListeSucces =
+        _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.InteractionManuelle;
+        _etatListeSuccesUi.DernierOffsetInteraction =
             ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
         _minuteurRepriseAnimationGrilleSucces.Stop();
         ArreterAnimationGrilleSucces();
@@ -322,20 +324,18 @@ public partial class MainWindow
 
         // Mémorise le sens réel du mouvement observé pour que l'autodéfilement
         // reparte du bon côté après une interruption ou un déplacement manuel.
-        _animationGrilleSuccesVersBas = e.VerticalChange > 0;
+        _etatListeSuccesUi.AnimationVersBas = e.VerticalChange > 0;
 
-        _dernierOffsetInteractionListeSucces =
-            ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? _dernierOffsetInteractionListeSucces;
-        JournaliserDiagnosticListeSucces(
-            "liste_scrollchanged",
-            $"delta={e.VerticalChange:0.##}"
-        );
+        _etatListeSuccesUi.DernierOffsetInteraction =
+            ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset
+            ?? _etatListeSuccesUi.DernierOffsetInteraction;
+        JournaliserDiagnosticListeSucces("liste_scrollchanged", $"delta={e.VerticalChange:0.##}");
 
         DefinirVisibiliteBarreDefilementListeSucces(
             ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
         );
 
-        if (!_interactionListeSuccesActive)
+        if (!_etatListeSuccesUi.InteractionActive)
         {
             return;
         }
@@ -351,10 +351,11 @@ public partial class MainWindow
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is not null)
         {
-            _dernierOffsetInteractionListeSucces = ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset;
+            _etatListeSuccesUi.DernierOffsetInteraction =
+                ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset;
         }
 
-        _interactionListeSuccesActive = false;
+        _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.AutoScroll;
         DefinirVisibiliteBarreDefilementListeSucces(
             ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
         );
@@ -477,10 +478,16 @@ public partial class MainWindow
             return;
         }
 
+        double hauteurTitre = 36;
+        double hauteurBandeauCompte = Math.Max(
+            BoutonCompteUtilisateur?.ActualHeight ?? 32,
+            BoutonAide?.ActualHeight ?? 32
+        ) + 8 + 6;
+
         double hauteurVisible =
             ActualHeight
-            - (BandeauTitreFenetre is null ? 0 : CalculerHauteurOccupee(BandeauTitreFenetre))
-            - (BandeauCompteFenetre is null ? 0 : CalculerHauteurOccupee(BandeauCompteFenetre))
+            - hauteurTitre
+            - hauteurBandeauCompte
             - (CadreZonePrincipale?.Padding.Top ?? 0)
             - (CadreZonePrincipale?.Padding.Bottom ?? 0);
 
@@ -510,8 +517,26 @@ public partial class MainWindow
         CarteJeuEnCours.MinHeight = hauteurCible;
         CarteJeuEnCours.Height = hauteurCible;
         CarteJeuEnCours.MaxHeight = hauteurCible;
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+    }
+
+    /// <summary>
+    /// Planifie un seul recalcul de hauteur de la liste des succès à la fin du cycle de layout.
+    /// </summary>
+    private void PlanifierAjustementHauteurListeSuccesJeuEnCours()
+    {
+        if (_etatListeSuccesUi.AjustementHauteurPlanifie)
+        {
+            return;
+        }
+
+        _etatListeSuccesUi.AjustementHauteurPlanifie = true;
         _ = Dispatcher.BeginInvoke(
-            (Action)AjusterHauteurListeSuccesJeuEnCours,
+            () =>
+            {
+                _etatListeSuccesUi.AjustementHauteurPlanifie = false;
+                AjusterHauteurListeSuccesJeuEnCours();
+            },
             DispatcherPriority.Render
         );
     }

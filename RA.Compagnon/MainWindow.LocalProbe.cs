@@ -10,54 +10,19 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    private static readonly TimeSpan DureeGraceSondeLocale = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan DureeGraceJeuLocalResolut = TimeSpan.FromSeconds(25);
-    private static readonly TimeSpan DureeGraceNoticeCompteLocale = TimeSpan.FromMilliseconds(600);
-
     private bool EtatLocalEmulateurEstActifPourNotice()
     {
-        if (_presenceLocaleCompteActive)
-        {
-            return true;
-        }
-
-        if (_horodatageDernierePresenceLocaleCompteValide == DateTimeOffset.MinValue)
-        {
-            return false;
-        }
-
-        return DateTimeOffset.UtcNow - _horodatageDernierePresenceLocaleCompteValide
-            <= DureeGraceNoticeCompteLocale;
+        return _serviceOrchestrateurEtatJeu.EtatLocalEmulateurEstActifPourNotice(
+            _presenceLocaleCompteActive
+        );
     }
 
     private bool EtatLocalJeuEstActif()
     {
-        if (_identifiantJeuLocalActif <= 0)
-        {
-            return false;
-        }
-
-        if (_dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true)
-        {
-            return true;
-        }
-
-        if (_horodatageDerniereDetectionLocaleValide == DateTimeOffset.MinValue)
-        {
-            return DateTimeOffset.UtcNow - _horodatageDerniereResolutionJeuLocalValide
-                <= DureeGraceJeuLocalResolut;
-        }
-
-        if (
-            DateTimeOffset.UtcNow - _horodatageDerniereDetectionLocaleValide
-            <= DureeGraceSondeLocale
-        )
-        {
-            return true;
-        }
-
-        return DateTimeOffset.UtcNow - _horodatageDerniereResolutionJeuLocalValide
-            <= DureeGraceJeuLocalResolut;
+        return _serviceOrchestrateurEtatJeu.EtatLocalJeuEstActif(
+            _identifiantJeuLocalActif,
+            _dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true
+        );
     }
 
     /// <summary>
@@ -136,19 +101,12 @@ public partial class MainWindow
         _dernierIdentifiantJeuAvecProgression = 0;
         _dernierTitreJeuApi = string.Empty;
         _dernierePresenceRiche = string.Empty;
-        _signatureDernierEtatRichPresence = string.Empty;
-        _signatureDerniereSondeLocaleEmulateurs = string.Empty;
-        _signatureDernierJeuLocalResolut = string.Empty;
         _signatureDerniereNoticeCompteJournalisee = string.Empty;
         _dernierPseudoCharge = string.Empty;
         _dernierProfilUtilisateurCharge = null;
         _dernierResumeUtilisateurCharge = null;
         _dernierEtatSondeLocaleEmulateurs = null;
         _presenceLocaleCompteActive = false;
-        _horodatageDernierePresenceLocaleCompteValide = DateTimeOffset.MinValue;
-        _horodatageDerniereDetectionLocaleValide = DateTimeOffset.MinValue;
-        _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.MinValue;
-        _horodatageDernierSignalSuccesLocalUtc = DateTimeOffset.MinValue;
         _signatureDernierSuccesLocalDirectAffiche = string.Empty;
         _identifiantJeuSuccesObserve = 0;
         _etatSuccesObserves = [];
@@ -156,6 +114,7 @@ public partial class MainWindow
         _titreJeuLocalResolutEnAttente = string.Empty;
         _identifiantJeuLocalActif = 0;
         _titreJeuLocalActif = string.Empty;
+        _serviceOrchestrateurEtatJeu.Reinitialiser();
         _consolesResolutionLocale = [];
         _serviceSurveillanceSuccesLocaux.ArreterSurveillance();
     }
@@ -202,18 +161,10 @@ public partial class MainWindow
             string signatureEtat =
                 $"{etat.StatutAffiche}|{etat.SousStatutAffiche}|{etat.IdentifiantDernierJeu}|{etat.DatePresenceBrute}|{etat.SourceRichPresence}";
 
-            if (
-                string.Equals(
-                    _signatureDernierEtatRichPresence,
-                    signatureEtat,
-                    StringComparison.Ordinal
-                )
-            )
+            if (!_serviceOrchestrateurEtatJeu.DoitTraiterEtatRichPresence(signatureEtat))
             {
                 return;
             }
-
-            _signatureDernierEtatRichPresence = signatureEtat;
             _dernierePresenceRiche = etat.MessageRichPresence;
             MettreAJourNoticeCompteEntete();
 
@@ -256,10 +207,7 @@ public partial class MainWindow
                 ServiceSondeLocaleEmulateurs.SonderPresenceEmulateur
             );
 
-            if (presenceActive)
-            {
-                _horodatageDernierePresenceLocaleCompteValide = DateTimeOffset.UtcNow;
-            }
+            _serviceOrchestrateurEtatJeu.EnregistrerPresenceLocaleCompte(presenceActive);
 
             if (_presenceLocaleCompteActive != presenceActive)
             {
@@ -298,13 +246,12 @@ public partial class MainWindow
 
             if (etatBrut.EmulateurDetecte)
             {
-                _horodatageDerniereDetectionLocaleValide = DateTimeOffset.UtcNow;
+                _serviceOrchestrateurEtatJeu.EnregistrerDetectionLocaleValide();
                 _dernierEtatSondeLocaleEmulateurs = etatBrut;
             }
             else if (
                 _dernierEtatSondeLocaleEmulateurs?.EmulateurDetecte == true
-                && DateTimeOffset.UtcNow - _horodatageDerniereDetectionLocaleValide
-                    <= DureeGraceSondeLocale
+                && _serviceOrchestrateurEtatJeu.SondeLocaleEstEncoreValide()
             )
             {
                 etat = _dernierEtatSondeLocaleEmulateurs;
@@ -319,18 +266,10 @@ public partial class MainWindow
             );
             MettreAJourNoticeCompteEntete();
 
-            if (
-                string.Equals(
-                    _signatureDerniereSondeLocaleEmulateurs,
-                    etat.Signature,
-                    StringComparison.Ordinal
-                )
-            )
+            if (!_serviceOrchestrateurEtatJeu.DoitTraiterSondeLocale(etat.Signature))
             {
                 return;
             }
-
-            _signatureDerniereSondeLocaleEmulateurs = etat.Signature;
 
             if (
                 !ConfigurationConnexionEstComplete()
@@ -338,7 +277,7 @@ public partial class MainWindow
                 || !etat.EmulateurDetecte
             )
             {
-                _signatureDernierJeuLocalResolut = string.Empty;
+                _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
                 _identifiantJeuLocalActif = 0;
                 _titreJeuLocalActif = string.Empty;
                 _identifiantJeuLocalResolutEnAttente = 0;
@@ -351,6 +290,11 @@ public partial class MainWindow
 
             if (etat.IdentifiantJeuProbable > 0)
             {
+                if (_serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(etat.IdentifiantJeuProbable))
+                {
+                    return;
+                }
+
                 string titreJeuRacache = string.IsNullOrWhiteSpace(etat.TitreJeuProbable)
                     ? $"Game ID {etat.IdentifiantJeuProbable}"
                     : etat.TitreJeuProbable;
@@ -358,18 +302,17 @@ public partial class MainWindow
                     $"{etat.NomEmulateur}|{etat.IdentifiantJeuProbable}|racache_direct";
 
                 if (
-                    !string.Equals(
-                        _signatureDernierJeuLocalResolut,
+                    _serviceOrchestrateurEtatJeu.DoitTraiterResolutionLocale(
                         signatureResolutionDirecte,
-                        StringComparison.Ordinal
+                        etat.IdentifiantJeuProbable,
+                        _dernierIdentifiantJeuApi,
+                        _identifiantJeuLocalActif
                     )
-                    || _identifiantJeuLocalActif != etat.IdentifiantJeuProbable
                 )
                 {
-                    _signatureDernierJeuLocalResolut = signatureResolutionDirecte;
                     _identifiantJeuLocalActif = etat.IdentifiantJeuProbable;
                     _titreJeuLocalActif = titreJeuRacache;
-                    _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.UtcNow;
+                    _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
 
                     if (_chargementJeuEnCoursActif)
                     {
@@ -400,22 +343,30 @@ public partial class MainWindow
 
             if (jeuResolutImmediate is not null)
             {
+                if (
+                    _serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(
+                        jeuResolutImmediate.IdentifiantJeu
+                    )
+                )
+                {
+                    return;
+                }
+
                 string signatureResolutionImmediate =
                     $"{etat.Signature}|{jeuResolutImmediate.IdentifiantJeu}|{jeuResolutImmediate.Source}";
 
                 if (
-                    !string.Equals(
-                        _signatureDernierJeuLocalResolut,
+                    _serviceOrchestrateurEtatJeu.DoitTraiterResolutionLocale(
                         signatureResolutionImmediate,
-                        StringComparison.Ordinal
+                        jeuResolutImmediate.IdentifiantJeu,
+                        _dernierIdentifiantJeuApi,
+                        _identifiantJeuLocalActif
                     )
-                    || _dernierIdentifiantJeuApi != jeuResolutImmediate.IdentifiantJeu
                 )
                 {
-                    _signatureDernierJeuLocalResolut = signatureResolutionImmediate;
                     _identifiantJeuLocalActif = jeuResolutImmediate.IdentifiantJeu;
                     _titreJeuLocalActif = jeuResolutImmediate.TitreRetroAchievements;
-                    _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.UtcNow;
+                    _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
 
                     if (_chargementJeuEnCoursActif)
                     {
@@ -437,25 +388,29 @@ public partial class MainWindow
 
             if (jeuResolut is not null)
             {
+                if (_serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(jeuResolut.IdentifiantJeu))
+                {
+                    return;
+                }
+
                 string signatureResolution =
                     $"{etat.Signature}|{jeuResolut.IdentifiantJeu}|{jeuResolut.Source}";
 
                 if (
-                    string.Equals(
-                        _signatureDernierJeuLocalResolut,
+                    !_serviceOrchestrateurEtatJeu.DoitTraiterResolutionLocale(
                         signatureResolution,
-                        StringComparison.Ordinal
+                        jeuResolut.IdentifiantJeu,
+                        _dernierIdentifiantJeuApi,
+                        _identifiantJeuLocalActif
                     )
-                    && _dernierIdentifiantJeuApi == jeuResolut.IdentifiantJeu
                 )
                 {
                     return;
                 }
 
-                _signatureDernierJeuLocalResolut = signatureResolution;
                 _identifiantJeuLocalActif = jeuResolut.IdentifiantJeu;
                 _titreJeuLocalActif = jeuResolut.TitreRetroAchievements;
-                _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.UtcNow;
+                _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
 
                 if (_chargementJeuEnCoursActif)
                 {
@@ -471,7 +426,7 @@ public partial class MainWindow
                 return;
             }
 
-            _signatureDernierJeuLocalResolut = string.Empty;
+            _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
         }
         catch
         {
@@ -630,23 +585,7 @@ public partial class MainWindow
 
     private static string[] ObtenirAliasConsolesDepuisEmulateur(string nomEmulateur)
     {
-        if (string.IsNullOrWhiteSpace(nomEmulateur))
-        {
-            return [];
-        }
-
-        string nomEmulateurNormalise = nomEmulateur.Trim().ToLowerInvariant();
-
-        return nomEmulateurNormalise switch
-        {
-            "flycast" => ["dreamcast", "naomi", "atomiswave"],
-            "duckstation" => ["playstation", "sony playstation", "ps1", "psx", "ps one"],
-            "pcsx2" => ["playstation 2", "ps2"],
-            "ppsspp" => ["playstation portable", "psp"],
-            "dolphin" => ["gamecube", "nintendo gamecube", "wii", "nintendo wii", "wiiware"],
-            "lunaproject64" => ["nintendo 64", "n64"],
-            _ => [],
-        };
+        return ServiceCatalogueEmulateursLocaux.ObtenirAliasConsoles(nomEmulateur);
     }
 
     private static string NormaliserNomConsole(string valeur)
@@ -710,10 +649,7 @@ public partial class MainWindow
             return;
         }
 
-        if (
-            DateTimeOffset.UtcNow - _horodatageDernierSignalSuccesLocalUtc
-            < DureeMinimaleEntreSignauxSuccesLocaux
-        )
+        if (_serviceOrchestrateurEtatJeu.DoitIgnorerSignalSuccesLocal())
         {
             ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
                 "signal_ignore",
@@ -722,7 +658,7 @@ public partial class MainWindow
             return;
         }
 
-        _horodatageDernierSignalSuccesLocalUtc = DateTimeOffset.UtcNow;
+        _serviceOrchestrateurEtatJeu.EnregistrerSignalSuccesLocal();
 
         if (_chargementJeuEnCoursActif)
         {
@@ -813,19 +749,14 @@ public partial class MainWindow
 
     private static bool EstEmulateurSuccesLocalDirectPrisEnCharge(string nomEmulateur)
     {
-        return string.Equals(nomEmulateur, "RALibretro", StringComparison.Ordinal)
-            || string.Equals(nomEmulateur, "LunaProject64", StringComparison.Ordinal)
-            || string.Equals(nomEmulateur, "RetroArch", StringComparison.Ordinal);
+        return ServiceCatalogueEmulateursLocaux.EstSuccesLocalDirectPrisEnCharge(nomEmulateur);
     }
 
     private static bool TypeSourcePeutPorterSuccesDirect(SignalSuccesLocal signal)
     {
-        return signal.NomEmulateur switch
-        {
-            "RetroArch" => signal.TypeSource.Contains("logs", StringComparison.Ordinal),
-            "LunaProject64" => signal.TypeSource.Contains("racache", StringComparison.Ordinal),
-            "RALibretro" => signal.TypeSource.Contains("racache", StringComparison.Ordinal),
-            _ => false,
-        };
+        return ServiceCatalogueEmulateursLocaux.TypeSourcePeutPorterSuccesDirect(
+            signal.NomEmulateur,
+            signal.TypeSource
+        );
     }
 }

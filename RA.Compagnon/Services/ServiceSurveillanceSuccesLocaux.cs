@@ -33,43 +33,18 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
     public static void ReinitialiserJournalSession()
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalSurveillanceSucces);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.WriteAllText(
-                CheminJournalSurveillanceSucces,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Ce journal reste auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalSurveillanceSucces);
     }
 
     public static void JournaliserEvenement(string evenement, string details)
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalSurveillanceSucces)!);
-            File.AppendAllText(
-                CheminJournalSurveillanceSucces,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={Nettoyer(evenement)};details={Nettoyer(details)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Ce journal reste auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalSurveillanceSucces,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={Nettoyer(evenement)};details={Nettoyer(details)}{Environment.NewLine}"
+            )
+        );
     }
 
     public void MettreAJourCible(EtatSondeLocaleEmulateur? etat)
@@ -107,7 +82,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             $"emulateur={nomEmulateur};signature={signature}"
         );
 
-        if (string.Equals(nomEmulateur, "RetroArch", StringComparison.Ordinal))
+        if (ServiceCatalogueEmulateursLocaux.NecessiteSignalInitialSurveillance(nomEmulateur))
         {
             PlanifierSignalInitialRetroArch(signature);
         }
@@ -132,16 +107,16 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         string nomEmulateur
     )
     {
-        return nomEmulateur switch
+        return ServiceCatalogueEmulateursLocaux.TrouverParNom(nomEmulateur)?.StrategieSurveillanceSucces switch
         {
-            "RetroArch" => ConstruireSurveillanceRetroArch(),
-            "LunaProject64" => ConstruireSurveillanceRACache(
+            StrategieSurveillanceSuccesLocale.RetroArchLogs => ConstruireSurveillanceRetroArch(),
+            StrategieSurveillanceSuccesLocale.Project64RACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
-                TrouverRepertoireRACacheProject64()
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64()
             ),
-            "RALibretro" => ConstruireSurveillanceRACache(
+            StrategieSurveillanceSuccesLocale.RALibretroRACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
-                TrouverRepertoireRACacheRALibretro()
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRALibretro()
             ),
             _ => (null, null, string.Empty),
         };
@@ -149,7 +124,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
     private (FileSystemWatcher? Principale, FileSystemWatcher? Secondaire, string Signature) ConstruireSurveillanceRetroArch()
     {
-        string repertoireLogs = TrouverRepertoireLogsRetroArch();
+        string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
 
         if (string.IsNullOrWhiteSpace(repertoireLogs))
         {
@@ -260,14 +235,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             $"emulateur={nomEmulateur};source={typeSource};chemin={chemin}"
         );
 
-        if (
-            typeSource == "racache_log"
-            || (
-                typeSource == "racache_data"
-                && string.Equals(nomEmulateur, "RALibretro", StringComparison.Ordinal)
-            )
-            || (typeSource == "logs" && string.Equals(nomEmulateur, "RetroArch", StringComparison.Ordinal))
-        )
+        if (ServiceCatalogueEmulateursLocaux.TypeSourceDoitPlanifierSuivi(nomEmulateur, typeSource))
         {
             PlanifierSignalSuiviRACache(nomEmulateur, typeSource, chemin);
         }
@@ -349,7 +317,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
     private void PlanifierSignalInitialRetroArch(string signatureCapturee)
     {
-        string repertoireLogs = TrouverRepertoireLogsRetroArch();
+        string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
 
         if (string.IsNullOrWhiteSpace(repertoireLogs) || !Directory.Exists(repertoireLogs))
         {
@@ -431,21 +399,6 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             : valeur.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 
-    private static string TrouverRepertoireLogsRetroArch()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RetroArch", "logs"),
-            Path.Combine(documents, "RetroArch", "logs"),
-            Path.Combine(appData, "RetroArch", "logs"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
     private static bool CheminDoitDeclencherSignal(string typeSource, string chemin)
     {
         string nomFichier = Path.GetFileName(chemin);
@@ -459,33 +412,4 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         };
     }
 
-    private static string TrouverRepertoireRACacheProject64()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
-            Path.Combine(documents, "Luna_Project64", "RACache"),
-            Path.Combine(appData, "Luna-Project64", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
-    private static string TrouverRepertoireRACacheRALibretro()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RALibretro", "RACache"),
-            Path.Combine(documents, "RALibretro", "RACache"),
-            Path.Combine(appData, "RALibretro", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
 }

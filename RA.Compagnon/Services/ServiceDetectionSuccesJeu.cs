@@ -18,24 +18,7 @@ public sealed class ServiceDetectionSuccesJeu
 
     public static void ReinitialiserJournalSession()
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalDetectionSucces);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.WriteAllText(
-                CheminJournalDetectionSucces,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Ce journal est auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDetectionSucces);
     }
 
     public static IReadOnlyList<SuccesDebloqueDetecte> DetecterNouveauxSucces(
@@ -131,18 +114,10 @@ public sealed class ServiceDetectionSuccesJeu
 
     private static void JournaliserLigne(string details)
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalDetectionSucces)!);
-            File.AppendAllText(
-                CheminJournalDetectionSucces,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {details}{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Ce journal est auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalDetectionSucces,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {details}{Environment.NewLine}"
+        );
     }
 
     private static string Nettoyer(string? valeur)

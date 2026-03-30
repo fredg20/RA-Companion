@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
@@ -37,12 +38,20 @@ public partial class MainWindow
     /// </summary>
     private void ReinitialiserGrilleTousSucces()
     {
-        _survolBadgeGrilleSuccesActif = false;
-        _animationGrilleSuccesVersBas = true;
-        _amplitudeAnimationGrilleSucces = 0;
+        _etatListeSuccesUi.VersionChargementGrille++;
+        _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.AutoScroll;
+        _etatListeSuccesUi.AnimationVersBas = true;
+        _etatListeSuccesUi.AmplitudeAnimation = 0;
+        _etatListeSuccesUi.SignatureAnimation = string.Empty;
         _minuteurRepriseAnimationGrilleSucces.Stop();
         ConteneurGrilleTousSuccesJeuEnCours?.ScrollToVerticalOffset(0);
         GrilleTousSuccesJeuEnCours.Children.Clear();
+        GrilleTousSuccesJeuEnCours.Width = double.NaN;
+        GrilleTousSuccesJeuEnCours.Height = double.NaN;
+        GrilleTousSuccesJeuEnCours.InvalidateMeasure();
+        GrilleTousSuccesJeuEnCours.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateArrange();
         ReinitialiserPositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
@@ -57,8 +66,8 @@ public partial class MainWindow
         _succesDebloquesLocauxTemporaires.Clear();
         _succesDetectesRecemment.Clear();
         _succesDebloqueDetecteEnAttente = null;
-        _identifiantSuccesGrilleTemporaire = null;
-        _identifiantSuccesGrilleEpingle = null;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
         _minuteurAffichageTemporaireSuccesGrille.Stop();
         ReinitialiserPremierSuccesNonDebloque();
         ReinitialiserGrilleTousSucces();
@@ -81,9 +90,14 @@ public partial class MainWindow
     /// </summary>
     private async Task MettreAJourSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
-        List<GameAchievementV2> succes = InitialiserContexteSuccesJeu(jeu);
+        List<GameAchievementV2> succes = InitialiserContexteSuccesJeu(jeu, out int versionGrille);
         await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
-        DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes);
+        DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes, versionGrille);
+        MarquerEtapePipelineChargementJeu(
+            EtapePipelineChargementJeu.SuccesCharges,
+            jeu.IdentifiantJeu,
+            _versionChargementContenuJeu
+        );
 
         if (
             _succesDebloqueDetecteEnAttente is not null
@@ -94,13 +108,17 @@ public partial class MainWindow
         }
     }
 
-    private List<GameAchievementV2> InitialiserContexteSuccesJeu(GameInfoAndUserProgressV2 jeu)
+    private List<GameAchievementV2> InitialiserContexteSuccesJeu(
+        GameInfoAndUserProgressV2 jeu,
+        out int versionGrille
+    )
     {
         List<GameAchievementV2> succes =
         [
             .. jeu.Succes.Values.OrderBy(item => item.DisplayOrder).ThenBy(item => item.Id),
         ];
 
+        versionGrille = ++_etatListeSuccesUi.VersionChargementGrille;
         _identifiantJeuSuccesCourant = jeu.IdentifiantJeu;
         FusionnerSuccesDebloquesLocauxTemporaires(jeu.IdentifiantJeu, succes);
         _succesJeuCourant = succes;
@@ -129,10 +147,11 @@ public partial class MainWindow
     /// </summary>
     private void DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(
         int identifiantJeu,
-        List<GameAchievementV2> succes
+        List<GameAchievementV2> succes,
+        int versionGrille
     )
     {
-        _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes);
+        _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes, versionGrille);
     }
 
     /// <summary>
@@ -140,12 +159,13 @@ public partial class MainWindow
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesEnArrierePlanAsync(
         int identifiantJeu,
-        List<GameAchievementV2> succes
+        List<GameAchievementV2> succes,
+        int versionGrille
     )
     {
         try
         {
-            await MettreAJourGrilleTousSuccesAsync(identifiantJeu, succes);
+            await MettreAJourGrilleTousSuccesAsync(identifiantJeu, succes, versionGrille);
         }
         catch
         {
@@ -164,10 +184,10 @@ public partial class MainWindow
     {
         if (_identifiantJeuSuccesCourant > 0)
         {
-            if (_identifiantSuccesGrilleTemporaire.HasValue)
+            if (_etatListeSuccesUi.IdentifiantSuccesTemporaire.HasValue)
             {
                 GameAchievementV2? succesTemporaire = succes.FirstOrDefault(item =>
-                    item.Id == _identifiantSuccesGrilleTemporaire.Value
+                    item.Id == _etatListeSuccesUi.IdentifiantSuccesTemporaire.Value
                 );
 
                 if (succesTemporaire is not null)
@@ -176,10 +196,10 @@ public partial class MainWindow
                 }
             }
 
-            if (_identifiantSuccesGrilleEpingle.HasValue)
+            if (_etatListeSuccesUi.IdentifiantSuccesEpingle.HasValue)
             {
                 GameAchievementV2? succesEpingle = succes.FirstOrDefault(item =>
-                    item.Id == _identifiantSuccesGrilleEpingle.Value
+                    item.Id == _etatListeSuccesUi.IdentifiantSuccesEpingle.Value
                 );
 
                 if (succesEpingle is not null)
@@ -376,8 +396,8 @@ public partial class MainWindow
         }
         succesTemp.Add(succesDetecte.IdentifiantSucces);
         _succesDebloqueDetecteEnAttente = null;
-        _identifiantSuccesGrilleTemporaire = succes.Id;
-        _retourPremierSuccesNonDebloqueApresSelectionTemporaire = true;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = succes.Id;
+        _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = true;
         _minuteurAffichageTemporaireSuccesGrille.Stop();
         _minuteurAffichageTemporaireSuccesGrille.Start();
         RafraichirStyleBadgesGrilleSucces();
@@ -528,9 +548,9 @@ public partial class MainWindow
         }
 
         GameAchievementV2 succesCible = succesOrdonnes[indexCible];
-        _identifiantSuccesGrilleEpingle = succesCible.Id;
-        _identifiantSuccesGrilleTemporaire = null;
-        _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = succesCible.Id;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
         _minuteurAffichageTemporaireSuccesGrille.Stop();
         RafraichirStyleBadgesGrilleSucces();
 
@@ -541,10 +561,10 @@ public partial class MainWindow
         List<GameAchievementV2> succesOrdonnes
     )
     {
-        if (_identifiantSuccesGrilleTemporaire.HasValue)
+        if (_etatListeSuccesUi.IdentifiantSuccesTemporaire.HasValue)
         {
             GameAchievementV2? succesTemporaire = succesOrdonnes.FirstOrDefault(item =>
-                item.Id == _identifiantSuccesGrilleTemporaire.Value
+                item.Id == _etatListeSuccesUi.IdentifiantSuccesTemporaire.Value
             );
 
             if (succesTemporaire is not null)
@@ -553,10 +573,10 @@ public partial class MainWindow
             }
         }
 
-        if (_identifiantSuccesGrilleEpingle.HasValue)
+        if (_etatListeSuccesUi.IdentifiantSuccesEpingle.HasValue)
         {
             GameAchievementV2? succesEpingle = succesOrdonnes.FirstOrDefault(item =>
-                item.Id == _identifiantSuccesGrilleEpingle.Value
+                item.Id == _etatListeSuccesUi.IdentifiantSuccesEpingle.Value
             );
 
             if (succesEpingle is not null)

@@ -50,8 +50,8 @@ public partial class MainWindow
         GameInfoAndUserProgressV2 jeuLocalReconstruit = ConstruireJeuUtilisateurDepuisEtatLocal(
             jeuSauvegarde
         );
-        _identifiantSuccesGrilleTemporaire = null;
-        _identifiantSuccesGrilleEpingle = null;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
         AppliquerMetaConsoleJeuEnCoursInitiale(jeuLocalReconstruit);
         DemarrerEnrichissementMetaConsoleJeuEnCours(jeuLocalReconstruit);
         DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.Id);
@@ -86,7 +86,7 @@ public partial class MainWindow
             return;
         }
 
-        _identifiantSuccesGrilleEpingle = succesSauvegarde.EstEpingleManuellement
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = succesSauvegarde.EstEpingleManuellement
             ? succesSauvegarde.AchievementId
             : null;
         TexteTitrePremierSuccesNonDebloque.Text = succesSauvegarde.Title;

@@ -82,6 +82,20 @@ public partial class MainWindow
             ReinitialiserContexteSurveillance();
             DefinirEtatConnexion("Profil inaccessible");
 
+            bool afficherErreur = EnregistrerPhaseErreurChargementOrchestrateur(
+                0,
+                string.Empty,
+                "profil_inaccessible"
+            );
+
+            if (!afficherErreur)
+            {
+                ReinitialiserSuccesRecents();
+                TexteEtatSuccesRecents.Text =
+                    "Impossible de charger les succès récents pour ce compte.";
+                return;
+            }
+
             ReinitialiserMetaConsoleJeuEnCours();
             ReinitialiserPremierSuccesNonDebloque();
             ReinitialiserGrilleTousSucces();
@@ -89,9 +103,6 @@ public partial class MainWindow
             DefinirEtatJeuDansProgression(string.Empty);
             DefinirTitreJeuEnCours(string.Empty);
             DefinirDetailsJeuEnCours(string.Empty);
-            TexteResumeProgressionJeuEnCours.Text = "-- / --";
-            TextePourcentageJeuEnCours.Text = "Impossible de charger la progression du jeu.";
-            BarreProgressionJeuEnCours.Value = 0;
             ReinitialiserSuccesRecents();
             TexteEtatSuccesRecents.Text =
                 "Impossible de charger les succès récents pour ce compte.";
@@ -105,6 +116,12 @@ public partial class MainWindow
 
             if (afficherEtatChargement)
             {
+                if (!EnregistrerPhaseErreurChargementOrchestrateur(0, string.Empty, "api"))
+                {
+                    ReinitialiserSuccesRecents();
+                    return;
+                }
+
                 ReinitialiserMetaConsoleJeuEnCours();
                 ReinitialiserPremierSuccesNonDebloque();
                 ReinitialiserGrilleTousSucces();
@@ -112,9 +129,6 @@ public partial class MainWindow
                 DefinirEtatJeuDansProgression(string.Empty);
                 DefinirTitreJeuEnCours(string.Empty);
                 DefinirDetailsJeuEnCours(string.Empty);
-                TexteResumeProgressionJeuEnCours.Text = "-- / --";
-                TextePourcentageJeuEnCours.Text = "Impossible de charger la progression du jeu.";
-                BarreProgressionJeuEnCours.Value = 0;
                 ReinitialiserSuccesRecents();
             }
         }
@@ -166,6 +180,11 @@ public partial class MainWindow
 
         if (identifiantJeuEffectif <= 0)
         {
+            if (!EnregistrerPhaseAucunJeuOrchestrateur("aucun_jeu_recent"))
+            {
+                return;
+            }
+
             ReinitialiserMetaConsoleJeuEnCours();
             ReinitialiserCarrouselVisuelsJeuEnCours();
             ReinitialiserPremierSuccesNonDebloque();
@@ -174,9 +193,11 @@ public partial class MainWindow
             DefinirEtatJeuDansProgression(string.Empty);
             DefinirTitreJeuEnCours(string.Empty);
             DefinirDetailsJeuEnCours(string.Empty);
-            TexteResumeProgressionJeuEnCours.Text = "-- / --";
-            TextePourcentageJeuEnCours.Text = "uucun jeu récent à afficher.";
-            BarreProgressionJeuEnCours.Value = 0;
+            return;
+        }
+
+        if (_serviceOrchestrateurEtatJeu.DoitIgnorerChargementApi(identifiantJeuEffectif, forcerChargementJeu))
+        {
             return;
         }
 
@@ -222,9 +243,11 @@ public partial class MainWindow
 
         if (!progressionDejaAfficheePourCeJeu)
         {
-            TexteResumeProgressionJeuEnCours.Text = "-- / --";
-            TextePourcentageJeuEnCours.Text = "Chargement de la progression...";
-            BarreProgressionJeuEnCours.Value = 0;
+            EnregistrerPhaseChargementApiOrchestrateur(
+                identifiantJeuEffectif,
+                titreAffichageInitial,
+                EtatLocalJeuEstActif() ? "api_local" : "api"
+            );
         }
 
         bool contexteApiInchange =
@@ -249,7 +272,18 @@ public partial class MainWindow
             $"api:{identifiantJeuEffectif}",
             $"source=api;jeu={identifiantJeuEffectif};titre={titreJeuProvisoire}"
         );
+        EnregistrerPhaseChargementApiOrchestrateur(
+            identifiantJeuEffectif,
+            titreAffichageInitial,
+            EtatLocalJeuEstActif() ? "api_local" : "api",
+            false
+        );
         int versionChargement = ++_versionChargementContenuJeu;
+        DemarrerPipelineChargementJeu(
+            identifiantJeuEffectif,
+            titreAffichageInitial,
+            versionChargement
+        );
         DemarrerChargementJeuUtilisateurEnArrierePlan(
             identifiantJeuEffectif,
             titreJeuProvisoire,
@@ -342,9 +376,16 @@ public partial class MainWindow
 
             if (!progressionDejaAfficheePourCeJeu)
             {
-                TexteResumeProgressionJeuEnCours.Text = "-- / --";
-                TextePourcentageJeuEnCours.Text = "Impossible de charger la progression du jeu.";
-                BarreProgressionJeuEnCours.Value = 0;
+                bool afficherErreur = EnregistrerPhaseErreurChargementOrchestrateur(
+                    identifiantJeuEffectif,
+                    titreJeuProvisoire,
+                    "api_background"
+                );
+
+                if (!afficherErreur)
+                {
+                    return;
+                }
             }
         }
     }
@@ -375,12 +416,38 @@ public partial class MainWindow
             }
 
             DonneesJeuAffiche donneesCourantes = _dernieresDonneesJeuAffichees;
+            int nombreSuccesAvant = _succesJeuCourant.Count;
             donneesEnrichies.Communaute = donneesCourantes.Communaute;
             donneesEnrichies.CommunauteAffichee = donneesCourantes.CommunauteAffichee;
+            donneesEnrichies = FusionnerDonneesJeuSansRegression(
+                donneesEnrichies,
+                donneesCourantes
+            );
+
+            if (DonneesJeuSontIdempotentes(donneesEnrichies, donneesCourantes))
+            {
+                _dernieresDonneesJeuAffichees = donneesEnrichies;
+                JournaliserDiagnosticChangementJeu(
+                    "pipeline_idempotent_enrichissement",
+                    $"jeu={identifiantJeuEffectif};succes={donneesEnrichies.Jeu.Succes.Count}"
+                );
+                MarquerEtapePipelineChargementJeu(
+                    EtapePipelineChargementJeu.MetadonneesEnrichies,
+                    identifiantJeuEffectif,
+                    versionChargement
+                );
+                return;
+            }
+
             _dernieresDonneesJeuAffichees = donneesEnrichies;
 
             GameInfoAndUserProgressV2 jeu = donneesEnrichies.Jeu;
             JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(donneesEnrichies);
+            MarquerEtapePipelineChargementJeu(
+                EtapePipelineChargementJeu.MetadonneesEnrichies,
+                jeu.Id,
+                versionChargement
+            );
 
             _dernierTitreJeuApi = jeu.Title;
             AppliquerMetaConsoleJeuEnCoursInitiale(jeu);
@@ -388,6 +455,21 @@ public partial class MainWindow
             DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
             DefinirEtatJeuDansProgression(jeuAffiche.Statut);
             DefinirDetailsJeuEnCours(jeuAffiche.Details);
+
+            int nombreSuccesApres = jeu.Succes.Count;
+
+            if (
+                _identifiantJeuSuccesCourant != identifiantJeuEffectif
+                || nombreSuccesApres > nombreSuccesAvant
+                || GrilleTousSuccesJeuEnCours.Children.Count < nombreSuccesApres
+            )
+            {
+                JournaliserDiagnosticChangementJeu(
+                    "progression_succes_enrichis_recharge",
+                    $"jeu={identifiantJeuEffectif};avant={nombreSuccesAvant};apres={nombreSuccesApres};badges={GrilleTousSuccesJeuEnCours.Children.Count}"
+                );
+                DemarrerMiseAJourSuccesJeuEnArrierePlan(jeu);
+            }
         }
         catch
         {
@@ -441,7 +523,8 @@ public partial class MainWindow
     {
         return versionChargement == _versionChargementContenuJeu
             && identifiantJeuEffectif > 0
-            && _dernierIdentifiantJeuApi == identifiantJeuEffectif;
+            && _dernierIdentifiantJeuApi == identifiantJeuEffectif
+            && PipelineChargementJeuEstActuel(identifiantJeuEffectif, versionChargement);
     }
 
     private async Task ChargerSuccesRecentsAsync(
@@ -511,6 +594,10 @@ public partial class MainWindow
         return versionChargement == _versionChargementContenuJeu
             && (
                 identifiantJeuProfil <= 0
+                || PipelineChargementJeuEstActuel(identifiantJeuProfil, versionChargement)
+            )
+            && (
+                identifiantJeuProfil <= 0
                 || _dernierIdentifiantJeuApi <= 0
                 || _dernierIdentifiantJeuApi == identifiantJeuProfil
             );
@@ -518,13 +605,36 @@ public partial class MainWindow
 
     private async Task AppliquerProgressionJeuAsync(DonneesJeuAffiche donneesJeu)
     {
+        donneesJeu = FusionnerDonneesJeuSansRegression(donneesJeu, _dernieresDonneesJeuAffichees);
+
+        if (DonneesJeuSontIdempotentes(donneesJeu, _dernieresDonneesJeuAffichees))
+        {
+            _dernieresDonneesJeuAffichees = donneesJeu;
+            JournaliserDiagnosticChangementJeu(
+                "pipeline_idempotent_progression",
+                $"jeu={donneesJeu.Jeu.Id};succes={donneesJeu.Jeu.Succes.Count}"
+            );
+            MarquerEtapePipelineChargementJeu(
+                EtapePipelineChargementJeu.DonneesMinimales | EtapePipelineChargementJeu.SuccesCharges,
+                donneesJeu.Jeu.Id,
+                _versionChargementContenuJeu
+            );
+            return;
+        }
+
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
         JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(donneesJeu);
         JournaliserDiagnosticChangementJeu("progression_debut", $"jeu={jeu.Id}");
+        EnregistrerPhaseJeuAfficheOrchestrateur(jeu.Id, jeu.Title, "progression");
         _dernierTitreJeuApi = jeu.Title;
         _dernierIdentifiantJeuAvecInfos = jeu.Id;
         _dernierIdentifiantJeuAvecProgression = jeu.Id;
         _dernieresDonneesJeuAffichees = donneesJeu;
+        MarquerEtapePipelineChargementJeu(
+            EtapePipelineChargementJeu.DonneesMinimales,
+            jeu.Id,
+            _versionChargementContenuJeu
+        );
         AppliquerVisuelsJeuEnCoursInitiaux(jeu);
         DemarrerEnrichissementVisuelsJeuEnCours(jeu);
         JournaliserDiagnosticChangementJeu("progression_visuels_ok");
@@ -537,14 +647,139 @@ public partial class MainWindow
         TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
         TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
         BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
-        _ = InitialiserContexteSuccesJeu(jeu);
+        _ = InitialiserContexteSuccesJeu(jeu, out _);
 
         await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);
         await DetecterNouveauxSuccesJeuAsync(jeu);
         DemarrerMiseAJourCachesJeuLocaux(jeu);
         DemarrerMiseAJourSuccesJeuEnArrierePlan(jeu);
+        MarquerEtapePipelineChargementJeu(
+            EtapePipelineChargementJeu.SuccesCharges,
+            jeu.Id,
+            _versionChargementContenuJeu
+        );
         JournaliserDiagnosticChangementJeu("progression_succes_ok");
         JournaliserDiagnosticChangementJeu("progression_fin");
+    }
+
+    private DonneesJeuAffiche FusionnerDonneesJeuSansRegression(
+        DonneesJeuAffiche donneesNouvelles,
+        DonneesJeuAffiche? donneesExistantes
+    )
+    {
+        if (
+            donneesExistantes is null
+            || donneesExistantes.Jeu.Id <= 0
+            || donneesExistantes.Jeu.Id != donneesNouvelles.Jeu.Id
+        )
+        {
+            return donneesNouvelles;
+        }
+
+        GameInfoAndUserProgressV2 jeuNouveau = donneesNouvelles.Jeu;
+        GameInfoAndUserProgressV2 jeuExistant = donneesExistantes.Jeu;
+        int nbSuccesNouveaux = jeuNouveau.Succes.Count;
+        int nbSuccesExistants = jeuExistant.Succes.Count;
+
+        if (nbSuccesExistants > nbSuccesNouveaux)
+        {
+            jeuNouveau.Succes = jeuExistant.Succes.ToDictionary(item => item.Key, item => item.Value);
+            jeuNouveau.NombreSucces = Math.Max(
+                Math.Max(jeuNouveau.NombreSucces, nbSuccesExistants),
+                jeuExistant.NombreSucces
+            );
+            JournaliserDiagnosticChangementJeu(
+                "pipeline_non_regression_succes",
+                $"jeu={jeuNouveau.Id};avant={nbSuccesNouveaux};conserve={nbSuccesExistants}"
+            );
+        }
+
+        return new DonneesJeuAffiche
+        {
+            Jeu = jeuNouveau,
+            DetailsEtendus = donneesNouvelles.DetailsEtendus ?? donneesExistantes.DetailsEtendus,
+            Progression = donneesNouvelles.Progression ?? donneesExistantes.Progression,
+            RangsEtScores =
+                donneesNouvelles.RangsEtScores.Count > 0
+                    ? donneesNouvelles.RangsEtScores
+                    : donneesExistantes.RangsEtScores,
+            Communaute = donneesNouvelles.Communaute ?? donneesExistantes.Communaute,
+            CommunauteAffichee =
+                donneesNouvelles.CommunauteAffichee ?? donneesExistantes.CommunauteAffichee,
+        };
+    }
+
+    private static bool DonneesJeuSontIdempotentes(
+        DonneesJeuAffiche donneesNouvelles,
+        DonneesJeuAffiche? donneesExistantes
+    )
+    {
+        if (
+            donneesExistantes is null
+            || donneesExistantes.Jeu.Id <= 0
+            || donneesExistantes.Jeu.Id != donneesNouvelles.Jeu.Id
+        )
+        {
+            return false;
+        }
+
+        if (
+            donneesNouvelles.DetailsEtendus is not null
+            && donneesExistantes.DetailsEtendus is null
+        )
+        {
+            return false;
+        }
+
+        if (donneesNouvelles.Progression is not null && donneesExistantes.Progression is null)
+        {
+            return false;
+        }
+
+        if (donneesNouvelles.RangsEtScores.Count > donneesExistantes.RangsEtScores.Count)
+        {
+            return false;
+        }
+
+        Dictionary<string, GameAchievementV2> succesNouveaux = donneesNouvelles.Jeu.Succes;
+        Dictionary<string, GameAchievementV2> succesExistants = donneesExistantes.Jeu.Succes;
+
+        if (succesNouveaux.Count != succesExistants.Count)
+        {
+            return false;
+        }
+
+        foreach ((string cleSucces, GameAchievementV2 succesNouveau) in succesNouveaux)
+        {
+            if (
+                !succesExistants.TryGetValue(cleSucces, out GameAchievementV2? succesExistant)
+                && !succesExistants.TryGetValue(
+                    succesNouveau.Id.ToString(CultureInfo.InvariantCulture),
+                    out succesExistant
+                )
+            )
+            {
+                return false;
+            }
+
+            if (
+                !string.Equals(
+                    succesNouveau.DateEarned,
+                    succesExistant.DateEarned,
+                    StringComparison.Ordinal
+                )
+                || !string.Equals(
+                    succesNouveau.DateEarnedHardcore,
+                    succesExistant.DateEarnedHardcore,
+                    StringComparison.Ordinal
+                )
+            )
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void DemarrerMiseAJourCachesJeuLocaux(GameInfoAndUserProgressV2 jeu)

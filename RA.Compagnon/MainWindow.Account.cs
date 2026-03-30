@@ -332,6 +332,85 @@ public partial class MainWindow
         }
     }
 
+    private async Task AfficherModaleAideAsync()
+    {
+        SystemControls.StackPanel contenu = new()
+        {
+            Width = 460,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0),
+            Children =
+            {
+                new SystemControls.TextBlock
+                {
+                    FontSize = 20,
+                    FontWeight = FontWeights.SemiBold,
+                    Text = "Aide rapide",
+                    Margin = new Thickness(0, 0, 0, 8),
+                },
+                new SystemControls.TextBlock
+                {
+                    Opacity = 0.84,
+                    Text =
+                        "Compagnon t'aide à suivre le jeu en cours, ta progression et les succès obtenus sur RetroAchievements.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 14),
+                },
+                ConstruireBlocAide(
+                    "Pour commencer",
+                    [
+                        "Clique sur Profil pour connecter ton compte RetroAchievements.",
+                        "Lance ensuite un jeu dans un émulateur compatible.",
+                        "Compagnon affichera automatiquement le jeu détecté et ta progression.",
+                    ]
+                ),
+                ConstruireBlocAide(
+                    "Pendant le jeu",
+                    [
+                        "La notice en haut t'indique si une partie est en cours.",
+                        "La carte principale affiche le jeu courant, les informations utiles et la liste des succès.",
+                        "Lorsqu'un succès est obtenu, il peut être mis en avant temporairement dans la carte.",
+                    ]
+                ),
+                ConstruireBlocAide(
+                    "En cas de problème",
+                    [
+                        "Attends quelques secondes après un changement de jeu.",
+                        "Vérifie que ton compte est toujours connecté.",
+                        "Si besoin, relance d'abord l'émulateur, puis Compagnon.",
+                    ]
+                ),
+            },
+        };
+
+        SystemControls.Border conteneurContenu = new()
+        {
+            Padding = new Thickness(MargeInterieureModaleConnexion),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", 12),
+            Child = contenu,
+        };
+
+        UiControls.ContentDialog dialogueAide = new(RacineModales)
+        {
+            Title = "Aide",
+            Content = conteneurContenu,
+            MinWidth = 460 + (MargeInterieureModaleConnexion * 2),
+            CloseButtonText = "Fermer",
+            DefaultButton = UiControls.ContentDialogButton.Close,
+        };
+
+        try
+        {
+            DefinirEtatModalesActif(true);
+            await dialogueAide.ShowAsync();
+        }
+        finally
+        {
+            DefinirEtatModalesActif(false);
+        }
+    }
+
     private async Task<DonneesCompteUtilisateur> ObtenirDonneesComptePourModaleAsync()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -498,6 +577,49 @@ public partial class MainWindow
     private static SystemControls.Separator ConstruireSeparateurBlocCompte()
     {
         return new SystemControls.Separator { Margin = new Thickness(0, 2, 0, 12), Opacity = 0.45 };
+    }
+
+    private SystemControls.Border ConstruireBlocAide(
+        string titre,
+        IReadOnlyList<string> lignes
+    )
+    {
+        SystemControls.StackPanel pile = new()
+        {
+            Margin = new Thickness(0, 0, 0, 12),
+            Children =
+            {
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 0, 0, 8),
+                    FontSize = 16,
+                    FontWeight = FontWeights.SemiBold,
+                    Text = titre,
+                },
+            },
+        };
+
+        foreach (string ligne in lignes)
+        {
+            pile.Children.Add(
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Opacity = 0.84,
+                    Text = $"• {ligne}",
+                    TextWrapping = TextWrapping.Wrap,
+                }
+            );
+        }
+
+        return new SystemControls.Border
+        {
+            Padding = new Thickness(10, 10, 10, 6),
+            Margin = new Thickness(0, 0, 0, 8),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+            Child = pile,
+        };
     }
 
     private SystemControls.Border ConstruireBlocJeuxRecemmentJoues(
@@ -784,6 +906,11 @@ public partial class MainWindow
         await AfficherModaleCompteAsync();
     }
 
+    private async void AfficherAide_Click(object sender, RoutedEventArgs e)
+    {
+        await AfficherModaleAideAsync();
+    }
+
     private void MettreAJourResumeConnexion()
     {
         if (string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo))
@@ -834,9 +961,7 @@ public partial class MainWindow
             identifiantJeuAffiche > 0
                 ? identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)
                 : string.Empty;
-        string texteIdentifiantJeuAffiche = string.IsNullOrWhiteSpace(texteIdentifiantJeu)
-            ? string.Empty
-            : $"Game ID {texteIdentifiantJeu}";
+        string texteIdentifiantJeuAffiche = string.Empty;
 
         if (EtatLocalEmulateurEstActifPourNotice())
         {
@@ -848,15 +973,13 @@ public partial class MainWindow
                 ? Visibility.Collapsed
                 : Visibility.Visible;
 
-            (Brush fondLocal, Brush bordureLocale) = ObtenirCouleursNoticeCompteEntete("En jeu");
-            BadgeEtatCompteUtilisateur.Background = fondLocal;
-            BadgeEtatCompteUtilisateur.BorderBrush = bordureLocale;
+            BadgeEtatCompteUtilisateur.Background = Brushes.Transparent;
+            BadgeEtatCompteUtilisateur.BorderBrush = Brushes.Transparent;
             ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
-            ZoneEtatCompteUtilisateur.ToolTip = string.IsNullOrWhiteSpace(
-                texteIdentifiantJeuAffiche
-            )
-                ? "En jeu (détection locale)"
-                : $"En jeu{Environment.NewLine}{texteIdentifiantJeuAffiche}";
+            ZoneEtatCompteUtilisateur.ToolTip =
+                identifiantJeuAffiche > 0
+                    ? $"En jeu{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
+                    : "En jeu (détection locale)";
             JournaliserNoticeCompteEntete("En jeu", texteIdentifiantJeu, "local");
             return;
         }
@@ -888,13 +1011,13 @@ public partial class MainWindow
             ? Visibility.Visible
             : Visibility.Collapsed;
 
-        (Brush fond, Brush bordure) = ObtenirCouleursNoticeCompteEntete(compte.Statut);
-        BadgeEtatCompteUtilisateur.Background = fond;
-        BadgeEtatCompteUtilisateur.BorderBrush = bordure;
+        BadgeEtatCompteUtilisateur.Background = Brushes.Transparent;
+        BadgeEtatCompteUtilisateur.BorderBrush = Brushes.Transparent;
         ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
-        ZoneEtatCompteUtilisateur.ToolTip = afficherSousStatut
-            ? $"{compte.Statut}{Environment.NewLine}{texteIdentifiantJeuAffiche}"
-            : compte.Statut;
+        ZoneEtatCompteUtilisateur.ToolTip =
+            identifiantJeuAffiche > 0
+                ? $"{compte.Statut}{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
+                : compte.Statut;
         JournaliserNoticeCompteEntete(compte.Statut, texteIdentifiantJeu, "api");
     }
 
@@ -981,6 +1104,46 @@ public partial class MainWindow
     {
         _etatConnexionCourant = etatConnexion;
         MettreAJourResumeConnexion();
+    }
+
+    private static void OuvrirDocumentProjet(string nomFichier)
+    {
+        if (string.IsNullOrWhiteSpace(nomFichier))
+        {
+            return;
+        }
+
+        string? dossierCourant = string.IsNullOrWhiteSpace(AppContext.BaseDirectory)
+            ? null
+            : System.IO.Path.GetFullPath(AppContext.BaseDirectory);
+
+        while (!string.IsNullOrWhiteSpace(dossierCourant))
+        {
+            string cheminCandidat = System.IO.Path.Combine(dossierCourant, nomFichier);
+
+            if (System.IO.File.Exists(cheminCandidat))
+            {
+                try
+                {
+                    Process.Start(
+                        new ProcessStartInfo
+                        {
+                            FileName = cheminCandidat,
+                            UseShellExecute = true,
+                        }
+                    );
+                }
+                catch
+                {
+                    // L'ouverture d'un document local reste facultative.
+                }
+
+                return;
+            }
+
+            System.IO.DirectoryInfo? parent = System.IO.Directory.GetParent(dossierCourant);
+            dossierCourant = parent?.FullName;
+        }
     }
 
     private bool ConfigurationConnexionEstComplete()

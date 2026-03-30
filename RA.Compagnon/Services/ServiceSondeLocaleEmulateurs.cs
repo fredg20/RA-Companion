@@ -24,58 +24,20 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private const int ProcessCommandLineInformation = 60;
     private static readonly Lock VerrouCacheDuckStation = new();
     private static readonly Lock VerrouCacheRALibretro = new();
+    private static readonly Lock VerrouCachePPSSPP = new();
     private static readonly Lock VerrouCacheRetroArch = new();
     private static string _dernierRepertoireDuckStation = string.Empty;
     private static DateTime _dernierHorodatageCacheGamelistUtc = DateTime.MinValue;
     private static Dictionary<string, string> _cacheSerialVersCheminDuckStation = [];
     private static RenseignementJeuRA? _dernierRenseignementRALibretro;
     private static DateTime _dernierHorodatageRenseignementRALibretroUtc = DateTime.MinValue;
+    private static RenseignementJeuRA? _dernierRenseignementPPSSPP;
+    private static DateTime _dernierHorodatageRenseignementPPSSPPUtc = DateTime.MinValue;
     private static RenseignementJeuRA? _dernierRenseignementRetroArch;
     private static DateTime _dernierHorodatageRenseignementRetroArchUtc = DateTime.MinValue;
 
-    private sealed record DefinitionEmulateur(
-        string NomEmulateur,
-        string[] NomsProcessus,
-        Func<Process, string, string> ExtraireTitreJeu
-    );
-
-    private static readonly DefinitionEmulateur[] Definitions =
-    [
-        new(
-            "RetroArch",
-            ["retroarch"],
-            (_, titre) => ExtraireTitreAvecSeparateurs(titre, "RetroArch", "RetroArch ")
-        ),
-        new("RALibretro", ["ralibretro"], ExtraireTitreRALibretro),
-        new(
-            "DuckStation",
-            [
-                "duckstation",
-                "duckstation-qt",
-                "duckstation-nogui",
-                "duckstation-sdl",
-                "duckstation-x64",
-                "duckstation-avx2",
-                "duckstation-qt-x64",
-            ],
-            ExtraireTitreDuckStation
-        ),
-        new("PCSX2", ["pcsx2", "pcsx2-qt"], ExtraireTitrePCSX2),
-        new("PPSSPP", ["ppsspp", "ppssppwindows", "ppssppwindows64"], ExtraireTitrePPSSPP),
-        new(
-            "Dolphin",
-            [
-                "dolphin",
-                "dolphin-qt2",
-                "dolphin emulator",
-                "slippi dolphin",
-                "slippi dolphin launcher",
-            ],
-            ExtraireTitreDolphin
-        ),
-        new("LunaProject64", ["project64"], ExtraireTitreProject64),
-        new("Flycast", ["flycast"], (_, titre) => ExtraireTitreAvecSeparateurs(titre, "Flycast")),
-    ];
+    private static readonly IReadOnlyList<DefinitionEmulateurLocal> Definitions =
+        ServiceCatalogueEmulateursLocaux.Definitions;
 
     private static readonly string CheminJournalSondeLocale = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -86,24 +48,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     public static void ReinitialiserJournalSession()
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalSondeLocale);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.WriteAllText(
-                CheminJournalSondeLocale,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Cette journalisation reste purement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalSondeLocale);
     }
 
     public EtatSondeLocaleEmulateur Sonder(bool journaliser = true)
@@ -112,7 +57,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             Process[] processus = Process.GetProcesses();
 
-            foreach (DefinitionEmulateur definition in Definitions)
+            foreach (DefinitionEmulateurLocal definition in Definitions)
             {
                 EtatSondeLocaleEmulateur? etat = SonderPourDefinition(definition, processus);
 
@@ -165,7 +110,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     }
 
     private static EtatSondeLocaleEmulateur? SonderPourDefinition(
-        DefinitionEmulateur definition,
+        DefinitionEmulateurLocal definition,
         IEnumerable<Process> processus
     )
     {
@@ -182,11 +127,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         IReadOnlyList<string> titresFenetres = LireTitresFenetresVisibles(processusCible);
         string titreFenetre = ChoisirTitreFenetre(definition, processusCible, titresFenetres);
-        string titreJeuProbable = definition.ExtraireTitreJeu(processusCible, titreFenetre);
+        string titreJeuProbable = ExtraireTitreJeuPourDefinition(
+            definition,
+            processusCible,
+            titreFenetre
+        );
         int identifiantJeuProbable = 0;
         string informationsDiagnostic = string.Empty;
 
-        if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
+        if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.Project64RACache
+        )
         {
             RenseignementJeuRA? renseignementJeu = LireRenseignementJeuProject64DepuisRACache();
 
@@ -199,11 +151,16 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     titreJeuProbable = renseignementJeu.TitreJeu;
                 }
 
-                informationsDiagnostic =
-                    $"racacheGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
             }
         }
-        else if (string.Equals(definition.NomEmulateur, "RALibretro", StringComparison.Ordinal))
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.RALibretroRACache
+        )
         {
             RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRALibretroDepuisRACache();
 
@@ -216,8 +173,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     titreJeuProbable = renseignementJeu.TitreJeu;
                 }
 
-                informationsDiagnostic =
-                    $"racacheGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
             }
 
             if (identifiantJeuProbable <= 0)
@@ -225,7 +184,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 titreJeuProbable = string.Empty;
             }
         }
-        else if (string.Equals(definition.NomEmulateur, "RetroArch", StringComparison.Ordinal))
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.RetroArchLog
+        )
         {
             RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRetroArchDepuisLog();
 
@@ -238,11 +200,16 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     titreJeuProbable = renseignementJeu.TitreJeu;
                 }
 
-                informationsDiagnostic =
-                    $"logGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
             }
         }
-        else if (string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal))
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.DuckStationLog
+        )
         {
             RenseignementJeuRA? renseignementJeu = LireRenseignementJeuDuckStationDepuisLog();
 
@@ -255,13 +222,63 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     titreJeuProbable = renseignementJeu.TitreJeu;
                 }
 
-                informationsDiagnostic =
-                    $"logGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu == StrategieRenseignementJeuEmulateurLocal.PCSX2Log
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuPCSX2DepuisLog();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.PPSSPPLog
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuPPSSPPDepuisLog(
+                titreJeuProbable
+            );
+
+            renseignementJeu ??= LireRenseignementJeuPPSSPPDepuisCache(titreJeuProbable);
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
             }
         }
 
         if (
-            string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
+            definition.StrategieRenseignementJeu
+                == StrategieRenseignementJeuEmulateurLocal.DuckStationLog
             && string.IsNullOrWhiteSpace(titreJeuProbable)
         )
         {
@@ -288,7 +305,49 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         };
     }
 
-    private static bool Correspond(Process processus, DefinitionEmulateur definition)
+    private static string ExtraireTitreJeuPourDefinition(
+        DefinitionEmulateurLocal definition,
+        Process processus,
+        string titreFenetre
+    )
+    {
+        return definition.StrategieExtractionTitre switch
+        {
+            StrategieExtractionTitreEmulateurLocal.SeparateursRetroArch =>
+                ExtraireTitreAvecSeparateurs(titreFenetre, "RetroArch", "RetroArch "),
+            StrategieExtractionTitreEmulateurLocal.RALibretro => ExtraireTitreRALibretro(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.DuckStation => ExtraireTitreDuckStation(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.PCSX2 => ExtraireTitrePCSX2(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.PPSSPP => ExtraireTitrePPSSPP(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.Dolphin => ExtraireTitreDolphin(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.Project64 => ExtraireTitreProject64(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.Flycast => ExtraireTitreAvecSeparateurs(
+                titreFenetre,
+                "Flycast"
+            ),
+            _ => string.Empty,
+        };
+    }
+
+    private static bool Correspond(Process processus, DefinitionEmulateurLocal definition)
     {
         bool correspondAuNomProcessus = CorrespondNomProcessus(processus, definition);
 
@@ -299,11 +358,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         // RetroArch, DuckStation et PCSX2 ont des variantes de fenêtres/outils qui rendent
         // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
-        if (
-            string.Equals(definition.NomEmulateur, "RetroArch", StringComparison.Ordinal)
-            || string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
-            || string.Equals(definition.NomEmulateur, "PCSX2", StringComparison.Ordinal)
-        )
+        if (!definition.AutoriserDetectionParTitreFenetre)
         {
             return false;
         }
@@ -314,7 +369,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             && titreFenetre.StartsWith(definition.NomEmulateur, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool CorrespondNomProcessus(Process processus, DefinitionEmulateur definition)
+    private static bool CorrespondNomProcessus(
+        Process processus,
+        DefinitionEmulateurLocal definition
+    )
     {
         string nomProcessus = processus.ProcessName?.Trim() ?? string.Empty;
 
@@ -349,7 +407,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         try
         {
             return ChoisirTitreFenetre(
-                new DefinitionEmulateur(string.Empty, [], (_, titre) => titre),
+                new DefinitionEmulateurLocal(
+                    string.Empty,
+                    [],
+                    [],
+                    StrategieExtractionTitreEmulateurLocal.Flycast,
+                    StrategieRenseignementJeuEmulateurLocal.Aucune,
+                    StrategieSurveillanceSuccesLocale.Aucune,
+                    true,
+                    false,
+                    []
+                ),
                 processus,
                 LireTitresFenetresVisibles(processus)
             );
@@ -556,7 +624,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return renseignementJeu.TitreJeu;
         }
 
-        string cheminConfiguration = TrouverCheminConfigurationRALibretro();
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRALibretro();
 
         if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
         {
@@ -839,21 +908,13 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     private static void Journaliser(EtatSondeLocaleEmulateur etat)
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalSondeLocale)!);
-            File.AppendAllText(
-                CheminJournalSondeLocale,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};gameId={etat.IdentifiantJeuProbable.ToString(CultureInfo.InvariantCulture)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Cette journalisation reste purement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalSondeLocale,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};gameId={etat.IdentifiantJeuProbable.ToString(CultureInfo.InvariantCulture)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
+            )
+        );
     }
 
     private static string NettoyerPourJournal(string? valeur)
@@ -917,7 +978,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     }
 
     private static string ChoisirTitreFenetre(
-        DefinitionEmulateur definition,
+        DefinitionEmulateurLocal definition,
         Process processus,
         IReadOnlyList<string> titres
     )
@@ -998,6 +1059,25 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             || normaliseB.Contains(normaliseA, StringComparison.Ordinal);
     }
 
+    private static string ConstruireDiagnosticSourceJeu(
+        StrategieRenseignementJeuEmulateurLocal strategie,
+        int identifiantJeu
+    )
+    {
+        string source = strategie switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => "project64_racache",
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => "ralibretro_racache",
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "retroarch_log",
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "duckstation_log",
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "pcsx2_log",
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => "ppsspp_log",
+            _ => "inconnue",
+        };
+
+        return $"source={source};gameId={identifiantJeu.ToString(CultureInfo.InvariantCulture)}";
+    }
+
     private static string ConstruireDiagnosticDuckStation(
         Process processus,
         IReadOnlyList<string> titresFenetres
@@ -1058,7 +1138,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 morceaux.Add($"memcardJeu=[{titreMemcard}]");
             }
 
-            return string.Join("; ", morceaux);
+            string details = string.Join("; ", morceaux);
+
+            return string.IsNullOrWhiteSpace(details)
+                ? "source=duckstation_fallback"
+                : $"source=duckstation_fallback; {details}";
         }
         catch
         {
@@ -1172,7 +1256,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            string cheminJournal = TrouverDernierCheminJournalRetroArch();
+            string cheminJournal =
+                ServiceSourcesLocalesEmulateurs.TrouverDernierCheminJournalRetroArch();
 
             if (string.IsNullOrWhiteSpace(cheminJournal))
             {
@@ -1188,7 +1273,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             }
 
             foreach (
-                string ligne in LireToutesLesLignesAvecPartage(cheminJournal)
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
                     .AsEnumerable()
                     .Reverse()
             )
@@ -1241,7 +1327,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            string cheminJournal = TrouverCheminJournalDuckStation();
+            string cheminJournal =
+                ServiceSourcesLocalesEmulateurs.TrouverCheminJournalDuckStation();
 
             if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
             {
@@ -1259,7 +1346,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             }
 
             foreach (
-                string ligne in LireToutesLesLignesAvecPartage(cheminJournal)
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
                     .AsEnumerable()
                     .Reverse()
             )
@@ -1306,60 +1394,354 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return null;
     }
 
-    private static string TrouverDernierCheminJournalRetroArch()
+    private static RenseignementJeuRA? LireRenseignementJeuPCSX2DepuisLog()
     {
         try
         {
-            string repertoireLogs = TrouverRepertoireLogsRetroArch();
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalPCSX2();
 
-            if (string.IsNullOrWhiteSpace(repertoireLogs) || !Directory.Exists(repertoireLogs))
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
             {
-                return string.Empty;
+                return null;
             }
 
-            DirectoryInfo repertoire = new(repertoireLogs);
-            FileInfo? fichierLog = repertoire
-                .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
-                .Where(fichier => fichier.Length > 0)
-                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
-                .FirstOrDefault();
+            FileInfo fichierJournal = new(cheminJournal);
 
-            fichierLog ??= repertoire
-                .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
-                .Where(fichier => fichier.Length > 0)
-                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
-                .FirstOrDefault();
+            if (
+                fichierJournal.Length <= 0
+                || DateTime.UtcNow - fichierJournal.LastWriteTimeUtc > TimeSpan.FromMinutes(15)
+            )
+            {
+                return null;
+            }
 
-            return fichierLog?.FullName ?? string.Empty;
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceIdentifie = PCSX2GameIdentifieRegex().Match(ligne);
+
+                if (
+                    correspondanceIdentifie.Success
+                    && int.TryParse(
+                        correspondanceIdentifie.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuIdentifie
+                    )
+                    && identifiantJeuIdentifie > 0
+                )
+                {
+                    string titreJeu = correspondanceIdentifie.Groups[2].Value.Trim();
+                    return new RenseignementJeuRA(identifiantJeuIdentifie, titreJeu);
+                }
+
+                Match correspondanceCharge = PCSX2GameChargeRegex().Match(ligne);
+
+                if (
+                    correspondanceCharge.Success
+                    && int.TryParse(
+                        correspondanceCharge.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                    && identifiantJeuCharge > 0
+                )
+                {
+                    return new RenseignementJeuRA(identifiantJeuCharge, string.Empty);
+                }
+            }
         }
         catch
         {
+            // Le log PCSX2 reste une aide locale facultative.
+        }
+
+        return null;
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuPPSSPPDepuisLog(string titreJeuAttendu)
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalPPSSPP();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return null;
+            }
+
+            FileInfo fichierJournal = new(cheminJournal);
+
+            if (
+                fichierJournal.Length <= 0
+                || DateTime.UtcNow - fichierJournal.LastWriteTimeUtc > TimeSpan.FromMinutes(15)
+            )
+            {
+                return null;
+            }
+
+            bool exigerCorrespondanceTitre = !string.IsNullOrWhiteSpace(titreJeuAttendu);
+            List<string> lignes =
+            [
+                .. ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminJournal),
+            ];
+
+            if (exigerCorrespondanceTitre)
+            {
+                for (int index = lignes.Count - 1; index >= 0; index--)
+                {
+                    Match correspondanceDemarrage = PPSSPPJeuDemarreRegex().Match(lignes[index]);
+
+                    if (!correspondanceDemarrage.Success)
+                    {
+                        continue;
+                    }
+
+                    string titreDemarre = ExtraireTitrePPSSPPDepuisCheminJeu(
+                        correspondanceDemarrage.Groups[1].Value
+                    );
+
+                    if (!TitresSemblables(titreJeuAttendu, titreDemarre))
+                    {
+                        continue;
+                    }
+
+                    for (
+                        int indexRecherche = index;
+                        indexRecherche < lignes.Count && indexRecherche <= index + 40;
+                        indexRecherche++
+                    )
+                    {
+                        string ligneRecherche = lignes[indexRecherche];
+                        Match correspondanceJeuIdentifie = PPSSPPGameIdentifieRegex()
+                            .Match(ligneRecherche);
+
+                        if (
+                            correspondanceJeuIdentifie.Success
+                            && int.TryParse(
+                                correspondanceJeuIdentifie.Groups[1].Value,
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out int identifiantJeuIdentifie
+                            )
+                            && identifiantJeuIdentifie > 0
+                        )
+                        {
+                            return MemoriserRenseignementPPSSPP(
+                                new RenseignementJeuRA(
+                                    identifiantJeuIdentifie,
+                                    correspondanceJeuIdentifie.Groups[2].Value.Trim()
+                                )
+                            );
+                        }
+
+                        Match correspondanceJeuCharge = PPSSPPGameChargeRegex()
+                            .Match(ligneRecherche);
+
+                        if (
+                            correspondanceJeuCharge.Success
+                            && int.TryParse(
+                                correspondanceJeuCharge.Groups[1].Value,
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out int identifiantJeuCharge
+                            )
+                            && identifiantJeuCharge > 0
+                        )
+                        {
+                            return MemoriserRenseignementPPSSPP(
+                                new RenseignementJeuRA(identifiantJeuCharge, titreJeuAttendu)
+                            );
+                        }
+                    }
+                }
+            }
+
+            RenseignementJeuRA? renseignementSecours = null;
+
+            foreach (string ligne in lignes.AsEnumerable().Reverse())
+            {
+                Match correspondanceJeuIdentifie = PPSSPPGameIdentifieRegex().Match(ligne);
+
+                if (
+                    correspondanceJeuIdentifie.Success
+                    && int.TryParse(
+                        correspondanceJeuIdentifie.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuIdentifie
+                    )
+                    && identifiantJeuIdentifie > 0
+                )
+                {
+                    RenseignementJeuRA renseignementIdentifie = new(
+                        identifiantJeuIdentifie,
+                        correspondanceJeuIdentifie.Groups[2].Value.Trim()
+                    );
+
+                    if (
+                        !exigerCorrespondanceTitre
+                        || TitresSemblables(titreJeuAttendu, renseignementIdentifie.TitreJeu)
+                    )
+                    {
+                        return MemoriserRenseignementPPSSPP(renseignementIdentifie);
+                    }
+
+                    continue;
+                }
+
+                Match correspondanceJeuCharge = PPSSPPGameChargeRegex().Match(ligne);
+
+                if (
+                    correspondanceJeuCharge.Success
+                    && int.TryParse(
+                        correspondanceJeuCharge.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                    && identifiantJeuCharge > 0
+                )
+                {
+                    if (exigerCorrespondanceTitre)
+                    {
+                        continue;
+                    }
+
+                    renseignementSecours ??= new RenseignementJeuRA(
+                        identifiantJeuCharge,
+                        string.Empty
+                    );
+                    continue;
+                }
+
+                Match correspondanceLoadCallback = PPSSPPLoadCallbackRegex().Match(ligne);
+
+                if (
+                    correspondanceLoadCallback.Success
+                    && int.TryParse(
+                        correspondanceLoadCallback.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCallback
+                    )
+                    && identifiantJeuCallback > 0
+                )
+                {
+                    if (exigerCorrespondanceTitre)
+                    {
+                        continue;
+                    }
+
+                    string titreJeu = correspondanceLoadCallback.Groups[2].Value.Trim();
+
+                    if (string.Equals(titreJeu, "(null)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        titreJeu = string.Empty;
+                    }
+
+                    renseignementSecours ??= new RenseignementJeuRA(
+                        identifiantJeuCallback,
+                        titreJeu
+                    );
+                    continue;
+                }
+
+                Match correspondance = JournalGameIdRegex().Match(ligne);
+
+                if (
+                    correspondance.Success
+                    && int.TryParse(
+                        correspondance.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeu
+                    )
+                    && identifiantJeu > 0
+                )
+                {
+                    if (exigerCorrespondanceTitre)
+                    {
+                        continue;
+                    }
+
+                    renseignementSecours ??= new RenseignementJeuRA(identifiantJeu, string.Empty);
+                }
+            }
+
+            return renseignementSecours is null
+                ? null
+                : MemoriserRenseignementPPSSPP(renseignementSecours);
+        }
+        catch
+        {
+            // Le log PPSSPP reste une aide locale facultative.
+        }
+
+        return null;
+    }
+
+    private static string ExtraireTitrePPSSPPDepuisCheminJeu(string cheminJeu)
+    {
+        if (string.IsNullOrWhiteSpace(cheminJeu))
+        {
             return string.Empty;
+        }
+
+        string titre = Path.GetFileNameWithoutExtension(cheminJeu).Trim();
+
+        if (string.IsNullOrWhiteSpace(titre))
+        {
+            return string.Empty;
+        }
+
+        titre = TexteEntreParenthesesRegex().Replace(titre, " ");
+        titre = titre.Replace("Ã‚Â®", string.Empty, StringComparison.Ordinal);
+        titre = titre.Replace("Â®", string.Empty, StringComparison.Ordinal);
+        return EspacesMultiplesRegex().Replace(titre, " ").Trim();
+    }
+
+    private static RenseignementJeuRA? MemoriserRenseignementPPSSPP(
+        RenseignementJeuRA renseignement
+    )
+    {
+        lock (VerrouCachePPSSPP)
+        {
+            _dernierRenseignementPPSSPP = renseignement;
+            _dernierHorodatageRenseignementPPSSPPUtc = DateTime.UtcNow;
+            return _dernierRenseignementPPSSPP;
         }
     }
 
-    private static string TrouverCheminJournalDuckStation()
+    private static RenseignementJeuRA? LireRenseignementJeuPPSSPPDepuisCache(string titreJeuAttendu)
     {
-        string[] candidats =
-        [
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "DuckStation",
-                "duckstation.log"
-            ),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "DuckStation",
-                "duckstation.log"
-            ),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "DuckStation",
-                "duckstation.log"
-            ),
-        ];
+        lock (VerrouCachePPSSPP)
+        {
+            if (
+                _dernierRenseignementPPSSPP is null
+                || DateTime.UtcNow - _dernierHorodatageRenseignementPPSSPPUtc
+                    > TimeSpan.FromSeconds(10)
+            )
+            {
+                return null;
+            }
 
-        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+            if (
+                string.IsNullOrWhiteSpace(titreJeuAttendu)
+                || string.IsNullOrWhiteSpace(_dernierRenseignementPPSSPP.TitreJeu)
+                || !TitresSemblables(titreJeuAttendu, _dernierRenseignementPPSSPP.TitreJeu)
+            )
+            {
+                return null;
+            }
+
+            return _dernierRenseignementPPSSPP;
+        }
     }
 
     private static RenseignementJeuRA? MemoriserRenseignementRetroArch(
@@ -1391,61 +1773,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
-    private static List<string> LireToutesLesLignesAvecPartage(string cheminFichier)
-    {
-        try
-        {
-            using FileStream flux = new(
-                cheminFichier,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.ReadWrite | FileShare.Delete
-            );
-            using StreamReader lecteur = new(
-                flux,
-                Encoding.UTF8,
-                detectEncodingFromByteOrderMarks: true
-            );
-            List<string> lignes = [];
-
-            while (!lecteur.EndOfStream)
-            {
-                string? ligne = lecteur.ReadLine();
-
-                if (ligne is not null)
-                {
-                    lignes.Add(ligne);
-                }
-            }
-
-            return lignes;
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    private static string TrouverRepertoireLogsRetroArch()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RetroArch", "logs"),
-            Path.Combine(documents, "RetroArch", "logs"),
-            Path.Combine(appData, "RetroArch", "logs"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
     private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisRACache()
     {
         try
         {
-            string repertoireRACache = TrouverRepertoireRACacheProject64();
+            string repertoireRACache =
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64();
 
             if (string.IsNullOrWhiteSpace(repertoireRACache))
             {
@@ -1483,7 +1816,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            string repertoireRACache = TrouverRepertoireRACacheRALibretro();
+            string repertoireRACache =
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRALibretro();
             RenseignementJeuRA? renseignementConfiguration =
                 LireRenseignementJeuRALibretroDepuisConfiguration();
 
@@ -1601,7 +1935,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisConfiguration()
     {
-        string cheminConfiguration = TrouverCheminConfigurationRALibretro();
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRALibretro();
 
         if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
         {
@@ -1649,51 +1984,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
-    private static string TrouverRepertoireRACacheProject64()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
-            Path.Combine(documents, "Luna_Project64", "RACache"),
-            Path.Combine(appData, "Luna-Project64", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
-    private static string TrouverRepertoireRACacheRALibretro()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RALibretro", "RACache"),
-            Path.Combine(documents, "RALibretro", "RACache"),
-            Path.Combine(appData, "RALibretro", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
-    private static string TrouverCheminConfigurationRALibretro()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RALibretro", "RALibretro.json"),
-            Path.Combine(documents, "RALibretro", "RALibretro.json"),
-            Path.Combine(appData, "RALibretro", "RALibretro.json"),
-        ];
-
-        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
-    }
-
     public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueDepuisSourceLocale(
         string nomEmulateur,
         int identifiantJeu,
@@ -1708,13 +1998,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
-            string cheminJournal = nomEmulateur switch
-            {
-                "RALibretro" => Path.Combine(TrouverRepertoireRACacheRALibretro(), "RALog.txt"),
-                "LunaProject64" => Path.Combine(TrouverRepertoireRACacheProject64(), "RALog.txt"),
-                "RetroArch" => TrouverDernierCheminJournalRetroArch(),
-                _ => string.Empty,
-            };
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(
+                nomEmulateur
+            );
 
             if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
             {
@@ -1770,7 +2056,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            List<string> lignes = LireToutesLesLignesAvecPartage(cheminJournal);
+            List<string> lignes = ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                cheminJournal
+            );
 
             foreach (string ligne in lignes.AsEnumerable().Reverse())
             {
@@ -1802,7 +2090,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            List<string> lignes = LireToutesLesLignesAvecPartage(cheminJournal);
+            List<string> lignes = ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                cheminJournal
+            );
 
             foreach (string ligne in lignes.AsEnumerable().Reverse())
             {
@@ -1922,7 +2212,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
             string contenu = string.Join(
                 Environment.NewLine,
-                LireToutesLesLignesAvecPartage(cheminDonneesJeu)
+                ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminDonneesJeu)
             );
 
             if (string.IsNullOrWhiteSpace(contenu))
@@ -1966,7 +2256,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            string repertoireDuckStation = TrouverRepertoireDuckStation();
+            string repertoireDuckStation =
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireDuckStation();
 
             if (string.IsNullOrWhiteSpace(repertoireDuckStation))
             {
@@ -2017,27 +2308,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             return string.Empty;
         }
-    }
-
-    private static string TrouverRepertoireDuckStation()
-    {
-        string[] candidats =
-        [
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "DuckStation"
-            ),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "DuckStation"
-            ),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "DuckStation"
-            ),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
     private static string ResoudreCheminJeuDuckStationDepuisSerial(
@@ -2211,6 +2481,42 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex DuckStationGameLoadedRegex();
+
+    [GeneratedRegex(
+        @"Achievements:\s+Identified game:\s*(\d+)\s+""([^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PCSX2GameIdentifieRegex();
+
+    [GeneratedRegex(
+        @"Achievements:\s+Game\s+(\d+)\s+loaded\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PCSX2GameChargeRegex();
+
+    [GeneratedRegex(
+        @"Load callback:\s*(\d+)\s*\(([^)]*)\)",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PPSSPPLoadCallbackRegex();
+
+    [GeneratedRegex(
+        @"RetroAchievements:\s+Identified game:\s*(\d+)\s+""([^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PPSSPPGameIdentifieRegex();
+
+    [GeneratedRegex(
+        @"RetroAchievements:\s+Game\s+(\d+)\s+loaded\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PPSSPPGameChargeRegex();
+
+    [GeneratedRegex(
+        @"Booted\s+(.+?)\.\.\.$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex PPSSPPJeuDemarreRegex();
 
     [GeneratedRegex(
         @"Achievement\s+(\d+)\s+awarded\b",

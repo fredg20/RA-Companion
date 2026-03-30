@@ -145,3 +145,13 @@ Génération du livrable dans `dist` :
 ```powershell
 ./build.ps1
 ```
+
+Tests ciblés :
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-tests.ps1
+```
+
+Checklist de validation :
+
+- [CHECKLIST.md](CHECKLIST.md)

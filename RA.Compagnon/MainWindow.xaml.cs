@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
@@ -58,9 +59,6 @@ public partial class MainWindow : UiControls.FluentWindow
     private static readonly TimeSpan DureeAffichageTemporaireSuccesGrille = TimeSpan.FromSeconds(
         10
     );
-    private static readonly TimeSpan DureeMinimaleEntreSignauxSuccesLocaux = TimeSpan.FromSeconds(
-        2
-    );
     private static readonly HttpClient HttpClientImages = new();
     private const double LargeurMinimaleDispositionDouble = 920;
     private const double LargeurContenuModaleConnexion = 360;
@@ -92,6 +90,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServiceDetectionSuccesJeu _serviceDetectionSuccesJeu = new();
     private readonly ServiceDetectionSuccesUtilisateurLocal _serviceDetectionSuccesUtilisateurLocal =
         new();
+    private readonly ServiceOrchestrateurEtatJeu _serviceOrchestrateurEtatJeu = new();
 #if DEBUG
     private readonly ServiceTestSuccesDebug _serviceTestSuccesDebug = new();
 #endif
@@ -117,7 +116,7 @@ public partial class MainWindow : UiControls.FluentWindow
         new(StringComparer.OrdinalIgnoreCase);
     private readonly List<VisuelJeuEnCours> _visuelsJeuEnCours = [];
     private SystemControls.Primitives.ScrollBar? _barreDefilementVerticalePrincipale;
-    private SystemControls.Primitives.ScrollBar? _barreDefilementVerticaleListeSucces;
+    private readonly EtatListeSuccesUi _etatListeSuccesUi = new();
     private bool _connexionInitialeAffichee;
     private bool _chargementJeuEnCoursActif;
     private bool _actualisationApiCibleeEnAttente;
@@ -129,56 +128,36 @@ public partial class MainWindow : UiControls.FluentWindow
     private bool _dernierSuccesAfficheModifie;
     private bool _derniereListeSuccesAfficheeModifiee;
     private bool _miseAJourAnimationTitreJeuPlanifiee;
-    private bool _miseAJourAnimationGrilleSuccesPlanifiee;
-    private bool _animationGrilleSuccesVersBas = true;
-    private bool _survolBadgeGrilleSuccesActif;
-    private bool _interactionListeSuccesActive;
-    private double _dernierOffsetInteractionListeSucces;
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
     private int _versionChargementContenuJeu;
+    private EtatPipelineChargementJeu _etatPipelineChargementJeu =
+        EtatPipelineChargementJeu.Vide;
     private UserProfileV2? _dernierProfilUtilisateurCharge;
     private UserSummaryV2? _dernierResumeUtilisateurCharge;
     private DonneesJeuAffiche? _dernieresDonneesJeuAffichees;
     private string _dernierTitreJeuApi = string.Empty;
     private string _dernierePresenceRiche = string.Empty;
-    private string _signatureDernierEtatRichPresence = string.Empty;
-    private string _signatureDerniereSondeLocaleEmulateurs = string.Empty;
-    private string _signatureDernierJeuLocalResolut = string.Empty;
     private string _signatureDerniereNoticeCompteJournalisee = string.Empty;
     private string _dernierPseudoCharge = string.Empty;
     private string _signatureAnimationTitreJeu = string.Empty;
-    private string _signatureAnimationGrilleSucces = string.Empty;
-    private string _signatureOrdreAleatoireSuccesGrille = string.Empty;
     private string _etatConnexionCourant = "Non configuré";
     private string _cheminImageJeuEnCoursDemande = string.Empty;
     private string _cheminImageJeuEnCoursAffiche = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
     private int _indexVisuelJeuEnCours;
     private int _identifiantJeuSuccesCourant;
-    private int _identifiantJeuOrdreAleatoireSuccesGrille;
-    private int? _identifiantSuccesGrilleTemporaire;
-    private int? _identifiantSuccesGrilleEpingle;
-    private bool _retourPremierSuccesNonDebloqueApresSelectionTemporaire;
-    private double _amplitudeAnimationGrilleSucces;
     private double _largeurMaxVisuelJeuEnCours;
     private double _hauteurMaxVisuelJeuEnCours;
-    private AnimationClock? _horlogeAnimationGrilleSucces;
-    private Dictionary<int, int> _positionsAleatoiresSuccesGrille = [];
     private Dictionary<int, HashSet<int>> _succesDebloquesLocauxTemporaires = [];
     private Dictionary<string, DateTimeOffset> _succesDetectesRecemment = [];
     private IReadOnlyList<ConsoleV2> _consolesResolutionLocale = [];
     private Dictionary<int, EtatObservationSuccesLocal> _etatSuccesObserves = [];
     private List<GameAchievementV2> _succesJeuCourant = [];
     private SuccesDebloqueDetecte? _succesDebloqueDetecteEnAttente;
-    private OrdreSuccesGrille _ordreSuccesGrilleCourant = OrdreSuccesGrille.Normal;
     private EtatSondeLocaleEmulateur? _dernierEtatSondeLocaleEmulateurs;
     private bool _presenceLocaleCompteActive;
-    private DateTimeOffset _horodatageDernierePresenceLocaleCompteValide;
-    private DateTimeOffset _horodatageDerniereDetectionLocaleValide;
-    private DateTimeOffset _horodatageDerniereResolutionJeuLocalValide;
-    private DateTimeOffset _horodatageDernierSignalSuccesLocalUtc;
     private string _signatureDernierSuccesLocalDirectAffiche = string.Empty;
     private int _identifiantJeuSuccesObserve;
     private int _identifiantJeuLocalActif;

@@ -2,6 +2,8 @@
 [Bb]in/
 [Oo]bj/
 dist/
+artifacts/
+publish/
 !RA.Compagnon/lib/
 !RA.Compagnon/lib/**
 native/*/build/
@@ -23,6 +25,10 @@ third_party/
 *.cache
 *.pdb
 *.lib
+*.trx
+*.coverage
+*.coveragexml
+TestResults/
 
 # NuGet and local packages
 packages/

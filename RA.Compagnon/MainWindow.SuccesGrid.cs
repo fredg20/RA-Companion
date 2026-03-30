@@ -57,13 +57,13 @@ public partial class MainWindow
     /// </summary>
     private async Task ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille nouvelOrdre)
     {
-        if (_ordreSuccesGrilleCourant == nouvelOrdre)
+        if (_etatListeSuccesUi.OrdreCourant == nouvelOrdre)
         {
             MettreAJourLibelleOrdreSuccesGrilleEtModes();
             return;
         }
 
-        _ordreSuccesGrilleCourant = nouvelOrdre;
+        _etatListeSuccesUi.OrdreCourant = nouvelOrdre;
 
         if (nouvelOrdre == OrdreSuccesGrille.Aleatoire)
         {
@@ -77,11 +77,15 @@ public partial class MainWindow
             return;
         }
 
-        await MettreAJourGrilleTousSuccesAsync(_identifiantJeuSuccesCourant, _succesJeuCourant);
+        await MettreAJourGrilleTousSuccesAsync(
+            _identifiantJeuSuccesCourant,
+            _succesJeuCourant,
+            _etatListeSuccesUi.VersionChargementGrille
+        );
 
         if (
-            !_identifiantSuccesGrilleTemporaire.HasValue
-            && !_identifiantSuccesGrilleEpingle.HasValue
+            !_etatListeSuccesUi.IdentifiantSuccesTemporaire.HasValue
+            && !_etatListeSuccesUi.IdentifiantSuccesEpingle.HasValue
         )
         {
             await MettreAJourPremierSuccesNonDebloqueAsync(
@@ -93,14 +97,14 @@ public partial class MainWindow
 
     private void InvaliderOrdreAleatoireSuccesGrille()
     {
-        _identifiantJeuOrdreAleatoireSuccesGrille = 0;
-        _signatureOrdreAleatoireSuccesGrille = string.Empty;
-        _positionsAleatoiresSuccesGrille.Clear();
+        _etatListeSuccesUi.IdentifiantJeuOrdreAleatoire = 0;
+        _etatListeSuccesUi.SignatureOrdreAleatoire = string.Empty;
+        _etatListeSuccesUi.PositionsAleatoires.Clear();
     }
 
     private void MettreAJourLibelleOrdreSuccesGrilleEtModes()
     {
-        string libelle = _ordreSuccesGrilleCourant switch
+        string libelle = _etatListeSuccesUi.OrdreCourant switch
         {
             OrdreSuccesGrille.Aleatoire => "Aléatoire",
             OrdreSuccesGrille.Facile => "Facile",
@@ -117,10 +121,10 @@ public partial class MainWindow
         Brush contourInactif = new SolidColorBrush(Color.FromArgb(140, 255, 255, 255));
         Brush centreActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
 
-        bool modeNormal = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Normal;
-        bool modeAleatoire = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Aleatoire;
-        bool modeFacile = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Facile;
-        bool modeDifficile = _ordreSuccesGrilleCourant == OrdreSuccesGrille.Difficile;
+        bool modeNormal = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Normal;
+        bool modeAleatoire = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Aleatoire;
+        bool modeFacile = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Facile;
+        bool modeDifficile = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Difficile;
 
         if (ContourOrdreSuccesNormal is not null)
         {
@@ -164,7 +168,7 @@ public partial class MainWindow
         IEnumerable<GameAchievementV2> succes
     )
     {
-        return _ordreSuccesGrilleCourant switch
+        return _etatListeSuccesUi.OrdreCourant switch
         {
             OrdreSuccesGrille.Aleatoire => OrdonnerSuccesPourGrilleAleatoire(
                 identifiantJeu,
@@ -219,13 +223,13 @@ public partial class MainWindow
         string signature = $"{identifiantJeu}:{string.Join(',', succesNonDebloques)}";
 
         if (
-            _identifiantJeuOrdreAleatoireSuccesGrille == identifiantJeu
+            _etatListeSuccesUi.IdentifiantJeuOrdreAleatoire == identifiantJeu
             && string.Equals(
-                _signatureOrdreAleatoireSuccesGrille,
+                _etatListeSuccesUi.SignatureOrdreAleatoire,
                 signature,
                 StringComparison.Ordinal
             )
-            && succesNonDebloques.All(item => _positionsAleatoiresSuccesGrille.ContainsKey(item))
+            && succesNonDebloques.All(item => _etatListeSuccesUi.PositionsAleatoires.ContainsKey(item))
         )
         {
             return;
@@ -242,11 +246,13 @@ public partial class MainWindow
             );
         }
 
-        _positionsAleatoiresSuccesGrille = succesMelanges
-            .Select((identifiantSucces, index) => new { identifiantSucces, index })
-            .ToDictionary(item => item.identifiantSucces, item => item.index);
-        _identifiantJeuOrdreAleatoireSuccesGrille = identifiantJeu;
-        _signatureOrdreAleatoireSuccesGrille = signature;
+        _etatListeSuccesUi.PositionsAleatoires.Clear();
+        foreach (var item in succesMelanges.Select((identifiantSucces, index) => new { identifiantSucces, index }))
+        {
+            _etatListeSuccesUi.PositionsAleatoires[item.identifiantSucces] = item.index;
+        }
+        _etatListeSuccesUi.IdentifiantJeuOrdreAleatoire = identifiantJeu;
+        _etatListeSuccesUi.SignatureOrdreAleatoire = signature;
     }
 
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleAleatoire(
@@ -264,7 +270,7 @@ public partial class MainWindow
                 .ThenBy(item =>
                     SuccesEstDebloquePourAffichage(item)
                         ? int.MaxValue
-                        : _positionsAleatoiresSuccesGrille.GetValueOrDefault(
+                        : _etatListeSuccesUi.PositionsAleatoires.GetValueOrDefault(
                             item.Id,
                             int.MaxValue - 1
                         )
@@ -279,11 +285,19 @@ public partial class MainWindow
     /// </summary>
     private async Task MettreAJourGrilleTousSuccesAsync(
         int identifiantJeu,
-        List<GameAchievementV2> succes
+        List<GameAchievementV2> succes,
+        int versionGrille
     )
     {
-        if (_identifiantJeuSuccesCourant != identifiantJeu)
+        if (
+            _identifiantJeuSuccesCourant != identifiantJeu
+            || _etatListeSuccesUi.VersionChargementGrille != versionGrille
+        )
         {
+            JournaliserDiagnosticListeSucces(
+                "grille_ignoree_version",
+                $"jeu={identifiantJeu};version={versionGrille};versionCourante={_etatListeSuccesUi.VersionChargementGrille};jeuCourant={_identifiantJeuSuccesCourant};succesAttendus={succes.Count}"
+            );
             return;
         }
 
@@ -291,7 +305,17 @@ public partial class MainWindow
             "grille_debut",
             $"jeu={identifiantJeu};succes={succes.Count}"
         );
+        JournaliserDiagnosticListeSucces(
+            "grille_debut",
+            $"jeu={identifiantJeu};version={versionGrille};succesAttendus={succes.Count}"
+        );
         GrilleTousSuccesJeuEnCours.Children.Clear();
+        GrilleTousSuccesJeuEnCours.Width = double.NaN;
+        GrilleTousSuccesJeuEnCours.Height = double.NaN;
+        GrilleTousSuccesJeuEnCours.InvalidateMeasure();
+        GrilleTousSuccesJeuEnCours.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours.InvalidateArrange();
         List<GameAchievementV2> succesOrdonnes = OrdonnerSuccesPourGrilleSelonMode(
             identifiantJeu,
             succes
@@ -300,17 +324,31 @@ public partial class MainWindow
         if (succesOrdonnes.Count == 0)
         {
             SauvegarderDerniereListeSuccesAffichee(identifiantJeu, []);
+            JournaliserDiagnosticListeSucces(
+                "grille_vide",
+                $"jeu={identifiantJeu};version={versionGrille}"
+            );
             PlanifierMiseAJourAnimationGrilleTousSucces();
             TerminerDiagnosticChangementJeu("grille_vide");
             return;
         }
 
         List<ElementListeSuccesAfficheLocal> etatsBadges = [];
+        int indexLot = 0;
 
         foreach (GameAchievementV2[] lotSucces in succesOrdonnes.Chunk(12))
         {
-            if (_identifiantJeuSuccesCourant != identifiantJeu)
+            indexLot++;
+
+            if (
+                _identifiantJeuSuccesCourant != identifiantJeu
+                || _etatListeSuccesUi.VersionChargementGrille != versionGrille
+            )
             {
+                JournaliserDiagnosticListeSucces(
+                    "grille_abandon_lot",
+                    $"jeu={identifiantJeu};version={versionGrille};versionCourante={_etatListeSuccesUi.VersionChargementGrille};lot={indexLot};badgesAjoutes={etatsBadges.Count};succesAttendus={succesOrdonnes.Count}"
+                );
                 return;
             }
 
@@ -332,11 +370,27 @@ public partial class MainWindow
                 );
             }
 
+            JournaliserDiagnosticListeSucces(
+                "grille_lot",
+                $"jeu={identifiantJeu};version={versionGrille};lot={indexLot};tailleLot={lotSucces.Length};badgesAjoutes={etatsBadges.Count};succesAttendus={succesOrdonnes.Count}"
+            );
             MettreAJourDispositionGrilleTousSucces();
             GrilleTousSuccesJeuEnCours.UpdateLayout();
             ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
-            AjusterHauteurListeSuccesJeuEnCours();
+            PlanifierAjustementHauteurListeSuccesJeuEnCours();
             await Task.Yield();
+        }
+
+        if (
+            _identifiantJeuSuccesCourant != identifiantJeu
+            || _etatListeSuccesUi.VersionChargementGrille != versionGrille
+        )
+        {
+            JournaliserDiagnosticListeSucces(
+                "grille_abandon_fin",
+                $"jeu={identifiantJeu};version={versionGrille};versionCourante={_etatListeSuccesUi.VersionChargementGrille};badgesAjoutes={etatsBadges.Count};succesAttendus={succesOrdonnes.Count}"
+            );
+            return;
         }
 
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
@@ -346,17 +400,13 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
         CarteListeSuccesJeuEnCours?.UpdateLayout();
         CarteJeuEnCours?.UpdateLayout();
-        AjusterHauteurListeSuccesJeuEnCours();
-        _ = Dispatcher.BeginInvoke(
-            (Action)AjusterHauteurListeSuccesJeuEnCours,
-            System.Windows.Threading.DispatcherPriority.Render
-        );
-        _ = Dispatcher.BeginInvoke(
-            (Action)AjusterHauteurListeSuccesJeuEnCours,
-            System.Windows.Threading.DispatcherPriority.Loaded
-        );
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
         RafraichirStyleBadgesGrilleSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        JournaliserDiagnosticListeSucces(
+            "grille_fin",
+            $"jeu={identifiantJeu};version={versionGrille};badgesAjoutes={etatsBadges.Count};succesAttendus={succesOrdonnes.Count}"
+        );
         TerminerDiagnosticChangementJeu("grille_fin", $"badges={etatsBadges.Count}");
     }
 
@@ -462,13 +512,13 @@ public partial class MainWindow
         }
 
         bool estEpingle =
-            _identifiantSuccesGrilleEpingle.HasValue
+            _etatListeSuccesUi.IdentifiantSuccesEpingle.HasValue
             && contexte.IdentifiantJeu == _identifiantJeuSuccesCourant
-            && contexte.Id == _identifiantSuccesGrilleEpingle.Value;
+            && contexte.Id == _etatListeSuccesUi.IdentifiantSuccesEpingle.Value;
         bool estTemporaire =
-            _identifiantSuccesGrilleTemporaire.HasValue
+            _etatListeSuccesUi.IdentifiantSuccesTemporaire.HasValue
             && contexte.IdentifiantJeu == _identifiantJeuSuccesCourant
-            && contexte.Id == _identifiantSuccesGrilleTemporaire.Value;
+            && contexte.Id == _etatListeSuccesUi.IdentifiantSuccesTemporaire.Value;
 
         if (estEpingle)
         {
@@ -550,24 +600,24 @@ public partial class MainWindow
 
         if (affichagePermanent)
         {
-            _identifiantSuccesGrilleEpingle = succes.Id;
-            _identifiantSuccesGrilleTemporaire = null;
-            _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
+            _etatListeSuccesUi.IdentifiantSuccesEpingle = succes.Id;
+            _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+            _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
             _minuteurAffichageTemporaireSuccesGrille.Stop();
         }
         else
         {
             if (succesDebloque)
             {
-                _identifiantSuccesGrilleEpingle = null;
-                _retourPremierSuccesNonDebloqueApresSelectionTemporaire = true;
+                _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
+                _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = true;
             }
             else
             {
-                _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
+                _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
             }
 
-            _identifiantSuccesGrilleTemporaire = succes.Id;
+            _etatListeSuccesUi.IdentifiantSuccesTemporaire = succes.Id;
             _minuteurAffichageTemporaireSuccesGrille.Stop();
             _minuteurAffichageTemporaireSuccesGrille.Start();
         }
@@ -587,7 +637,7 @@ public partial class MainWindow
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)
     {
         _minuteurAffichageTemporaireSuccesGrille.Stop();
-        _identifiantSuccesGrilleTemporaire = null;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
         ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
             "succes_ui_fin_temporaire",
             $"jeu={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
@@ -600,9 +650,9 @@ public partial class MainWindow
 
         RafraichirStyleBadgesGrilleSucces();
 
-        if (_retourPremierSuccesNonDebloqueApresSelectionTemporaire)
+        if (_etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire)
         {
-            _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
+            _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
 
             GameAchievementV2? premierSuccesNonDebloque = _succesJeuCourant
                 .Where(item => !SuccesEstDebloquePourAffichage(item))
@@ -653,11 +703,7 @@ public partial class MainWindow
         MettreAJourDispositionGrilleTousSucces();
         GrilleTousSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
-        AjusterHauteurListeSuccesJeuEnCours();
-        _ = Dispatcher.BeginInvoke(
-            (Action)AjusterHauteurListeSuccesJeuEnCours,
-            System.Windows.Threading.DispatcherPriority.Render
-        );
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 

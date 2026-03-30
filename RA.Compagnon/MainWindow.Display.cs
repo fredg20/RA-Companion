@@ -472,6 +472,8 @@ public partial class MainWindow
     /// </summary>
     private void ReinitialiserJeuEnCours()
     {
+        _serviceOrchestrateurEtatJeu.Reinitialiser();
+        ReinitialiserPipelineChargementJeu();
         DefinirTitreZoneJeu();
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
@@ -486,9 +488,7 @@ public partial class MainWindow
         DefinirEtatJeuDansProgression(string.Empty);
         DefinirTitreJeuEnCours(string.Empty);
         DefinirDetailsJeuEnCours(string.Empty);
-        TexteResumeProgressionJeuEnCours.Text = "-- / --";
-        TextePourcentageJeuEnCours.Text = "Connecte ton compte pour afficher ton activité.";
-        BarreProgressionJeuEnCours.Value = 0;
+        EnregistrerPhaseAucunJeuOrchestrateur("non_configure");
         ReinitialiserSuccesRecents();
     }
 

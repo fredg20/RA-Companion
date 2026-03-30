@@ -16,27 +16,13 @@ public sealed class ServiceTestSuccesDebug
 
     public static void JournaliserEvenement(string evenement, string details)
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalTestSucces);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.AppendAllText(
-                CheminJournalTestSucces,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={Nettoyer(evenement)};details={Nettoyer(details)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Ce journal reste auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalTestSucces,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={Nettoyer(evenement)};details={Nettoyer(details)}{Environment.NewLine}"
+            )
+        );
     }
 
     public ResultatScenarioTestSuccesDebug ConstruireScenarioDepuisContexte(
@@ -220,6 +206,27 @@ public sealed class ServiceTestSuccesDebug
         }
     }
 
+    public static SignalSuccesLocal? ConstruireSignalSourceLocale(ScenarioTestSuccesDebug scenario)
+    {
+        if (
+            scenario.ModeDeclenchement != ModeDeclenchementTestSuccesDebug.SourceLocale
+            || string.IsNullOrWhiteSpace(scenario.NomEmulateur)
+            || string.IsNullOrWhiteSpace(scenario.TypeSourceLocale)
+            || string.IsNullOrWhiteSpace(scenario.CheminSourceLocale)
+        )
+        {
+            return null;
+        }
+
+        return new SignalSuccesLocal
+        {
+            NomEmulateur = scenario.NomEmulateur,
+            TypeSource = scenario.TypeSourceLocale,
+            Chemin = scenario.CheminSourceLocale,
+            HorodatageUtc = DateTimeOffset.UtcNow,
+        };
+    }
+
     private static ResultatScenarioTestSuccesDebug Invalide(string motif)
     {
         return new ResultatScenarioTestSuccesDebug
@@ -255,24 +262,26 @@ public sealed class ServiceTestSuccesDebug
             return (sourceSimulee, string.Empty, string.Empty);
         }
 
+        string typeSourceLocale =
+            ServiceCatalogueEmulateursLocaux.ObtenirTypeSourceJournalSuccesLocal(nomEmulateur);
+
+        if (string.IsNullOrWhiteSpace(typeSourceLocale))
+        {
+            return (sourceSimulee, string.Empty, string.Empty);
+        }
+
         return nomEmulateur.Trim() switch
         {
             "RetroArch" => (
                 sourceSimulee,
-                "logs",
+                typeSourceLocale,
                 TrouverCheminJournalRetroArchPourInjection()
             ),
-            "RALibretro" => (
+            _ => (
                 sourceSimulee,
-                "racache_log",
-                Path.Combine(TrouverRepertoireRACacheRALibretro(), "RALog.txt")
+                typeSourceLocale,
+                ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(nomEmulateur)
             ),
-            "LunaProject64" => (
-                sourceSimulee,
-                "racache_log",
-                Path.Combine(TrouverRepertoireRACacheProject64(), "RALog.txt")
-            ),
-            _ => (sourceSimulee, string.Empty, string.Empty),
         };
     }
 
@@ -303,13 +312,22 @@ public sealed class ServiceTestSuccesDebug
             "RetroArch" => $"retroarch{suffixe}",
             "RALibretro" => $"ralibretro{suffixe}",
             "LunaProject64" => $"lunaproject64{suffixe}",
-            _ => "debug_interne",
+            "DuckStation" => $"duckstation{suffixe}",
+            "PCSX2" => $"pcsx2{suffixe}",
+            "PPSSPP" => $"ppsspp{suffixe}",
+            _ => $"debug_{nomEmulateur.Trim().ToLowerInvariant()}{suffixe}",
         };
     }
 
     private static List<string> ConstruireLignesInjection(ScenarioTestSuccesDebug scenario)
     {
-        return string.Equals(scenario.NomEmulateur, "RetroArch", StringComparison.Ordinal)
+        return string.Equals(
+            ServiceCatalogueEmulateursLocaux.ObtenirTypeSourceJournalSuccesLocal(
+                scenario.NomEmulateur
+            ),
+            "logs",
+            StringComparison.Ordinal
+        )
             ?
             [
                 string.Create(
@@ -336,79 +354,25 @@ public sealed class ServiceTestSuccesDebug
 
     private static string TrouverCheminJournalRetroArchPourInjection()
     {
-        string repertoireLogs = TrouverRepertoireLogsRetroArch();
+        string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
+        string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(
+            "RetroArch"
+        );
+
+        if (!string.IsNullOrWhiteSpace(cheminJournal))
+        {
+            return cheminJournal;
+        }
 
         if (string.IsNullOrWhiteSpace(repertoireLogs))
         {
             return string.Empty;
         }
 
-        DirectoryInfo repertoire = new(repertoireLogs);
-        FileInfo? fichier = repertoire
-            .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
-            .Where(item => item.Length > 0)
-            .OrderByDescending(item => item.LastWriteTimeUtc)
-            .FirstOrDefault();
-
-        fichier ??= repertoire
-            .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
-            .OrderByDescending(item => item.LastWriteTimeUtc)
-            .FirstOrDefault();
-
-        if (fichier is not null)
-        {
-            return fichier.FullName;
-        }
-
         return Path.Combine(
             repertoireLogs,
             $"retroarch__{DateTime.Now:yyyy_MM_dd__HH_mm_ss}.log"
         );
-    }
-
-    private static string TrouverRepertoireLogsRetroArch()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RetroArch", "logs"),
-            Path.Combine(documents, "RetroArch", "logs"),
-            Path.Combine(appData, "RetroArch", "logs"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
-    private static string TrouverRepertoireRACacheProject64()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
-            Path.Combine(documents, "Luna_Project64", "RACache"),
-            Path.Combine(appData, "Luna-Project64", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
-    }
-
-    private static string TrouverRepertoireRACacheRALibretro()
-    {
-        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-
-        string[] candidats =
-        [
-            Path.Combine(documents, "emulation", "RALibretro", "RACache"),
-            Path.Combine(documents, "RALibretro", "RACache"),
-            Path.Combine(appData, "RALibretro", "RACache"),
-        ];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
     private static string Nettoyer(string? valeur)

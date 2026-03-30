@@ -16,7 +16,6 @@ public partial class App : Application
 {
     private const string NomMutexInstanceUnique = @"Local\RA.Compagnon.InstanceUnique";
     private const int SwRestore = 9;
-    private static readonly bool ActiverJournalDemarrage = false;
     private static readonly string CheminJournalDemarrage = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "RA-Compagnon",
@@ -173,7 +172,7 @@ public partial class App : Application
 
     internal static void JournaliserDemarrage(string message)
     {
-        if (!ActiverJournalDemarrage)
+        if (!ServiceModeDiagnostic.EstActif)
         {
             return;
         }
@@ -187,7 +186,7 @@ public partial class App : Application
                 Directory.CreateDirectory(repertoire);
             }
 
-            File.AppendAllText(
+            ServiceModeDiagnostic.JournaliserLigne(
                 CheminJournalDemarrage,
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}"
             );

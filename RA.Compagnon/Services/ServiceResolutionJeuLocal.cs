@@ -24,43 +24,18 @@ public sealed partial class ServiceResolutionJeuLocal
 
     public static void ReinitialiserJournalSession()
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalResolutionLocale);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.WriteAllText(
-                CheminJournalResolutionLocale,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Cette journalisation reste strictement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalResolutionLocale);
     }
 
     public static void JournaliserEvenementInterface(string evenement, string details)
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalResolutionLocale)!);
-            File.AppendAllText(
-                CheminJournalResolutionLocale,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={NettoyerPourJournal(evenement)};details={NettoyerPourJournal(details)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Cette journalisation reste strictement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalResolutionLocale,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={NettoyerPourJournal(evenement)};details={NettoyerPourJournal(details)}{Environment.NewLine}"
+            )
+        );
     }
 
     public static JeuLocalResolut? ResoudreDepuisJeuxRecents(
@@ -490,21 +465,13 @@ public sealed partial class ServiceResolutionJeuLocal
         JeuLocalResolut? resolutionRetenue
     )
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalResolutionLocale)!);
-            File.AppendAllText(
-                CheminJournalResolutionLocale,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] mode={mode};titreLocal={NettoyerPourJournal(titreJeuLocal)};jeuxRecents={nombreJeuxRecents};consoles={nombreConsolesCandidates};meilleurRecent={FormatterResolution(meilleureResolutionJeuxRecents)};meilleurCatalogue={FormatterResolution(meilleureResolutionCatalogue)};retenu={FormatterResolution(resolutionRetenue)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Cette journalisation reste strictement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalResolutionLocale,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] mode={mode};titreLocal={NettoyerPourJournal(titreJeuLocal)};jeuxRecents={nombreJeuxRecents};consoles={nombreConsolesCandidates};meilleurRecent={FormatterResolution(meilleureResolutionJeuxRecents)};meilleurCatalogue={FormatterResolution(meilleureResolutionCatalogue)};retenu={FormatterResolution(resolutionRetenue)}{Environment.NewLine}"
+            )
+        );
     }
 
     private static string FormatterResolution(JeuLocalResolut? resolution)

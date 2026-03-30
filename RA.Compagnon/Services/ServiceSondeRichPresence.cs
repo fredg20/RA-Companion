@@ -18,24 +18,7 @@ public sealed class ServiceSondeRichPresence
 
     public static void ReinitialiserJournalSession()
     {
-        try
-        {
-            string? repertoire = Path.GetDirectoryName(CheminJournalRichPresence);
-
-            if (!string.IsNullOrWhiteSpace(repertoire))
-            {
-                Directory.CreateDirectory(repertoire);
-            }
-
-            File.WriteAllText(
-                CheminJournalRichPresence,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Cette journalisation est strictement auxiliaire.
-        }
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalRichPresence);
     }
 
     public static EtatRichPresence Sonder(DonneesCompteUtilisateur donnees, bool journaliser = true)
@@ -165,21 +148,13 @@ public sealed class ServiceSondeRichPresence
 
     private static void JournaliserSonde(EtatRichPresence etat)
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalRichPresence)!);
-            File.AppendAllText(
-                CheminJournalRichPresence,
-                string.Create(
-                    CultureInfo.InvariantCulture,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] source={NettoyerPourJournal(etat.SourceRichPresence)};statutSite={NettoyerPourJournal(etat.StatutSite)};message={NettoyerPourJournal(etat.MessageRichPresence)};dateBrute={NettoyerPourJournal(etat.DatePresenceBrute)};dateValide={etat.PresenceDateValide};ancienne={etat.PresenceManifestementAncienne};dernierJeu={etat.IdentifiantDernierJeu};enJeu={etat.EstEnJeu};statutAffiche={NettoyerPourJournal(etat.StatutAffiche)};sousStatut={NettoyerPourJournal(etat.SousStatutAffiche)}{Environment.NewLine}"
-                )
-            );
-        }
-        catch
-        {
-            // Cette journalisation est strictement auxiliaire et ne doit jamais casser la sonde.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalRichPresence,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] source={NettoyerPourJournal(etat.SourceRichPresence)};statutSite={NettoyerPourJournal(etat.StatutSite)};message={NettoyerPourJournal(etat.MessageRichPresence)};dateBrute={NettoyerPourJournal(etat.DatePresenceBrute)};dateValide={etat.PresenceDateValide};ancienne={etat.PresenceManifestementAncienne};dernierJeu={etat.IdentifiantDernierJeu};enJeu={etat.EstEnJeu};statutAffiche={NettoyerPourJournal(etat.StatutAffiche)};sousStatut={NettoyerPourJournal(etat.SousStatutAffiche)}{Environment.NewLine}"
+            )
+        );
     }
 
     private static string NettoyerPourJournal(string? valeur)

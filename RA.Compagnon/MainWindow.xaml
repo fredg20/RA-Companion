@@ -26,7 +26,7 @@
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <Grid x:Name="BandeauTitreFenetre" Grid.Row="0" Height="36" Margin="{StaticResource MargeFenetreHaut}">
+    <Grid Grid.Row="0" Height="36" Margin="{StaticResource MargeFenetreHaut}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="220" />
         <ColumnDefinition Width="*" />
@@ -75,51 +75,26 @@
       </Grid>
     </Grid>
 
-    <Grid x:Name="BandeauCompteFenetre" Grid.Row="1" Margin="{StaticResource PaddingFenetrePrincipale}">
+    <Grid Grid.Row="1" Margin="12,8,12,6">
       <Grid HorizontalAlignment="Right" VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="12" />
+          <ColumnDefinition Width="8" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel
-          x:Name="ZoneEtatCompteUtilisateur"
+        <ui:Button
+          x:Name="BoutonAide"
           Grid.Column="0"
-          MaxWidth="220"
+          MinWidth="40"
+          Height="32"
+          Padding="10,0"
           HorizontalAlignment="Right"
           VerticalAlignment="Center"
-          Visibility="Collapsed"
-        >
-          <Border
-            x:Name="BadgeEtatCompteUtilisateur"
-            Padding="10,5"
-            HorizontalAlignment="Right"
-            CornerRadius="8"
-            Background="#18000000"
-            BorderBrush="#30000000"
-            BorderThickness="1"
-          >
-            <TextBlock
-              x:Name="TexteEtatCompteUtilisateur"
-              FontSize="13"
-              FontWeight="SemiBold"
-              Opacity="0.92"
-              TextAlignment="Center"
-            />
-          </Border>
-
-          <TextBlock
-            x:Name="TexteSousEtatCompteUtilisateur"
-            Margin="0,4,0,0"
-            HorizontalAlignment="Right"
-            FontSize="12"
-            Opacity="0.72"
-            TextAlignment="Right"
-            TextTrimming="CharacterEllipsis"
-            Visibility="Collapsed"
-          />
-        </StackPanel>
+          Appearance="Secondary"
+          Click="AfficherAide_Click"
+          Content="?"
+        />
 
         <ui:Button
           x:Name="BoutonCompteUtilisateur"
@@ -217,12 +192,58 @@
                 </Grid.RowDefinitions>
 
                 <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+
                   <TextBlock
                     x:Name="TitreZoneJeuEnCours"
+                    Grid.Column="0"
                     FontSize="28"
                     FontWeight="SemiBold"
                     Text="Dernier jeu joué"
+                    Visibility="Collapsed"
                   />
+
+                  <StackPanel
+                    x:Name="ZoneEtatCompteUtilisateur"
+                    Grid.Column="0"
+                    MaxWidth="320"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Visibility="Collapsed"
+                    Margin="0,2,0,0"
+                  >
+                    <Border
+                      x:Name="BadgeEtatCompteUtilisateur"
+                      Padding="0"
+                      HorizontalAlignment="Left"
+                      CornerRadius="0"
+                      Background="Transparent"
+                      BorderBrush="Transparent"
+                      BorderThickness="0"
+                    >
+                      <TextBlock
+                        x:Name="TexteEtatCompteUtilisateur"
+                        FontSize="22"
+                        FontWeight="SemiBold"
+                        Opacity="0.92"
+                        TextAlignment="Left"
+                      />
+                    </Border>
+
+                    <TextBlock
+                      x:Name="TexteSousEtatCompteUtilisateur"
+                      Margin="2,3,0,0"
+                      HorizontalAlignment="Left"
+                      FontSize="11"
+                      Opacity="0.45"
+                      TextAlignment="Left"
+                      TextTrimming="CharacterEllipsis"
+                      Visibility="Collapsed"
+                    />
+                  </StackPanel>
                 </Grid>
 
                 <Border Grid.Row="2" Style="{StaticResource StyleSousCarteJeu}">

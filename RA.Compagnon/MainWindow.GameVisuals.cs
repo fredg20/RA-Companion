@@ -5,6 +5,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
@@ -265,6 +266,11 @@ public partial class MainWindow
 
         VisuelJeuEnCours visuel = _visuelsJeuEnCours[_indexVisuelJeuEnCours];
         await MettreAJourImageJeuEnCoursAsync(visuel.CheminImage);
+        MarquerEtapePipelineChargementJeu(
+            EtapePipelineChargementJeu.ImagesChargees,
+            _dernierIdentifiantJeuAvecInfos,
+            _versionChargementContenuJeu
+        );
         TexteVisuelJeuEnCours.Text =
             $"{visuel.Libelle} {_indexVisuelJeuEnCours + 1}/{_visuelsJeuEnCours.Count}";
         ZoneSousImageJeuEnCours.Visibility = Visibility.Collapsed;
@@ -513,34 +519,25 @@ public partial class MainWindow
         IReadOnlyList<VisuelJeuEnCours> visuels
     )
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalVisuelsJeu)!);
+        LastGameV2? dernierJeu = resume?.LastGame;
+        RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
+            item.IdentifiantJeu == jeu.Id
+        );
 
-            LastGameV2? dernierJeu = resume?.LastGame;
-            RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
-                item.IdentifiantJeu == jeu.Id
-            );
+        string details =
+            $"jeu={jeu.Id};titre={jeu.Title};"
+            + $"box={jeu.ImageBoxArt};"
+            + $"lastGameId={dernierJeu?.IdentifiantJeu ?? 0};"
+            + $"lastTitle={dernierJeu?.CheminImageTitre ?? string.Empty};"
+            + $"lastIngame={dernierJeu?.CheminImageEnJeu ?? string.Empty};"
+            + $"recentTitle={jeuRecent?.CheminImageTitre ?? string.Empty};"
+            + $"recentIngame={jeuRecent?.CheminImageEnJeu ?? string.Empty};"
+            + $"badge={cheminBadge};"
+            + $"visuels={string.Join(" | ", visuels.Select(visuel => $"{visuel.Libelle}:{visuel.CheminImage}"))}";
 
-            string details =
-                $"jeu={jeu.Id};titre={jeu.Title};"
-                + $"box={jeu.ImageBoxArt};"
-                + $"lastGameId={dernierJeu?.IdentifiantJeu ?? 0};"
-                + $"lastTitle={dernierJeu?.CheminImageTitre ?? string.Empty};"
-                + $"lastIngame={dernierJeu?.CheminImageEnJeu ?? string.Empty};"
-                + $"recentTitle={jeuRecent?.CheminImageTitre ?? string.Empty};"
-                + $"recentIngame={jeuRecent?.CheminImageEnJeu ?? string.Empty};"
-                + $"badge={cheminBadge};"
-                + $"visuels={string.Join(" | ", visuels.Select(visuel => $"{visuel.Libelle}:{visuel.CheminImage}"))}";
-
-            File.AppendAllText(
-                CheminJournalVisuelsJeu,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {details}{Environment.NewLine}"
-            );
-        }
-        catch
-        {
-            // Ignore un échec de journalisation pour ne pas gêner l'application.
-        }
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalVisuelsJeu,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {details}{Environment.NewLine}"
+        );
     }
 }

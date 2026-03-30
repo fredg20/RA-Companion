@@ -56,16 +56,16 @@ public partial class MainWindow
     /// </summary>
     private void PlanifierMiseAJourAnimationGrilleTousSucces()
     {
-        if (_miseAJourAnimationGrilleSuccesPlanifiee)
+        if (_etatListeSuccesUi.MiseAJourAnimationPlanifiee)
         {
             return;
         }
 
-        _miseAJourAnimationGrilleSuccesPlanifiee = true;
+        _etatListeSuccesUi.MiseAJourAnimationPlanifiee = true;
         _ = Dispatcher.BeginInvoke(
             () =>
             {
-                _miseAJourAnimationGrilleSuccesPlanifiee = false;
+                _etatListeSuccesUi.MiseAJourAnimationPlanifiee = false;
                 MettreAJourAnimationGrilleTousSucces();
             },
             DispatcherPriority.Render
@@ -89,9 +89,9 @@ public partial class MainWindow
         if (GrilleTousSuccesJeuEnCours.Children.Count == 0)
         {
             JournaliserDiagnosticListeSucces("animation_maj_vide");
-            _signatureAnimationGrilleSucces = string.Empty;
-            _amplitudeAnimationGrilleSucces = 0;
-            _dernierOffsetInteractionListeSucces = 0;
+            _etatListeSuccesUi.SignatureAnimation = string.Empty;
+            _etatListeSuccesUi.AmplitudeAnimation = 0;
+            _etatListeSuccesUi.DernierOffsetInteraction = 0;
             ArreterAnimationGrilleSucces();
             GrilleTousSuccesJeuEnCours.Width = double.NaN;
             GrilleTousSuccesJeuEnCours.Height = double.NaN;
@@ -101,27 +101,58 @@ public partial class MainWindow
             DefinirVisibiliteBarreDefilementListeSucces(visible: false);
             return;
         }
+        GrilleTousSuccesJeuEnCours.Width = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
+        GrilleTousSuccesJeuEnCours.InvalidateMeasure();
+        GrilleTousSuccesJeuEnCours.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours.InvalidateArrange();
         GrilleTousSuccesJeuEnCours.Measure(
             new Size(ConteneurGrilleTousSuccesJeuEnCours.ActualWidth, double.PositiveInfinity)
         );
-        double hauteurContenu = GrilleTousSuccesJeuEnCours.DesiredSize.Height;
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        double hauteurContenu = Math.Max(
+            GrilleTousSuccesJeuEnCours.DesiredSize.Height,
+            Math.Max(
+                GrilleTousSuccesJeuEnCours.ActualHeight,
+                ConteneurGrilleTousSuccesJeuEnCours.ExtentHeight
+            )
+        );
         double hauteurVisible = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ViewportHeight);
 
         if (hauteurVisible <= 0)
         {
             hauteurVisible = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualHeight);
         }
-
-        GrilleTousSuccesJeuEnCours.Width = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
         GrilleTousSuccesJeuEnCours.Height = hauteurContenu;
-        _amplitudeAnimationGrilleSucces = Math.Max(0, hauteurContenu - hauteurVisible);
+        double hauteurDefilableMesuree = Math.Max(0, hauteurContenu - hauteurVisible);
+        double hauteurDefilableReelle = Math.Max(
+            hauteurDefilableMesuree,
+            Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight)
+        );
+        _etatListeSuccesUi.AmplitudeAnimation = hauteurDefilableReelle;
+
+        if (_etatListeSuccesUi.AmplitudeAnimation <= SeuilDeclenchementDefilementGrilleSucces)
+        {
+            ArreterAnimationGrilleSucces();
+            _etatListeSuccesUi.SignatureAnimation =
+                $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurVisible, 1, MidpointRounding.AwayFromZero)}|0";
+            _etatListeSuccesUi.AmplitudeAnimation = 0;
+            _etatListeSuccesUi.DernierOffsetInteraction = 0;
+            ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
+            JournaliserDiagnosticListeSucces(
+                "animation_maj_desactivee",
+                $"hauteurContenu={hauteurContenu:0.##};hauteurVisible={hauteurVisible:0.##};scrollable={ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight:0.##}"
+            );
+            DefinirVisibiliteBarreDefilementListeSucces(visible: false);
+            return;
+        }
 
         string signatureAnimation =
-            $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurVisible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(_amplitudeAnimationGrilleSucces, 1, MidpointRounding.AwayFromZero)}";
+            $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurVisible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(_etatListeSuccesUi.AmplitudeAnimation, 1, MidpointRounding.AwayFromZero)}";
 
         if (
             string.Equals(
-                _signatureAnimationGrilleSucces,
+                _etatListeSuccesUi.SignatureAnimation,
                 signatureAnimation,
                 StringComparison.Ordinal
             )
@@ -132,11 +163,11 @@ public partial class MainWindow
         }
 
         ArreterAnimationGrilleSucces();
-        _signatureAnimationGrilleSucces = signatureAnimation;
+        _etatListeSuccesUi.SignatureAnimation = signatureAnimation;
         double offsetReference = Math.Clamp(
             ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset,
             0,
-            _amplitudeAnimationGrilleSucces
+            _etatListeSuccesUi.AmplitudeAnimation
         );
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetReference);
         JournaliserDiagnosticListeSucces(
@@ -144,16 +175,18 @@ public partial class MainWindow
             $"signature={signatureAnimation};offsetRef={offsetReference:0.##}"
         );
 
-        if (_amplitudeAnimationGrilleSucces > SeuilDeclenchementDefilementGrilleSucces)
+        if (_etatListeSuccesUi.AmplitudeAnimation > SeuilDeclenchementDefilementGrilleSucces)
         {
             DemarrerAnimationGrilleSuccesDepuisPosition(
                 offsetReference,
-                _amplitudeAnimationGrilleSucces,
-                allerVersBas: _animationGrilleSuccesVersBas
+                _etatListeSuccesUi.AmplitudeAnimation,
+                allerVersBas: _etatListeSuccesUi.AnimationVersBas
             );
         }
 
-        DefinirVisibiliteBarreDefilementListeSucces(ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver);
+        DefinirVisibiliteBarreDefilementListeSucces(
+            ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
+        );
     }
 
     /// <summary>
@@ -163,18 +196,15 @@ public partial class MainWindow
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
         {
-            _horlogeAnimationGrilleSucces?.Controller?.Stop();
-            _horlogeAnimationGrilleSucces = null;
+            _etatListeSuccesUi.HorlogeAnimation?.Controller?.Stop();
+            _etatListeSuccesUi.HorlogeAnimation = null;
             return;
         }
 
         double offsetCourant = ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset;
-        JournaliserDiagnosticListeSucces(
-            "animation_arret_net",
-            $"offset={offsetCourant:0.##}"
-        );
-        _horlogeAnimationGrilleSucces?.Controller?.Stop();
-        _horlogeAnimationGrilleSucces = null;
+        JournaliserDiagnosticListeSucces("animation_arret_net", $"offset={offsetCourant:0.##}");
+        _etatListeSuccesUi.HorlogeAnimation?.Controller?.Stop();
+        _etatListeSuccesUi.HorlogeAnimation = null;
 
         // Conserve la position courante quand on coupe l'autodéfilement,
         // sinon la propriété animée retombe à sa valeur par défaut et la liste
@@ -182,90 +212,6 @@ public partial class MainWindow
         SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, offsetCourant);
         ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(OffsetVerticalAnimeProperty, null);
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetCourant);
-    }
-
-    /// <summary>
-    /// Ralentit puis fige l'autodéfilement au lieu de l'arrêter net.
-    /// </summary>
-    private void ArreterAnimationGrilleSuccesEnDouceur()
-    {
-        if (ConteneurGrilleTousSuccesJeuEnCours is null || _horlogeAnimationGrilleSucces is null)
-        {
-            ArreterAnimationGrilleSucces();
-            return;
-        }
-
-        double offsetCourant = Math.Clamp(
-            ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset,
-            0,
-            Math.Max(_amplitudeAnimationGrilleSucces, ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight)
-        );
-        double distanceRestante = _animationGrilleSuccesVersBas
-            ? Math.Max(0, _amplitudeAnimationGrilleSucces - offsetCourant)
-            : Math.Max(0, offsetCourant);
-
-        if (distanceRestante <= 0.5)
-        {
-            ArreterAnimationGrilleSucces();
-            return;
-        }
-
-        double distanceRalentissement = Math.Min(18, distanceRestante);
-        double cible = _animationGrilleSuccesVersBas
-            ? offsetCourant + distanceRalentissement
-            : offsetCourant - distanceRalentissement;
-        JournaliserDiagnosticListeSucces(
-            "animation_arret_doux_debut",
-            $"offset={offsetCourant:0.##};cible={cible:0.##};reste={distanceRestante:0.##}"
-        );
-
-        _horlogeAnimationGrilleSucces.Controller?.Stop();
-        _horlogeAnimationGrilleSucces = null;
-        SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, offsetCourant);
-        ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(OffsetVerticalAnimeProperty, null);
-        ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetCourant);
-
-        DoubleAnimation animationRalentissement = new()
-        {
-            From = offsetCourant,
-            To = Math.Clamp(cible, 0, _amplitudeAnimationGrilleSucces),
-            Duration = TimeSpan.FromMilliseconds(240),
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseOut },
-            FillBehavior = FillBehavior.Stop,
-        };
-
-        AnimationClock horlogeRalentissement = animationRalentissement.CreateClock();
-        _horlogeAnimationGrilleSucces = horlogeRalentissement;
-        horlogeRalentissement.Completed += (_, _) =>
-        {
-            if (!ReferenceEquals(_horlogeAnimationGrilleSucces, horlogeRalentissement))
-            {
-                return;
-            }
-
-            double offsetFinal = Math.Clamp(
-                animationRalentissement.To ?? offsetCourant,
-                0,
-                _amplitudeAnimationGrilleSucces
-            );
-            _dernierOffsetInteractionListeSucces = offsetFinal;
-            SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, offsetFinal);
-            ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(
-                OffsetVerticalAnimeProperty,
-                null
-            );
-            ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetFinal);
-            _horlogeAnimationGrilleSucces = null;
-            JournaliserDiagnosticListeSucces(
-                "animation_arret_doux_fin",
-                $"offsetFinal={offsetFinal:0.##}"
-            );
-        };
-
-        ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(
-            OffsetVerticalAnimeProperty,
-            horlogeRalentissement
-        );
     }
 
     /// <summary>
@@ -279,7 +225,7 @@ public partial class MainWindow
         }
 
         ArreterAnimationGrilleSucces();
-        _dernierOffsetInteractionListeSucces = 0;
+        _etatListeSuccesUi.DernierOffsetInteraction = 0;
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
     }
 
@@ -300,7 +246,7 @@ public partial class MainWindow
         double offsetDepart = Math.Clamp(offsetInitial, 0, amplitude);
         SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, offsetDepart);
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetDepart);
-        _animationGrilleSuccesVersBas = allerVersBas;
+        _etatListeSuccesUi.AnimationVersBas = allerVersBas;
 
         if (offsetDepart <= 0.5)
         {
@@ -331,10 +277,10 @@ public partial class MainWindow
         };
 
         AnimationClock horlogePremierTrajet = animationPremierTrajet.CreateClock();
-        _horlogeAnimationGrilleSucces = horlogePremierTrajet;
+        _etatListeSuccesUi.HorlogeAnimation = horlogePremierTrajet;
         horlogePremierTrajet.Completed += (_, _) =>
         {
-            if (!ReferenceEquals(_horlogeAnimationGrilleSucces, horlogePremierTrajet))
+            if (!ReferenceEquals(_etatListeSuccesUi.HorlogeAnimation, horlogePremierTrajet))
             {
                 return;
             }
@@ -350,25 +296,23 @@ public partial class MainWindow
             ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(
                 Math.Clamp(ciblePremierTrajet, 0, amplitude)
             );
-            _horlogeAnimationGrilleSucces = null;
+            _etatListeSuccesUi.HorlogeAnimation = null;
 
-            if (_survolBadgeGrilleSuccesActif)
+            if (_etatListeSuccesUi.SurvolBadgeActif)
             {
                 return;
             }
 
-            DemarrerAnimationGrilleSuccesCyclique(amplitude, departEnHaut: ciblePremierTrajet <= 0.5);
+            DemarrerAnimationGrilleSuccesCyclique(
+                amplitude,
+                departEnHaut: ciblePremierTrajet <= 0.5
+            );
         };
 
         ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(
             OffsetVerticalAnimeProperty,
             horlogePremierTrajet
         );
-
-        if (_survolBadgeGrilleSuccesActif || _interactionListeSuccesActive)
-        {
-            horlogePremierTrajet.Controller?.Pause();
-        }
     }
 
     /// <summary>
@@ -394,7 +338,7 @@ public partial class MainWindow
 
         SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, positionDepart);
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(positionDepart);
-        _animationGrilleSuccesVersBas = departEnHaut;
+        _etatListeSuccesUi.AnimationVersBas = departEnHaut;
         JournaliserDiagnosticListeSucces(
             "animation_cycle_debut",
             $"depart={positionDepart:0.##};arrivee={positionArrivee:0.##}"
@@ -418,10 +362,10 @@ public partial class MainWindow
         );
 
         AnimationClock horlogeCycle = animation.CreateClock();
-        _horlogeAnimationGrilleSucces = horlogeCycle;
+        _etatListeSuccesUi.HorlogeAnimation = horlogeCycle;
         horlogeCycle.Completed += (_, _) =>
         {
-            if (!ReferenceEquals(_horlogeAnimationGrilleSucces, horlogeCycle))
+            if (!ReferenceEquals(_etatListeSuccesUi.HorlogeAnimation, horlogeCycle))
             {
                 return;
             }
@@ -432,15 +376,15 @@ public partial class MainWindow
                 null
             );
             ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(positionArrivee);
-            _horlogeAnimationGrilleSucces = null;
-            _dernierOffsetInteractionListeSucces = 0;
-            _animationGrilleSuccesVersBas = !departEnHaut;
+            _etatListeSuccesUi.HorlogeAnimation = null;
+            _etatListeSuccesUi.DernierOffsetInteraction = 0;
+            _etatListeSuccesUi.AnimationVersBas = !departEnHaut;
             JournaliserDiagnosticListeSucces(
                 "animation_cycle_fin",
-                $"offset={positionArrivee:0.##};prochainSens={(_animationGrilleSuccesVersBas ? "bas" : "haut")}"
+                $"offset={positionArrivee:0.##};prochainSens={(_etatListeSuccesUi.AnimationVersBas ? "bas" : "haut")}"
             );
 
-            if (_survolBadgeGrilleSuccesActif || _interactionListeSuccesActive)
+            if (_etatListeSuccesUi.SurvolBadgeActif || _etatListeSuccesUi.InteractionActive)
             {
                 return;
             }
@@ -452,11 +396,6 @@ public partial class MainWindow
             OffsetVerticalAnimeProperty,
             horlogeCycle
         );
-
-        if (_survolBadgeGrilleSuccesActif || _interactionListeSuccesActive)
-        {
-            horlogeCycle.Controller?.Pause();
-        }
     }
 
     /// <summary>
@@ -498,7 +437,7 @@ public partial class MainWindow
     /// </summary>
     private void BadgeGrilleSucces_EntreeSouris(object sender, MouseEventArgs e)
     {
-        _survolBadgeGrilleSuccesActif = true;
+        _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.PauseSurvol;
         _minuteurRepriseAnimationGrilleSucces.Stop();
         JournaliserDiagnosticListeSucces("badge_mouseenter");
         ArreterAnimationGrilleSucces();
@@ -509,7 +448,10 @@ public partial class MainWindow
     /// </summary>
     private void BadgeGrilleSucces_SortieSouris(object sender, MouseEventArgs e)
     {
-        _survolBadgeGrilleSuccesActif = false;
+        if (_etatListeSuccesUi.EtatInteraction == EtatInteractionListeSucces.PauseSurvol)
+        {
+            _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.AutoScroll;
+        }
         JournaliserDiagnosticListeSucces("badge_mouseleave");
         _minuteurRepriseAnimationGrilleSucces.Stop();
         _minuteurRepriseAnimationGrilleSucces.Start();
@@ -531,32 +473,26 @@ public partial class MainWindow
     private void ReprendreAnimationGrilleSuccesSiPossible()
     {
         if (
-            _survolBadgeGrilleSuccesActif
-            || _interactionListeSuccesActive
+            _etatListeSuccesUi.SurvolBadgeActif
+            || _etatListeSuccesUi.InteractionActive
             || GrilleTousSuccesJeuEnCours is null
-            || _amplitudeAnimationGrilleSucces <= SeuilDeclenchementDefilementGrilleSucces
+            || _etatListeSuccesUi.AmplitudeAnimation <= SeuilDeclenchementDefilementGrilleSucces
         )
         {
             JournaliserDiagnosticListeSucces("animation_reprise_bloquee");
             return;
         }
 
-        if (_horlogeAnimationGrilleSucces is not null)
-        {
-            JournaliserDiagnosticListeSucces("animation_reprise_resume");
-            _horlogeAnimationGrilleSucces.Controller?.Resume();
-            return;
-        }
-
         JournaliserDiagnosticListeSucces("animation_reprise_restart");
-        double offsetReprise = _dernierOffsetInteractionListeSucces > 0
-            ? _dernierOffsetInteractionListeSucces
-            : ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
-        _dernierOffsetInteractionListeSucces = 0;
+        double offsetReprise =
+            _etatListeSuccesUi.DernierOffsetInteraction > 0
+                ? _etatListeSuccesUi.DernierOffsetInteraction
+                : ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
+        _etatListeSuccesUi.DernierOffsetInteraction = 0;
         DemarrerAnimationGrilleSuccesDepuisPosition(
             offsetReprise,
-            _amplitudeAnimationGrilleSucces,
-            _animationGrilleSuccesVersBas
+            _etatListeSuccesUi.AmplitudeAnimation,
+            _etatListeSuccesUi.AnimationVersBas
         );
     }
 
