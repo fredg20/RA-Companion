@@ -58,6 +58,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private static readonly TimeSpan DureeAffichageTemporaireSuccesGrille = TimeSpan.FromSeconds(
         10
     );
+    private static readonly TimeSpan DureeMinimaleEntreSignauxSuccesLocaux = TimeSpan.FromSeconds(
+        2
+    );
     private static readonly HttpClient HttpClientImages = new();
     private const double LargeurMinimaleDispositionDouble = 920;
     private const double LargeurContenuModaleConnexion = 360;
@@ -85,9 +88,13 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServiceCatalogueJeuxLocal _serviceCatalogueJeuxLocal = new();
     private readonly ServiceEtatUtilisateurJeuxLocal _serviceEtatUtilisateurJeuxLocal = new();
     private readonly ServiceSondeLocaleEmulateurs _serviceSondeLocaleEmulateurs = new();
+    private readonly ServiceSurveillanceSuccesLocaux _serviceSurveillanceSuccesLocaux = new();
     private readonly ServiceDetectionSuccesJeu _serviceDetectionSuccesJeu = new();
     private readonly ServiceDetectionSuccesUtilisateurLocal _serviceDetectionSuccesUtilisateurLocal =
         new();
+#if DEBUG
+    private readonly ServiceTestSuccesDebug _serviceTestSuccesDebug = new();
+#endif
     private readonly DispatcherTimer _minuteurActualisationApi = new(DispatcherPriority.Background);
     private readonly DispatcherTimer _minuteurActualisationRichPresence = new(
         DispatcherPriority.Background
@@ -156,15 +163,20 @@ public partial class MainWindow : UiControls.FluentWindow
     private double _hauteurMaxVisuelJeuEnCours;
     private AnimationClock? _horlogeAnimationGrilleSucces;
     private Dictionary<int, int> _positionsAleatoiresSuccesGrille = [];
+    private Dictionary<int, HashSet<int>> _succesDebloquesLocauxTemporaires = [];
+    private Dictionary<string, DateTimeOffset> _succesDetectesRecemment = [];
     private IReadOnlyList<ConsoleV2> _consolesResolutionLocale = [];
     private Dictionary<int, EtatObservationSuccesLocal> _etatSuccesObserves = [];
     private List<GameAchievementV2> _succesJeuCourant = [];
+    private SuccesDebloqueDetecte? _succesDebloqueDetecteEnAttente;
     private OrdreSuccesGrille _ordreSuccesGrilleCourant = OrdreSuccesGrille.Normal;
     private EtatSondeLocaleEmulateur? _dernierEtatSondeLocaleEmulateurs;
     private bool _presenceLocaleCompteActive;
     private DateTimeOffset _horodatageDernierePresenceLocaleCompteValide;
     private DateTimeOffset _horodatageDerniereDetectionLocaleValide;
     private DateTimeOffset _horodatageDerniereResolutionJeuLocalValide;
+    private DateTimeOffset _horodatageDernierSignalSuccesLocalUtc;
+    private string _signatureDernierSuccesLocalDirectAffiche = string.Empty;
     private int _identifiantJeuSuccesObserve;
     private int _identifiantJeuLocalActif;
     private string _titreJeuLocalActif = string.Empty;
@@ -179,10 +191,15 @@ public partial class MainWindow : UiControls.FluentWindow
         App.JournaliserDemarrage("MainWindow ctor début");
         InitializeComponent();
         App.JournaliserDemarrage("MainWindow ctor fin");
+        ServiceSurveillanceSuccesLocaux.ReinitialiserJournalSession();
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
         ReinitialiserJeuEnCours();
         ConfigurerActualisationAutomatique();
+        _serviceSurveillanceSuccesLocaux.SignalRecu += SurveillanceSuccesLocaux_SignalRecu;
+#if DEBUG
+        PreviewKeyDown += FenetrePrincipale_PreviewKeyDown_Debug;
+#endif
         Loaded += FenetrePrincipaleChargee;
         Closing += FenetrePrincipale_Fermeture;
     }
@@ -295,6 +312,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private void FenetrePrincipale_Fermeture(object? sender, CancelEventArgs e)
     {
         ArreterActualisationAutomatique();
+        _serviceSurveillanceSuccesLocaux.Dispose();
         MemoriserGeometrieFenetre();
 
         try

@@ -4,6 +4,7 @@ using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
+using System.Windows.Threading;
 
 namespace RA.Compagnon;
 
@@ -147,6 +148,8 @@ public partial class MainWindow
         _horodatageDernierePresenceLocaleCompteValide = DateTimeOffset.MinValue;
         _horodatageDerniereDetectionLocaleValide = DateTimeOffset.MinValue;
         _horodatageDerniereResolutionJeuLocalValide = DateTimeOffset.MinValue;
+        _horodatageDernierSignalSuccesLocalUtc = DateTimeOffset.MinValue;
+        _signatureDernierSuccesLocalDirectAffiche = string.Empty;
         _identifiantJeuSuccesObserve = 0;
         _etatSuccesObserves = [];
         _identifiantJeuLocalResolutEnAttente = 0;
@@ -154,6 +157,7 @@ public partial class MainWindow
         _identifiantJeuLocalActif = 0;
         _titreJeuLocalActif = string.Empty;
         _consolesResolutionLocale = [];
+        _serviceSurveillanceSuccesLocaux.ArreterSurveillance();
     }
 
     /// <summary>
@@ -310,6 +314,9 @@ public partial class MainWindow
                 _dernierEtatSondeLocaleEmulateurs = etatBrut;
             }
 
+            _serviceSurveillanceSuccesLocaux.MettreAJourCible(
+                etat.EmulateurDetecte ? etat : null
+            );
             MettreAJourNoticeCompteEntete();
 
             if (
@@ -652,5 +659,173 @@ public partial class MainWindow
         return string.Concat(
             valeur.Trim().ToLowerInvariant().Where(caractere => char.IsLetterOrDigit(caractere))
         );
+    }
+
+    private void SurveillanceSuccesLocaux_SignalRecu(SignalSuccesLocal signal)
+    {
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "signal_dispatch_ui",
+            $"emulateur={signal.NomEmulateur};source={signal.TypeSource};chemin={signal.Chemin}"
+        );
+        _ = Dispatcher.InvokeAsync(
+            async () => await TraiterSignalSuccesLocalAsync(signal),
+            DispatcherPriority.Background
+        );
+    }
+
+    private async Task TraiterSignalSuccesLocalAsync(SignalSuccesLocal signal)
+    {
+        if (!ConfigurationConnexionEstComplete() || !_profilUtilisateurAccessible)
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_ignore",
+                "raison=configuration_incomplete_ou_profil_inaccessible"
+            );
+            return;
+        }
+
+        if (
+            _dernierEtatSondeLocaleEmulateurs is not { EmulateurDetecte: true } etat
+            || !string.Equals(etat.NomEmulateur, signal.NomEmulateur, StringComparison.Ordinal)
+        )
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_ignore",
+                $"raison=emulateur_non_aligne;attendu={_dernierEtatSondeLocaleEmulateurs?.NomEmulateur ?? string.Empty};recu={signal.NomEmulateur}"
+            );
+            return;
+        }
+
+        if (!EtatLocalJeuEstActif())
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_ignore",
+                $"raison=jeu_local_inactif;emulateur={signal.NomEmulateur}"
+            );
+            return;
+        }
+
+        if (await TenterAfficherSuccesLocalDirectAsync(signal))
+        {
+            return;
+        }
+
+        if (
+            DateTimeOffset.UtcNow - _horodatageDernierSignalSuccesLocalUtc
+            < DureeMinimaleEntreSignauxSuccesLocaux
+        )
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_ignore",
+                $"raison=debounce;emulateur={signal.NomEmulateur}"
+            );
+            return;
+        }
+
+        _horodatageDernierSignalSuccesLocalUtc = DateTimeOffset.UtcNow;
+
+        if (_chargementJeuEnCoursActif)
+        {
+            _actualisationApiCibleeEnAttente = true;
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_refresh_differe",
+                $"emulateur={signal.NomEmulateur};source={signal.TypeSource};chemin={signal.Chemin}"
+            );
+            return;
+        }
+
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "signal_refresh_immediat",
+            $"emulateur={signal.NomEmulateur};source={signal.TypeSource};chemin={signal.Chemin}"
+        );
+        await ChargerJeuEnCoursAsync(false, true);
+        RedemarrerMinuteurActualisationApi();
+    }
+
+    private async Task<bool> TenterAfficherSuccesLocalDirectAsync(SignalSuccesLocal signal)
+    {
+        if (
+            !EstEmulateurSuccesLocalDirectPrisEnCharge(signal.NomEmulateur)
+            || !TypeSourcePeutPorterSuccesDirect(signal)
+        )
+        {
+            return false;
+        }
+
+        SuccesDebloqueDetecte? succesDirect =
+            ServiceSondeLocaleEmulateurs.LireDernierSuccesDebloqueDepuisSourceLocale(
+                signal.NomEmulateur,
+                _identifiantJeuLocalActif > 0 ? _identifiantJeuLocalActif : _identifiantJeuSuccesCourant,
+                !string.IsNullOrWhiteSpace(_titreJeuLocalActif)
+                    ? _titreJeuLocalActif
+                    : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty,
+                _succesJeuCourant
+            );
+
+        if (succesDirect is null)
+        {
+            return false;
+        }
+
+        string signatureSucces =
+            $"{succesDirect.IdentifiantJeu}|{succesDirect.IdentifiantSucces}|{succesDirect.TitreSucces}";
+
+        if (
+            string.Equals(
+                _signatureDernierSuccesLocalDirectAffiche,
+                signatureSucces,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_succes_direct_ignore",
+                $"raison=deja_affiche;emulateur={signal.NomEmulateur};succes={succesDirect.IdentifiantSucces}"
+            );
+            return false;
+        }
+
+        string sourceDetectionDirecte = $"{signal.NomEmulateur.ToLowerInvariant()}_log";
+        ServiceDetectionSuccesJeu.JournaliserDetection(succesDirect, sourceDetectionDirecte);
+        MarquerSuccesCommeTraite(succesDirect);
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "signal_succes_direct_detecte",
+            $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesDirect.IdentifiantJeu};succes={succesDirect.IdentifiantSucces}"
+        );
+        bool affiche = await AfficherSuccesDebloqueDetecteAsync(succesDirect);
+
+        if (!affiche)
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_succes_direct_echec_ui",
+                $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesDirect.IdentifiantJeu};succes={succesDirect.IdentifiantSucces}"
+            );
+            return false;
+        }
+
+        _signatureDernierSuccesLocalDirectAffiche = signatureSucces;
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "signal_succes_direct_affiche",
+            $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesDirect.IdentifiantJeu};succes={succesDirect.IdentifiantSucces}"
+        );
+        return true;
+    }
+
+    private static bool EstEmulateurSuccesLocalDirectPrisEnCharge(string nomEmulateur)
+    {
+        return string.Equals(nomEmulateur, "RALibretro", StringComparison.Ordinal)
+            || string.Equals(nomEmulateur, "LunaProject64", StringComparison.Ordinal)
+            || string.Equals(nomEmulateur, "RetroArch", StringComparison.Ordinal);
+    }
+
+    private static bool TypeSourcePeutPorterSuccesDirect(SignalSuccesLocal signal)
+    {
+        return signal.NomEmulateur switch
+        {
+            "RetroArch" => signal.TypeSource.Contains("logs", StringComparison.Ordinal),
+            "LunaProject64" => signal.TypeSource.Contains("racache", StringComparison.Ordinal),
+            "RALibretro" => signal.TypeSource.Contains("racache", StringComparison.Ordinal),
+            _ => false,
+        };
     }
 }

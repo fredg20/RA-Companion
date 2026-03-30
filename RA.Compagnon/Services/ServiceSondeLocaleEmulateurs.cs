@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows.Automation;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
@@ -16,6 +17,8 @@ namespace RA.Compagnon.Services;
 public sealed partial class ServiceSondeLocaleEmulateurs
 {
     private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
+
+    public sealed record RenseignementSuccesRA(int IdentifiantSucces, string TitreSucces);
 
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
     private const int ProcessCommandLineInformation = 60;
@@ -1135,38 +1138,20 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         try
         {
-            string repertoireLogs = TrouverRepertoireLogsRetroArch();
+            string cheminJournal = TrouverDernierCheminJournalRetroArch();
 
-            if (string.IsNullOrWhiteSpace(repertoireLogs))
+            if (string.IsNullOrWhiteSpace(cheminJournal))
             {
                 return null;
             }
 
-            DirectoryInfo repertoire = new(repertoireLogs);
-            FileInfo? fichierLog = repertoire
-                .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
-                .Where(fichier => fichier.Length > 0)
-                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
-                .FirstOrDefault();
-
-            fichierLog ??= repertoire
-                .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
-                .Where(fichier => fichier.Length > 0)
-                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
-                .FirstOrDefault();
-
-            if (fichierLog is null)
-            {
-                return LireRenseignementJeuRetroArchDepuisCache();
-            }
-
-            if (DateTime.UtcNow - fichierLog.LastWriteTimeUtc > TimeSpan.FromMinutes(15))
+            if (DateTime.UtcNow - File.GetLastWriteTimeUtc(cheminJournal) > TimeSpan.FromMinutes(15))
             {
                 return LireRenseignementJeuRetroArchDepuisCache();
             }
 
             foreach (
-                string ligne in LireToutesLesLignesAvecPartage(fichierLog.FullName)
+                string ligne in LireToutesLesLignesAvecPartage(cheminJournal)
                     .AsEnumerable()
                     .Reverse()
             )
@@ -1213,6 +1198,38 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return LireRenseignementJeuRetroArchDepuisCache();
+    }
+
+    private static string TrouverDernierCheminJournalRetroArch()
+    {
+        try
+        {
+            string repertoireLogs = TrouverRepertoireLogsRetroArch();
+
+            if (string.IsNullOrWhiteSpace(repertoireLogs) || !Directory.Exists(repertoireLogs))
+            {
+                return string.Empty;
+            }
+
+            DirectoryInfo repertoire = new(repertoireLogs);
+            FileInfo? fichierLog = repertoire
+                .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
+                .Where(fichier => fichier.Length > 0)
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            fichierLog ??= repertoire
+                .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
+                .Where(fichier => fichier.Length > 0)
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            return fichierLog?.FullName ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static RenseignementJeuRA? MemoriserRenseignementRetroArch(
@@ -1547,6 +1564,78 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueDepuisSourceLocale(
+        string nomEmulateur,
+        int identifiantJeu,
+        string titreJeu,
+        IReadOnlyCollection<GameAchievementV2> succesConnus
+    )
+    {
+        if (identifiantJeu <= 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            string cheminJournal = nomEmulateur switch
+            {
+                "RALibretro" => Path.Combine(TrouverRepertoireRACacheRALibretro(), "RALog.txt"),
+                "LunaProject64" => Path.Combine(TrouverRepertoireRACacheProject64(), "RALog.txt"),
+                "RetroArch" => TrouverDernierCheminJournalRetroArch(),
+                _ => string.Empty,
+            };
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return null;
+            }
+
+            RenseignementSuccesRA? renseignement = LireDernierSuccesDepuisJournalRA(cheminJournal);
+
+            if (renseignement is null)
+            {
+                return null;
+            }
+
+            GameAchievementV2? succes = succesConnus.FirstOrDefault(item =>
+                item.Id == renseignement.IdentifiantSucces
+            );
+
+            return new SuccesDebloqueDetecte
+            {
+                IdentifiantJeu = identifiantJeu,
+                TitreJeu = titreJeu?.Trim() ?? string.Empty,
+                IdentifiantSucces = renseignement.IdentifiantSucces,
+                TitreSucces = succes?.Title?.Trim() ?? renseignement.TitreSucces,
+                Points = succes?.Points ?? 0,
+                Hardcore = true,
+                DateObtention = DateTimeOffset.Now.ToString(
+                    "yyyy-MM-dd HH:mm:ss",
+                    CultureInfo.InvariantCulture
+                ),
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueRALibretro(
+        int identifiantJeu,
+        string titreJeu,
+        IReadOnlyCollection<GameAchievementV2> succesConnus
+    )
+    {
+        return LireDernierSuccesDebloqueDepuisSourceLocale(
+            "RALibretro",
+            identifiantJeu,
+            titreJeu,
+            succesConnus
+        );
+    }
+
     private static int LireDernierIdentifiantJeuDepuisJournalRA(string cheminJournal)
     {
         try
@@ -1577,6 +1666,56 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return 0;
+    }
+
+    private static RenseignementSuccesRA? LireDernierSuccesDepuisJournalRA(string cheminJournal)
+    {
+        try
+        {
+            List<string> lignes = LireToutesLesLignesAvecPartage(cheminJournal);
+
+            foreach (string ligne in lignes.AsEnumerable().Reverse())
+            {
+                Match correspondanceAttribue = JournalSuccesAttribueRegex().Match(ligne);
+
+                if (
+                    correspondanceAttribue.Success
+                    && int.TryParse(
+                        correspondanceAttribue.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantSuccesAttribue
+                    )
+                )
+                {
+                    return new RenseignementSuccesRA(identifiantSuccesAttribue, string.Empty);
+                }
+
+                Match correspondanceAttribution = JournalSuccesAttributionRegex().Match(ligne);
+
+                if (
+                    correspondanceAttribution.Success
+                    && int.TryParse(
+                        correspondanceAttribution.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantSuccesAttribution
+                    )
+                )
+                {
+                    return new RenseignementSuccesRA(
+                        identifiantSuccesAttribution,
+                        correspondanceAttribution.Groups[2].Value.Trim()
+                    );
+                }
+            }
+        }
+        catch
+        {
+            // Le journal RA reste une aide locale facultative.
+        }
+
+        return null;
     }
 
     private static RenseignementJeuRA? LireDernierRenseignementJeuProject64DepuisData(
@@ -1930,6 +2069,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex JournalGameIdRegex();
+
+    [GeneratedRegex(
+        @"Awarding achievement\s+(\d+)\s*:\s*(.+)$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex JournalSuccesAttributionRegex();
+
+    [GeneratedRegex(
+        @"Achievement\s+(\d+)\s+awarded\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex JournalSuccesAttribueRegex();
 
     [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
     private static partial Regex FichierDonneesJeuRegex();

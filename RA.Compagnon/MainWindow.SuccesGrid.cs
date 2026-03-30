@@ -181,22 +181,24 @@ public partial class MainWindow
             _ =>
             [
                 .. succes
-                    .OrderBy(item => SuccesEstDebloque(item) ? 1 : 0)
+                    .OrderBy(item => SuccesEstDebloquePourAffichage(item) ? 1 : 0)
                     .ThenBy(item => item.DisplayOrder)
                     .ThenBy(item => item.Id),
             ],
         };
     }
 
-    private static List<GameAchievementV2> OrdonnerSuccesPourGrilleParTrueRatio(
+    private List<GameAchievementV2> OrdonnerSuccesPourGrilleParTrueRatio(
         IEnumerable<GameAchievementV2> succes,
         bool ordreCroissant
     )
     {
         IOrderedEnumerable<GameAchievementV2> ordreInitial = ordreCroissant
-            ? succes.OrderBy(item => SuccesEstDebloque(item) ? 1 : 0).ThenBy(item => item.TrueRatio)
+            ? succes
+                .OrderBy(item => SuccesEstDebloquePourAffichage(item) ? 1 : 0)
+                .ThenBy(item => item.TrueRatio)
             : succes
-                .OrderBy(item => SuccesEstDebloque(item) ? 1 : 0)
+                .OrderBy(item => SuccesEstDebloquePourAffichage(item) ? 1 : 0)
                 .ThenByDescending(item => item.TrueRatio);
 
         return [.. ordreInitial.ThenBy(item => item.DisplayOrder).ThenBy(item => item.Id)];
@@ -210,7 +212,7 @@ public partial class MainWindow
         List<int> succesNonDebloques =
         [
             .. succes
-                .Where(item => !SuccesEstDebloque(item))
+                .Where(item => !SuccesEstDebloquePourAffichage(item))
                 .Select(item => item.Id)
                 .OrderBy(item => item),
         ];
@@ -258,9 +260,9 @@ public partial class MainWindow
         return
         [
             .. succesListe
-                .OrderBy(item => SuccesEstDebloque(item) ? 1 : 0)
+                .OrderBy(item => SuccesEstDebloquePourAffichage(item) ? 1 : 0)
                 .ThenBy(item =>
-                    SuccesEstDebloque(item)
+                    SuccesEstDebloquePourAffichage(item)
                         ? int.MaxValue
                         : _positionsAleatoiresSuccesGrille.GetValueOrDefault(
                             item.Id,
@@ -502,7 +504,7 @@ public partial class MainWindow
             return;
         }
 
-        bool succesDebloque = SuccesEstDebloque(succes);
+        bool succesDebloque = SuccesEstDebloquePourAffichage(succes);
         bool affichagePermanent = permanent && !succesDebloque;
 
         if (affichagePermanent)
@@ -545,6 +547,10 @@ public partial class MainWindow
     {
         _minuteurAffichageTemporaireSuccesGrille.Stop();
         _identifiantSuccesGrilleTemporaire = null;
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "succes_ui_fin_temporaire",
+            $"jeu={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
+        );
 
         if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
         {
@@ -558,7 +564,7 @@ public partial class MainWindow
             _retourPremierSuccesNonDebloqueApresSelectionTemporaire = false;
 
             GameAchievementV2? premierSuccesNonDebloque = _succesJeuCourant
-                .Where(item => !SuccesEstDebloque(item))
+                .Where(item => !SuccesEstDebloquePourAffichage(item))
                 .OrderBy(item => item.DisplayOrder)
                 .ThenBy(item => item.Id)
                 .FirstOrDefault();
@@ -569,6 +575,12 @@ public partial class MainWindow
                 true,
                 false
             );
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "succes_ui_retour_automatique",
+                premierSuccesNonDebloque is null
+                    ? $"jeu={_identifiantJeuSuccesCourant};succes=0;raison=tous_debloques"
+                    : $"jeu={_identifiantJeuSuccesCourant};succes={premierSuccesNonDebloque.Id};titre={premierSuccesNonDebloque.Title}"
+            );
             return;
         }
 
@@ -576,17 +588,15 @@ public partial class MainWindow
             _identifiantJeuSuccesCourant,
             _succesJeuCourant
         );
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "succes_ui_retour_normal",
+            $"jeu={_identifiantJeuSuccesCourant}"
+        );
     }
 
     /// <summary>
     /// Indique si un succès du jeu a déjà été obtenu par l'utilisateur.
     /// </summary>
-    private static bool SuccesEstDebloque(GameAchievementV2 succes)
-    {
-        return !string.IsNullOrWhiteSpace(succes.DateEarned)
-            || !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore);
-    }
-
     /// <summary>
     /// Recalcule le gap de la grille des succès selon la largeur disponible.
     /// </summary>

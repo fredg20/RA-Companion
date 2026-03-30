@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
+using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
 
@@ -51,6 +52,9 @@ public partial class MainWindow
     {
         _identifiantJeuSuccesCourant = 0;
         _succesJeuCourant = [];
+        _succesDebloquesLocauxTemporaires.Clear();
+        _succesDetectesRecemment.Clear();
+        _succesDebloqueDetecteEnAttente = null;
         _identifiantSuccesGrilleTemporaire = null;
         _identifiantSuccesGrilleEpingle = null;
         _minuteurAffichageTemporaireSuccesGrille.Stop();
@@ -75,15 +79,30 @@ public partial class MainWindow
     /// </summary>
     private async Task MettreAJourSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
+        List<GameAchievementV2> succes = InitialiserContexteSuccesJeu(jeu);
+        await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
+        DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes);
+
+        if (
+            _succesDebloqueDetecteEnAttente is not null
+            && _succesDebloqueDetecteEnAttente.IdentifiantJeu == jeu.IdentifiantJeu
+        )
+        {
+            _ = await AfficherSuccesDebloqueDetecteAsync(_succesDebloqueDetecteEnAttente);
+        }
+    }
+
+    private List<GameAchievementV2> InitialiserContexteSuccesJeu(GameInfoAndUserProgressV2 jeu)
+    {
         List<GameAchievementV2> succes =
         [
             .. jeu.Succes.Values.OrderBy(item => item.DisplayOrder).ThenBy(item => item.Id),
         ];
 
         _identifiantJeuSuccesCourant = jeu.IdentifiantJeu;
+        FusionnerSuccesDebloquesLocauxTemporaires(jeu.IdentifiantJeu, succes);
         _succesJeuCourant = succes;
-        await MettreAJourPremierSuccesNonDebloqueAsync(jeu.IdentifiantJeu, succes);
-        DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(jeu.IdentifiantJeu, succes);
+        return succes;
     }
 
     private void DemarrerMiseAJourSuccesJeuEnArrierePlan(GameInfoAndUserProgressV2 jeu)
@@ -171,7 +190,7 @@ public partial class MainWindow
         List<GameAchievementV2> succesNonDebloques =
         [
             .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, succes)
-                .Where(item => !SuccesEstDebloque(item)),
+                .Where(item => !SuccesEstDebloquePourAffichage(item)),
         ];
         GameAchievementV2? premierSuccesNonDebloque = succesNonDebloques.FirstOrDefault();
 
@@ -302,6 +321,155 @@ public partial class MainWindow
                 }
             );
         }
+    }
+
+    private async Task<bool> AfficherSuccesDebloqueDetecteAsync(SuccesDebloqueDetecte succesDetecte)
+    {
+        if (succesDetecte.IdentifiantJeu <= 0)
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "succes_ui_ignore",
+                $"raison=jeu_invalide;jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces}"
+            );
+            return false;
+        }
+
+        _succesDebloqueDetecteEnAttente = succesDetecte;
+
+        if (
+            _identifiantJeuSuccesCourant != succesDetecte.IdentifiantJeu
+            || _succesJeuCourant.Count == 0
+        )
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "succes_ui_en_attente",
+                $"raison=contexte_indisponible;jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces};jeuCourant={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
+            );
+            return false;
+        }
+
+        GameAchievementV2? succes = _succesJeuCourant.FirstOrDefault(item =>
+            item.Id == succesDetecte.IdentifiantSucces
+        );
+
+        if (succes is null)
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "succes_ui_ignore",
+                $"raison=succes_introuvable;jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces}"
+            );
+            return false;
+        }
+
+        MarquerSuccesCommeDebloqueLocalement(succes, succesDetecte);
+        if (!_succesDebloquesLocauxTemporaires.TryGetValue(succesDetecte.IdentifiantJeu, out HashSet<int>? succesTemp))
+        {
+            succesTemp = [];
+            _succesDebloquesLocauxTemporaires[succesDetecte.IdentifiantJeu] = succesTemp;
+        }
+        succesTemp.Add(succesDetecte.IdentifiantSucces);
+        _succesDebloqueDetecteEnAttente = null;
+        _identifiantSuccesGrilleTemporaire = succes.Id;
+        _retourPremierSuccesNonDebloqueApresSelectionTemporaire = true;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
+        _minuteurAffichageTemporaireSuccesGrille.Start();
+        RafraichirStyleBadgesGrilleSucces();
+
+        await AppliquerSuccesEnCoursAsync(_identifiantJeuSuccesCourant, succes, false, false);
+        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+            "succes_ui_affiche",
+            $"jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces};titre={succesDetecte.TitreSucces}"
+        );
+        return true;
+    }
+
+    private static void MarquerSuccesCommeDebloqueLocalement(
+        GameAchievementV2 succes,
+        SuccesDebloqueDetecte succesDetecte
+    )
+    {
+        string dateObtention = string.IsNullOrWhiteSpace(succesDetecte.DateObtention)
+            ? DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)
+            : succesDetecte.DateObtention.Trim();
+
+        succes.DateEarned = dateObtention;
+
+        if (succesDetecte.Hardcore)
+        {
+            succes.DateEarnedHardcore = dateObtention;
+        }
+    }
+
+    private void FusionnerSuccesDebloquesLocauxTemporaires(
+        int identifiantJeu,
+        List<GameAchievementV2> succes
+    )
+    {
+        if (
+            identifiantJeu <= 0
+            || !_succesDebloquesLocauxTemporaires.TryGetValue(identifiantJeu, out HashSet<int>? ids)
+            || ids.Count == 0
+        )
+        {
+            return;
+        }
+
+        string dateSession = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+
+        foreach (GameAchievementV2 succesJeu in succes.Where(item => ids.Contains(item.Id)))
+        {
+            if (string.IsNullOrWhiteSpace(succesJeu.DateEarned))
+            {
+                succesJeu.DateEarned = dateSession;
+            }
+        }
+    }
+
+    private bool SuccesEstDebloquePourAffichage(GameAchievementV2 succes)
+    {
+        if (
+            _identifiantJeuSuccesCourant > 0
+            && _succesDebloquesLocauxTemporaires.TryGetValue(
+                _identifiantJeuSuccesCourant,
+                out HashSet<int>? ids
+            )
+            && ids.Contains(succes.Id)
+        )
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(succes.DateEarned)
+            || !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore);
+    }
+
+    private bool SuccesDejaTraiteRecemment(SuccesDebloqueDetecte succes)
+    {
+        string signature = ConstruireSignatureSuccesTraite(succes);
+
+        if (
+            _succesDetectesRecemment.TryGetValue(signature, out DateTimeOffset horodatage)
+            && DateTimeOffset.UtcNow - horodatage < TimeSpan.FromMinutes(5)
+        )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void MarquerSuccesCommeTraite(SuccesDebloqueDetecte succes)
+    {
+        string signature = ConstruireSignatureSuccesTraite(succes);
+        _succesDetectesRecemment[signature] = DateTimeOffset.UtcNow;
+    }
+
+    private static string ConstruireSignatureSuccesTraite(SuccesDebloqueDetecte succes)
+    {
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{succes.IdentifiantJeu}|{succes.IdentifiantSucces}"
+        );
     }
 
     private async void BoutonSuccesEnCoursPrecedent_Click(object sender, RoutedEventArgs e)

@@ -537,6 +537,7 @@ public partial class MainWindow
         TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
         TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
         BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
+        _ = InitialiserContexteSuccesJeu(jeu);
 
         await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);
         await DetecterNouveauxSuccesJeuAsync(jeu);
@@ -591,10 +592,24 @@ public partial class MainWindow
                 _etatSuccesObserves,
                 succesCourants
             );
+        List<SuccesDebloqueDetecte> nouveauxSuccesFiltres =
+        [
+            .. nouveauxSucces.Where(succes => !SuccesDejaTraiteRecemment(succes)),
+        ];
 
-        foreach (SuccesDebloqueDetecte succes in nouveauxSucces)
+        foreach (SuccesDebloqueDetecte succes in nouveauxSuccesFiltres)
         {
             ServiceDetectionSuccesJeu.JournaliserDetection(succes, "session");
+            MarquerSuccesCommeTraite(succes);
+        }
+
+        SuccesDebloqueDetecte? succesLePlusRecent = SelectionnerSuccesDebloqueLePlusRecent(
+            nouveauxSuccesFiltres
+        );
+
+        if (succesLePlusRecent is not null)
+        {
+            _ = await AfficherSuccesDebloqueDetecteAsync(succesLePlusRecent);
         }
 
         _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
@@ -615,6 +630,8 @@ public partial class MainWindow
         IReadOnlyList<EtatSuccesUtilisateurLocal> nouveauxSucces =
             ServiceDetectionSuccesUtilisateurLocal.DetecterNouveauxSucces(precedent, courant);
 
+        List<SuccesDebloqueDetecte> succesFiltresAAfficher = [];
+
         foreach (EtatSuccesUtilisateurLocal succesLocal in nouveauxSucces)
         {
             if (
@@ -627,8 +644,8 @@ public partial class MainWindow
                 continue;
             }
 
-            ServiceDetectionSuccesJeu.JournaliserDetection(
-                new SuccesDebloqueDetecte
+            SuccesDebloqueDetecte succesDetecte =
+                new()
                 {
                     IdentifiantJeu = jeu.Id,
                     TitreJeu = jeu.Title?.Trim() ?? string.Empty,
@@ -639,9 +656,58 @@ public partial class MainWindow
                     DateObtention = succesLocal.EstHardcore
                         ? succesLocal.DateDeblocageHardcoreUtc
                         : succesLocal.DateDeblocageUtc,
-                },
-                "cache_local"
-            );
+                };
+
+            if (SuccesDejaTraiteRecemment(succesDetecte))
+            {
+                continue;
+            }
+
+            ServiceDetectionSuccesJeu.JournaliserDetection(succesDetecte, "cache_local");
+            MarquerSuccesCommeTraite(succesDetecte);
+            succesFiltresAAfficher.Add(succesDetecte);
         }
+
+        SuccesDebloqueDetecte? succesAAfficher = SelectionnerSuccesDebloqueLePlusRecent(
+            succesFiltresAAfficher
+        );
+
+        if (succesAAfficher is not null)
+        {
+            _ = await AfficherSuccesDebloqueDetecteAsync(succesAAfficher);
+        }
+    }
+
+    private static SuccesDebloqueDetecte? SelectionnerSuccesDebloqueLePlusRecent(
+        IReadOnlyList<SuccesDebloqueDetecte> succesDetectes
+    )
+    {
+        if (succesDetectes.Count == 0)
+        {
+            return null;
+        }
+
+        return succesDetectes
+            .OrderByDescending(succes => ConvertirDateDeblocageSucces(succes.DateObtention))
+            .ThenByDescending(succes => succes.Hardcore)
+            .ThenByDescending(succes => succes.IdentifiantSucces)
+            .FirstOrDefault();
+    }
+
+    private static DateTimeOffset ConvertirDateDeblocageSucces(string? valeur)
+    {
+        if (
+            DateTimeOffset.TryParse(
+                valeur,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AllowWhiteSpaces,
+                out DateTimeOffset date
+            )
+        )
+        {
+            return date;
+        }
+
+        return DateTimeOffset.MinValue;
     }
 }

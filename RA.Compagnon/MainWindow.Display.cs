@@ -20,6 +20,7 @@ public partial class MainWindow
         ImageConsoleJeuEnCours.Visibility = Visibility.Collapsed;
         TexteConsoleJeuEnCours.Text = string.Empty;
         TexteConsoleJeuEnCours.Visibility = Visibility.Collapsed;
+        ZoneConsoleJeuEnCours.Visibility = Visibility.Collapsed;
         TexteTypeJeuEnCours.Text = string.Empty;
         TexteTypeJeuEnCours.Visibility = Visibility.Collapsed;
         TexteDeveloppeurJeuEnCours.Text = string.Empty;
@@ -30,12 +31,12 @@ public partial class MainWindow
         TexteTempsJeuEnCours.Visibility = Visibility.Collapsed;
         TexteDetailsJeuEnCours.Text = string.Empty;
         TexteDetailsJeuEnCours.Visibility = Visibility.Collapsed;
+        EtiquetteConsoleJeuEnCours.Visibility = Visibility.Collapsed;
         EtiquetteTypeJeuEnCours.Visibility = Visibility.Collapsed;
         EtiquetteCreditsJeuEnCours.Visibility = Visibility.Collapsed;
         EtiquetteDateSortieJeuEnCours.Visibility = Visibility.Collapsed;
         EtiquetteTempsJeuEnCours.Visibility = Visibility.Collapsed;
         GrilleInformationsJeuEnCours.Visibility = Visibility.Collapsed;
-        LigneMetaJeuEnCours.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
@@ -52,6 +53,8 @@ public partial class MainWindow
         {
             TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
             TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
+            ZoneConsoleJeuEnCours.Visibility = Visibility.Visible;
+            EtiquetteConsoleJeuEnCours.Visibility = Visibility.Visible;
         }
 
         if (!string.IsNullOrWhiteSpace(jeu.Genre))
@@ -113,11 +116,6 @@ public partial class MainWindow
             // L'icône de console reste facultative. En cas d'échec, on conserve au moins l'année.
         }
 
-        LigneMetaJeuEnCours.Visibility =
-            ImageConsoleJeuEnCours.Visibility == Visibility.Visible
-            || TexteConsoleJeuEnCours.Visibility == Visibility.Visible
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         MettreAJourVisibiliteInformationsJeuEnCours();
     }
 
@@ -135,6 +133,8 @@ public partial class MainWindow
         {
             TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
             TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
+            ZoneConsoleJeuEnCours.Visibility = Visibility.Visible;
+            EtiquetteConsoleJeuEnCours.Visibility = Visibility.Visible;
         }
 
         if (!string.IsNullOrWhiteSpace(jeu.Genre))
@@ -167,12 +167,6 @@ public partial class MainWindow
             EtiquetteTempsJeuEnCours.Visibility = Visibility.Visible;
         }
 
-        LigneMetaJeuEnCours.Visibility =
-            TexteConsoleJeuEnCours.Visibility == Visibility.Visible
-            || TexteTypeJeuEnCours.Visibility == Visibility.Visible
-            || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         MettreAJourVisibiliteInformationsJeuEnCours();
     }
 
@@ -240,13 +234,12 @@ public partial class MainWindow
                 ImageConsoleJeuEnCours.Visibility = Visibility.Visible;
             }
 
-            LigneMetaJeuEnCours.Visibility =
+            ZoneConsoleJeuEnCours.Visibility =
                 ImageConsoleJeuEnCours.Visibility == Visibility.Visible
                 || TexteConsoleJeuEnCours.Visibility == Visibility.Visible
-                || TexteTypeJeuEnCours.Visibility == Visibility.Visible
-                || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
                     ? Visibility.Visible
                     : Visibility.Collapsed;
+            EtiquetteConsoleJeuEnCours.Visibility = ZoneConsoleJeuEnCours.Visibility;
             MettreAJourVisibiliteInformationsJeuEnCours();
         }
         catch
@@ -615,7 +608,8 @@ public partial class MainWindow
     private void MettreAJourVisibiliteInformationsJeuEnCours()
     {
         bool auMoinsUneLigneVisible =
-            TexteTypeJeuEnCours.Visibility == Visibility.Visible
+            ZoneConsoleJeuEnCours.Visibility == Visibility.Visible
+            || TexteTypeJeuEnCours.Visibility == Visibility.Visible
             || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
             || TexteDateSortieJeuEnCours.Visibility == Visibility.Visible
             || TexteTempsJeuEnCours.Visibility == Visibility.Visible;
