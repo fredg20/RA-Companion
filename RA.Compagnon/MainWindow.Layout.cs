@@ -8,6 +8,11 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
+    private static double CalculerHauteurOccupee(FrameworkElement element)
+    {
+        return element.ActualHeight + element.Margin.Top + element.Margin.Bottom;
+    }
+
     /// <summary>
     /// Affiche temporairement la barre de défilement après un usage de la molette ou un scroll.
     /// </summary>
@@ -42,6 +47,28 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Retourne la barre verticale de la liste des succès.
+    /// </summary>
+    private SystemControls.Primitives.ScrollBar? ObtenirBarreDefilementVerticaleListeSucces()
+    {
+        if (_barreDefilementVerticaleListeSucces is not null)
+        {
+            return _barreDefilementVerticaleListeSucces;
+        }
+
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return null;
+        }
+
+        _barreDefilementVerticaleListeSucces =
+            TrouverDescendants<SystemControls.Primitives.ScrollBar>(ConteneurGrilleTousSuccesJeuEnCours)
+                .FirstOrDefault(barre => barre.Orientation == SystemControls.Orientation.Vertical);
+
+        return _barreDefilementVerticaleListeSucces;
+    }
+
+    /// <summary>
     /// Masque la barre verticale principale sans changer la structure du layout.
     /// </summary>
     private void DefinirVisibiliteBarreDefilementPrincipale()
@@ -64,6 +91,34 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Affiche ou masque la barre verticale de la liste des succès selon le survol.
+    /// </summary>
+    private void DefinirVisibiliteBarreDefilementListeSucces(bool visible)
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return;
+        }
+
+        bool afficher = visible && ListeSuccesPeutDefiler();
+        ConteneurGrilleTousSuccesJeuEnCours.VerticalScrollBarVisibility = afficher
+            ? SystemControls.ScrollBarVisibility.Auto
+            : SystemControls.ScrollBarVisibility.Hidden;
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+
+        SystemControls.Primitives.ScrollBar? barre = ObtenirBarreDefilementVerticaleListeSucces();
+
+        if (barre is null)
+        {
+            return;
+        }
+
+        barre.Opacity = afficher ? 1 : 0;
+        barre.Visibility = afficher ? Visibility.Visible : Visibility.Hidden;
+        barre.IsHitTestVisible = afficher;
+    }
+
+    /// <summary>
     /// Indique si la souris est placée sur la zone réservée à la barre verticale.
     /// </summary>
     private static bool EstDansZoneBarreDefilement(
@@ -81,6 +136,15 @@ public partial class MainWindow
     private bool ZonePrincipalePeutDefiler()
     {
         return ZonePrincipale is not null && ZonePrincipale.ScrollableHeight > 0;
+    }
+
+    /// <summary>
+    /// Indique si la liste des succès a réellement besoin d'une barre verticale.
+    /// </summary>
+    private bool ListeSuccesPeutDefiler()
+    {
+        return ConteneurGrilleTousSuccesJeuEnCours is not null
+            && ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight > 0;
     }
 
     /// <summary>
@@ -171,6 +235,136 @@ public partial class MainWindow
     }
 
     /// <summary>
+    /// Affiche la barre de la liste des succès uniquement pendant le survol.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris(object sender, MouseEventArgs e)
+    {
+        DefinirVisibiliteBarreDefilementListeSucces(visible: true);
+        JournaliserDiagnosticListeSucces("liste_mouseenter");
+    }
+
+    /// <summary>
+    /// Masque la barre de la liste dès que la souris quitte la zone.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_SortieSouris(object sender, MouseEventArgs e)
+    {
+        if (_interactionListeSuccesActive && Mouse.LeftButton == MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        DefinirVisibiliteBarreDefilementListeSucces(visible: false);
+        JournaliserDiagnosticListeSucces("liste_mouseleave");
+
+        if (!_survolBadgeGrilleSuccesActif)
+        {
+            _minuteurRepriseAnimationGrilleSucces.Stop();
+            _minuteurRepriseAnimationGrilleSucces.Start();
+        }
+    }
+
+    /// <summary>
+    /// Garde la barre visible et l'autodéfilement en pause pendant l'interaction souris.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheBas(
+        object sender,
+        MouseButtonEventArgs e
+    )
+    {
+        _interactionListeSuccesActive = true;
+        _dernierOffsetInteractionListeSucces =
+            ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
+        _minuteurRepriseAnimationGrilleSucces.Stop();
+        ArreterAnimationGrilleSucces();
+        DefinirVisibiliteBarreDefilementListeSucces(visible: true);
+        JournaliserDiagnosticListeSucces("liste_mouseleftdown");
+    }
+
+    /// <summary>
+    /// Relâche l'interaction souris avec la liste et reprend l'autodéfilement si possible.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheHaut(
+        object sender,
+        MouseButtonEventArgs e
+    )
+    {
+        FinaliserInteractionListeSucces();
+    }
+
+    /// <summary>
+    /// Finalise aussi le drag de la barre quand le relâchement se fait hors de la zone.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_PerteCaptureSouris(
+        object sender,
+        MouseEventArgs e
+    )
+    {
+        if (Mouse.LeftButton == MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        FinaliserInteractionListeSucces();
+    }
+
+    /// <summary>
+    /// Laisse le déplacement manuel de la liste devenir la nouvelle référence avant reprise.
+    /// </summary>
+    private void ConteneurGrilleTousSuccesJeuEnCours_DefilementChange(
+        object sender,
+        SystemControls.ScrollChangedEventArgs e
+    )
+    {
+        if (Math.Abs(e.VerticalChange) <= 0.01)
+        {
+            return;
+        }
+
+        // Mémorise le sens réel du mouvement observé pour que l'autodéfilement
+        // reparte du bon côté après une interruption ou un déplacement manuel.
+        _animationGrilleSuccesVersBas = e.VerticalChange > 0;
+
+        _dernierOffsetInteractionListeSucces =
+            ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? _dernierOffsetInteractionListeSucces;
+        JournaliserDiagnosticListeSucces(
+            "liste_scrollchanged",
+            $"delta={e.VerticalChange:0.##}"
+        );
+
+        DefinirVisibiliteBarreDefilementListeSucces(
+            ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
+        );
+
+        if (!_interactionListeSuccesActive)
+        {
+            return;
+        }
+
+        _minuteurRepriseAnimationGrilleSucces.Stop();
+        _minuteurRepriseAnimationGrilleSucces.Start();
+    }
+
+    /// <summary>
+    /// Valide la dernière position manuelle de la liste puis relance l'autodéfilement depuis cette base.
+    /// </summary>
+    private void FinaliserInteractionListeSucces()
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is not null)
+        {
+            _dernierOffsetInteractionListeSucces = ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset;
+        }
+
+        _interactionListeSuccesActive = false;
+        DefinirVisibiliteBarreDefilementListeSucces(
+            ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
+        );
+        JournaliserDiagnosticListeSucces("liste_interaction_fin");
+
+        _minuteurRepriseAnimationGrilleSucces.Stop();
+        _minuteurRepriseAnimationGrilleSucces.Start();
+    }
+
+    /// <summary>
     /// Bascule entre un affichage sur une colonne ou deux colonnes selon la largeur disponible.
     /// </summary>
     private void AjusterDisposition()
@@ -226,7 +420,10 @@ public partial class MainWindow
             else
             {
                 GrilleCartes.RowDefinitions.Add(
-                    new SystemControls.RowDefinition { Height = GridLength.Auto }
+                    new SystemControls.RowDefinition
+                    {
+                        Height = new GridLength(1, GridUnitType.Star),
+                    }
                 );
             }
 
@@ -248,22 +445,44 @@ public partial class MainWindow
     /// </summary>
     private void AjusterHauteurCarteJeuEnCours()
     {
-        if (CarteJeuEnCours is null || ZonePrincipale is null)
+        if (CarteJeuEnCours is null || ZonePrincipale is null || GrilleCartes is null)
         {
             return;
         }
 
         if (ZonePrincipale.Visibility != Visibility.Visible)
         {
+            if (ConteneurZonePrincipale is not null)
+            {
+                ConteneurZonePrincipale.MinHeight = 0;
+                ConteneurZonePrincipale.Height = double.NaN;
+            }
+
+            GrilleCartes.MinHeight = 0;
+            GrilleCartes.Height = double.NaN;
             CarteJeuEnCours.Height = double.NaN;
             CarteJeuEnCours.MaxHeight = double.PositiveInfinity;
+            CarteJeuEnCours.MinHeight = 0;
+            if (CarteListeSuccesJeuEnCours is not null)
+            {
+                CarteListeSuccesJeuEnCours.Height = double.NaN;
+                CarteListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
+
+            if (ConteneurGrilleTousSuccesJeuEnCours is not null)
+            {
+                ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
+                ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
             return;
         }
 
         double hauteurVisible =
-            ZonePrincipale.ViewportHeight > 0
-                ? ZonePrincipale.ViewportHeight
-                : ZonePrincipale.ActualHeight;
+            ActualHeight
+            - (BandeauTitreFenetre is null ? 0 : CalculerHauteurOccupee(BandeauTitreFenetre))
+            - (BandeauCompteFenetre is null ? 0 : CalculerHauteurOccupee(BandeauCompteFenetre))
+            - (CadreZonePrincipale?.Padding.Top ?? 0)
+            - (CadreZonePrincipale?.Padding.Bottom ?? 0);
 
         if (hauteurVisible <= 0)
         {
@@ -274,9 +493,88 @@ public partial class MainWindow
             return;
         }
 
-        double hauteurCible = Math.Max(1, hauteurVisible);
+        Thickness margeConteneur = ConteneurZonePrincipale?.Margin ?? default;
+        double hauteurCible = Math.Max(
+            1,
+            hauteurVisible - margeConteneur.Top - margeConteneur.Bottom
+        );
+
+        if (ConteneurZonePrincipale is not null)
+        {
+            ConteneurZonePrincipale.MinHeight = hauteurCible;
+            ConteneurZonePrincipale.Height = double.NaN;
+        }
+
+        GrilleCartes.MinHeight = hauteurCible;
+        GrilleCartes.Height = double.NaN;
+        CarteJeuEnCours.MinHeight = hauteurCible;
         CarteJeuEnCours.Height = hauteurCible;
         CarteJeuEnCours.MaxHeight = hauteurCible;
+        _ = Dispatcher.BeginInvoke(
+            (Action)AjusterHauteurListeSuccesJeuEnCours,
+            DispatcherPriority.Render
+        );
+    }
+
+    /// <summary>
+    /// Ajuste explicitement la hauteur de la liste des rétrosuccès à l'espace restant dans sa carte.
+    /// </summary>
+    private void AjusterHauteurListeSuccesJeuEnCours()
+    {
+        if (
+            CarteJeuEnCours is null
+            || GrilleTousSuccesJeuEnCours is null
+            || CarteListeSuccesJeuEnCours is null
+            || ConteneurGrilleTousSuccesJeuEnCours is null
+            || !CarteListeSuccesJeuEnCours.IsLoaded
+        )
+        {
+            return;
+        }
+
+        double hauteurCarteJeu = CarteJeuEnCours.ActualHeight;
+
+        if (hauteurCarteJeu <= 0)
+        {
+            return;
+        }
+
+        CarteJeuEnCours.UpdateLayout();
+        CarteListeSuccesJeuEnCours.UpdateLayout();
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+
+        Point positionSectionDansCarteJeu = CarteListeSuccesJeuEnCours.TranslatePoint(
+            new Point(0, 0),
+            CarteJeuEnCours
+        );
+        double hauteurMaxSection = hauteurCarteJeu - positionSectionDansCarteJeu.Y;
+
+        if (hauteurMaxSection <= 0)
+        {
+            return;
+        }
+
+        Point positionDansCarte = ConteneurGrilleTousSuccesJeuEnCours.TranslatePoint(
+            new Point(0, 0),
+            CarteListeSuccesJeuEnCours
+        );
+        double hauteurDisponible = hauteurMaxSection - positionDansCarte.Y;
+
+        if (hauteurDisponible <= 0)
+        {
+            return;
+        }
+
+        CarteListeSuccesJeuEnCours.MinHeight = 0;
+        CarteListeSuccesJeuEnCours.Height = hauteurMaxSection;
+        CarteListeSuccesJeuEnCours.MaxHeight = hauteurMaxSection;
+        ConteneurGrilleTousSuccesJeuEnCours.MinHeight = 0;
+        ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
+        ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = hauteurDisponible;
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        DefinirVisibiliteBarreDefilementListeSucces(
+            ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
+        );
     }
 
     /// <summary>

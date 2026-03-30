@@ -26,7 +26,7 @@
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <Grid Grid.Row="0" Height="36" Margin="{StaticResource MargeFenetreHaut}">
+    <Grid x:Name="BandeauTitreFenetre" Grid.Row="0" Height="36" Margin="{StaticResource MargeFenetreHaut}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="220" />
         <ColumnDefinition Width="*" />
@@ -75,7 +75,7 @@
       </Grid>
     </Grid>
 
-    <Grid Grid.Row="1" Margin="{StaticResource PaddingFenetrePrincipale}">
+    <Grid x:Name="BandeauCompteFenetre" Grid.Row="1" Margin="{StaticResource PaddingFenetrePrincipale}">
       <Grid HorizontalAlignment="Right" VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
@@ -137,6 +137,7 @@
     </Grid>
 
     <Border
+      x:Name="CadreZonePrincipale"
       Grid.Row="2"
       Padding="{StaticResource PaddingFenetrePrincipale}"
       Background="Transparent"
@@ -152,8 +153,13 @@
         MouseLeave="ZonePrincipale_SortieSouris"
         ScrollChanged="ZonePrincipale_DefilementChange"
       >
-        <Grid Margin="{StaticResource MargeFenetreContenu}" Background="Transparent">
-          <Grid x:Name="GrilleCartes">
+        <Grid
+          x:Name="ConteneurZonePrincipale"
+          Margin="{StaticResource MargeFenetreContenu}"
+          Background="Transparent"
+          VerticalAlignment="Top"
+        >
+          <Grid x:Name="GrilleCartes" VerticalAlignment="Stretch">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="280" />
               <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
@@ -196,7 +202,7 @@
               x:Name="CarteJeuEnCours"
               Grid.Column="2"
               ClipToBounds="True"
-              VerticalAlignment="Top"
+              VerticalAlignment="Stretch"
               Style="{StaticResource StyleSectionArrondie}"
             >
               <Grid x:Name="GrilleCarteJeuEnCours">
@@ -669,6 +675,7 @@
                 </Border>
 
                 <Border
+                  x:Name="CarteListeSuccesJeuEnCours"
                   Grid.Row="6"
                   VerticalAlignment="Stretch"
                   Style="{StaticResource StyleSousCarteJeu}"
@@ -861,23 +868,28 @@
                       </StackPanel>
                     </Border>
 
-                    <Grid
+                    <ScrollViewer
                       x:Name="ConteneurGrilleTousSuccesJeuEnCours"
                       Grid.Row="2"
                       Margin="{StaticResource MargeGrilleDense}"
                       VerticalAlignment="Stretch"
-                      ClipToBounds="True"
-                      PreviewMouseWheel="ConteneurGrilleTousSuccesJeuEnCours_ApercuMoletteSouris"
+                      VerticalScrollBarVisibility="Hidden"
+                      HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False"
+                      MouseEnter="ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris"
+                      MouseLeave="ConteneurGrilleTousSuccesJeuEnCours_SortieSouris"
+                      PreviewMouseLeftButtonDown="ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheBas"
+                      PreviewMouseLeftButtonUp="ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheHaut"
+                      LostMouseCapture="ConteneurGrilleTousSuccesJeuEnCours_PerteCaptureSouris"
+                      ScrollChanged="ConteneurGrilleTousSuccesJeuEnCours_DefilementChange"
                       SizeChanged="ConteneurGrilleTousSuccesJeuEnCours_TailleChangee"
                     >
-                      <Canvas x:Name="PisteGrilleTousSuccesJeuEnCours" ClipToBounds="True">
-                        <WrapPanel
-                          x:Name="GrilleTousSuccesJeuEnCours"
-                          VerticalAlignment="Top"
-                          HorizontalAlignment="Left"
-                        />
-                      </Canvas>
-                    </Grid>
+                      <WrapPanel
+                        x:Name="GrilleTousSuccesJeuEnCours"
+                        VerticalAlignment="Top"
+                        HorizontalAlignment="Left"
+                      />
+                    </ScrollViewer>
 
                     <StackPanel Grid.Row="3" Visibility="Collapsed">
                       <TextBlock

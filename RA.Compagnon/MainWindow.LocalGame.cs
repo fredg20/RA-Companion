@@ -49,6 +49,23 @@ public partial class MainWindow
     {
         string titreJeuProbable = etat.TitreJeuProbable?.Trim() ?? string.Empty;
 
+        // Quand le bon jeu est déjà chargé avec sa progression/ses succès, on évite
+        // de réécraser l'UI avec l'état transitoire "Détection locale en cours...".
+        if (
+            etat.IdentifiantJeuProbable > 0
+            && (
+                _dernierIdentifiantJeuAvecProgression == etat.IdentifiantJeuProbable
+                || _dernieresDonneesJeuAffichees?.Jeu.Id == etat.IdentifiantJeuProbable
+                || (
+                    _identifiantJeuSuccesCourant == etat.IdentifiantJeuProbable
+                    && _succesJeuCourant.Count > 0
+                )
+            )
+        )
+        {
+            return;
+        }
+
         if (
             string.IsNullOrWhiteSpace(titreJeuProbable)
             || string.Equals(

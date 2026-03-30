@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Input;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Debug;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Services;
@@ -18,7 +19,7 @@ public partial class MainWindow
 
         Key touche = e.Key == Key.System ? e.SystemKey : e.Key;
 
-        if (touche != Key.F8 && touche != Key.F10)
+        if (touche != Key.F7 && touche != Key.F8 && touche != Key.F9 && touche != Key.F10)
         {
             return;
         }
@@ -28,10 +29,18 @@ public partial class MainWindow
             "test_succes_raccourci_recu",
             $"touche={touche};jeu={_identifiantJeuLocalActif};jeuSucces={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
         );
-        await DeclencherTestSuccesDebugAsync();
+        ModeDeclenchementTestSuccesDebug modeDeclenchement = touche switch
+        {
+            Key.F9 => ModeDeclenchementTestSuccesDebug.SourceLocale,
+            Key.F7 => ModeDeclenchementTestSuccesDebug.Session,
+            _ => ModeDeclenchementTestSuccesDebug.InterneUi,
+        };
+        await DeclencherTestSuccesDebugAsync(modeDeclenchement);
     }
 
-    private async Task DeclencherTestSuccesDebugAsync()
+    private async Task DeclencherTestSuccesDebugAsync(
+        ModeDeclenchementTestSuccesDebug modeDeclenchement
+    )
     {
         string nomEmulateur =
             _dernierEtatSondeLocaleEmulateurs?.NomEmulateur?.Trim() ?? string.Empty;
@@ -49,7 +58,8 @@ public partial class MainWindow
                 identifiantJeu,
                 titreJeu,
                 _succesJeuCourant,
-                SuccesEstDebloquePourAffichage
+                SuccesEstDebloquePourAffichage,
+                modeDeclenchement
             );
 
         if (!resultat.EstValide || resultat.Scenario is null)
@@ -74,6 +84,106 @@ public partial class MainWindow
             "test_succes_declenche",
             $"mode={scenario.ModeDeclenchement};source={scenario.SourceSimulee};emulateur={scenario.NomEmulateur};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
         );
+
+        if (scenario.ModeDeclenchement == ModeDeclenchementTestSuccesDebug.SourceLocale)
+        {
+            ResultatExecutionTestSuccesDebug execution =
+                _serviceTestSuccesDebug.InjecterScenarioSourceLocale(scenario);
+
+            ServiceTestSuccesDebug.JournaliserEvenement(
+                execution.EstReussi
+                    ? "test_succes_injection_reussie"
+                    : "test_succes_injection_echec",
+                $"source={scenario.SourceSimulee};typeSource={scenario.TypeSourceLocale};chemin={execution.Chemin};motif={execution.Motif};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
+            );
+
+            if (!execution.EstReussi)
+            {
+                MessageBox.Show(
+                    $"Injection source locale impossible : {execution.Motif}",
+                    "Compagnon DEBUG",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+            }
+
+            return;
+        }
+
+        if (scenario.ModeDeclenchement == ModeDeclenchementTestSuccesDebug.Session)
+        {
+            IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent =
+                ServiceDetectionSuccesJeu.CapturerEtat(_succesJeuCourant);
+            IReadOnlyList<GameAchievementV2> succesVirtuels =
+                ServiceTestSuccesDebug.ConstruireSuccesVirtuelsSession(
+                    _succesJeuCourant,
+                    scenario
+                );
+            IReadOnlyList<SuccesDebloqueDetecte> succesDetectes =
+                ServiceDetectionSuccesJeu.DetecterNouveauxSucces(
+                    scenario.IdentifiantJeu,
+                    scenario.TitreJeu,
+                    etatPrecedent,
+                    succesVirtuels
+                );
+
+            if (succesDetectes.Count == 0)
+            {
+                ServiceTestSuccesDebug.JournaliserEvenement(
+                    "test_succes_session_aucun_resultat",
+                    $"source={scenario.SourceSimulee};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
+                );
+                MessageBox.Show(
+                    "Le test de session n'a détecté aucun nouveau succès.",
+                    "Compagnon DEBUG",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return;
+            }
+
+            bool unSuccesAffiche = false;
+
+            foreach (SuccesDebloqueDetecte succesDetecte in succesDetectes)
+            {
+                if (SuccesDejaTraiteRecemment(succesDetecte))
+                {
+                    ServiceTestSuccesDebug.JournaliserEvenement(
+                        "test_succes_session_ignore",
+                        $"motif=deja_traite;source={scenario.SourceSimulee};jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces}"
+                    );
+                    continue;
+                }
+
+                ServiceDetectionSuccesJeu.JournaliserDetection(
+                    succesDetecte,
+                    scenario.SourceSimulee
+                );
+                MarquerSuccesCommeTraite(succesDetecte);
+                bool succesAffiche = await AfficherSuccesDebloqueDetecteAsync(succesDetecte);
+                unSuccesAffiche |= succesAffiche;
+
+                ServiceTestSuccesDebug.JournaliserEvenement(
+                    succesAffiche
+                        ? "test_succes_session_affiche"
+                        : "test_succes_session_echec_ui",
+                    $"source={scenario.SourceSimulee};jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces}"
+                );
+            }
+
+            if (!unSuccesAffiche)
+            {
+                MessageBox.Show(
+                    "Le succès de test session a été détecté, mais l'UI n'a pas pu l'afficher.",
+                    "Compagnon DEBUG",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+            }
+
+            return;
+        }
+
         ServiceDetectionSuccesJeu.JournaliserDetection(succes, scenario.SourceSimulee);
         MarquerSuccesCommeTraite(succes);
 

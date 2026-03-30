@@ -44,7 +44,8 @@ public sealed class ServiceTestSuccesDebug
         int identifiantJeu,
         string titreJeu,
         IReadOnlyList<GameAchievementV2> succesJeuCourant,
-        Func<GameAchievementV2, bool> succesEstDebloque
+        Func<GameAchievementV2, bool> succesEstDebloque,
+        ModeDeclenchementTestSuccesDebug modeDeclenchement
     )
     {
         if (identifiantJeu <= 0)
@@ -67,11 +68,24 @@ public sealed class ServiceTestSuccesDebug
             return Invalide("aucun_succes_disponible");
         }
 
+        (string sourceSimulee, string typeSourceLocale, string cheminSourceLocale) =
+            ConstruireConfigurationSource(nomEmulateur, modeDeclenchement);
+
+        if (
+            modeDeclenchement == ModeDeclenchementTestSuccesDebug.SourceLocale
+            && string.IsNullOrWhiteSpace(cheminSourceLocale)
+        )
+        {
+            return Invalide("source_locale_indisponible");
+        }
+
         ScenarioTestSuccesDebug scenario =
             new()
             {
                 NomEmulateur = nomEmulateur.Trim(),
-                SourceSimulee = ConstruireSourceSimulee(nomEmulateur),
+                SourceSimulee = sourceSimulee,
+                TypeSourceLocale = typeSourceLocale,
+                CheminSourceLocale = cheminSourceLocale,
                 IdentifiantJeu = identifiantJeu,
                 TitreJeu = titreJeu?.Trim() ?? string.Empty,
                 IdentifiantSucces = succesCible.Id,
@@ -82,7 +96,7 @@ public sealed class ServiceTestSuccesDebug
                     "yyyy-MM-dd HH:mm:ss",
                     CultureInfo.InvariantCulture
                 ),
-                ModeDeclenchement = ModeDeclenchementTestSuccesDebug.InterneUi,
+                ModeDeclenchement = modeDeclenchement,
             };
 
         return new ResultatScenarioTestSuccesDebug
@@ -107,6 +121,105 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    public static List<GameAchievementV2> ConstruireSuccesVirtuelsSession(
+        IReadOnlyList<GameAchievementV2> succesJeuCourant,
+        ScenarioTestSuccesDebug scenario
+    )
+    {
+        List<GameAchievementV2> succesClones =
+        [
+            .. succesJeuCourant.Select(item => new GameAchievementV2
+            {
+                Id = item.Id,
+                Title = item.Title,
+                Description = item.Description,
+                Points = item.Points,
+                TrueRatio = item.TrueRatio,
+                NumAwarded = item.NumAwarded,
+                NumAwardedHardcore = item.NumAwardedHardcore,
+                BadgeName = item.BadgeName,
+                DisplayOrder = item.DisplayOrder,
+                Type = item.Type,
+                DateEarned = item.DateEarned,
+                DateEarnedHardcore = item.DateEarnedHardcore,
+                MemAddr = item.MemAddr,
+            }),
+        ];
+
+        GameAchievementV2? succesCible = succesClones.FirstOrDefault(item =>
+            item.Id == scenario.IdentifiantSucces
+        );
+
+        if (succesCible is not null)
+        {
+            succesCible.DateEarned = scenario.DateObtention;
+
+            if (scenario.Hardcore)
+            {
+                succesCible.DateEarnedHardcore = scenario.DateObtention;
+            }
+        }
+
+        return succesClones;
+    }
+
+    public ResultatExecutionTestSuccesDebug InjecterScenarioSourceLocale(
+        ScenarioTestSuccesDebug scenario
+    )
+    {
+        if (scenario.ModeDeclenchement != ModeDeclenchementTestSuccesDebug.SourceLocale)
+        {
+            return InvalideExecution("mode_invalide", scenario.CheminSourceLocale);
+        }
+
+        if (string.IsNullOrWhiteSpace(scenario.CheminSourceLocale))
+        {
+            return InvalideExecution("chemin_invalide", string.Empty);
+        }
+
+        try
+        {
+            string? repertoire = Path.GetDirectoryName(scenario.CheminSourceLocale);
+
+            if (!string.IsNullOrWhiteSpace(repertoire))
+            {
+                Directory.CreateDirectory(repertoire);
+            }
+
+            List<string> lignes = ConstruireLignesInjection(scenario);
+
+            using FileStream flux = new(
+                scenario.CheminSourceLocale,
+                FileMode.Append,
+                FileAccess.Write,
+                FileShare.ReadWrite
+            );
+            using StreamWriter ecrivain = new(flux);
+
+            foreach (string ligne in lignes)
+            {
+                ecrivain.WriteLine(ligne);
+            }
+
+            ecrivain.Flush();
+            flux.Flush(true);
+
+            return new ResultatExecutionTestSuccesDebug
+            {
+                EstReussi = true,
+                Motif = string.Empty,
+                Chemin = scenario.CheminSourceLocale,
+            };
+        }
+        catch (Exception exception)
+        {
+            return InvalideExecution(
+                $"{exception.GetType().Name}:{exception.Message}",
+                scenario.CheminSourceLocale
+            );
+        }
+    }
+
     private static ResultatScenarioTestSuccesDebug Invalide(string motif)
     {
         return new ResultatScenarioTestSuccesDebug
@@ -116,20 +229,186 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
-    private static string ConstruireSourceSimulee(string nomEmulateur)
+    private static ResultatExecutionTestSuccesDebug InvalideExecution(string motif, string chemin)
     {
-        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        return new ResultatExecutionTestSuccesDebug
         {
-            return "debug_interne";
+            EstReussi = false,
+            Motif = motif,
+            Chemin = chemin,
+        };
+    }
+
+    private static (
+        string SourceSimulee,
+        string TypeSourceLocale,
+        string CheminSourceLocale
+    ) ConstruireConfigurationSource(
+        string nomEmulateur,
+        ModeDeclenchementTestSuccesDebug modeDeclenchement
+    )
+    {
+        string sourceSimulee = ConstruireSourceSimulee(nomEmulateur, modeDeclenchement);
+
+        if (modeDeclenchement != ModeDeclenchementTestSuccesDebug.SourceLocale)
+        {
+            return (sourceSimulee, string.Empty, string.Empty);
         }
 
         return nomEmulateur.Trim() switch
         {
-            "RetroArch" => "retroarch_log_test",
-            "RALibretro" => "ralibretro_log_test",
-            "LunaProject64" => "lunaproject64_log_test",
+            "RetroArch" => (
+                sourceSimulee,
+                "logs",
+                TrouverCheminJournalRetroArchPourInjection()
+            ),
+            "RALibretro" => (
+                sourceSimulee,
+                "racache_log",
+                Path.Combine(TrouverRepertoireRACacheRALibretro(), "RALog.txt")
+            ),
+            "LunaProject64" => (
+                sourceSimulee,
+                "racache_log",
+                Path.Combine(TrouverRepertoireRACacheProject64(), "RALog.txt")
+            ),
+            _ => (sourceSimulee, string.Empty, string.Empty),
+        };
+    }
+
+    private static string ConstruireSourceSimulee(
+        string nomEmulateur,
+        ModeDeclenchementTestSuccesDebug modeDeclenchement
+    )
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
+            return modeDeclenchement switch
+            {
+                ModeDeclenchementTestSuccesDebug.SourceLocale => "debug_source_locale",
+                ModeDeclenchementTestSuccesDebug.Session => "debug_session",
+                _ => "debug_interne",
+            };
+        }
+
+        string suffixe = modeDeclenchement switch
+        {
+            ModeDeclenchementTestSuccesDebug.SourceLocale => "_log_test",
+            ModeDeclenchementTestSuccesDebug.Session => "_session_test",
+            _ => "_interne_test",
+        };
+
+        return nomEmulateur.Trim() switch
+        {
+            "RetroArch" => $"retroarch{suffixe}",
+            "RALibretro" => $"ralibretro{suffixe}",
+            "LunaProject64" => $"lunaproject64{suffixe}",
             _ => "debug_interne",
         };
+    }
+
+    private static List<string> ConstruireLignesInjection(ScenarioTestSuccesDebug scenario)
+    {
+        return string.Equals(scenario.NomEmulateur, "RetroArch", StringComparison.Ordinal)
+            ?
+            [
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"[INFO] [RCHEEVOS] Awarding achievement {scenario.IdentifiantSucces}: {scenario.TitreSucces}"
+                ),
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"[INFO] [RCHEEVOS] Achievement {scenario.IdentifiantSucces} awarded, new score: 0"
+                ),
+            ]
+            :
+            [
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{DateTime.Now:HHmmss.fff}|INFO| Awarding achievement {scenario.IdentifiantSucces}: {scenario.TitreSucces}"
+                ),
+                string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"{DateTime.Now.AddMilliseconds(50):HHmmss.fff}|INFO| Achievement {scenario.IdentifiantSucces} awarded"
+                ),
+            ];
+    }
+
+    private static string TrouverCheminJournalRetroArchPourInjection()
+    {
+        string repertoireLogs = TrouverRepertoireLogsRetroArch();
+
+        if (string.IsNullOrWhiteSpace(repertoireLogs))
+        {
+            return string.Empty;
+        }
+
+        DirectoryInfo repertoire = new(repertoireLogs);
+        FileInfo? fichier = repertoire
+            .EnumerateFiles("retroarch__*.log", SearchOption.TopDirectoryOnly)
+            .Where(item => item.Length > 0)
+            .OrderByDescending(item => item.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        fichier ??= repertoire
+            .EnumerateFiles("*.log", SearchOption.TopDirectoryOnly)
+            .OrderByDescending(item => item.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        if (fichier is not null)
+        {
+            return fichier.FullName;
+        }
+
+        return Path.Combine(
+            repertoireLogs,
+            $"retroarch__{DateTime.Now:yyyy_MM_dd__HH_mm_ss}.log"
+        );
+    }
+
+    private static string TrouverRepertoireLogsRetroArch()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RetroArch", "logs"),
+            Path.Combine(documents, "RetroArch", "logs"),
+            Path.Combine(appData, "RetroArch", "logs"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    private static string TrouverRepertoireRACacheProject64()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
+            Path.Combine(documents, "Luna_Project64", "RACache"),
+            Path.Combine(appData, "Luna-Project64", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    private static string TrouverRepertoireRACacheRALibretro()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RALibretro", "RACache"),
+            Path.Combine(documents, "RALibretro", "RACache"),
+            Path.Combine(appData, "RALibretro", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
     private static string Nettoyer(string? valeur)

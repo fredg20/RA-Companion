@@ -136,21 +136,22 @@ public partial class MainWindow
             : Visibility.Visible;
     }
 
-    private async Task AppliquerDerniereListeSuccesSauvegardeeAsync(int identifiantJeu)
+    private Task AppliquerDerniereListeSuccesSauvegardeeAsync(int identifiantJeu)
     {
         EtatListeSuccesAfficheeLocal? listeSauvegardee =
             _configurationConnexion.DerniereListeSuccesAffichee;
 
         if (listeSauvegardee is null || listeSauvegardee.Id != identifiantJeu)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         GrilleTousSuccesJeuEnCours.Children.Clear();
 
-        SystemControls.Border[] badges = await Task.WhenAll(
-            listeSauvegardee.Achievements.Select(succesSauvegarde =>
-                ConstruireBadgeGrilleSuccesAsync(
+        foreach (ElementListeSuccesAfficheLocal succesSauvegarde in listeSauvegardee.Achievements)
+        {
+            GrilleTousSuccesJeuEnCours.Children.Add(
+                ConstruireBadgeGrilleSucces(
                     identifiantJeu,
                     new SuccesGrilleAffiche
                     {
@@ -163,17 +164,13 @@ public partial class MainWindow
                         ),
                     }
                 )
-            )
-        );
-
-        foreach (SystemControls.Border badge in badges)
-        {
-            GrilleTousSuccesJeuEnCours.Children.Add(badge);
+            );
         }
 
         RafraichirStyleBadgesGrilleSucces();
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        return Task.CompletedTask;
     }
 
     private Task SauvegarderDernierJeuAfficheAsync(

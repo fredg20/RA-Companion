@@ -117,6 +117,7 @@ public partial class MainWindow : UiControls.FluentWindow
         new(StringComparer.OrdinalIgnoreCase);
     private readonly List<VisuelJeuEnCours> _visuelsJeuEnCours = [];
     private SystemControls.Primitives.ScrollBar? _barreDefilementVerticalePrincipale;
+    private SystemControls.Primitives.ScrollBar? _barreDefilementVerticaleListeSucces;
     private bool _connexionInitialeAffichee;
     private bool _chargementJeuEnCoursActif;
     private bool _actualisationApiCibleeEnAttente;
@@ -131,6 +132,8 @@ public partial class MainWindow : UiControls.FluentWindow
     private bool _miseAJourAnimationGrilleSuccesPlanifiee;
     private bool _animationGrilleSuccesVersBas = true;
     private bool _survolBadgeGrilleSuccesActif;
+    private bool _interactionListeSuccesActive;
+    private double _dernierOffsetInteractionListeSucces;
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
@@ -192,6 +195,7 @@ public partial class MainWindow : UiControls.FluentWindow
         InitializeComponent();
         App.JournaliserDemarrage("MainWindow ctor fin");
         ServiceSurveillanceSuccesLocaux.ReinitialiserJournalSession();
+        ReinitialiserJournalDiagnosticListeSucces();
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
         ReinitialiserJeuEnCours();

@@ -41,7 +41,9 @@ public partial class MainWindow
         _animationGrilleSuccesVersBas = true;
         _amplitudeAnimationGrilleSucces = 0;
         _minuteurRepriseAnimationGrilleSucces.Stop();
+        ConteneurGrilleTousSuccesJeuEnCours?.ScrollToVerticalOffset(0);
         GrilleTousSuccesJeuEnCours.Children.Clear();
+        ReinitialiserPositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
@@ -362,7 +364,12 @@ public partial class MainWindow
         }
 
         MarquerSuccesCommeDebloqueLocalement(succes, succesDetecte);
-        if (!_succesDebloquesLocauxTemporaires.TryGetValue(succesDetecte.IdentifiantJeu, out HashSet<int>? succesTemp))
+        if (
+            !_succesDebloquesLocauxTemporaires.TryGetValue(
+                succesDetecte.IdentifiantJeu,
+                out HashSet<int>? succesTemp
+            )
+        )
         {
             succesTemp = [];
             _succesDebloquesLocauxTemporaires[succesDetecte.IdentifiantJeu] = succesTemp;
@@ -414,7 +421,10 @@ public partial class MainWindow
             return;
         }
 
-        string dateSession = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+        string dateSession = DateTime.Now.ToString(
+            "yyyy-MM-dd HH:mm:ss",
+            CultureInfo.InvariantCulture
+        );
 
         foreach (GameAchievementV2 succesJeu in succes.Where(item => ids.Contains(item.Id)))
         {

@@ -305,55 +305,69 @@ public partial class MainWindow
             return;
         }
 
-        var badgesCharges = await Task.WhenAll(
-            succesOrdonnes.Select(async succesJeu =>
-            {
-                SuccesGrilleAffiche succesAffiche = ServicePresentationSucces.ConstruirePourGrille(
-                    succesJeu
-                );
+        List<ElementListeSuccesAfficheLocal> etatsBadges = [];
 
-                return new
-                {
-                    Badge = await ConstruireBadgeGrilleSuccesAsync(identifiantJeu, succesAffiche),
-                    Etat = new ElementListeSuccesAfficheLocal
+        foreach (GameAchievementV2[] lotSucces in succesOrdonnes.Chunk(12))
+        {
+            if (_identifiantJeuSuccesCourant != identifiantJeu)
+            {
+                return;
+            }
+
+            foreach (GameAchievementV2 succesJeu in lotSucces)
+            {
+                SuccesGrilleAffiche succesAffiche =
+                    ServicePresentationSucces.ConstruirePourGrille(succesJeu);
+
+                GrilleTousSuccesJeuEnCours.Children.Add(
+                    ConstruireBadgeGrilleSucces(identifiantJeu, succesAffiche)
+                );
+                etatsBadges.Add(
+                    new ElementListeSuccesAfficheLocal
                     {
                         IdentifiantSucces = succesJeu.Id,
                         Titre = succesAffiche.Titre,
                         CheminImageBadge = succesAffiche.UrlBadge,
-                    },
-                };
-            })
+                    }
+                );
+            }
+
+            MettreAJourDispositionGrilleTousSucces();
+            GrilleTousSuccesJeuEnCours.UpdateLayout();
+            ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+            AjusterHauteurListeSuccesJeuEnCours();
+            await Task.Yield();
+        }
+
+        ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
+        SauvegarderDerniereListeSuccesAffichee(identifiantJeu, etatsBadges);
+        MettreAJourDispositionGrilleTousSucces();
+        GrilleTousSuccesJeuEnCours.UpdateLayout();
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        CarteListeSuccesJeuEnCours?.UpdateLayout();
+        CarteJeuEnCours?.UpdateLayout();
+        AjusterHauteurListeSuccesJeuEnCours();
+        _ = Dispatcher.BeginInvoke(
+            (Action)AjusterHauteurListeSuccesJeuEnCours,
+            System.Windows.Threading.DispatcherPriority.Render
         );
-
-        if (_identifiantJeuSuccesCourant != identifiantJeu)
-        {
-            return;
-        }
-
-        foreach (var badgeCharge in badgesCharges)
-        {
-            GrilleTousSuccesJeuEnCours.Children.Add(badgeCharge.Badge);
-        }
-
-        SauvegarderDerniereListeSuccesAffichee(
-            identifiantJeu,
-            [.. badgesCharges.Select(item => item.Etat)]
+        _ = Dispatcher.BeginInvoke(
+            (Action)AjusterHauteurListeSuccesJeuEnCours,
+            System.Windows.Threading.DispatcherPriority.Loaded
         );
         RafraichirStyleBadgesGrilleSucces();
-        MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
-        TerminerDiagnosticChangementJeu("grille_fin", $"badges={badgesCharges.Length}");
+        TerminerDiagnosticChangementJeu("grille_fin", $"badges={etatsBadges.Count}");
     }
 
     /// <summary>
     /// Construit un badge de la grille des rétrosuccès à partir de son titre et de son visuel.
     /// </summary>
-    private async Task<SystemControls.Border> ConstruireBadgeGrilleSuccesAsync(
+    private SystemControls.Border ConstruireBadgeGrilleSucces(
         int identifiantJeu,
         SuccesGrilleAffiche succesAffiche
     )
     {
-        ImageSource? imageBadge = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
         SystemControls.Border conteneur = new()
         {
             Width = TailleBadgeGrilleSucces,
@@ -376,38 +390,65 @@ public partial class MainWindow
         conteneur.MouseLeftButtonUp += BadgeGrilleSucces_ClicGauche;
         conteneur.MouseRightButtonUp += BadgeGrilleSucces_ClicDroit;
 
-        if (imageBadge is null)
+        SystemControls.Grid grilleVisuel = new();
+        SystemControls.TextBlock texteSecours = new()
         {
-            conteneur.Child = new SystemControls.TextBlock
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Opacity = 0.62,
-                Text = succesAffiche.Titre,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap,
-            };
-            return conteneur;
-        }
-
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = 0.62,
+            FontSize = 10,
+            FontWeight = FontWeights.SemiBold,
+            Text = string.IsNullOrWhiteSpace(succesAffiche.Titre)
+                ? "?"
+                : succesAffiche.Titre[..1].ToUpperInvariant(),
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.NoWrap,
+        };
         SystemControls.Image imageSucces = new()
         {
-            Source = succesAffiche.EstDebloque
-                ? imageBadge
-                : ConvertirImageEnNoirEtBlanc(imageBadge),
             Width = 34,
             Height = 34,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            Opacity = succesAffiche.EstDebloque ? 1 : 0.58,
+            Opacity = 0,
             Stretch = Stretch.Uniform,
         };
 
         imageSucces.Loaded += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
         imageSucces.SizeChanged += (_, _) => AppliquerCoinsArrondisImage(imageSucces);
-        conteneur.Child = imageSucces;
+        grilleVisuel.Children.Add(texteSecours);
+        grilleVisuel.Children.Add(imageSucces);
+        conteneur.Child = grilleVisuel;
         AppliquerStyleBadgeEpingle(conteneur);
+        _ = ChargerImageBadgeGrilleEnArrierePlanAsync(imageSucces, texteSecours, succesAffiche);
         return conteneur;
+    }
+
+    private async Task ChargerImageBadgeGrilleEnArrierePlanAsync(
+        SystemControls.Image imageSucces,
+        SystemControls.TextBlock texteSecours,
+        SuccesGrilleAffiche succesAffiche
+    )
+    {
+        try
+        {
+            ImageSource? imageBadge = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
+
+            if (imageBadge is null)
+            {
+                return;
+            }
+
+            imageSucces.Source = succesAffiche.EstDebloque
+                ? imageBadge
+                : ConvertirImageEnNoirEtBlanc(imageBadge);
+            imageSucces.Opacity = succesAffiche.EstDebloque ? 1 : 0.58;
+            texteSecours.Visibility = Visibility.Collapsed;
+        }
+        catch
+        {
+            // Le badge texte de secours reste affiché.
+        }
     }
 
     /// <summary>
@@ -605,7 +646,18 @@ public partial class MainWindow
         SizeChangedEventArgs e
     )
     {
+        JournaliserDiagnosticListeSucces(
+            "liste_sizechanged",
+            $"largeur={e.NewSize.Width:0.##};hauteur={e.NewSize.Height:0.##}"
+        );
         MettreAJourDispositionGrilleTousSucces();
+        GrilleTousSuccesJeuEnCours.UpdateLayout();
+        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        AjusterHauteurListeSuccesJeuEnCours();
+        _ = Dispatcher.BeginInvoke(
+            (Action)AjusterHauteurListeSuccesJeuEnCours,
+            System.Windows.Threading.DispatcherPriority.Render
+        );
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 

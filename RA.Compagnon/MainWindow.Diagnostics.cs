@@ -15,6 +15,11 @@ public partial class MainWindow
         "RA-Compagnon",
         "journal-performance-jeu.log"
     );
+    private static readonly string CheminJournalDiagnosticListeSucces = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RA-Compagnon",
+        "journal-liste-succes.log"
+    );
 
     public static void ReinitialiserJournalDiagnosticPerformance()
     {
@@ -24,6 +29,45 @@ public partial class MainWindow
             File.WriteAllText(
                 CheminJournalDiagnosticPerformance,
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
+            );
+        }
+        catch
+        {
+            // Ce journal reste purement diagnostique.
+        }
+    }
+
+    public static void ReinitialiserJournalDiagnosticListeSucces()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalDiagnosticListeSucces)!);
+            File.WriteAllText(
+                CheminJournalDiagnosticListeSucces,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] nouvelle_session{Environment.NewLine}"
+            );
+        }
+        catch
+        {
+            // Ce journal reste purement diagnostique.
+        }
+    }
+
+    private void JournaliserDiagnosticListeSucces(string evenement, string? details = null)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CheminJournalDiagnosticListeSucces)!);
+            double offset = ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
+            double hauteurVisible = ConteneurGrilleTousSuccesJeuEnCours?.ViewportHeight ?? 0;
+            double hauteurDefilable = ConteneurGrilleTousSuccesJeuEnCours?.ScrollableHeight ?? 0;
+            int nbBadges = GrilleTousSuccesJeuEnCours?.Children.Count ?? 0;
+            string etat =
+                $"offset={offset:0.##};amplitude={_amplitudeAnimationGrilleSucces:0.##};sens={(_animationGrilleSuccesVersBas ? "bas" : "haut")};interaction={_interactionListeSuccesActive};survolBadge={_survolBadgeGrilleSuccesActif};visible={hauteurVisible:0.##};scrollable={hauteurDefilable:0.##};badges={nbBadges}";
+
+            File.AppendAllText(
+                CheminJournalDiagnosticListeSucces,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
             );
         }
         catch

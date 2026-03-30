@@ -84,7 +84,11 @@ public sealed partial class ServiceCatalogueJeuxLocal
             existant.ImageTitre = (jeu.ImageTitle ?? string.Empty).Trim();
             existant.ImageEnJeu = (jeu.ImageIngame ?? string.Empty).Trim();
             existant.DateMajUtc = maintenant;
-            existant.Succes = [.. jeu.Succes.Values.Select(ConvertirSucces)];
+            List<SuccesCatalogueLocal> succesConvertis =
+            [
+                .. jeu.Succes.Values.Select(ConvertirSucces),
+            ];
+            existant.Succes = FusionnerSuccesSansRegresser(existant.Succes, succesConvertis);
 
             HashSet<string> titresAlternatifs = new(StringComparer.OrdinalIgnoreCase);
 
@@ -214,6 +218,37 @@ public sealed partial class ServiceCatalogueJeuxLocal
             Type = (succes.Type ?? string.Empty).Trim(),
             DateMajUtc = DateTimeOffset.UtcNow,
         };
+    }
+
+    private static List<SuccesCatalogueLocal> FusionnerSuccesSansRegresser(
+        List<SuccesCatalogueLocal> succesExistants,
+        List<SuccesCatalogueLocal> succesRecus
+    )
+    {
+        if (succesExistants.Count == 0)
+        {
+            return succesRecus;
+        }
+
+        if (succesRecus.Count == 0)
+        {
+            return succesExistants;
+        }
+
+        Dictionary<int, SuccesCatalogueLocal> succesFusionnes = succesExistants.ToDictionary(
+            item => item.AchievementId
+        );
+
+        foreach (SuccesCatalogueLocal succesRecu in succesRecus)
+        {
+            succesFusionnes[succesRecu.AchievementId] = succesRecu;
+        }
+
+        return
+        [
+            .. succesFusionnes
+                .Values.OrderBy(item => item.AchievementId)
+        ];
     }
 
     private static void AjouterTitreAlternatif(

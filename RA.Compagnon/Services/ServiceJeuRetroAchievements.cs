@@ -207,13 +207,42 @@ public sealed class ServiceJeuRetroAchievements
             jeu.NumDistinctPlayers = details.NumDistinctPlayers;
         }
 
-        if (
-            (jeu.Achievements is null || jeu.Achievements.Count == 0)
-            && details.Achievements.Count > 0
-        )
+        if (details.Achievements.Count > 0)
         {
-            jeu.Achievements = details.Achievements;
-            jeu.NumAchievements = details.NumAchievements;
+            Dictionary<string, GameAchievementV2> succesJeuCourants = jeu.Achievements ?? [];
+            bool doitRemplacerSucces =
+                succesJeuCourants.Count == 0
+                || details.Achievements.Count > succesJeuCourants.Count
+                || details.NumAchievements > Math.Max(jeu.NumAchievements, succesJeuCourants.Count);
+
+            if (doitRemplacerSucces)
+            {
+                Dictionary<string, GameAchievementV2> succesFusionnes = details
+                    .Achievements.ToDictionary(
+                        item => item.Key,
+                        item =>
+                        {
+                            GameAchievementV2 succesDetail = item.Value;
+
+                            if (
+                                succesJeuCourants.TryGetValue(item.Key, out GameAchievementV2? succesCourant)
+                                || succesJeuCourants.TryGetValue(
+                                    succesDetail.Id.ToString(),
+                                    out succesCourant
+                                )
+                            )
+                            {
+                                succesDetail.DateEarned = succesCourant.DateEarned;
+                                succesDetail.DateEarnedHardcore = succesCourant.DateEarnedHardcore;
+                            }
+
+                            return succesDetail;
+                        }
+                    );
+
+                jeu.Achievements = succesFusionnes;
+                jeu.NumAchievements = Math.Max(details.NumAchievements, succesFusionnes.Count);
+            }
         }
     }
 

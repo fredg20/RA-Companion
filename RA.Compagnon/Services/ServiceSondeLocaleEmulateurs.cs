@@ -49,7 +49,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         new("RALibretro", ["ralibretro"], ExtraireTitreRALibretro),
         new(
             "DuckStation",
-            ["duckstation", "duckstation-qt", "duckstation-nogui", "duckstation-sdl"],
+            [
+                "duckstation",
+                "duckstation-qt",
+                "duckstation-nogui",
+                "duckstation-sdl",
+                "duckstation-x64",
+                "duckstation-avx2",
+                "duckstation-qt-x64",
+            ],
             ExtraireTitreDuckStation
         ),
         new("PCSX2", ["pcsx2", "pcsx2-qt"], ExtraireTitrePCSX2),
@@ -234,6 +242,23 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     $"logGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
             }
         }
+        else if (string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal))
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuDuckStationDepuisLog();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic =
+                    $"logGameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+            }
+        }
 
         if (
             string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
@@ -292,6 +317,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static bool CorrespondNomProcessus(Process processus, DefinitionEmulateur definition)
     {
         string nomProcessus = processus.ProcessName?.Trim() ?? string.Empty;
+
+        if (
+            string.Equals(definition.NomEmulateur, "DuckStation", StringComparison.Ordinal)
+            && nomProcessus.Contains("duckstation", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return true;
+        }
+
         return definition.NomsProcessus.Any(nom =>
             string.Equals(nomProcessus, nom, StringComparison.OrdinalIgnoreCase)
             || nomProcessus.StartsWith(nom, StringComparison.OrdinalIgnoreCase)
@@ -1145,7 +1179,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 return null;
             }
 
-            if (DateTime.UtcNow - File.GetLastWriteTimeUtc(cheminJournal) > TimeSpan.FromMinutes(15))
+            if (
+                DateTime.UtcNow - File.GetLastWriteTimeUtc(cheminJournal)
+                > TimeSpan.FromMinutes(15)
+            )
             {
                 return LireRenseignementJeuRetroArchDepuisCache();
             }
@@ -1200,6 +1237,75 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return LireRenseignementJeuRetroArchDepuisCache();
     }
 
+    private static RenseignementJeuRA? LireRenseignementJeuDuckStationDepuisLog()
+    {
+        try
+        {
+            string cheminJournal = TrouverCheminJournalDuckStation();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return null;
+            }
+
+            FileInfo fichierJournal = new(cheminJournal);
+
+            if (
+                fichierJournal.Length <= 0
+                || DateTime.UtcNow - fichierJournal.LastWriteTimeUtc > TimeSpan.FromMinutes(15)
+            )
+            {
+                return null;
+            }
+
+            foreach (
+                string ligne in LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceChargement = DuckStationGameLoadedRegex().Match(ligne);
+
+                if (
+                    correspondanceChargement.Success
+                    && int.TryParse(
+                        correspondanceChargement.Groups[2].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                    && identifiantJeuCharge > 0
+                )
+                {
+                    string titreJeu = correspondanceChargement.Groups[1].Value.Trim();
+                    return new RenseignementJeuRA(identifiantJeuCharge, titreJeu);
+                }
+
+                Match correspondance = JournalGameIdRegex().Match(ligne);
+
+                if (
+                    correspondance.Success
+                    && int.TryParse(
+                        correspondance.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeu
+                    )
+                    && identifiantJeu > 0
+                )
+                {
+                    return new RenseignementJeuRA(identifiantJeu, string.Empty);
+                }
+            }
+        }
+        catch
+        {
+            // Le log DuckStation reste une aide locale facultative.
+        }
+
+        return null;
+    }
+
     private static string TrouverDernierCheminJournalRetroArch()
     {
         try
@@ -1230,6 +1336,30 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             return string.Empty;
         }
+    }
+
+    private static string TrouverCheminJournalDuckStation()
+    {
+        string[] candidats =
+        [
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "DuckStation",
+                "duckstation.log"
+            ),
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DuckStation",
+                "duckstation.log"
+            ),
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "DuckStation",
+                "duckstation.log"
+            ),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
     private static RenseignementJeuRA? MemoriserRenseignementRetroArch(
@@ -2075,6 +2205,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex JournalSuccesAttributionRegex();
+
+    [GeneratedRegex(
+        @"Game loaded:\s*'(.+?)'\s*\(ID:\s*(\d+)\s*,",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex DuckStationGameLoadedRegex();
 
     [GeneratedRegex(
         @"Achievement\s+(\d+)\s+awarded\b",

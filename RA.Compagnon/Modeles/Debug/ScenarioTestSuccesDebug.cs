@@ -6,6 +6,10 @@ public sealed class ScenarioTestSuccesDebug
 
     public string SourceSimulee { get; init; } = string.Empty;
 
+    public string TypeSourceLocale { get; init; } = string.Empty;
+
+    public string CheminSourceLocale { get; init; } = string.Empty;
+
     public int IdentifiantJeu { get; init; }
 
     public string TitreJeu { get; init; } = string.Empty;
