@@ -140,7 +140,7 @@ Build de la solution :
 dotnet build RA.Compagnon.sln -m:1
 ```
 
-Génération du livrable dans `dist` :
+Generation du livrable autonome `RA.Compagnon-win-x64` dans `dist` :
 
 ```powershell
 ./build.ps1

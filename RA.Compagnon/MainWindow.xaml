@@ -939,13 +939,112 @@
       </ScrollViewer>
     </Border>
 
+    <Grid
+      x:Name="VoileFenetreConnexion"
+      Grid.RowSpan="3"
+      Panel.ZIndex="10"
+      Visibility="Collapsed"
+      Background="#88000000"
+      IsHitTestVisible="False"
+    />
+
+    <Grid
+      x:Name="OverlayConnexion"
+      Grid.RowSpan="3"
+      Panel.ZIndex="20"
+      Visibility="Collapsed"
+      Background="#88000000"
+      IsHitTestVisible="True"
+      Focusable="True"
+    >
+      <Border
+        Width="430"
+        MaxWidth="430"
+        Padding="16"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Background="{DynamicResource ControlFillColorDefaultBrush}"
+        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        CornerRadius="12"
+        KeyboardNavigation.TabNavigation="Cycle"
+      >
+        <StackPanel>
+          <TextBlock
+            FontSize="20"
+            FontWeight="SemiBold"
+            Text="Connexion RetroAchievements"
+            Margin="0,0,0,8"
+          />
+          <TextBlock
+            Opacity="0.84"
+            TextWrapping="Wrap"
+            Margin="0,0,0,14"
+            Text="Entre ton pseudo et ta clé Web API pour synchroniser ton dernier jeu joué, ta progression et tes succès récents."
+          />
+
+          <TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Pseudo" />
+          <TextBox
+            x:Name="ChampPseudoConnexion"
+            MinWidth="360"
+            Padding="10,6"
+            Margin="0,0,0,14"
+          />
+
+          <TextBlock Margin="0,0,0,6" FontWeight="SemiBold" Text="Clé API" />
+          <PasswordBox
+            x:Name="ChampCleApiConnexion"
+            MinWidth="360"
+            Padding="10,6"
+          />
+
+          <TextBlock
+            Margin="0,10,0,0"
+            Opacity="0.68"
+            TextWrapping="Wrap"
+            Text="Tu peux retrouver cette clé depuis ton compte RetroAchievements, dans la section dédiée à l'API Web."
+          />
+
+          <TextBlock
+            x:Name="TexteErreurConnexion"
+            Margin="0,12,0,0"
+            Foreground="IndianRed"
+            TextWrapping="Wrap"
+            Visibility="Collapsed"
+          />
+
+          <StackPanel
+            Orientation="Horizontal"
+            HorizontalAlignment="Center"
+            Margin="0,18,0,0"
+          >
+            <Button
+              x:Name="BoutonEnregistrerConnexion"
+              MinWidth="120"
+              Padding="14,6"
+              Margin="0,0,8,0"
+              IsDefault="True"
+              Content="Enregistrer"
+            />
+            <Button
+              x:Name="BoutonAnnulerConnexion"
+              MinWidth="120"
+              Padding="14,6"
+              IsCancel="True"
+              Content="Fermer"
+            />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
     <ui:ContentDialogHost
       x:Name="RacineModales"
       Grid.RowSpan="3"
       Background="Transparent"
       IsHitTestVisible="False"
       Visibility="Collapsed"
-      Panel.ZIndex="10"
+      Panel.ZIndex="11"
     />
   </Grid>
 </ui:FluentWindow>

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -14,6 +15,21 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
+    private SolidColorBrush ObtenirPinceauTheme(string cleRessource, Color couleurParDefaut)
+    {
+        if (TryFindResource(cleRessource) is SolidColorBrush pinceauLocal)
+        {
+            return pinceauLocal;
+        }
+
+        if (Application.Current.TryFindResource(cleRessource) is SolidColorBrush pinceauApp)
+        {
+            return pinceauApp;
+        }
+
+        return new SolidColorBrush(couleurParDefaut);
+    }
+
     private void DefinirEtatModalesActif(bool actif)
     {
         if (RacineModales is null)
@@ -25,198 +41,319 @@ public partial class MainWindow
         RacineModales.IsHitTestVisible = actif;
     }
 
-    private async Task AfficherModaleConnexionAsync(bool masquerContenuPrincipal = true)
+    private void DefinirVoileConnexionActif(bool actif)
     {
-        ArreterActualisationAutomatique();
-        if (masquerContenuPrincipal)
+        if (VoileFenetreConnexion is null)
         {
-            DefinirVisibiliteContenuPrincipal(false);
+            return;
         }
 
-        while (true)
+        VoileFenetreConnexion.Visibility = actif ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task AfficherModaleConnexionAsync(
+        bool masquerContenuPrincipal = true,
+        bool fermerApplicationSiAnnuleSansConfiguration = true
+    )
+    {
+        ArreterActualisationAutomatique();
+        bool connexionDejaConfiguree = ConfigurationConnexionEstComplete();
+        string pseudoValide = string.Empty;
+        string cleApiValide = string.Empty;
+        SolidColorBrush fondFenetre = Brushes.Transparent;
+        SolidColorBrush fondCarte = new(Color.FromRgb(36, 36, 40));
+        SolidColorBrush fondChamp = new(Color.FromRgb(24, 24, 27));
+        SolidColorBrush bordure = ObtenirPinceauTheme(
+            "CardStrokeColorDefaultBrush",
+            Color.FromRgb(78, 78, 86)
+        );
+        SolidColorBrush textePrincipal = ObtenirPinceauTheme(
+            "TextFillColorPrimaryBrush",
+            Color.FromRgb(243, 244, 246)
+        );
+        SolidColorBrush texteSecondaire = ObtenirPinceauTheme(
+            "TextFillColorSecondaryBrush",
+            Color.FromRgb(191, 197, 206)
+        );
+        SolidColorBrush fondBoutonPrimaire = ObtenirPinceauTheme(
+            "SystemAccentColorBrush",
+            Color.FromRgb(28, 100, 242)
+        );
+        CornerRadius rayonCoins = ObtenirRayonCoins("RayonCoinsStandard", 12);
+
+        SystemControls.TextBox champPseudo = new()
         {
-            bool connexionDejaConfiguree = ConfigurationConnexionEstComplete();
-            UiControls.TextBox champPseudo = new()
-            {
-                MinWidth = LargeurContenuModaleConnexion,
-                MaxWidth = LargeurContenuModaleConnexion,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                PlaceholderText = "Pseudo",
-                Text = _configurationConnexion.Pseudo,
-            };
+            MinWidth = LargeurContenuModaleConnexion,
+            MaxWidth = LargeurContenuModaleConnexion,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Padding = new Thickness(10, 6, 10, 6),
+            Margin = new Thickness(0, 0, 0, 14),
+            Text = _configurationConnexion.Pseudo,
+            Foreground = textePrincipal,
+            Background = fondChamp,
+            BorderBrush = bordure,
+            BorderThickness = new Thickness(1),
+            CaretBrush = textePrincipal,
+        };
 
-            UiControls.PasswordBox champCleApi = new()
-            {
-                MinWidth = LargeurContenuModaleConnexion,
-                MaxWidth = LargeurContenuModaleConnexion,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Password = _configurationConnexion.CleApiWeb,
-                PlaceholderText = "Clé API",
-            };
+        SystemControls.PasswordBox champCleApi = new()
+        {
+            MinWidth = LargeurContenuModaleConnexion,
+            MaxWidth = LargeurContenuModaleConnexion,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Password = _configurationConnexion.CleApiWeb,
+            Padding = new Thickness(10, 6, 10, 6),
+            Foreground = textePrincipal,
+            Background = fondChamp,
+            BorderBrush = bordure,
+            BorderThickness = new Thickness(1),
+            CaretBrush = textePrincipal,
+        };
 
-            SystemControls.TextBlock texteErreur = new()
-            {
-                MinWidth = LargeurContenuModaleConnexion,
-                MaxWidth = LargeurContenuModaleConnexion,
-                Margin = new Thickness(0, 12, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Visibility = Visibility.Collapsed,
-                Foreground = Brushes.IndianRed,
-                TextWrapping = TextWrapping.Wrap,
-            };
+        SystemControls.TextBlock texteErreur = new()
+        {
+            MinWidth = LargeurContenuModaleConnexion,
+            MaxWidth = LargeurContenuModaleConnexion,
+            Margin = new Thickness(0, 12, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Visibility = Visibility.Collapsed,
+            Foreground = Brushes.IndianRed,
+            TextWrapping = TextWrapping.Wrap,
+        };
 
-            SystemControls.StackPanel contenu = new()
-            {
-                Width = LargeurContenuModaleConnexion,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Margin = new Thickness(0),
-                Children =
-                {
-                    new SystemControls.TextBlock
-                    {
-                        MinWidth = LargeurContenuModaleConnexion,
-                        MaxWidth = LargeurContenuModaleConnexion,
-                        FontSize = 20,
-                        FontWeight = FontWeights.SemiBold,
-                        Text = "Connecter ton compte",
-                        Margin = new Thickness(0, 0, 0, 8),
-                    },
-                    new SystemControls.TextBlock
-                    {
-                        MinWidth = LargeurContenuModaleConnexion,
-                        MaxWidth = LargeurContenuModaleConnexion,
-                        Opacity = 0.84,
-                        Text =
-                            "Entre ton pseudo et ta clé Web API pour synchroniser ton dernier jeu joué, ta progression et tes succès récents.",
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(0, 0, 0, 14),
-                    },
-                    champPseudo,
-                    champCleApi,
-                    new SystemControls.TextBlock
-                    {
-                        MinWidth = LargeurContenuModaleConnexion,
-                        MaxWidth = LargeurContenuModaleConnexion,
-                        Margin = new Thickness(0, 10, 0, 0),
-                        Opacity = 0.68,
-                        Text =
-                            "Tu peux retrouver cette clé depuis ton compte RetroAchievements, dans la section dédiée à l'API Web.",
-                        TextWrapping = TextWrapping.Wrap,
-                    },
-                    texteErreur,
-                },
-            };
-            champPseudo.Margin = new Thickness(0, 0, 0, 14);
+        SystemControls.Button boutonEnregistrer = new()
+        {
+            Content = "Enregistrer",
+            MinWidth = 120,
+            IsDefault = true,
+            Padding = new Thickness(14, 6, 14, 6),
+            Background = fondBoutonPrimaire,
+            Foreground = Brushes.White,
+            BorderBrush = fondBoutonPrimaire,
+        };
 
-            SystemControls.Border conteneurContenu = new()
+        SystemControls.Button boutonAnnuler = new()
+        {
+            Content = connexionDejaConfiguree ? "Annuler" : "Fermer",
+            MinWidth = 120,
+            IsCancel = true,
+            Padding = new Thickness(14, 6, 14, 6),
+            Margin = new Thickness(8, 0, 0, 0),
+            Background = fondCarte,
+            Foreground = textePrincipal,
+            BorderBrush = bordure,
+        };
+
+        Window fenetreConnexion = new()
+        {
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            ShowInTaskbar = false,
+            ShowActivated = true,
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = fondFenetre,
+            Foreground = textePrincipal,
+            MinWidth = LargeurContenuModaleConnexion + (MargeInterieureModaleConnexion * 2) + 36,
+            Content = new SystemControls.Border
             {
                 Padding = new Thickness(MargeInterieureModaleConnexion),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", 12),
-                Child = contenu,
-            };
-
-            UiControls.ContentDialog dialogueConnexion = new(RacineModales)
-            {
-                Title = "Connexion RetroAchievements",
-                Content = conteneurContenu,
-                MinWidth = LargeurContenuModaleConnexion + (MargeInterieureModaleConnexion * 2),
-                PrimaryButtonText = "Enregistrer",
-                SecondaryButtonText = connexionDejaConfiguree ? "Annuler" : "Fermer",
-                DefaultButton = UiControls.ContentDialogButton.Primary,
-            };
-
-            dialogueConnexion.Loaded += DialogueConnexion_Chargement;
-
-            UiControls.ContentDialogResult resultat;
-
-            try
-            {
-                DefinirEtatModalesActif(true);
-                resultat = await dialogueConnexion.ShowAsync();
-            }
-            finally
-            {
-                DefinirEtatModalesActif(false);
-                dialogueConnexion.Loaded -= DialogueConnexion_Chargement;
-            }
-
-            if (resultat != UiControls.ContentDialogResult.Primary)
-            {
-                if (ConfigurationConnexionEstComplete())
+                Background = fondCarte,
+                BorderBrush = bordure,
+                BorderThickness = new Thickness(1),
+                CornerRadius = rayonCoins,
+                SnapsToDevicePixels = true,
+                Child = new SystemControls.StackPanel
                 {
-                    if (masquerContenuPrincipal)
+                    Width = LargeurContenuModaleConnexion,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Children =
                     {
-                        DefinirVisibiliteContenuPrincipal(true);
+                        new SystemControls.TextBlock
+                        {
+                            FontSize = 20,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = textePrincipal,
+                            Text = "Connexion",
+                            Margin = new Thickness(0, 0, 0, 8),
+                        },
+                        new SystemControls.TextBlock
+                        {
+                            Opacity = 0.84,
+                            Foreground = texteSecondaire,
+                            Text =
+                                "Entre ton pseudo et ta clé Web API pour synchroniser ton dernier jeu joué, ta progression et tes succès récents.",
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0, 0, 0, 14),
+                        },
+                        new SystemControls.TextBlock
+                        {
+                            Margin = new Thickness(0, 0, 0, 6),
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = textePrincipal,
+                            Text = "Pseudo",
+                        },
+                        champPseudo,
+                        new SystemControls.TextBlock
+                        {
+                            Margin = new Thickness(0, 0, 0, 6),
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = textePrincipal,
+                            Text = "Clé API",
+                        },
+                        champCleApi,
+                        new SystemControls.TextBlock
+                        {
+                            Margin = new Thickness(0, 10, 0, 0),
+                            Opacity = 0.68,
+                            Foreground = texteSecondaire,
+                            Text =
+                                "Tu peux retrouver cette clé depuis ton compte RetroAchievements, dans la section dédiée à l'API Web.",
+                            TextWrapping = TextWrapping.Wrap,
+                        },
+                        texteErreur,
+                        new SystemControls.StackPanel
+                        {
+                            Orientation = SystemControls.Orientation.Horizontal,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            Margin = new Thickness(0, 18, 0, 0),
+                            Children =
+                            {
+                                boutonEnregistrer,
+                                boutonAnnuler,
+                            },
+                        },
+                    },
+                },
+            },
+        };
+
+        fenetreConnexion.Loaded += (_, _) =>
+        {
+            fenetreConnexion.Dispatcher.BeginInvoke(
+                () =>
+                {
+                    fenetreConnexion.Activate();
+
+                    if (!string.IsNullOrWhiteSpace(champPseudo.Text))
+                    {
+                        champCleApi.Focus();
+                        return;
                     }
-                    return;
-                }
 
-                Close();
-                return;
-            }
+                    champPseudo.Focus();
+                    champPseudo.SelectAll();
+                },
+                DispatcherPriority.ApplicationIdle
+            );
+        };
 
+        boutonAnnuler.Click += (_, _) =>
+        {
+            fenetreConnexion.DialogResult = false;
+            fenetreConnexion.Close();
+        };
+
+        boutonEnregistrer.Click += async (_, _) =>
+        {
             string pseudo = champPseudo.Text.Trim();
             string cleApi = champCleApi.Password.Trim();
 
-            if (string.IsNullOrWhiteSpace(pseudo) || string.IsNullOrWhiteSpace(cleApi))
-            {
-                texteErreur.Text = "Renseigne ton pseudo et ta clé Web API pour continuer.";
-                texteErreur.Visibility = Visibility.Visible;
-                continue;
-            }
+            texteErreur.Visibility = Visibility.Collapsed;
+            boutonEnregistrer.IsEnabled = false;
+            boutonAnnuler.IsEnabled = false;
 
             try
             {
+                if (string.IsNullOrWhiteSpace(pseudo) || string.IsNullOrWhiteSpace(cleApi))
+                {
+                    texteErreur.Text =
+                        "Renseigne ton pseudo et ta clé Web API pour continuer.";
+                    texteErreur.Visibility = Visibility.Visible;
+                    return;
+                }
+
                 await ServiceUtilisateurRetroAchievements.ObtenirProfilAsync(pseudo, cleApi);
+                pseudoValide = pseudo;
+                cleApiValide = cleApi;
+                fenetreConnexion.DialogResult = true;
+                fenetreConnexion.Close();
             }
             catch (UtilisateurRetroAchievementsInaccessibleException exception)
             {
                 texteErreur.Text = exception.Message;
                 texteErreur.Visibility = Visibility.Visible;
-                continue;
             }
             catch (Exception exception)
             {
-                string messageErreur = string.IsNullOrWhiteSpace(exception.Message)
+                texteErreur.Text = string.IsNullOrWhiteSpace(exception.Message)
                     ? "Impossible de vérifier ce compte pour le moment. Vérifie ta connexion et réessaie."
                     : $"Impossible de vérifier ce compte pour le moment. {exception.Message}";
-                texteErreur.Text = messageErreur;
                 texteErreur.Visibility = Visibility.Visible;
-                continue;
             }
-
-            if (
-                !string.Equals(
-                    _configurationConnexion.Pseudo,
-                    pseudo,
-                    StringComparison.OrdinalIgnoreCase
-                )
-            )
+            finally
             {
-                _configurationConnexion.DernierJeuAffiche = null;
-                _configurationConnexion.DernierSuccesAffiche = null;
-                _configurationConnexion.DerniereListeSuccesAffichee = null;
+                if (fenetreConnexion.IsVisible)
+                {
+                    boutonEnregistrer.IsEnabled = true;
+                    boutonAnnuler.IsEnabled = true;
+                }
             }
+        };
 
-            _configurationConnexion.Pseudo = pseudo;
-            _configurationConnexion.CleApiWeb = cleApi;
+        await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+        bool? resultat;
 
-            MemoriserGeometrieFenetre();
-            await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
-            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
-                _configurationConnexion
-            );
+        try
+        {
+            DefinirVoileConnexionActif(true);
+            resultat = fenetreConnexion.ShowDialog();
+        }
+        finally
+        {
+            DefinirVoileConnexionActif(false);
+            Activate();
+        }
 
-            MettreAJourResumeConnexion();
-            if (masquerContenuPrincipal)
+        if (resultat != true)
+        {
+            if (ConfigurationConnexionEstComplete())
             {
-                DefinirVisibiliteContenuPrincipal(true);
+                return;
             }
-            await ChargerJeuEnCoursAsync();
-            DemarrerActualisationAutomatique();
+
+            if (fermerApplicationSiAnnuleSansConfiguration)
+            {
+                Close();
+            }
             return;
         }
+
+        if (
+            !string.Equals(
+                _configurationConnexion.Pseudo,
+                pseudoValide,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            _configurationConnexion.DernierJeuAffiche = null;
+            _configurationConnexion.DernierSuccesAffiche = null;
+            _configurationConnexion.DerniereListeSuccesAffichee = null;
+        }
+
+        _configurationConnexion.Pseudo = pseudoValide;
+        _configurationConnexion.CleApiWeb = cleApiValide;
+
+        MemoriserGeometrieFenetre();
+        await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
+        await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+
+        MettreAJourResumeConnexion();
+        await ChargerJeuEnCoursAsync();
+        DemarrerActualisationAutomatique();
     }
 
     private async Task AfficherModaleCompteAsync()
@@ -271,6 +408,20 @@ public partial class MainWindow
                 TextWrapping = TextWrapping.Wrap,
             }
         );
+        if (!string.IsNullOrWhiteSpace(compte.NomUtilisateur))
+        {
+            UiControls.Button boutonProfilRetroAchievements = new()
+            {
+                Content = "Ouvrir le profil RetroAchievements",
+                Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Padding = new Thickness(14, 6, 14, 6),
+                Margin = new Thickness(0, 0, 0, 12),
+            };
+            boutonProfilRetroAchievements.Click += (_, _) =>
+                OuvrirProfilRetroAchievements(compte.NomUtilisateur);
+            contenu.Children.Add(boutonProfilRetroAchievements);
+        }
         for (int indexSection = 0; indexSection < compte.Sections.Count; indexSection++)
         {
             if (indexSection > 0)
@@ -299,10 +450,8 @@ public partial class MainWindow
             Title = string.Empty,
             Content = conteneurContenu,
             MinWidth = 460 + (MargeInterieureModaleConnexion * 2),
-            PrimaryButtonText = "Modifier la connexion",
-            SecondaryButtonText = "Profil RA",
-            CloseButtonText = "Fermer",
-            DefaultButton = UiControls.ContentDialogButton.Secondary,
+            PrimaryButtonText = "Déconnexion",
+            DefaultButton = UiControls.ContentDialogButton.Primary,
         };
 
         dialogueCompte.Loaded += DialogueCompte_Chargement;
@@ -322,14 +471,16 @@ public partial class MainWindow
 
         if (resultat == UiControls.ContentDialogResult.Primary)
         {
-            await AfficherModaleConnexionAsync(false);
+            if (!await ConfirmerDeconnexionAsync())
+            {
+                return;
+            }
+
+            await DeconnecterCompteAsync();
+            await AfficherModaleConnexionAsync(false, false);
             return;
         }
 
-        if (resultat == UiControls.ContentDialogResult.Secondary)
-        {
-            OuvrirProfilRetroAchievements(compte.NomUtilisateur);
-        }
     }
 
     private async Task AfficherModaleAideAsync()
@@ -409,6 +560,62 @@ public partial class MainWindow
         {
             DefinirEtatModalesActif(false);
         }
+    }
+
+    private async Task<bool> ConfirmerDeconnexionAsync()
+    {
+        UiControls.ContentDialog dialogueConfirmation = new(RacineModales)
+        {
+            Title = "Déconnexion",
+            Content =
+                "Veux-tu vraiment te déconnecter de Compagnon ? Le compte sera retiré localement, mais tes données RetroAchievements ne seront pas supprimées.",
+            PrimaryButtonText = "Déconnexion",
+            SecondaryButtonText = "Annuler",
+            CloseButtonText = string.Empty,
+            DefaultButton = UiControls.ContentDialogButton.Secondary,
+        };
+
+        dialogueConfirmation.Loaded += DialogueConfirmation_Chargement;
+
+        UiControls.ContentDialogResult resultat;
+
+        try
+        {
+            DefinirEtatModalesActif(true);
+            resultat = await dialogueConfirmation.ShowAsync();
+        }
+        finally
+        {
+            DefinirEtatModalesActif(false);
+            dialogueConfirmation.Loaded -= DialogueConfirmation_Chargement;
+        }
+
+        return resultat == UiControls.ContentDialogResult.Primary;
+    }
+
+    private async Task DeconnecterCompteAsync()
+    {
+        ArreterActualisationAutomatique();
+        MemoriserGeometrieFenetre();
+        ReinitialiserContexteSurveillance();
+        ReinitialiserSuccesAffichesEtPersistes();
+        ReinitialiserJeuEnCours();
+
+        _profilUtilisateurAccessible = true;
+        _dernieresDonneesJeuAffichees = null;
+        _configurationConnexion.Pseudo = string.Empty;
+        _configurationConnexion.CleApiWeb = string.Empty;
+        _configurationConnexion.DernierJeuAffiche = null;
+        _configurationConnexion.DernierSuccesAffiche = null;
+        _configurationConnexion.DerniereListeSuccesAffichee = null;
+        _dernierJeuAfficheModifie = false;
+        _dernierSuccesAfficheModifie = false;
+        _derniereListeSuccesAfficheeModifiee = false;
+
+        DefinirEtatConnexion("Non configuré");
+        AjusterDisposition();
+
+        await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
     }
 
     private async Task<DonneesCompteUtilisateur> ObtenirDonneesComptePourModaleAsync()
@@ -579,10 +786,7 @@ public partial class MainWindow
         return new SystemControls.Separator { Margin = new Thickness(0, 2, 0, 12), Opacity = 0.45 };
     }
 
-    private SystemControls.Border ConstruireBlocAide(
-        string titre,
-        IReadOnlyList<string> lignes
-    )
+    private SystemControls.Border ConstruireBlocAide(string titre, IReadOnlyList<string> lignes)
     {
         SystemControls.StackPanel pile = new()
         {
@@ -779,6 +983,19 @@ public partial class MainWindow
         );
     }
 
+    private void DialogueConfirmation_Chargement(object sender, RoutedEventArgs e)
+    {
+        if (sender is not UiControls.ContentDialog dialogueConfirmation)
+        {
+            return;
+        }
+
+        dialogueConfirmation.Dispatcher.BeginInvoke(
+            () => AjusterPiedModaleConnexion(dialogueConfirmation),
+            DispatcherPriority.Loaded
+        );
+    }
+
     private static void AjusterPiedModaleConnexion(UiControls.ContentDialog dialogueConnexion)
     {
         List<SystemControls.Button> boutons =
@@ -802,8 +1019,34 @@ public partial class MainWindow
             return;
         }
 
+        string[] textesAutorises =
+        [
+            texteBoutonPrincipal,
+            texteBoutonSecondaire,
+        ];
+
         boutonSecondaire.MinWidth = 120;
         boutonPrincipal.MinWidth = 120;
+
+        foreach (SystemControls.Button bouton in boutons)
+        {
+            string texte = TexteBouton(bouton);
+
+            if (
+                textesAutorises.Any(texteAutorise =>
+                    !string.IsNullOrWhiteSpace(texteAutorise)
+                    && texte.Equals(texteAutorise, StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                bouton.Visibility = Visibility.Visible;
+                bouton.IsEnabled = true;
+                continue;
+            }
+
+            bouton.Visibility = Visibility.Collapsed;
+            bouton.IsEnabled = false;
+        }
 
         SystemControls.Panel? conteneurBoutons = TrouverPanneauCommun(
             boutonSecondaire,
@@ -813,24 +1056,6 @@ public partial class MainWindow
         if (conteneurBoutons is null)
         {
             return;
-        }
-
-        foreach (
-            SystemControls.Button boutonSupplementaire in TrouverDescendants<SystemControls.Button>(
-                conteneurBoutons
-            )
-        )
-        {
-            if (
-                ReferenceEquals(boutonSupplementaire, boutonSecondaire)
-                || ReferenceEquals(boutonSupplementaire, boutonPrincipal)
-            )
-            {
-                continue;
-            }
-
-            boutonSupplementaire.Visibility = Visibility.Collapsed;
-            boutonSupplementaire.IsEnabled = false;
         }
 
         conteneurBoutons.HorizontalAlignment = HorizontalAlignment.Center;
@@ -1126,11 +1351,7 @@ public partial class MainWindow
                 try
                 {
                     Process.Start(
-                        new ProcessStartInfo
-                        {
-                            FileName = cheminCandidat,
-                            UseShellExecute = true,
-                        }
+                        new ProcessStartInfo { FileName = cheminCandidat, UseShellExecute = true }
                     );
                 }
                 catch

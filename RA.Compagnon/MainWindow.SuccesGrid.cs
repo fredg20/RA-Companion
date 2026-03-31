@@ -229,7 +229,9 @@ public partial class MainWindow
                 signature,
                 StringComparison.Ordinal
             )
-            && succesNonDebloques.All(item => _etatListeSuccesUi.PositionsAleatoires.ContainsKey(item))
+            && succesNonDebloques.All(item =>
+                _etatListeSuccesUi.PositionsAleatoires.ContainsKey(item)
+            )
         )
         {
             return;
@@ -247,7 +249,11 @@ public partial class MainWindow
         }
 
         _etatListeSuccesUi.PositionsAleatoires.Clear();
-        foreach (var item in succesMelanges.Select((identifiantSucces, index) => new { identifiantSucces, index }))
+        foreach (
+            var item in succesMelanges.Select(
+                (identifiantSucces, index) => new { identifiantSucces, index }
+            )
+        )
         {
             _etatListeSuccesUi.PositionsAleatoires[item.identifiantSucces] = item.index;
         }
@@ -354,8 +360,9 @@ public partial class MainWindow
 
             foreach (GameAchievementV2 succesJeu in lotSucces)
             {
-                SuccesGrilleAffiche succesAffiche =
-                    ServicePresentationSucces.ConstruirePourGrille(succesJeu);
+                SuccesGrilleAffiche succesAffiche = ServicePresentationSucces.ConstruirePourGrille(
+                    succesJeu
+                );
 
                 GrilleTousSuccesJeuEnCours.Children.Add(
                     ConstruireBadgeGrilleSucces(identifiantJeu, succesAffiche)

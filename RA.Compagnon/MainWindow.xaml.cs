@@ -132,8 +132,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
     private int _versionChargementContenuJeu;
-    private EtatPipelineChargementJeu _etatPipelineChargementJeu =
-        EtatPipelineChargementJeu.Vide;
+    private EtatPipelineChargementJeu _etatPipelineChargementJeu = EtatPipelineChargementJeu.Vide;
     private UserProfileV2? _dernierProfilUtilisateurCharge;
     private UserSummaryV2? _dernierResumeUtilisateurCharge;
     private DonneesJeuAffiche? _dernieresDonneesJeuAffichees;
@@ -266,26 +265,32 @@ public partial class MainWindow : UiControls.FluentWindow
             DefinirVisibiliteBarreDefilementPrincipale,
             DispatcherPriority.Loaded
         );
+
+        if (!ConfigurationConnexionEstComplete())
+        {
+            await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+            await AfficherModaleConnexionAsync();
+
+            if (!ConfigurationConnexionEstComplete())
+            {
+                App.JournaliserDemarrage("FenetrePrincipaleChargee fin sans configuration");
+                return;
+            }
+        }
+
         App.JournaliserDemarrage("FenetrePrincipaleChargee avant DernierJeuSauvegarde");
         await AppliquerDernierJeuSauvegardeAsync();
         App.JournaliserDemarrage("FenetrePrincipaleChargee apres DernierJeuSauvegarde");
         bool conserverEtatSauvegardeAuPremierChargement =
             _configurationConnexion.DernierJeuAffiche is not null;
 
-        if (ConfigurationConnexionEstComplete())
-        {
-            App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerJeuEnCours");
-            await ChargerJeuEnCoursAsync(!conserverEtatSauvegardeAuPremierChargement, true);
-            App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerJeuEnCours");
-            _ = Dispatcher.BeginInvoke(
-                () => DemarrerActualisationAutomatique(),
-                DispatcherPriority.ApplicationIdle
-            );
-            App.JournaliserDemarrage("FenetrePrincipaleChargee fin");
-            return;
-        }
-
-        await AfficherModaleConnexionAsync();
+        App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerJeuEnCours");
+        await ChargerJeuEnCoursAsync(!conserverEtatSauvegardeAuPremierChargement, true);
+        App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerJeuEnCours");
+        _ = Dispatcher.BeginInvoke(
+            () => DemarrerActualisationAutomatique(),
+            DispatcherPriority.ApplicationIdle
+        );
         App.JournaliserDemarrage("FenetrePrincipaleChargee fin");
     }
 

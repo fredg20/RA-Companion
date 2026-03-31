@@ -479,10 +479,10 @@ public partial class MainWindow
         }
 
         double hauteurTitre = 36;
-        double hauteurBandeauCompte = Math.Max(
-            BoutonCompteUtilisateur?.ActualHeight ?? 32,
-            BoutonAide?.ActualHeight ?? 32
-        ) + 8 + 6;
+        double hauteurBandeauCompte =
+            Math.Max(BoutonCompteUtilisateur?.ActualHeight ?? 32, BoutonAide?.ActualHeight ?? 32)
+            + 8
+            + 6;
 
         double hauteurVisible =
             ActualHeight

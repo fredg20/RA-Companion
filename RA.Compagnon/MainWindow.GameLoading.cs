@@ -196,7 +196,12 @@ public partial class MainWindow
             return;
         }
 
-        if (_serviceOrchestrateurEtatJeu.DoitIgnorerChargementApi(identifiantJeuEffectif, forcerChargementJeu))
+        if (
+            _serviceOrchestrateurEtatJeu.DoitIgnorerChargementApi(
+                identifiantJeuEffectif,
+                forcerChargementJeu
+            )
+        )
         {
             return;
         }
@@ -615,7 +620,8 @@ public partial class MainWindow
                 $"jeu={donneesJeu.Jeu.Id};succes={donneesJeu.Jeu.Succes.Count}"
             );
             MarquerEtapePipelineChargementJeu(
-                EtapePipelineChargementJeu.DonneesMinimales | EtapePipelineChargementJeu.SuccesCharges,
+                EtapePipelineChargementJeu.DonneesMinimales
+                    | EtapePipelineChargementJeu.SuccesCharges,
                 donneesJeu.Jeu.Id,
                 _versionChargementContenuJeu
             );
@@ -683,7 +689,10 @@ public partial class MainWindow
 
         if (nbSuccesExistants > nbSuccesNouveaux)
         {
-            jeuNouveau.Succes = jeuExistant.Succes.ToDictionary(item => item.Key, item => item.Value);
+            jeuNouveau.Succes = jeuExistant.Succes.ToDictionary(
+                item => item.Key,
+                item => item.Value
+            );
             jeuNouveau.NombreSucces = Math.Max(
                 Math.Max(jeuNouveau.NombreSucces, nbSuccesExistants),
                 jeuExistant.NombreSucces
@@ -723,10 +732,7 @@ public partial class MainWindow
             return false;
         }
 
-        if (
-            donneesNouvelles.DetailsEtendus is not null
-            && donneesExistantes.DetailsEtendus is null
-        )
+        if (donneesNouvelles.DetailsEtendus is not null && donneesExistantes.DetailsEtendus is null)
         {
             return false;
         }
@@ -879,19 +885,18 @@ public partial class MainWindow
                 continue;
             }
 
-            SuccesDebloqueDetecte succesDetecte =
-                new()
-                {
-                    IdentifiantJeu = jeu.Id,
-                    TitreJeu = jeu.Title?.Trim() ?? string.Empty,
-                    IdentifiantSucces = succesJeu.Id,
-                    TitreSucces = succesJeu.Title?.Trim() ?? string.Empty,
-                    Points = succesJeu.Points,
-                    Hardcore = succesLocal.EstHardcore,
-                    DateObtention = succesLocal.EstHardcore
-                        ? succesLocal.DateDeblocageHardcoreUtc
-                        : succesLocal.DateDeblocageUtc,
-                };
+            SuccesDebloqueDetecte succesDetecte = new()
+            {
+                IdentifiantJeu = jeu.Id,
+                TitreJeu = jeu.Title?.Trim() ?? string.Empty,
+                IdentifiantSucces = succesJeu.Id,
+                TitreSucces = succesJeu.Title?.Trim() ?? string.Empty,
+                Points = succesJeu.Points,
+                Hardcore = succesLocal.EstHardcore,
+                DateObtention = succesLocal.EstHardcore
+                    ? succesLocal.DateDeblocageHardcoreUtc
+                    : succesLocal.DateDeblocageUtc,
+            };
 
             if (SuccesDejaTraiteRecemment(succesDetecte))
             {
