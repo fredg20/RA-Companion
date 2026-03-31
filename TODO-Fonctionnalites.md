@@ -15,6 +15,8 @@
 - [ ] Ajouter une vue "résumé de session" : durée, succès obtenus, points gagnés.
 - [ ] Ajouter un mode compact pour les petits écrans ou les setups secondaires.
 - [ ] Prévoir une adaptation de l'interface pour mobile ou petit format tactile.
+- [ ] Inclure une fonction de mise à jour de l'application.
+- [ ] Afficher clairement la version actuelle de l'application dans l'interface.
 - [ ] Afficher clairement le nombre de succès restants et les points restants pour finir le jeu.
 - [ ] Ajouter une indication de la prochaine récompense importante : completion, mastery ou milestone personnel.
 - [ ] Afficher plus clairement le temps écoulé depuis le début de la session en cours.
