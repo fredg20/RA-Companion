@@ -548,6 +548,7 @@ public partial class MainWindow
     {
         if (
             CarteJeuEnCours is null
+            || GrilleCarteJeuEnCours is null
             || GrilleTousSuccesJeuEnCours is null
             || CarteListeSuccesJeuEnCours is null
             || ConteneurGrilleTousSuccesJeuEnCours is null
@@ -557,7 +558,7 @@ public partial class MainWindow
             return;
         }
 
-        double hauteurCarteJeu = CarteJeuEnCours.ActualHeight;
+        double hauteurCarteJeu = GrilleCarteJeuEnCours.ActualHeight;
 
         if (hauteurCarteJeu <= 0)
         {
@@ -565,14 +566,18 @@ public partial class MainWindow
         }
 
         CarteJeuEnCours.UpdateLayout();
+        GrilleCarteJeuEnCours.UpdateLayout();
         CarteListeSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
 
         Point positionSectionDansCarteJeu = CarteListeSuccesJeuEnCours.TranslatePoint(
             new Point(0, 0),
-            CarteJeuEnCours
+            GrilleCarteJeuEnCours
         );
-        double hauteurMaxSection = hauteurCarteJeu - positionSectionDansCarteJeu.Y;
+        double hauteurMaxSection =
+            hauteurCarteJeu
+            - positionSectionDansCarteJeu.Y
+            - CarteListeSuccesJeuEnCours.Margin.Bottom;
 
         if (hauteurMaxSection <= 0)
         {
@@ -597,6 +602,7 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
         ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = hauteurDisponible;
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        AppliquerEcretageArrondiZoneSucces();
         DefinirVisibiliteBarreDefilementListeSucces(
             ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
         );

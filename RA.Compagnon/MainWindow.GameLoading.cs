@@ -460,6 +460,7 @@ public partial class MainWindow
             DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
             DefinirEtatJeuDansProgression(jeuAffiche.Statut);
             DefinirDetailsJeuEnCours(jeuAffiche.Details);
+            MettreAJourActionVueDetailleeJeuEnCours(jeu);
 
             int nombreSuccesApres = jeu.Succes.Count;
 
@@ -653,6 +654,7 @@ public partial class MainWindow
         TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
         TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
         BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
+        MettreAJourActionVueDetailleeJeuEnCours(jeu);
         _ = InitialiserContexteSuccesJeu(jeu, out _);
 
         await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);

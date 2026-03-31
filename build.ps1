@@ -20,6 +20,12 @@ if (Test-Path $dossierSortieTemporaire) {
 
 New-Item -ItemType Directory -Path $dossierSortieTemporaire -Force | Out-Null
 
+& dotnet restore $cheminProjet -r $runtimeIdentifier
+
+if ($LASTEXITCODE -ne 0) {
+    throw "La restauration pour le runtime de publication a echoue."
+}
+
 & dotnet publish $cheminProjet `
     -c Release `
     -r $runtimeIdentifier `

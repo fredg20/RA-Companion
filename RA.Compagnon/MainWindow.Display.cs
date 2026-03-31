@@ -488,6 +488,7 @@ public partial class MainWindow
         DefinirEtatJeuDansProgression(string.Empty);
         DefinirTitreJeuEnCours(string.Empty);
         DefinirDetailsJeuEnCours(string.Empty);
+        ReinitialiserVueDetailleeJeuEnCours();
         EnregistrerPhaseAucunJeuOrchestrateur("non_configure");
         ReinitialiserSuccesRecents();
     }

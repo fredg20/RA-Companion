@@ -703,6 +703,7 @@ public partial class MainWindow
         SizeChangedEventArgs e
     )
     {
+        AppliquerEcretageArrondiZoneSucces();
         JournaliserDiagnosticListeSucces(
             "liste_sizechanged",
             $"largeur={e.NewSize.Width:0.##};hauteur={e.NewSize.Height:0.##}"
@@ -712,6 +713,38 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+    }
+
+    /// <summary>
+    /// Applique un masque d'écrêtage arrondi à la zone visible de la liste des succès.
+    /// </summary>
+    private void AppliquerEcretageArrondiZoneSucces()
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return;
+        }
+
+        double largeur = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
+        double hauteur = ConteneurGrilleTousSuccesJeuEnCours.ActualHeight;
+
+        if (largeur <= 0 || hauteur <= 0)
+        {
+            ConteneurGrilleTousSuccesJeuEnCours.Clip = null;
+            return;
+        }
+
+        CornerRadius rayon = ObtenirRayonCoins("RayonCoinsPetit", 8);
+        double rayonEffectif = Math.Max(
+            0,
+            Math.Min(Math.Min(rayon.TopLeft, rayon.TopRight), Math.Min(largeur, hauteur) / 2)
+        );
+
+        ConteneurGrilleTousSuccesJeuEnCours.Clip = new RectangleGeometry(
+            new Rect(0, 0, largeur, hauteur),
+            rayonEffectif,
+            rayonEffectif
+        );
     }
 
     /// <summary>
@@ -735,6 +768,8 @@ public partial class MainWindow
             return;
         }
 
+        GrilleTousSuccesJeuEnCours.Width = largeurDisponible;
+
         int nombreBadges = GrilleTousSuccesJeuEnCours.Children.Count;
         int colonnes = Math.Max(
             1,
@@ -745,7 +780,7 @@ public partial class MainWindow
                 )
         );
         colonnes = Math.Min(colonnes, nombreBadges);
-
+        int nombreRangees = (int)Math.Ceiling((double)nombreBadges / colonnes);
         double gapHorizontal =
             colonnes > 1
                 ? Math.Max(
@@ -762,12 +797,16 @@ public partial class MainWindow
             }
 
             int colonne = index % colonnes;
-            bool dernierDeLigne = colonne == colonnes - 1;
+            int rangee = index / colonnes;
+            int indexPremierElementRangee = rangee * colonnes;
+            int elementsDansRangee = Math.Min(colonnes, nombreBadges - indexPremierElementRangee);
+            bool dernierDeLigne = colonne == elementsDansRangee - 1;
+            bool derniereRangee = rangee == nombreRangees - 1;
             badge.Margin = new Thickness(
                 0,
                 0,
                 dernierDeLigne ? 0 : gapHorizontal,
-                EspaceMinimalGrilleSucces
+                derniereRangee ? 0 : EspaceMinimalGrilleSucces
             );
         }
     }

@@ -1,11 +1,13 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.User;
+using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
@@ -219,11 +221,7 @@ public partial class MainWindow
                             Orientation = SystemControls.Orientation.Horizontal,
                             HorizontalAlignment = HorizontalAlignment.Center,
                             Margin = new Thickness(0, 18, 0, 0),
-                            Children =
-                            {
-                                boutonEnregistrer,
-                                boutonAnnuler,
-                            },
+                            Children = { boutonEnregistrer, boutonAnnuler },
                         },
                     },
                 },
@@ -269,8 +267,7 @@ public partial class MainWindow
             {
                 if (string.IsNullOrWhiteSpace(pseudo) || string.IsNullOrWhiteSpace(cleApi))
                 {
-                    texteErreur.Text =
-                        "Renseigne ton pseudo et ta clé Web API pour continuer.";
+                    texteErreur.Text = "Renseigne ton pseudo et ta clé Web API pour continuer.";
                     texteErreur.Visibility = Visibility.Visible;
                     return;
                 }
@@ -480,7 +477,6 @@ public partial class MainWindow
             await AfficherModaleConnexionAsync(false, false);
             return;
         }
-
     }
 
     private async Task AfficherModaleAideAsync()
@@ -531,6 +527,7 @@ public partial class MainWindow
                         "Si besoin, relance d'abord l'émulateur, puis Compagnon.",
                     ]
                 ),
+                ConstruireBlocAideLogsEmulateurs(),
             },
         };
 
@@ -826,6 +823,237 @@ public partial class MainWindow
         };
     }
 
+    private SystemControls.Border ConstruireBlocAideLogsEmulateurs()
+    {
+        SystemControls.StackPanel pile = new() { Margin = new Thickness(0, 0, 0, 12) };
+
+        pile.Children.Add(
+            new SystemControls.TextBlock
+            {
+                Margin = new Thickness(0, 0, 0, 8),
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                Text = "Logs des émulateurs",
+            }
+        );
+        pile.Children.Add(
+            new SystemControls.TextBlock
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Opacity = 0.78,
+                Text =
+                    "Compagnon peut t'indiquer quelle source locale il lit pour chaque émulateur validé. Ouvre cette section si tu dois vérifier un journal ou un dossier RACache.",
+                TextWrapping = TextWrapping.Wrap,
+            }
+        );
+        pile.Children.Add(
+            new SystemControls.TextBlock
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Opacity = 0.72,
+                Text =
+                    "Conseil : garde aussi tes émulateurs à jour. Les options de logs, les chemins et la qualité de détection peuvent changer selon la version.",
+                TextWrapping = TextWrapping.Wrap,
+            }
+        );
+
+        SystemControls.Expander expander = new()
+        {
+            Header = "Voir les chemins et les sources locales",
+            IsExpanded = false,
+        };
+
+        SystemControls.StackPanel contenu = new();
+
+        foreach (
+            DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
+                EstEmulateurValidePourIndicatifLogs
+            )
+        )
+        {
+            contenu.Children.Add(ConstruireCarteIndicatifLogsEmulateur(definition));
+        }
+
+        expander.Content = contenu;
+        pile.Children.Add(expander);
+
+        return new SystemControls.Border
+        {
+            Padding = new Thickness(10, 10, 10, 8),
+            Margin = new Thickness(0, 0, 0, 8),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+            Child = pile,
+        };
+    }
+
+    private SystemControls.Border ConstruireCarteIndicatifLogsEmulateur(
+        DefinitionEmulateurLocal definition
+    )
+    {
+        string source = ConstruireLibelleSourceLocaleEmulateur(definition);
+        string cheminDetecte = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(
+            definition.NomEmulateur
+        );
+        string cheminAttendu = string.IsNullOrWhiteSpace(cheminDetecte)
+            ? ConstruireCheminIndicatifSourceLocale(definition)
+            : cheminDetecte;
+        string statutChemin = string.IsNullOrWhiteSpace(cheminDetecte)
+            ? "Non trouvé sur ce PC"
+            : "Détecté sur ce PC";
+
+        SystemControls.StackPanel pile = new()
+        {
+            Children =
+            {
+                new SystemControls.TextBlock
+                {
+                    FontWeight = FontWeights.SemiBold,
+                    Text = definition.NomEmulateur,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 4, 0, 0),
+                    Opacity = 0.78,
+                    Text = source,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 6, 0, 0),
+                    FontWeight = FontWeights.SemiBold,
+                    Opacity = 0.72,
+                    Text = statutChemin,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new SystemControls.TextBox
+                {
+                    Margin = new Thickness(0, 4, 0, 0),
+                    Style = (Style)FindResource("StyleTexteCopiable"),
+                    Text = cheminAttendu,
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 6, 0, 0),
+                    Opacity = 0.66,
+                    Text = ConstruireTexteActivationSourceLocale(definition),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+            },
+        };
+
+        return new SystemControls.Border
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            Padding = new Thickness(10, 8, 10, 8),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+            Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
+            Child = pile,
+        };
+    }
+
+    private static bool EstEmulateurValidePourIndicatifLogs(DefinitionEmulateurLocal definition)
+    {
+        return definition.StrategieRenseignementJeu
+                != StrategieRenseignementJeuEmulateurLocal.Aucune
+            || definition.StrategieSurveillanceSucces != StrategieSurveillanceSuccesLocale.Aucune;
+    }
+
+    private static string ConstruireLibelleSourceLocaleEmulateur(
+        DefinitionEmulateurLocal definition
+    )
+    {
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                "Source suivie : journal local de RetroArch.",
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                "Source suivie : fichier duckstation.log.",
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
+                "Source suivie : fichier emulog.txt de PCSX2.",
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
+                "Source suivie : journal local de PPSSPP.",
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                "Source suivie : RACache et journal RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                "Source suivie : RACache et journal RALog.txt.",
+            _ => "Source locale non précisée.",
+        };
+    }
+
+    private static string ConstruireTexteActivationSourceLocale(DefinitionEmulateurLocal definition)
+    {
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                "Où l'activer : Settings -> User Interface -> Show Advanced Settings, puis Settings -> Logging -> Log to File. Le journal doit ensuite être écrit dans le dossier logs pendant la session. Garde RetroArch à jour.",
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                "Où l'activer : Settings -> Advanced Settings. Mets Log Level sur Debug, puis coche Log To File. Redémarre DuckStation si besoin pour forcer l'écriture de duckstation.log. Garde aussi DuckStation à jour.",
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
+                "Où l'activer : en général, rien de plus n'est nécessaire. PCSX2 génère normalement emulog.txt dans son dossier logs. Si ce fichier n'apparaît pas, vérifie les options de console ou de débogage de ta version. Garde aussi PCSX2 à jour.",
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
+                "Où l'activer : Tools -> Developer Tools -> Enable debug logging. Si ta version n'écrit toujours pas de fichier, lance PPSSPP avec l'option --log=... pour forcer un log sur disque. Garde aussi PPSSPP à jour.",
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans Project64 pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RALibretro pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            _ => string.Empty,
+        };
+    }
+
+    private static string ConstruireCheminIndicatifSourceLocale(DefinitionEmulateurLocal definition)
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => Path.Combine(
+                documents,
+                "emulation",
+                "RetroArch",
+                "logs"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => Path.Combine(
+                documents,
+                "DuckStation",
+                "duckstation.log"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => Path.Combine(
+                documents,
+                "PCSX2",
+                "logs",
+                "emulog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => Path.Combine(
+                documents,
+                "emulation",
+                "Playstation Portable",
+                "memstick",
+                "PSP",
+                "SYSTEM",
+                "DUMP",
+                "log.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
+                documents,
+                "emulation",
+                "Luna_Project64",
+                "RACache",
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RALibretro",
+                "RACache",
+                "RALog.txt"
+            ),
+            _ => "Chemin local non défini.",
+        };
+    }
+
     private SystemControls.Border ConstruireBlocJeuxRecemmentJoues(
         IReadOnlyList<JeuRecentAffiche> jeux
     )
@@ -1019,11 +1247,7 @@ public partial class MainWindow
             return;
         }
 
-        string[] textesAutorises =
-        [
-            texteBoutonPrincipal,
-            texteBoutonSecondaire,
-        ];
+        string[] textesAutorises = [texteBoutonPrincipal, texteBoutonSecondaire];
 
         boutonSecondaire.MinWidth = 120;
         boutonPrincipal.MinWidth = 120;

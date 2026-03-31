@@ -14,6 +14,7 @@
 - [ ] Ajouter une vraie page ou zone "Je joue à..." avec résumé clair du jeu courant.
 - [ ] Ajouter une vue "résumé de session" : durée, succès obtenus, points gagnés.
 - [ ] Ajouter un mode compact pour les petits écrans ou les setups secondaires.
+- [ ] Prévoir une adaptation de l'interface pour mobile ou petit format tactile.
 - [ ] Afficher clairement le nombre de succès restants et les points restants pour finir le jeu.
 - [ ] Ajouter une indication de la prochaine récompense importante : completion, mastery ou milestone personnel.
 - [ ] Afficher plus clairement le temps écoulé depuis le début de la session en cours.
@@ -136,3 +137,72 @@
 - [ ] Synchronisation cloud maison en dehors de RetroAchievements.
 - [ ] Fonctions de chat ou messagerie intégrées.
 - [ ] Classements complexes reconstitués localement sans besoin fort.
+
+## 10. Idées supplémentaires
+
+- [ ] Afficher clairement le dernier succès obtenu avec l'heure exacte.
+- [ ] Ajouter une vue "reprendre maintenant" avec le jeu le plus logique à relancer.
+- [ ] Afficher un résumé ultra-court du jeu courant : console, progression, succès restants.
+- [ ] Permettre d'afficher ou de masquer les badges non obtenus en niveaux de gris.
+- [ ] Ajouter une option pour figer temporairement la carte du succès mis en avant.
+- [ ] Ajouter une vue des jeux mis de côté à reprendre plus tard.
+- [ ] Ajouter une vue des jeux commencés aujourd'hui ou cette semaine.
+- [ ] Ajouter un objectif de session simple : 1 succès, 5 points ou 10 minutes de progression.
+- [ ] Afficher un indicateur de momentum quand plusieurs succès sont obtenus dans la même session.
+- [ ] Ajouter une vue des derniers jeux détectés localement, même sans succès.
+- [ ] Ajouter un récap des ouvertures de session locales par émulateur.
+- [ ] Ajouter une carte partageable "jeu du moment" avec image, progression et points.
+- [ ] Ajouter une aide contextuelle sur la qualité de la détection selon l'émulateur utilisé.
+- [ ] Intégrer les autres émulateurs RetroAchievements moins connus quand leur détection locale est suffisamment fiable.
+- [ ] Ajouter une vue des succès obtenables rapidement en début de session.
+- [ ] Ajouter une distinction visuelle plus nette entre succès de progression, de performance et cachés.
+- [ ] Ajouter un mode "focus" qui masque tout sauf le jeu courant et un succès suivi.
+- [ ] Ajouter une estimation du temps moyen passé par session sur chaque jeu.
+- [ ] Ajouter une vue des jeux laissés à moins de 10 succès de la fin.
+- [ ] Ajouter une alerte douce quand un jeu chargé n'est pas reconnu avec certitude.
+- [ ] Ajouter une fiche simple "compatibilité émulateur" pour chaque famille prise en charge.
+- [ ] Ajouter une vue des succès hardcore encore faisables sur un jeu déjà avancé en softcore.
+- [ ] Ajouter un indicateur de fraîcheur des données affichées : local, cache ou API récente.
+- [ ] Ajouter une vue des jeux où un seul succès débloquerait un gros gain de points.
+- [ ] Ajouter une note personnelle par jeu pour se rappeler quoi faire au prochain lancement.
+- [ ] Ajouter un mini-journal de session visible dans l'interface : jeu lancé, jeu détecté, succès obtenu.
+- [ ] Ajouter un écran "Que faire ensuite ?" avec 3 suggestions simples et justifiées.
+- [ ] Ajouter une option pour préférer certains émulateurs quand plusieurs sources sont détectées.
+- [ ] Ajouter une vue des jeux qui n'ont donné aucun succès depuis longtemps.
+- [ ] Ajouter une présentation spéciale des jeux maîtrisés ou presque maîtrisés.
+- [ ] Ajouter une option pour masquer complètement les succès déjà obtenus dans certaines vues.
+- [ ] Ajouter une vue des succès qui demandent probablement peu d'effort supplémentaire.
+- [ ] Ajouter un rappel discret quand un jeu relancé n'a pas été touché depuis plusieurs semaines.
+- [ ] Ajouter une petite légende intégrée pour expliquer les états : détecté, en jeu, chargé, succès direct.
+- [ ] Ajouter une vue des jeux commencés mais jamais rejoués après la première session.
+- [ ] Ajouter une option pour prioriser l'affichage des succès liés à la progression principale.
+- [ ] Ajouter un assistant de premier démarrage pour expliquer le compte, la clé API et les émulateurs compatibles.
+- [ ] Ajouter un diagnostic guidé "Pourquoi ce jeu n'est pas détecté ?" avec étapes simples.
+- [ ] Ajouter une vue des jeux détectés avec faible confiance pour les corriger facilement.
+- [ ] Ajouter un historique des changements de jeu pendant une même session.
+- [ ] Ajouter un mode "retour rapide" pour revenir au dernier jeu suivi en un clic.
+- [ ] Ajouter une vue des habitudes de jeu par heure ou par jour de la semaine.
+- [ ] Ajouter un indicateur de régularité sur un jeu : souvent lancé, rarement progressé, très actif.
+- [ ] Ajouter une aide visuelle pour distinguer données locales, données API et données restaurées.
+- [ ] Ajouter une vue des jeux qui changent souvent de mode hardcore/softcore.
+- [ ] Ajouter une option pour cacher les éléments jugés trop "techniques" pour un usage simple.
+- [ ] Ajouter une vue des jeux "bons candidats" pour une session courte sans préparation.
+- [ ] Ajouter une vue des jeux "bons candidats" pour une longue session de progression.
+- [ ] Ajouter une recommandation "jeu à terminer avant de commencer autre chose".
+- [ ] Ajouter une vue des séries démarrées mais jamais poursuivies.
+- [ ] Ajouter une vue des consoles les plus jouées récemment.
+- [ ] Ajouter une vue des consoles laissées de côté depuis longtemps.
+- [ ] Ajouter un tableau de bord personnel avec 3 à 5 widgets au choix.
+- [ ] Ajouter un mode "retour de pause" avec résumé de ce qui a changé depuis plusieurs jours.
+- [ ] Ajouter une estimation du temps écoulé depuis le dernier succès sur le jeu courant.
+- [ ] Ajouter une vue des jeux où le prochain succès est probablement proche.
+- [ ] Ajouter un système de repères personnels : à reprendre, à finir, à découvrir, à laisser de côté.
+- [ ] Ajouter une fiche "comment Compagnon détecte ce jeu" pour rassurer l'utilisateur.
+- [ ] Ajouter une vue des jeux avec progression forte mais peu de points gagnés.
+- [ ] Ajouter une vue des jeux avec beaucoup de points encore accessibles rapidement.
+- [ ] Ajouter une option pour faire remonter automatiquement les jeux relancés plusieurs fois récemment.
+- [ ] Ajouter une vue des jeux démarrés sur plusieurs émulateurs différents.
+- [ ] Ajouter une indication simple "détection excellente / bonne / fragile" selon la famille d'émulateur.
+- [ ] Ajouter un écran d'explication des termes RetroAchievements : mastery, hardcore, softcore, completion.
+- [ ] Ajouter une aide dédiée pour retrouver facilement sa clé API et son profil.
+- [ ] Ajouter une vue des succès ignorés volontairement ou masqués par préférence.
