@@ -30,6 +30,7 @@
 - [ ] Ajouter un mode "lecture seule" très épuré pour afficher seulement le jeu et la progression.
 - [ ] Ajouter un bouton pour recharger manuellement le jeu courant.
 - [ ] Ajouter une aide utilisateur plus complète, mais simple, accessible depuis le bouton `?`.
+- [ ] Ajouter un indicateur simple pour montrer où activer les logs de chaque émulateur validé.
 - [ ] Ajouter un thème clair en plus du thème actuel.
 - [ ] Permettre de mémoriser la taille et la position de certaines zones de l'interface.
 - [ ] Ajouter une option pour réduire ou désactiver certaines animations.
