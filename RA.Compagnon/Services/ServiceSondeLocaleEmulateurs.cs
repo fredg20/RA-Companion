@@ -186,6 +186,72 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
         else if (
             definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.RANesRACache
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRANesDepuisRACache();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.RAVBARACache
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRAVBADepuisRACache();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuRASnes9xDepuisRACache();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
             == StrategieRenseignementJeuEmulateurLocal.RetroArchLog
         )
         {
@@ -331,6 +397,21 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 processus,
                 titreFenetre
             ),
+            StrategieExtractionTitreEmulateurLocal.RANes => ExtraireTitreAvecSeparateurs(
+                titreFenetre,
+                "RANes"
+            ),
+            StrategieExtractionTitreEmulateurLocal.RAVBA => ExtraireTitreAvecSeparateurs(
+                titreFenetre,
+                "RAVBA",
+                "RAVBA-M",
+                "RAVisualBoyAdvance",
+                "RAVisualBoyAdvance-M"
+            ),
+            StrategieExtractionTitreEmulateurLocal.RASnes9x => ExtraireTitreAvecSeparateurs(
+                titreFenetre,
+                "RASnes9x"
+            ),
             StrategieExtractionTitreEmulateurLocal.Dolphin => ExtraireTitreDolphin(
                 processus,
                 titreFenetre
@@ -359,6 +440,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         // RetroArch, DuckStation et PCSX2 ont des variantes de fenetres/outils qui rendent
         // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
         if (!definition.AutoriserDetectionParTitreFenetre)
+        {
+            return false;
+        }
+
+        string nomProcessus = processus.ProcessName?.Trim() ?? string.Empty;
+
+        if (
+            string.Equals(nomProcessus, "explorer", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(nomProcessus, "openwith", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(nomProcessus, "dllhost", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return false;
         }
@@ -1065,6 +1157,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => "project64_racache",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => "ralibretro_racache",
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => "ranes_racache",
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => "ravba_racache",
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => "rasnes9x_racache",
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "retroarch_log",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "duckstation_log",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "pcsx2_log",
@@ -1782,6 +1877,64 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             }
 
             string cheminJournal = Path.Combine(repertoireRACache, "RALog.txt");
+            if (File.Exists(cheminJournal))
+            {
+                DateTime horodatageJournal = File.GetLastWriteTimeUtc(cheminJournal);
+
+                if (DateTime.UtcNow - horodatageJournal <= TimeSpan.FromMinutes(15))
+                {
+                    int identifiantJeu = LireDernierIdentifiantJeuDepuisJournalRA(cheminJournal);
+
+                    if (identifiantJeu > 0)
+                    {
+                        return LireRenseignementJeuProject64DepuisFichierData(
+                                repertoireRACache,
+                                identifiantJeu
+                            ) ?? new RenseignementJeuRA(identifiantJeu, string.Empty);
+                    }
+                }
+            }
+
+            return LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRANesDepuisRACache()
+    {
+        return LireRenseignementJeuDepuisRACache(
+            ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRANes()
+        );
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRAVBADepuisRACache()
+    {
+        return LireRenseignementJeuDepuisRACache(
+            ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRAVBA()
+        );
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuRASnes9xDepuisRACache()
+    {
+        return LireRenseignementJeuDepuisRACache(
+            ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRASnes9x()
+        );
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuDepuisRACache(string repertoireRACache)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(repertoireRACache))
+            {
+                return null;
+            }
+
+            string cheminJournal = Path.Combine(repertoireRACache, "RALog.txt");
+
             if (File.Exists(cheminJournal))
             {
                 DateTime horodatageJournal = File.GetLastWriteTimeUtc(cheminJournal);

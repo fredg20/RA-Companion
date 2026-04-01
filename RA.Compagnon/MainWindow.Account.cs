@@ -481,6 +481,8 @@ public partial class MainWindow
 
     private async Task AfficherModaleAideAsync()
     {
+        await VerifierMiseAJourApplicationSiNecessaireAsync();
+
         SystemControls.StackPanel contenu = new()
         {
             Width = 460,
@@ -527,6 +529,7 @@ public partial class MainWindow
                         "Si besoin, relance d'abord l'émulateur, puis Compagnon.",
                     ]
                 ),
+                ConstruireBlocAideMiseAJourApplication(),
                 ConstruireBlocAideLogsEmulateurs(),
             },
         };
@@ -979,6 +982,12 @@ public partial class MainWindow
                 "Source suivie : RACache et journal RALog.txt.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 "Source suivie : RACache et journal RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                "Source suivie : RACache et journal RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                "Source suivie : RACache et journal RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                "Source suivie : RACache et journal RALog.txt.",
             _ => "Source locale non précisée.",
         };
     }
@@ -999,6 +1008,12 @@ public partial class MainWindow
                 "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans Project64 pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RALibretro pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RANes pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RAVBA pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RASnes9x pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             _ => string.Empty,
         };
     }
@@ -1047,6 +1062,27 @@ public partial class MainWindow
                 documents,
                 "emulation",
                 "RALibretro",
+                "RACache",
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RANes-x64",
+                "RACache",
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => Path.Combine(
+                documents,
+                "emulation",
+                "RAVBA-x64",
+                "RACache",
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RASnes9x-x64",
                 "RACache",
                 "RALog.txt"
             ),

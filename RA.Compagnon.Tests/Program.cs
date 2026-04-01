@@ -45,6 +45,14 @@ static class TestRunner
             "Fusion de succes catalogue ne regresse pas sur une liste longue",
             FusionSuccesCatalogueNeRegressePasSurListeLongue
         );
+        ExecuterTest(
+            "Comparaison de versions detecte une version plus recente",
+            ComparaisonVersionsDetecteVersionPlusRecente
+        );
+        ExecuterTest(
+            "Comparaison de versions traite 1.0.2 et 1.0.2.0 comme equivalentes",
+            ComparaisonVersionsTraiteFormatsEquivalents
+        );
 
         Console.WriteLine();
         Console.WriteLine(
@@ -338,6 +346,20 @@ static class TestRunner
             resultat.FirstOrDefault(item => item.AchievementId == 204),
             "Les succes absents de la mise a jour partielle doivent etre conserves."
         );
+    }
+
+    private static void ComparaisonVersionsDetecteVersionPlusRecente()
+    {
+        int resultat = ServiceMiseAJourApplication.ComparerVersions("1.0.3", "1.0.2");
+
+        Assert.True(resultat > 0, "La version 1.0.3 devrait etre plus recente que 1.0.2.");
+    }
+
+    private static void ComparaisonVersionsTraiteFormatsEquivalents()
+    {
+        int resultat = ServiceMiseAJourApplication.ComparerVersions("1.0.2", "1.0.2.0");
+
+        Assert.Equal(0, resultat, "1.0.2 et 1.0.2.0 devraient etre considerees equivalentes.");
     }
 
     private static void DebloqueurVirtuelCouvreLesFamillesLogLocal()

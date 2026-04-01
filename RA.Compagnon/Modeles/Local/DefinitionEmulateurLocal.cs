@@ -10,6 +10,9 @@ public enum StrategieExtractionTitreEmulateurLocal
     Dolphin,
     Project64,
     Flycast,
+    RANes,
+    RAVBA,
+    RASnes9x,
 }
 
 public enum StrategieRenseignementJeuEmulateurLocal
@@ -17,6 +20,9 @@ public enum StrategieRenseignementJeuEmulateurLocal
     Aucune,
     Project64RACache,
     RALibretroRACache,
+    RANesRACache,
+    RAVBARACache,
+    RASnes9xRACache,
     RetroArchLog,
     DuckStationLog,
     PCSX2Log,
@@ -29,6 +35,9 @@ public enum StrategieSurveillanceSuccesLocale
     RetroArchLogs,
     Project64RACache,
     RALibretroRACache,
+    RANesRACache,
+    RAVBARACache,
+    RASnes9xRACache,
 }
 
 public sealed record DefinitionEmulateurLocal(

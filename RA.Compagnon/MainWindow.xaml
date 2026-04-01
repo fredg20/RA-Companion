@@ -1067,16 +1067,73 @@
       Padding="0,3,0,0"
       Background="Transparent"
     >
-      <TextBlock
-        x:Name="TexteVersionApplication"
+      <StackPanel
+        Orientation="Horizontal"
         HorizontalAlignment="Right"
         VerticalAlignment="Center"
-        FontSize="12"
-        FontWeight="SemiBold"
-        Opacity="0.68"
-        Text="Version 1.0.2"
-        TextAlignment="Right"
-      />
+      >
+          <Button
+            x:Name="BoutonMiseAJourApplication"
+            Margin="0,0,10,0"
+            Padding="10,2,10,2"
+            MinHeight="24"
+            VerticalAlignment="Center"
+            Visibility="Collapsed"
+            Content="Mise à jour"
+            Click="BoutonMiseAJourApplication_Click"
+          >
+            <Button.Style>
+              <Style TargetType="Button">
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Background" Value="#15512C" />
+                <Setter Property="BorderBrush" Value="#15512C" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                      <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="6"
+                      >
+                        <ContentPresenter
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Margin="{TemplateBinding Padding}"
+                        />
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter Property="Background" Value="#2A6B41" />
+                          <Setter Property="BorderBrush" Value="#2A6B41" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                          <Setter Property="Background" Value="#114524" />
+                          <Setter Property="BorderBrush" Value="#114524" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                          <Setter Property="Opacity" Value="0.55" />
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </Button.Style>
+          </Button>
+        <TextBlock
+          x:Name="TexteVersionApplication"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Center"
+          FontSize="12"
+          FontWeight="SemiBold"
+          Opacity="0.68"
+          Text="Version 1.0.3"
+          TextAlignment="Right"
+        />
+      </StackPanel>
     </Border>
 
     <ui:ContentDialogHost

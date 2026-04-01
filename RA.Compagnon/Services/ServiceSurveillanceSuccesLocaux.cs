@@ -123,6 +123,18 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
                 nomEmulateur,
                 ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRALibretro()
             ),
+            StrategieSurveillanceSuccesLocale.RANesRACache => ConstruireSurveillanceRACache(
+                nomEmulateur,
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRANes()
+            ),
+            StrategieSurveillanceSuccesLocale.RAVBARACache => ConstruireSurveillanceRACache(
+                nomEmulateur,
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRAVBA()
+            ),
+            StrategieSurveillanceSuccesLocale.RASnes9xRACache => ConstruireSurveillanceRACache(
+                nomEmulateur,
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheRASnes9x()
+            ),
             _ => (null, null, string.Empty),
         };
     }

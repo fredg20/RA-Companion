@@ -70,6 +70,39 @@ public static class ServiceCatalogueEmulateursLocaux
             ["logs"]
         ),
         new(
+            "RANes",
+            ["ranes"],
+            ["nintendo entertainment system", "nes", "famicom"],
+            StrategieExtractionTitreEmulateurLocal.RANes,
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache,
+            StrategieSurveillanceSuccesLocale.RANesRACache,
+            true,
+            true,
+            ["racache"]
+        ),
+        new(
+            "RAVBA",
+            ["ravba", "ravba-m", "ravisualboyadvance", "ravisualboyadvance-m"],
+            ["game boy", "gb", "game boy color", "gbc", "game boy advance", "gba"],
+            StrategieExtractionTitreEmulateurLocal.RAVBA,
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache,
+            StrategieSurveillanceSuccesLocale.RAVBARACache,
+            true,
+            true,
+            ["racache"]
+        ),
+        new(
+            "RASnes9x",
+            ["rasnes9x"],
+            ["super nintendo", "super nintendo entertainment system", "snes"],
+            StrategieExtractionTitreEmulateurLocal.RASnes9x,
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache,
+            StrategieSurveillanceSuccesLocale.RASnes9xRACache,
+            true,
+            true,
+            ["racache"]
+        ),
+        new(
             "Dolphin",
             [
                 "dolphin",
@@ -151,6 +184,9 @@ public static class ServiceCatalogueEmulateursLocaux
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => "logs",
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => "racache_log",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => "racache_log",
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => "racache_log",
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => "racache_log",
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => "racache_log",
             _ => string.Empty,
         };
     }
@@ -162,6 +198,9 @@ public static class ServiceCatalogueEmulateursLocaux
             StrategieSurveillanceSuccesLocale.RetroArchLogs => true,
             StrategieSurveillanceSuccesLocale.Project64RACache => true,
             StrategieSurveillanceSuccesLocale.RALibretroRACache => true,
+            StrategieSurveillanceSuccesLocale.RANesRACache => true,
+            StrategieSurveillanceSuccesLocale.RAVBARACache => true,
+            StrategieSurveillanceSuccesLocale.RASnes9xRACache => true,
             _ => false,
         };
     }
@@ -186,6 +225,15 @@ public static class ServiceCatalogueEmulateursLocaux
             StrategieSurveillanceSuccesLocale.RetroArchLogs => typeSource == "logs",
             StrategieSurveillanceSuccesLocale.Project64RACache => typeSource == "racache_log",
             StrategieSurveillanceSuccesLocale.RALibretroRACache => typeSource
+                is "racache_log"
+                    or "racache_data",
+            StrategieSurveillanceSuccesLocale.RANesRACache => typeSource
+                is "racache_log"
+                    or "racache_data",
+            StrategieSurveillanceSuccesLocale.RAVBARACache => typeSource
+                is "racache_log"
+                    or "racache_data",
+            StrategieSurveillanceSuccesLocale.RASnes9xRACache => typeSource
                 is "racache_log"
                     or "racache_data",
             _ => false,

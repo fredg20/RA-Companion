@@ -27,6 +27,18 @@ public static class ServiceSourcesLocalesEmulateurs
                 TrouverRepertoireRACacheProject64(),
                 "RALog.txt"
             ),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => Path.Combine(
+                TrouverRepertoireRACacheRANes(),
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => Path.Combine(
+                TrouverRepertoireRACacheRAVBA(),
+                "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => Path.Combine(
+                TrouverRepertoireRACacheRASnes9x(),
+                "RALog.txt"
+            ),
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 TrouverDernierCheminJournalRetroArch(),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
@@ -109,6 +121,66 @@ public static class ServiceSourcesLocalesEmulateurs
             Path.Combine(documents, "emulation", "RALibretro", "RACache"),
             Path.Combine(documents, "RALibretro", "RACache"),
             Path.Combine(appData, "RALibretro", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverRepertoireRACacheRANes()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RANes-x64", "RACache"),
+            Path.Combine(documents, "emulation", "RANes", "RACache"),
+            Path.Combine(documents, "RANes-x64", "RACache"),
+            Path.Combine(documents, "RANes", "RACache"),
+            Path.Combine(appData, "RANes-x64", "RACache"),
+            Path.Combine(appData, "RANes", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverRepertoireRACacheRAVBA()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RAVBA-x64", "RACache"),
+            Path.Combine(documents, "emulation", "RAVBA", "RACache"),
+            Path.Combine(documents, "emulation", "RAVBA-M-x64", "RACache"),
+            Path.Combine(documents, "emulation", "RAVBA-M", "RACache"),
+            Path.Combine(documents, "RAVBA-x64", "RACache"),
+            Path.Combine(documents, "RAVBA", "RACache"),
+            Path.Combine(documents, "RAVBA-M-x64", "RACache"),
+            Path.Combine(documents, "RAVBA-M", "RACache"),
+            Path.Combine(appData, "RAVBA-x64", "RACache"),
+            Path.Combine(appData, "RAVBA", "RACache"),
+            Path.Combine(appData, "RAVBA-M-x64", "RACache"),
+            Path.Combine(appData, "RAVBA-M", "RACache"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverRepertoireRACacheRASnes9x()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RASnes9x-x64", "RACache"),
+            Path.Combine(documents, "emulation", "RASnes9x", "RACache"),
+            Path.Combine(documents, "RASnes9x-x64", "RACache"),
+            Path.Combine(documents, "RASnes9x", "RACache"),
+            Path.Combine(appData, "RASnes9x-x64", "RACache"),
+            Path.Combine(appData, "RASnes9x", "RACache"),
         ];
 
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;

@@ -77,6 +77,8 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
     private const double RayonFlouTransitionImageJeuEnCours = 14;
     private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(8);
+    private static readonly TimeSpan IntervalleRafraichissementMiseAJourApplication =
+        TimeSpan.FromHours(6);
 
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();
     private readonly ServiceTraductionTexte _serviceTraductionTexte = new();
@@ -94,6 +96,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly ServiceDetectionSuccesUtilisateurLocal _serviceDetectionSuccesUtilisateurLocal =
         new();
     private readonly ServiceOrchestrateurEtatJeu _serviceOrchestrateurEtatJeu = new();
+    private readonly ServiceMiseAJourApplication _serviceMiseAJourApplication = new();
 #if DEBUG
     private readonly ServiceTestSuccesDebug _serviceTestSuccesDebug = new();
 #endif
@@ -167,6 +170,14 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _titreJeuLocalActif = string.Empty;
     private int _identifiantJeuLocalResolutEnAttente;
     private string _titreJeuLocalResolutEnAttente = string.Empty;
+    private EtatMiseAJourApplication _etatMiseAJourApplication =
+        EtatMiseAJourApplication.CreerEtatInitial("inconnue");
+    private DateTimeOffset _horodatageDerniereVerificationMiseAJourUtc = DateTimeOffset.MinValue;
+    private bool _verificationMiseAJourApplicationEnCours;
+    private bool _telechargementMiseAJourApplicationEnCours;
+    private string _versionMiseAJourTelechargee = string.Empty;
+    private string _messageTelechargementMiseAJourApplication = string.Empty;
+    private string? _cheminFichierMiseAJourTelechargee;
 
     /// <summary>
     /// Initialise la fenêtre principale.
@@ -181,6 +192,7 @@ public partial class MainWindow : UiControls.FluentWindow
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
         AppliquerVersionApplication();
+        _etatMiseAJourApplication = ServiceMiseAJourApplication.CreerEtatInitial();
         ReinitialiserJeuEnCours();
         ConfigurerActualisationAutomatique();
         _serviceSurveillanceSuccesLocaux.SignalRecu += SurveillanceSuccesLocaux_SignalRecu;
@@ -324,6 +336,7 @@ public partial class MainWindow : UiControls.FluentWindow
             () => DemarrerActualisationAutomatique(),
             DispatcherPriority.ApplicationIdle
         );
+        _ = VerifierMiseAJourApplicationSiNecessaireAsync();
         App.JournaliserDemarrage("FenetrePrincipaleChargee fin");
     }
 

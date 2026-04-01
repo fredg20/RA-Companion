@@ -15,7 +15,7 @@
 - [ ] Ajouter une vue "résumé de session" : durée, succès obtenus, points gagnés.
 - [ ] Ajouter un mode compact pour les petits écrans ou les setups secondaires.
 - [ ] Prévoir une adaptation de l'interface pour mobile ou petit format tactile.
-- [ ] Inclure une fonction de mise à jour de l'application.
+- [x] Inclure une fonction de mise à jour de l'application.
 - [x] Afficher clairement la version actuelle de l'application dans l'interface.
 - [ ] Afficher clairement le nombre de succès restants et les points restants pour finir le jeu.
 - [ ] Ajouter une indication de la prochaine récompense importante : completion, mastery ou milestone personnel.
@@ -153,7 +153,6 @@
 - [ ] Ajouter une vue des derniers jeux détectés localement, même sans succès.
 - [ ] Ajouter un récap des ouvertures de session locales par émulateur.
 - [ ] Ajouter une carte partageable "jeu du moment" avec image, progression et points.
-- [ ] Ajouter une aide contextuelle sur la qualité de la détection selon l'émulateur utilisé.
 - [ ] Intégrer les autres émulateurs RetroAchievements moins connus quand leur détection locale est suffisamment fiable.
 - [ ] Ajouter une vue des succès obtenables rapidement en début de session.
 - [ ] Ajouter une distinction visuelle plus nette entre succès de progression, de performance et cachés.
@@ -161,14 +160,12 @@
 - [ ] Ajouter une estimation du temps moyen passé par session sur chaque jeu.
 - [ ] Ajouter une vue des jeux laissés à moins de 10 succès de la fin.
 - [ ] Ajouter une alerte douce quand un jeu chargé n'est pas reconnu avec certitude.
-- [ ] Ajouter une fiche simple "compatibilité émulateur" pour chaque famille prise en charge.
 - [ ] Ajouter une vue des succès hardcore encore faisables sur un jeu déjà avancé en softcore.
 - [ ] Ajouter un indicateur de fraîcheur des données affichées : local, cache ou API récente.
 - [ ] Ajouter une vue des jeux où un seul succès débloquerait un gros gain de points.
 - [ ] Ajouter une note personnelle par jeu pour se rappeler quoi faire au prochain lancement.
 - [ ] Ajouter un mini-journal de session visible dans l'interface : jeu lancé, jeu détecté, succès obtenu.
 - [ ] Ajouter un écran "Que faire ensuite ?" avec 3 suggestions simples et justifiées.
-- [ ] Ajouter une option pour préférer certains émulateurs quand plusieurs sources sont détectées.
 - [ ] Ajouter une vue des jeux qui n'ont donné aucun succès depuis longtemps.
 - [ ] Ajouter une présentation spéciale des jeux maîtrisés ou presque maîtrisés.
 - [ ] Ajouter une option pour masquer complètement les succès déjà obtenus dans certaines vues.
