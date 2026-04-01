@@ -12,8 +12,7 @@ public sealed class UtilisateurRetroAchievementsInaccessibleException : Exceptio
     public UtilisateurRetroAchievementsInaccessibleException(string pseudo)
         : base(
             $"L'utilisateur RetroAchievements \"{pseudo}\" n'existe pas ou n'est pas accessible."
-        )
-    { }
+        ) { }
 
     /// <summary>
     /// Initialise une nouvelle exception de profil utilisateur inaccessible.
@@ -25,6 +24,5 @@ public sealed class UtilisateurRetroAchievementsInaccessibleException : Exceptio
         : base(
             $"L'utilisateur RetroAchievements \"{pseudo}\" n'existe pas ou n'est pas accessible.",
             innerException
-        )
-    { }
+        ) { }
 }

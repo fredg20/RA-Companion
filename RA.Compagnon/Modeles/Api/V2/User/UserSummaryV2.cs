@@ -74,8 +74,7 @@ public sealed class UserSummaryV2
     public Dictionary<
         string,
         Dictionary<string, UserRecentAchievementV2>
-    > RecentAchievements
-    { get; set; } = [];
+    > RecentAchievements { get; set; } = [];
 
     [JsonPropertyName("LastGame")]
     public LastGameV2? LastGame { get; set; }

@@ -68,7 +68,9 @@ public sealed partial class ServiceCatalogueJeuxLocal
         {
             CatalogueJeuxLocal catalogue = await ChargerCatalogueInterneAsync(jetonAnnulation);
             DateTimeOffset maintenant = DateTimeOffset.UtcNow;
-            JeuCatalogueLocal? existant = catalogue.Jeux.FirstOrDefault(item => item.GameId == jeu.Id);
+            JeuCatalogueLocal? existant = catalogue.Jeux.FirstOrDefault(item =>
+                item.GameId == jeu.Id
+            );
 
             if (existant is null)
             {
@@ -110,7 +112,7 @@ public sealed partial class ServiceCatalogueJeuxLocal
             );
             existant.TitresAlternatifs =
             [
-                .. titresAlternatifs.OrderBy(titre => titre, StringComparer.OrdinalIgnoreCase)
+                .. titresAlternatifs.OrderBy(titre => titre, StringComparer.OrdinalIgnoreCase),
             ];
 
             catalogue.DateMajUtc = maintenant;
@@ -158,11 +160,12 @@ public sealed partial class ServiceCatalogueJeuxLocal
         try
         {
             await using FileStream flux = File.OpenRead(cheminLecture);
-            CatalogueJeuxLocal? catalogue = await JsonSerializer.DeserializeAsync<CatalogueJeuxLocal>(
-                flux,
-                OptionsJson,
-                jetonAnnulation
-            );
+            CatalogueJeuxLocal? catalogue =
+                await JsonSerializer.DeserializeAsync<CatalogueJeuxLocal>(
+                    flux,
+                    OptionsJson,
+                    jetonAnnulation
+                );
             _catalogue = catalogue ?? new CatalogueJeuxLocal();
         }
         catch (JsonException)
@@ -235,8 +238,8 @@ public sealed partial class ServiceCatalogueJeuxLocal
             return succesExistants;
         }
 
-        Dictionary<int, SuccesCatalogueLocal> succesFusionnes = succesExistants.ToDictionary(
-            item => item.AchievementId
+        Dictionary<int, SuccesCatalogueLocal> succesFusionnes = succesExistants.ToDictionary(item =>
+            item.AchievementId
         );
 
         foreach (SuccesCatalogueLocal succesRecu in succesRecus)
@@ -244,11 +247,7 @@ public sealed partial class ServiceCatalogueJeuxLocal
             succesFusionnes[succesRecu.AchievementId] = succesRecu;
         }
 
-        return
-        [
-            .. succesFusionnes
-                .Values.OrderBy(item => item.AchievementId)
-        ];
+        return [.. succesFusionnes.Values.OrderBy(item => item.AchievementId)];
     }
 
     private static void AjouterTitreAlternatif(
@@ -287,14 +286,13 @@ public sealed partial class ServiceCatalogueJeuxLocal
         }
 
         string sansAccents = string.Concat(
-            titre.Normalize(NormalizationForm.FormD)
+            titre
+                .Normalize(NormalizationForm.FormD)
                 .Where(caractere =>
-                    CharUnicodeInfo.GetUnicodeCategory(caractere)
-                    != UnicodeCategory.NonSpacingMark
+                    CharUnicodeInfo.GetUnicodeCategory(caractere) != UnicodeCategory.NonSpacingMark
                 )
         );
-        string alphanumerique = CaracteresNonAlphaNumeriquesRegex()
-            .Replace(sansAccents, " ");
+        string alphanumerique = CaracteresNonAlphaNumeriquesRegex().Replace(sansAccents, " ");
         return EspacesMultiplesRegex().Replace(alphanumerique, " ").Trim();
     }
 

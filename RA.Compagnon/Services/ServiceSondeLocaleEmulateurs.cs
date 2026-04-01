@@ -12,7 +12,7 @@ using RA.Compagnon.Modeles.Local;
 namespace RA.Compagnon.Services;
 
 /// <summary>
-/// Détecte localement les principaux émulateurs connus à partir des processus et titres de fenêtre.
+/// Detecte localement les principaux emulateurs connus a partir des processus et titres de fenetre.
 /// </summary>
 public sealed partial class ServiceSondeLocaleEmulateurs
 {
@@ -356,7 +356,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return true;
         }
 
-        // RetroArch, DuckStation et PCSX2 ont des variantes de fenêtres/outils qui rendent
+        // RetroArch, DuckStation et PCSX2 ont des variantes de fenetres/outils qui rendent
         // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
         if (!definition.AutoriserDetectionParTitreFenetre)
         {
@@ -440,7 +440,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return string.Empty;
         }
 
-        string[] separateurs = [" - ", " | ", " — ", " – ", " :: ", " / "];
+        string[] separateurs = [" - ", " | ", " \u2014 ", " \u2013 ", " :: ", " / "];
 
         foreach (string separateur in separateurs)
         {
@@ -569,8 +569,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         // PPSSPP affiche souvent le serial PSP devant le vrai titre.
         titreNettoye = PrefixeSerialPpssppRegex().Replace(titreNettoye, string.Empty).Trim();
 
-        titreNettoye = titreNettoye.Replace("Â®", string.Empty, StringComparison.Ordinal);
-        titreNettoye = titreNettoye.Replace("®", string.Empty, StringComparison.Ordinal);
+        titreNettoye = titreNettoye.Replace("\u00AE", string.Empty, StringComparison.Ordinal);
         titreNettoye = EspacesMultiplesRegex().Replace(titreNettoye, " ").Trim();
 
         return titreNettoye;
@@ -695,7 +694,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         return titreNormalise
             is "selectionner un dossier"
-                or "sélectionner un dossier"
                 or "select a folder"
                 or "select a directory"
                 or "ouvrir"
@@ -727,7 +725,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 or "lancer un disque"
                 or "telecharger des jaquettes"
                 or "parametres pcsx2"
-                or "selectionner un dossier"
                 or "scanner les sous-dossiers ?"
                 or "confirmer l'extinction"
                 or "attention : memory card occupee"
@@ -1701,8 +1698,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         titre = TexteEntreParenthesesRegex().Replace(titre, " ");
-        titre = titre.Replace("Ã‚Â®", string.Empty, StringComparison.Ordinal);
-        titre = titre.Replace("Â®", string.Empty, StringComparison.Ordinal);
+        titre = titre.Replace("\u00AE", string.Empty, StringComparison.Ordinal);
         return EspacesMultiplesRegex().Replace(titre, " ").Trim();
     }
 

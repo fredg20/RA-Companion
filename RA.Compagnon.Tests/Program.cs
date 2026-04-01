@@ -47,7 +47,9 @@ static class TestRunner
         );
 
         Console.WriteLine();
-        Console.WriteLine(_echecs == 0 ? "Tous les tests sont passes." : $"{_echecs} test(s) en echec.");
+        Console.WriteLine(
+            _echecs == 0 ? "Tous les tests sont passes." : $"{_echecs} test(s) en echec."
+        );
         return _echecs == 0 ? 0 : 1;
     }
 
@@ -69,24 +71,48 @@ static class TestRunner
     private static void OrchestrateurIgnoreDetectionLocaleFaibleApresJeuValideRecent()
     {
         ServiceOrchestrateurEtatJeu service = new();
-        Assert.True(service.EnregistrerJeuAffiche(11423, "Ace Combat", "api"), "Le jeu affiche initial doit etre accepte.");
+        Assert.True(
+            service.EnregistrerJeuAffiche(11423, "Ace Combat", "api"),
+            "Le jeu affiche initial doit etre accepte."
+        );
 
         bool transitionAcceptee = service.EnregistrerDetectionLocale(0, string.Empty, "local");
 
-        Assert.False(transitionAcceptee, "Une detection locale faible recente ne doit pas ecraser un jeu valide.");
-        Assert.Equal(11423, service.EtatCourant.IdentifiantJeu, "Le GameID affiche doit etre conserve.");
-        Assert.Equal("Ace Combat", service.EtatCourant.TitreJeu, "Le titre affiche doit etre conserve.");
+        Assert.False(
+            transitionAcceptee,
+            "Une detection locale faible recente ne doit pas ecraser un jeu valide."
+        );
+        Assert.Equal(
+            11423,
+            service.EtatCourant.IdentifiantJeu,
+            "Le GameID affiche doit etre conserve."
+        );
+        Assert.Equal(
+            "Ace Combat",
+            service.EtatCourant.TitreJeu,
+            "Le titre affiche doit etre conserve."
+        );
     }
 
     private static void OrchestrateurConserveJeuValideFaceAAucunJeuTardif()
     {
         ServiceOrchestrateurEtatJeu service = new();
-        Assert.True(service.EnregistrerJeuAffiche(18160, "Crash of the Titans", "api"), "Le jeu affiche initial doit etre accepte.");
+        Assert.True(
+            service.EnregistrerJeuAffiche(18160, "Crash of the Titans", "api"),
+            "Le jeu affiche initial doit etre accepte."
+        );
 
         bool transitionAcceptee = service.EnregistrerAucunJeu("local");
 
-        Assert.False(transitionAcceptee, "Un 'aucun jeu' tardif ne doit pas vider un jeu recent deja valide.");
-        Assert.Equal(18160, service.EtatCourant.IdentifiantJeu, "Le GameID recent doit etre conserve.");
+        Assert.False(
+            transitionAcceptee,
+            "Un 'aucun jeu' tardif ne doit pas vider un jeu recent deja valide."
+        );
+        Assert.Equal(
+            18160,
+            service.EtatCourant.IdentifiantJeu,
+            "Le GameID recent doit etre conserve."
+        );
     }
 
     private static void ResolutionRapideRetrouveLeBonGameId()
@@ -131,8 +157,16 @@ static class TestRunner
         );
 
         Assert.NotNull(resolution, "Le catalogue local devrait accepter un titre alternatif.");
-        Assert.Equal(19924, resolution!.IdentifiantJeu, "Le GameID du titre alternatif doit etre retrouve.");
-        Assert.Equal("catalogue_local", resolution.Source, "La source attendue est catalogue_local.");
+        Assert.Equal(
+            19924,
+            resolution!.IdentifiantJeu,
+            "Le GameID du titre alternatif doit etre retrouve."
+        );
+        Assert.Equal(
+            "catalogue_local",
+            resolution.Source,
+            "La source attendue est catalogue_local."
+        );
     }
 
     private static void DetectionSuccesRepereNouveauHardcore()
@@ -165,16 +199,18 @@ static class TestRunner
 
     private static void DetectionSuccesIgnoreSuccesDejaObserve()
     {
-        IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent =
-            new Dictionary<int, EtatObservationSuccesLocal>
+        IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent = new Dictionary<
+            int,
+            EtatObservationSuccesLocal
+        >
+        {
+            [214818] = new EtatObservationSuccesLocal
             {
-                [214818] = new EtatObservationSuccesLocal
-                {
-                    IdentifiantSucces = 214818,
-                    DateObtention = "2026-03-30 12:34:56",
-                    DateObtentionHardcore = string.Empty,
-                },
-            };
+                IdentifiantSucces = 214818,
+                DateObtention = "2026-03-30 12:34:56",
+                DateObtentionHardcore = string.Empty,
+            },
+        };
         IReadOnlyCollection<GameAchievementV2> succesCourants =
         [
             new GameAchievementV2
@@ -201,25 +237,77 @@ static class TestRunner
     {
         List<SuccesCatalogueLocal> succesExistants =
         [
-            .. Enumerable.Range(1, 204).Select(index => new SuccesCatalogueLocal
-            {
-                AchievementId = index,
-                Titre = $"Succes {index}",
-                Points = index,
-            }),
+            .. Enumerable
+                .Range(1, 204)
+                .Select(index => new SuccesCatalogueLocal
+                {
+                    AchievementId = index,
+                    Titre = $"Succes {index}",
+                    Points = index,
+                }),
         ];
         List<SuccesCatalogueLocal> succesRecus =
         [
-            new SuccesCatalogueLocal { AchievementId = 1, Titre = "Succes 1 mis a jour", Points = 999 },
-            new SuccesCatalogueLocal { AchievementId = 2, Titre = "Succes 2", Points = 2 },
-            new SuccesCatalogueLocal { AchievementId = 3, Titre = "Succes 3", Points = 3 },
-            new SuccesCatalogueLocal { AchievementId = 4, Titre = "Succes 4", Points = 4 },
-            new SuccesCatalogueLocal { AchievementId = 5, Titre = "Succes 5", Points = 5 },
-            new SuccesCatalogueLocal { AchievementId = 6, Titre = "Succes 6", Points = 6 },
-            new SuccesCatalogueLocal { AchievementId = 7, Titre = "Succes 7", Points = 7 },
-            new SuccesCatalogueLocal { AchievementId = 8, Titre = "Succes 8", Points = 8 },
-            new SuccesCatalogueLocal { AchievementId = 9, Titre = "Succes 9", Points = 9 },
-            new SuccesCatalogueLocal { AchievementId = 10, Titre = "Succes 10", Points = 10 },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 1,
+                Titre = "Succes 1 mis a jour",
+                Points = 999,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 2,
+                Titre = "Succes 2",
+                Points = 2,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 3,
+                Titre = "Succes 3",
+                Points = 3,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 4,
+                Titre = "Succes 4",
+                Points = 4,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 5,
+                Titre = "Succes 5",
+                Points = 5,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 6,
+                Titre = "Succes 6",
+                Points = 6,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 7,
+                Titre = "Succes 7",
+                Points = 7,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 8,
+                Titre = "Succes 8",
+                Points = 8,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 9,
+                Titre = "Succes 9",
+                Points = 9,
+            },
+            new SuccesCatalogueLocal
+            {
+                AchievementId = 10,
+                Titre = "Succes 10",
+                Points = 10,
+            },
         ];
 
         MethodInfo? methodeFusion = typeof(ServiceCatalogueJeuxLocal).GetMethod(
@@ -227,15 +315,29 @@ static class TestRunner
             BindingFlags.NonPublic | BindingFlags.Static
         );
 
-        Assert.NotNull(methodeFusion, "La methode de fusion des succes doit etre trouvable par reflection.");
+        Assert.NotNull(
+            methodeFusion,
+            "La methode de fusion des succes doit etre trouvable par reflection."
+        );
 
         object? resultatBrut = methodeFusion!.Invoke(null, [succesExistants, succesRecus]);
         List<SuccesCatalogueLocal>? resultat = resultatBrut as List<SuccesCatalogueLocal>;
 
         Assert.NotNull(resultat, "La fusion doit retourner une liste de succes.");
-        Assert.Equal(204, resultat!.Count, "Une mise a jour partielle ne doit pas reduire une longue liste existante.");
-        Assert.Equal(999, resultat.First(item => item.AchievementId == 1).Points, "Les succes recents doivent quand meme mettre a jour les entrees recues.");
-        Assert.NotNull(resultat.FirstOrDefault(item => item.AchievementId == 204), "Les succes absents de la mise a jour partielle doivent etre conserves.");
+        Assert.Equal(
+            204,
+            resultat!.Count,
+            "Une mise a jour partielle ne doit pas reduire une longue liste existante."
+        );
+        Assert.Equal(
+            999,
+            resultat.First(item => item.AchievementId == 1).Points,
+            "Les succes recents doivent quand meme mettre a jour les entrees recues."
+        );
+        Assert.NotNull(
+            resultat.FirstOrDefault(item => item.AchievementId == 204),
+            "Les succes absents de la mise a jour partielle doivent etre conserves."
+        );
     }
 
     private static void DebloqueurVirtuelCouvreLesFamillesLogLocal()

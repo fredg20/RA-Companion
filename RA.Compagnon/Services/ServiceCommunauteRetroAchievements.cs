@@ -37,9 +37,13 @@ public sealed class ServiceCommunauteRetroAchievements
         await Task.WhenAll(claimsActivesTask, claimsUtilisateurTask);
 
         IReadOnlyList<UserClaimV2> claimsActivesJeu =
-            [.. (await claimsActivesTask).Where(item => item.GameId == identifiantJeu)];
+        [
+            .. (await claimsActivesTask).Where(item => item.GameId == identifiantJeu),
+        ];
         IReadOnlyList<UserClaimV2> claimsUtilisateurJeu =
-            [.. (await claimsUtilisateurTask).Where(item => item.GameId == identifiantJeu)];
+        [
+            .. (await claimsUtilisateurTask).Where(item => item.GameId == identifiantJeu),
+        ];
 
         return new DonneesCommunauteJeu
         {

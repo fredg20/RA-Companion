@@ -113,9 +113,7 @@ public partial class MainWindow
             if (signalSourceLocale is not null)
             {
                 ServiceTestSuccesDebug.JournaliserEvenement(
-                    ServiceCatalogueEmulateursLocaux.SurveillanceSuccesActive(
-                        scenario.NomEmulateur
-                    )
+                    ServiceCatalogueEmulateursLocaux.SurveillanceSuccesActive(scenario.NomEmulateur)
                         ? "test_succes_signal_source_locale"
                         : "test_succes_signal_source_locale_simule",
                     $"source={scenario.SourceSimulee};typeSource={scenario.TypeSourceLocale};emulateur={scenario.NomEmulateur};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
@@ -131,10 +129,7 @@ public partial class MainWindow
             IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent =
                 ServiceDetectionSuccesJeu.CapturerEtat(_succesJeuCourant);
             IReadOnlyList<GameAchievementV2> succesVirtuels =
-                ServiceTestSuccesDebug.ConstruireSuccesVirtuelsSession(
-                    _succesJeuCourant,
-                    scenario
-                );
+                ServiceTestSuccesDebug.ConstruireSuccesVirtuelsSession(_succesJeuCourant, scenario);
             IReadOnlyList<SuccesDebloqueDetecte> succesDetectes =
                 ServiceDetectionSuccesJeu.DetecterNouveauxSucces(
                     scenario.IdentifiantJeu,
@@ -180,9 +175,7 @@ public partial class MainWindow
                 unSuccesAffiche |= succesAffiche;
 
                 ServiceTestSuccesDebug.JournaliserEvenement(
-                    succesAffiche
-                        ? "test_succes_session_affiche"
-                        : "test_succes_session_echec_ui",
+                    succesAffiche ? "test_succes_session_affiche" : "test_succes_session_echec_ui",
                     $"source={scenario.SourceSimulee};jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces}"
                 );
             }

@@ -145,11 +145,13 @@ public sealed class ClientRetroAchievements
         }
 
         await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
-        UserSummaryV2? resume = await JsonSerializer.DeserializeAsync<UserSummaryV2>(
-            fluxReponse,
-            OptionsJson,
-            jetonAnnulation
-        ) ?? throw new InvalidOperationException(
+        UserSummaryV2? resume =
+            await JsonSerializer.DeserializeAsync<UserSummaryV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            )
+            ?? throw new InvalidOperationException(
                 "La réponse du résumé utilisateur RetroAchievements est vide."
             );
         return resume;
@@ -381,7 +383,8 @@ public sealed class ClientRetroAchievements
                 fluxReponse,
                 OptionsJson,
                 jetonAnnulation
-            ) ?? throw new InvalidOperationException("La réponse du jeu RetroAchievements est vide.");
+            )
+            ?? throw new InvalidOperationException("La réponse du jeu RetroAchievements est vide.");
         if (string.IsNullOrWhiteSpace(jeu.Title))
         {
             throw new InvalidOperationException(

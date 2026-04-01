@@ -26,11 +26,13 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         return etat.Jeux.FirstOrDefault(jeu => jeu.GameId == identifiantJeu);
     }
 
-    public async Task<(EtatJeuUtilisateurLocal? Precedent, EtatJeuUtilisateurLocal Courant)>
-        EnregistrerEtatJeuAsync(
-            GameInfoAndUserProgressV2 jeu,
-            CancellationToken jetonAnnulation = default
-        )
+    public async Task<(
+        EtatJeuUtilisateurLocal? Precedent,
+        EtatJeuUtilisateurLocal Courant
+    )> EnregistrerEtatJeuAsync(
+        GameInfoAndUserProgressV2 jeu,
+        CancellationToken jetonAnnulation = default
+    )
     {
         await _verrou.WaitAsync(jetonAnnulation);
 
@@ -67,16 +69,18 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
     {
         List<EtatSuccesUtilisateurLocal> succes =
         [
-            .. jeu.Succes.Values.Select(item => new EtatSuccesUtilisateurLocal
-            {
-                AchievementId = item.Id,
-                EstDebloque =
-                    !string.IsNullOrWhiteSpace(item.DateEarned)
-                    || !string.IsNullOrWhiteSpace(item.DateEarnedHardcore),
-                EstHardcore = !string.IsNullOrWhiteSpace(item.DateEarnedHardcore),
-                DateDeblocageUtc = (item.DateEarned ?? string.Empty).Trim(),
-                DateDeblocageHardcoreUtc = (item.DateEarnedHardcore ?? string.Empty).Trim(),
-            }).OrderBy(item => item.AchievementId)
+            .. jeu
+                .Succes.Values.Select(item => new EtatSuccesUtilisateurLocal
+                {
+                    AchievementId = item.Id,
+                    EstDebloque =
+                        !string.IsNullOrWhiteSpace(item.DateEarned)
+                        || !string.IsNullOrWhiteSpace(item.DateEarnedHardcore),
+                    EstHardcore = !string.IsNullOrWhiteSpace(item.DateEarnedHardcore),
+                    DateDeblocageUtc = (item.DateEarned ?? string.Empty).Trim(),
+                    DateDeblocageHardcoreUtc = (item.DateEarnedHardcore ?? string.Empty).Trim(),
+                })
+                .OrderBy(item => item.AchievementId),
         ];
 
         EtatSuccesUtilisateurLocal? dernierSucces = succes
@@ -85,9 +89,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
             .ThenByDescending(item => item.DateDeblocageUtc)
             .FirstOrDefault();
 
-        double progressionPourcentage = jeu.NumAchievements <= 0
-            ? 0
-            : (double)jeu.NumAwardedToUser / jeu.NumAchievements * 100d;
+        double progressionPourcentage =
+            jeu.NumAchievements <= 0
+                ? 0
+                : (double)jeu.NumAwardedToUser / jeu.NumAchievements * 100d;
 
         return new EtatJeuUtilisateurLocal
         {
@@ -97,9 +102,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
             NbSuccesDebloquesHardcore = jeu.NumAwardedToUserHardcore,
             ProgressionPourcentage = progressionPourcentage,
             DernierSuccesDetecteId = dernierSucces?.AchievementId ?? 0,
-            DernierSuccesDetecteUtc = dernierSucces?.EstHardcore == true
-                ? dernierSucces.DateDeblocageHardcoreUtc
-                : dernierSucces?.DateDeblocageUtc ?? string.Empty,
+            DernierSuccesDetecteUtc =
+                dernierSucces?.EstHardcore == true
+                    ? dernierSucces.DateDeblocageHardcoreUtc
+                    : dernierSucces?.DateDeblocageUtc ?? string.Empty,
             Succes = succes,
         };
     }

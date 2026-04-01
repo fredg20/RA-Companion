@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.IO;
 using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Windows;
@@ -179,6 +180,7 @@ public partial class MainWindow : UiControls.FluentWindow
         ReinitialiserJournalDiagnosticListeSucces();
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
+        AppliquerVersionApplication();
         ReinitialiserJeuEnCours();
         ConfigurerActualisationAutomatique();
         _serviceSurveillanceSuccesLocaux.SignalRecu += SurveillanceSuccesLocaux_SignalRecu;
@@ -209,6 +211,31 @@ public partial class MainWindow : UiControls.FluentWindow
         ImageSource imageIcone = decodeur.Frames[0];
         Icon = imageIcone;
         ImageIconeTitre.Source = imageIcone;
+    }
+
+    /// <summary>
+    /// Affiche la version courante de l'application dans l'interface.
+    /// </summary>
+    private void AppliquerVersionApplication()
+    {
+        if (TexteVersionApplication is null)
+        {
+            return;
+        }
+
+        Assembly assembly = typeof(MainWindow).Assembly;
+        Version? versionAssembly = assembly.GetName().Version;
+        string? version = versionAssembly is null
+            ? null
+            : $"{versionAssembly.Major}.{versionAssembly.Minor}.{Math.Max(0, versionAssembly.Build)}";
+
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            version = "inconnue";
+        }
+
+        TexteVersionApplication.Text = $"Version {version}";
+        TexteVersionApplication.ToolTip = $"RA-Compagnon {version}";
     }
 
     /// <summary>

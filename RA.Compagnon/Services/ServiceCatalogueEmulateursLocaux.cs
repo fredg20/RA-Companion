@@ -185,8 +185,9 @@ public static class ServiceCatalogueEmulateursLocaux
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => typeSource == "logs",
             StrategieSurveillanceSuccesLocale.Project64RACache => typeSource == "racache_log",
-            StrategieSurveillanceSuccesLocale.RALibretroRACache =>
-                typeSource is "racache_log" or "racache_data",
+            StrategieSurveillanceSuccesLocale.RALibretroRACache => typeSource
+                is "racache_log"
+                    or "racache_data",
             _ => false,
         };
     }

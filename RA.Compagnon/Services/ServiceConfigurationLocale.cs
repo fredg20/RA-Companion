@@ -29,7 +29,8 @@ public sealed class ServiceConfigurationLocale
     /// <summary>
     /// Chemin complet du fichier dédié au dernier jeu affiché.
     /// </summary>
-    public static string CheminFichierJeu => Path.Combine(ObtenirDossierConfiguration(), "game.json");
+    public static string CheminFichierJeu =>
+        Path.Combine(ObtenirDossierConfiguration(), "game.json");
 
     /// <summary>
     /// Chemin complet du fichier dédié au dernier rétrosuccès affiché.

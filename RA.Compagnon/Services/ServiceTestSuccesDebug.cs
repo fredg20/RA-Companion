@@ -65,25 +65,24 @@ public sealed class ServiceTestSuccesDebug
             return Invalide("source_locale_indisponible");
         }
 
-        ScenarioTestSuccesDebug scenario =
-            new()
-            {
-                NomEmulateur = nomEmulateur.Trim(),
-                SourceSimulee = sourceSimulee,
-                TypeSourceLocale = typeSourceLocale,
-                CheminSourceLocale = cheminSourceLocale,
-                IdentifiantJeu = identifiantJeu,
-                TitreJeu = titreJeu?.Trim() ?? string.Empty,
-                IdentifiantSucces = succesCible.Id,
-                TitreSucces = succesCible.Title?.Trim() ?? string.Empty,
-                Points = succesCible.Points,
-                Hardcore = true,
-                DateObtention = DateTime.Now.ToString(
-                    "yyyy-MM-dd HH:mm:ss",
-                    CultureInfo.InvariantCulture
-                ),
-                ModeDeclenchement = modeDeclenchement,
-            };
+        ScenarioTestSuccesDebug scenario = new()
+        {
+            NomEmulateur = nomEmulateur.Trim(),
+            SourceSimulee = sourceSimulee,
+            TypeSourceLocale = typeSourceLocale,
+            CheminSourceLocale = cheminSourceLocale,
+            IdentifiantJeu = identifiantJeu,
+            TitreJeu = titreJeu?.Trim() ?? string.Empty,
+            IdentifiantSucces = succesCible.Id,
+            TitreSucces = succesCible.Title?.Trim() ?? string.Empty,
+            Points = succesCible.Points,
+            Hardcore = true,
+            DateObtention = DateTime.Now.ToString(
+                "yyyy-MM-dd HH:mm:ss",
+                CultureInfo.InvariantCulture
+            ),
+            ModeDeclenchement = modeDeclenchement,
+        };
 
         return new ResultatScenarioTestSuccesDebug
         {
@@ -229,11 +228,7 @@ public sealed class ServiceTestSuccesDebug
 
     private static ResultatScenarioTestSuccesDebug Invalide(string motif)
     {
-        return new ResultatScenarioTestSuccesDebug
-        {
-            EstValide = false,
-            Motif = motif,
-        };
+        return new ResultatScenarioTestSuccesDebug { EstValide = false, Motif = motif };
     }
 
     private static ResultatExecutionTestSuccesDebug InvalideExecution(string motif, string chemin)
@@ -369,10 +364,7 @@ public sealed class ServiceTestSuccesDebug
             return string.Empty;
         }
 
-        return Path.Combine(
-            repertoireLogs,
-            $"retroarch__{DateTime.Now:yyyy_MM_dd__HH_mm_ss}.log"
-        );
+        return Path.Combine(repertoireLogs, $"retroarch__{DateTime.Now:yyyy_MM_dd__HH_mm_ss}.log");
     }
 
     private static string Nettoyer(string? valeur)

@@ -8,11 +8,6 @@ public sealed record EtatPipelineChargementJeu(
     DateTimeOffset HorodatageDerniereMiseAJourUtc
 )
 {
-    public static EtatPipelineChargementJeu Vide { get; } = new(
-        0,
-        string.Empty,
-        0,
-        EtapePipelineChargementJeu.Aucune,
-        DateTimeOffset.MinValue
-    );
+    public static EtatPipelineChargementJeu Vide { get; } =
+        new(0, string.Empty, 0, EtapePipelineChargementJeu.Aucune, DateTimeOffset.MinValue);
 }

@@ -217,15 +217,18 @@ public sealed class ServiceJeuRetroAchievements
 
             if (doitRemplacerSucces)
             {
-                Dictionary<string, GameAchievementV2> succesFusionnes = details
-                    .Achievements.ToDictionary(
+                Dictionary<string, GameAchievementV2> succesFusionnes =
+                    details.Achievements.ToDictionary(
                         item => item.Key,
                         item =>
                         {
                             GameAchievementV2 succesDetail = item.Value;
 
                             if (
-                                succesJeuCourants.TryGetValue(item.Key, out GameAchievementV2? succesCourant)
+                                succesJeuCourants.TryGetValue(
+                                    item.Key,
+                                    out GameAchievementV2? succesCourant
+                                )
                                 || succesJeuCourants.TryGetValue(
                                     succesDetail.Id.ToString(),
                                     out succesCourant

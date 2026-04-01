@@ -16,7 +16,7 @@
 - [ ] Ajouter un mode compact pour les petits écrans ou les setups secondaires.
 - [ ] Prévoir une adaptation de l'interface pour mobile ou petit format tactile.
 - [ ] Inclure une fonction de mise à jour de l'application.
-- [ ] Afficher clairement la version actuelle de l'application dans l'interface.
+- [x] Afficher clairement la version actuelle de l'application dans l'interface.
 - [ ] Afficher clairement le nombre de succès restants et les points restants pour finir le jeu.
 - [ ] Ajouter une indication de la prochaine récompense importante : completion, mastery ou milestone personnel.
 - [ ] Afficher plus clairement le temps écoulé depuis le début de la session en cours.
@@ -34,10 +34,9 @@
 - [ ] Ajouter un bouton pour recharger manuellement le jeu courant.
 - [x] Ajouter une aide utilisateur plus complète, mais simple, accessible depuis le bouton `?`.
 - [x] Ajouter un indicateur simple pour montrer où activer les logs de chaque émulateur validé.
-- [ ] Ajouter un thème clair en plus du thème actuel.
+- [ ] Inclure plusieurs variantes de thèmes.
 - [ ] Permettre de mémoriser la taille et la position de certaines zones de l'interface.
 - [ ] Ajouter une option pour réduire ou désactiver certaines animations.
-- [ ] Ajouter un mode contraste renforcé pour une meilleure lisibilité.
 - [ ] Ajouter un choix de taille de police globale.
 - [ ] Ajouter une option pour garder la fenêtre toujours au premier plan.
 - [ ] Ajouter un mode de lancement minimisé ou discret.

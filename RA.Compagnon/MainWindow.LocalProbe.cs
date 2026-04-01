@@ -1,10 +1,10 @@
+using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
-using System.Windows.Threading;
 
 namespace RA.Compagnon;
 
@@ -261,9 +261,7 @@ public partial class MainWindow
                 _dernierEtatSondeLocaleEmulateurs = etatBrut;
             }
 
-            _serviceSurveillanceSuccesLocaux.MettreAJourCible(
-                etat.EmulateurDetecte ? etat : null
-            );
+            _serviceSurveillanceSuccesLocaux.MettreAJourCible(etat.EmulateurDetecte ? etat : null);
             MettreAJourNoticeCompteEntete();
 
             if (!_serviceOrchestrateurEtatJeu.DoitTraiterSondeLocale(etat.Signature))
@@ -290,7 +288,11 @@ public partial class MainWindow
 
             if (etat.IdentifiantJeuProbable > 0)
             {
-                if (_serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(etat.IdentifiantJeuProbable))
+                if (
+                    _serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(
+                        etat.IdentifiantJeuProbable
+                    )
+                )
                 {
                     return;
                 }
@@ -388,7 +390,11 @@ public partial class MainWindow
 
             if (jeuResolut is not null)
             {
-                if (_serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(jeuResolut.IdentifiantJeu))
+                if (
+                    _serviceOrchestrateurEtatJeu.DoitIgnorerResolutionLocale(
+                        jeuResolut.IdentifiantJeu
+                    )
+                )
                 {
                     return;
                 }
@@ -691,7 +697,9 @@ public partial class MainWindow
         SuccesDebloqueDetecte? succesDirect =
             ServiceSondeLocaleEmulateurs.LireDernierSuccesDebloqueDepuisSourceLocale(
                 signal.NomEmulateur,
-                _identifiantJeuLocalActif > 0 ? _identifiantJeuLocalActif : _identifiantJeuSuccesCourant,
+                _identifiantJeuLocalActif > 0
+                    ? _identifiantJeuLocalActif
+                    : _identifiantJeuSuccesCourant,
                 !string.IsNullOrWhiteSpace(_titreJeuLocalActif)
                     ? _titreJeuLocalActif
                     : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty,

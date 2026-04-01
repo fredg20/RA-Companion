@@ -1,5 +1,5 @@
-using System.IO;
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Local;
 
@@ -49,8 +49,9 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
     public void MettreAJourCible(EtatSondeLocaleEmulateur? etat)
     {
-        string nomEmulateur =
-            etat is { EmulateurDetecte: true } ? etat.NomEmulateur?.Trim() ?? string.Empty : string.Empty;
+        string nomEmulateur = etat is { EmulateurDetecte: true }
+            ? etat.NomEmulateur?.Trim() ?? string.Empty
+            : string.Empty;
 
         if (string.IsNullOrWhiteSpace(nomEmulateur))
         {
@@ -103,11 +104,15 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         ArreterSurveillance();
     }
 
-    private (FileSystemWatcher? Principale, FileSystemWatcher? Secondaire, string Signature) ConstruireSurveillances(
-        string nomEmulateur
-    )
+    private (
+        FileSystemWatcher? Principale,
+        FileSystemWatcher? Secondaire,
+        string Signature
+    ) ConstruireSurveillances(string nomEmulateur)
     {
-        return ServiceCatalogueEmulateursLocaux.TrouverParNom(nomEmulateur)?.StrategieSurveillanceSucces switch
+        return ServiceCatalogueEmulateursLocaux
+            .TrouverParNom(nomEmulateur)
+            ?.StrategieSurveillanceSucces switch
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => ConstruireSurveillanceRetroArch(),
             StrategieSurveillanceSuccesLocale.Project64RACache => ConstruireSurveillanceRACache(
@@ -122,7 +127,11 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         };
     }
 
-    private (FileSystemWatcher? Principale, FileSystemWatcher? Secondaire, string Signature) ConstruireSurveillanceRetroArch()
+    private (
+        FileSystemWatcher? Principale,
+        FileSystemWatcher? Secondaire,
+        string Signature
+    ) ConstruireSurveillanceRetroArch()
     {
         string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
 
@@ -165,11 +174,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             ? CreerSurveillance(nomEmulateur, "racache_log", repertoireRACache, "RALog.txt")
             : null;
 
-        return (
-            principale,
-            secondaire,
-            $"{nomEmulateur}|{repertoireData}|{repertoireRACache}"
-        );
+        return (principale, secondaire, $"{nomEmulateur}|{repertoireData}|{repertoireRACache}");
     }
 
     private FileSystemWatcher CreerSurveillance(
@@ -226,9 +231,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             _dernierSignalUtc = DateTimeOffset.UtcNow;
         }
 
-        SignalRecu?.Invoke(
-            ConstruireSignal(nomEmulateur, typeSource, chemin)
-        );
+        SignalRecu?.Invoke(ConstruireSignal(nomEmulateur, typeSource, chemin));
 
         JournaliserEvenement(
             "signal_recu",
@@ -284,11 +287,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
                     _suiviRACacheLogPlanifie = false;
 
                     if (
-                        !string.Equals(
-                            _signatureCible,
-                            signatureCapturee,
-                            StringComparison.Ordinal
-                        )
+                        !string.Equals(_signatureCible, signatureCapturee, StringComparison.Ordinal)
                     )
                     {
                         JournaliserEvenement(
@@ -337,7 +336,9 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
                 lock (_verrou)
                 {
-                    if (!string.Equals(_signatureCible, signatureCapturee, StringComparison.Ordinal))
+                    if (
+                        !string.Equals(_signatureCible, signatureCapturee, StringComparison.Ordinal)
+                    )
                     {
                         JournaliserEvenement(
                             "signal_initial_abandonne",
@@ -364,7 +365,9 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
                     return;
                 }
 
-                SignalRecu?.Invoke(ConstruireSignal("RetroArch", "logs_initial", fichierLog.FullName));
+                SignalRecu?.Invoke(
+                    ConstruireSignal("RetroArch", "logs_initial", fichierLog.FullName)
+                );
                 JournaliserEvenement(
                     "signal_initial_recu",
                     $"emulateur=RetroArch;source=logs_initial;chemin={fichierLog.FullName}"
@@ -406,10 +409,14 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         return typeSource switch
         {
             "racache_data" => RegexFichierJeuRACache.IsMatch(nomFichier),
-            "racache_log" => string.Equals(nomFichier, "RALog.txt", StringComparison.OrdinalIgnoreCase),
-            "logs" => Path.GetExtension(nomFichier).Equals(".log", StringComparison.OrdinalIgnoreCase),
+            "racache_log" => string.Equals(
+                nomFichier,
+                "RALog.txt",
+                StringComparison.OrdinalIgnoreCase
+            ),
+            "logs" => Path.GetExtension(nomFichier)
+                .Equals(".log", StringComparison.OrdinalIgnoreCase),
             _ => true,
         };
     }
-
 }

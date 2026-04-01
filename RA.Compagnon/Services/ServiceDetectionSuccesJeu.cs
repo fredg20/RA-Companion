@@ -95,17 +95,18 @@ public sealed class ServiceDetectionSuccesJeu
         return resultat;
     }
 
-    public static void JournaliserInitialisation(int identifiantJeu, string titreJeu, int nombreSucces)
+    public static void JournaliserInitialisation(
+        int identifiantJeu,
+        string titreJeu,
+        int nombreSucces
+    )
     {
         JournaliserLigne(
             $"etat=initialisation;source=session;jeu={identifiantJeu};titreJeu={Nettoyer(titreJeu)};succes={nombreSucces.ToString(CultureInfo.InvariantCulture)}"
         );
     }
 
-    public static void JournaliserDetection(
-        SuccesDebloqueDetecte succes,
-        string source = "session"
-    )
+    public static void JournaliserDetection(SuccesDebloqueDetecte succes, string source = "session")
     {
         JournaliserLigne(
             $"etat=deblocage;source={Nettoyer(source)};jeu={succes.IdentifiantJeu};titreJeu={Nettoyer(succes.TitreJeu)};succes={succes.IdentifiantSucces};titreSucces={Nettoyer(succes.TitreSucces)};points={succes.Points.ToString(CultureInfo.InvariantCulture)};mode={(succes.Hardcore ? "hardcore" : "softcore")};date={Nettoyer(succes.DateObtention)}"

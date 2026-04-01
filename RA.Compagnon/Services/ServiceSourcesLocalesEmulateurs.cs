@@ -31,10 +31,8 @@ public static class ServiceSourcesLocalesEmulateurs
                 TrouverDernierCheminJournalRetroArch(),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 TrouverCheminJournalDuckStation(),
-            StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
-                TrouverCheminJournalPCSX2(),
-            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
-                TrouverCheminJournalPPSSPP(),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverCheminJournalPCSX2(),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverCheminJournalPPSSPP(),
             _ => string.Empty,
         };
     }
@@ -156,10 +154,7 @@ public static class ServiceSourcesLocalesEmulateurs
     {
         string[] candidats =
         [
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "PCSX2"
-            ),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "PCSX2"),
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "PCSX2"
@@ -176,7 +171,9 @@ public static class ServiceSourcesLocalesEmulateurs
     public static string TrouverRepertoirePPSSPP()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
         string[] candidats =

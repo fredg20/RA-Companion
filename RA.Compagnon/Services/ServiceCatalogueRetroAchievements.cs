@@ -50,7 +50,12 @@ public sealed class ServiceCatalogueRetroAchievements
         CancellationToken jetonAnnulation = default
     )
     {
-        if (_jeuxSystemeCache.TryGetValue(identifiantConsole, out IReadOnlyList<GameListEntryV2>? jeux))
+        if (
+            _jeuxSystemeCache.TryGetValue(
+                identifiantConsole,
+                out IReadOnlyList<GameListEntryV2>? jeux
+            )
+        )
         {
             return jeux;
         }
