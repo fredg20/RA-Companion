@@ -20,6 +20,12 @@ public partial class MainWindow
 
         public bool AjustementHauteurPlanifie { get; set; }
 
+        public bool MiseAJourDispositionPlanifiee { get; set; }
+
+        public bool RelayoutApresRedimensionnementPlanifie { get; set; }
+
+        public bool RedimensionnementFenetreActif { get; set; }
+
         public bool AnimationVersBas { get; set; } = true;
 
         public EtatInteractionListeSucces EtatInteraction { get; set; } =
@@ -31,6 +37,10 @@ public partial class MainWindow
             EtatInteraction == EtatInteractionListeSucces.InteractionManuelle;
 
         public double DernierOffsetInteraction { get; set; }
+
+        public double DerniereHauteurSectionStable { get; set; }
+
+        public double DerniereHauteurVisibleStable { get; set; }
 
         public int VersionChargementGrille { get; set; }
 

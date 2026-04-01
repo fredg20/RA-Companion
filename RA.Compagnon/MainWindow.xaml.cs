@@ -53,6 +53,8 @@ public partial class MainWindow : UiControls.FluentWindow
         250
     );
     private static readonly TimeSpan IntervalleMasquageBarreDefilement = TimeSpan.FromSeconds(1.2);
+    private static readonly TimeSpan IntervalleRelayoutApresRedimensionnement =
+        TimeSpan.FromMilliseconds(90);
     private static readonly TimeSpan IntervalleRepriseAnimationGrilleSucces = TimeSpan.FromSeconds(
         1.3
     );
@@ -105,6 +107,7 @@ public partial class MainWindow : UiControls.FluentWindow
         DispatcherPriority.Background
     );
     private readonly DispatcherTimer _minuteurMasquageBarreDefilement = new();
+    private readonly DispatcherTimer _minuteurRelayoutApresRedimensionnement = new();
     private readonly DispatcherTimer _minuteurRepriseAnimationGrilleSucces = new();
     private readonly DispatcherTimer _minuteurAffichageTemporaireSuccesGrille = new();
     private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
@@ -228,6 +231,9 @@ public partial class MainWindow : UiControls.FluentWindow
         _minuteurMasquageBarreDefilement.Interval = IntervalleMasquageBarreDefilement;
         _minuteurMasquageBarreDefilement.Tick += MinuteurMasquageBarreDefilement_Tick;
 
+        _minuteurRelayoutApresRedimensionnement.Interval = IntervalleRelayoutApresRedimensionnement;
+        _minuteurRelayoutApresRedimensionnement.Tick += MinuteurRelayoutApresRedimensionnement_Tick;
+
         _minuteurRepriseAnimationGrilleSucces.Interval = IntervalleRepriseAnimationGrilleSucces;
         _minuteurRepriseAnimationGrilleSucces.Tick += MinuteurRepriseAnimationGrilleSucces_Tick;
 
@@ -324,9 +330,21 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private void FenetrePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
+        if (
+            Math.Abs(e.PreviousSize.Width - e.NewSize.Width) > 0.01
+            || Math.Abs(e.PreviousSize.Height - e.NewSize.Height) > 0.01
+        )
+        {
+            _etatListeSuccesUi.RedimensionnementFenetreActif = true;
+            ReinitialiserListeSuccesPourRedimensionnement();
+        }
+
         AjusterDisposition();
         AjusterHauteurCarteJeuEnCours();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        PlanifierRelayoutListeSuccesApresRedimensionnement();
     }
 
     /// <summary>
@@ -334,6 +352,18 @@ public partial class MainWindow : UiControls.FluentWindow
     /// </summary>
     private void ZonePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
+        if (
+            Math.Abs(e.PreviousSize.Width - e.NewSize.Width) > 0.01
+            || Math.Abs(e.PreviousSize.Height - e.NewSize.Height) > 0.01
+        )
+        {
+            _etatListeSuccesUi.RedimensionnementFenetreActif = true;
+            ReinitialiserListeSuccesPourRedimensionnement();
+        }
+
         AjusterHauteurCarteJeuEnCours();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        PlanifierRelayoutListeSuccesApresRedimensionnement();
     }
 }

@@ -118,6 +118,7 @@ public partial class MainWindow
         barre.Opacity = afficher ? 1 : 0;
         barre.Visibility = afficher ? Visibility.Visible : Visibility.Hidden;
         barre.IsHitTestVisible = afficher;
+        SystemControls.Panel.SetZIndex(barre, 10);
     }
 
     /// <summary>
@@ -241,7 +242,9 @@ public partial class MainWindow
     /// </summary>
     private void ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris(object sender, MouseEventArgs e)
     {
-        DefinirVisibiliteBarreDefilementListeSucces(visible: true);
+        DefinirVisibiliteBarreDefilementListeSucces(
+            visible: ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
+        );
         JournaliserDiagnosticListeSucces("liste_mouseenter");
     }
 
@@ -317,31 +320,26 @@ public partial class MainWindow
         SystemControls.ScrollChangedEventArgs e
     )
     {
-        if (Math.Abs(e.VerticalChange) <= 0.01)
+        bool viewportModifie =
+            Math.Abs(e.ViewportHeightChange) > 0.01
+            || Math.Abs(e.ViewportWidthChange) > 0.01
+            || Math.Abs(e.ExtentHeightChange) > 0.01
+            || Math.Abs(e.ExtentWidthChange) > 0.01;
+
+        if (!viewportModifie)
         {
             return;
         }
 
-        // Mémorise le sens réel du mouvement observé pour que l'autodéfilement
-        // reparte du bon côté après une interruption ou un déplacement manuel.
-        _etatListeSuccesUi.AnimationVersBas = e.VerticalChange > 0;
-
-        _etatListeSuccesUi.DernierOffsetInteraction =
-            ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset
-            ?? _etatListeSuccesUi.DernierOffsetInteraction;
-        JournaliserDiagnosticListeSucces("liste_scrollchanged", $"delta={e.VerticalChange:0.##}");
-
-        DefinirVisibiliteBarreDefilementListeSucces(
-            ConteneurGrilleTousSuccesJeuEnCours?.IsMouseOver == true
+        JournaliserDiagnosticListeSucces(
+            "liste_viewport_changed",
+            $"viewportW={e.ViewportWidthChange:0.##};viewportH={e.ViewportHeightChange:0.##};extentW={e.ExtentWidthChange:0.##};extentH={e.ExtentHeightChange:0.##}"
         );
-
-        if (!_etatListeSuccesUi.InteractionActive)
-        {
-            return;
-        }
-
-        _minuteurRepriseAnimationGrilleSucces.Stop();
-        _minuteurRepriseAnimationGrilleSucces.Start();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        PlanifierMiseAJourAnimationGrilleTousSucces();
+        JournaliserDimensionsListeSucces("viewport_modifie");
+        DefinirVisibiliteBarreDefilementListeSucces(visible: true);
     }
 
     /// <summary>
@@ -363,6 +361,71 @@ public partial class MainWindow
 
         _minuteurRepriseAnimationGrilleSucces.Stop();
         _minuteurRepriseAnimationGrilleSucces.Start();
+    }
+
+    /// <summary>
+    /// Replanifie la section des rétrosuccès quand sa carte parente change de taille.
+    /// </summary>
+    private void CadreSuccesJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        if (
+            Math.Abs(e.PreviousSize.Width - e.NewSize.Width) <= 0.01
+            && Math.Abs(e.PreviousSize.Height - e.NewSize.Height) <= 0.01
+        )
+        {
+            return;
+        }
+
+        GrilleTousSuccesJeuEnCours?.InvalidateMeasure();
+        GrilleTousSuccesJeuEnCours?.InvalidateArrange();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateMeasure();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateArrange();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        PlanifierMiseAJourAnimationGrilleTousSucces();
+        JournaliserDimensionsListeSucces(
+            "cadre_succes_sizechanged",
+            $"largeur={e.NewSize.Width:0.##};hauteur={e.NewSize.Height:0.##}"
+        );
+    }
+
+    /// <summary>
+    /// Rejoue un recalcul complet de la zone de liste à la fin du layout après redimensionnement.
+    /// </summary>
+    private void PlanifierRelayoutListeSuccesApresRedimensionnement()
+    {
+        _minuteurRelayoutApresRedimensionnement.Stop();
+        _minuteurRelayoutApresRedimensionnement.Start();
+    }
+
+    /// <summary>
+    /// Rejoue le relayout une fois que le redimensionnement de fenêtre s'est stabilisé.
+    /// </summary>
+    private void MinuteurRelayoutApresRedimensionnement_Tick(object? sender, EventArgs e)
+    {
+        _minuteurRelayoutApresRedimensionnement.Stop();
+        _etatListeSuccesUi.RedimensionnementFenetreActif = false;
+        CarteJeuEnCours?.InvalidateMeasure();
+        CarteJeuEnCours?.InvalidateArrange();
+        CarteListeSuccesJeuEnCours?.InvalidateMeasure();
+        CarteListeSuccesJeuEnCours?.InvalidateArrange();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateMeasure();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateArrange();
+        AjusterDisposition();
+        AjusterHauteurCarteJeuEnCours();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        PlanifierMiseAJourAnimationGrilleTousSucces();
+        JournaliserDimensionsListeSucces("relayout_apres_redimensionnement");
     }
 
     /// <summary>
@@ -475,6 +538,12 @@ public partial class MainWindow
                 ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
                 ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
             }
+
+            if (ZoneVisibleListeSuccesJeuEnCours is not null)
+            {
+                ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
+                ZoneVisibleListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
             return;
         }
 
@@ -546,11 +615,16 @@ public partial class MainWindow
     /// </summary>
     private void AjusterHauteurListeSuccesJeuEnCours()
     {
+        const double SeuilHauteurSectionAberrante = 80;
+        const double SeuilHauteurVisibleAberrante = 48;
+
         if (
             CarteJeuEnCours is null
             || GrilleCarteJeuEnCours is null
             || GrilleTousSuccesJeuEnCours is null
             || CarteListeSuccesJeuEnCours is null
+            || ZonePrincipaleListeSuccesJeuEnCours is null
+            || ZoneVisibleListeSuccesJeuEnCours is null
             || ConteneurGrilleTousSuccesJeuEnCours is null
             || !CarteListeSuccesJeuEnCours.IsLoaded
         )
@@ -568,25 +642,27 @@ public partial class MainWindow
         CarteJeuEnCours.UpdateLayout();
         GrilleCarteJeuEnCours.UpdateLayout();
         CarteListeSuccesJeuEnCours.UpdateLayout();
+        ZonePrincipaleListeSuccesJeuEnCours.UpdateLayout();
+        ZoneVisibleListeSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
 
-        Point positionSectionDansCarteJeu = CarteListeSuccesJeuEnCours.TranslatePoint(
-            new Point(0, 0),
-            GrilleCarteJeuEnCours
-        );
-        double hauteurMaxSection =
-            hauteurCarteJeu
-            - positionSectionDansCarteJeu.Y
-            - CarteListeSuccesJeuEnCours.Margin.Bottom;
+        double hauteurMaxSection = Math.Max(0, ZonePrincipaleListeSuccesJeuEnCours.ActualHeight);
 
         if (hauteurMaxSection <= 0)
         {
             return;
         }
 
-        Point positionDansCarte = ConteneurGrilleTousSuccesJeuEnCours.TranslatePoint(
+        double largeurMaxSection = Math.Max(0, ZonePrincipaleListeSuccesJeuEnCours.ActualWidth);
+
+        if (largeurMaxSection <= 0)
+        {
+            return;
+        }
+
+        Point positionDansCarte = ZoneVisibleListeSuccesJeuEnCours.TranslatePoint(
             new Point(0, 0),
-            CarteListeSuccesJeuEnCours
+            ZonePrincipaleListeSuccesJeuEnCours
         );
         double hauteurDisponible = hauteurMaxSection - positionDansCarte.Y;
 
@@ -595,13 +671,57 @@ public partial class MainWindow
             return;
         }
 
-        CarteListeSuccesJeuEnCours.MinHeight = 0;
-        CarteListeSuccesJeuEnCours.Height = hauteurMaxSection;
-        CarteListeSuccesJeuEnCours.MaxHeight = hauteurMaxSection;
+        double largeurDisponible = largeurMaxSection - positionDansCarte.X;
+
+        if (largeurDisponible <= 0)
+        {
+            largeurDisponible = Math.Max(0, ZoneVisibleListeSuccesJeuEnCours.ActualWidth);
+        }
+
+        bool grilleChargee = GrilleTousSuccesJeuEnCours.Children.Count > 0;
+        bool hauteurAberrante =
+            hauteurMaxSection < SeuilHauteurSectionAberrante
+            || hauteurDisponible < SeuilHauteurVisibleAberrante;
+
+        if (grilleChargee && _etatListeSuccesUi.RedimensionnementFenetreActif)
+        {
+            JournaliserDimensionsListeSucces(
+                "hauteur_liste_reportee",
+                $"hauteurDisponible={hauteurDisponible:0.##};hauteurSection={hauteurMaxSection:0.##}"
+            );
+            return;
+        }
+
+        if (
+            grilleChargee
+            && hauteurAberrante
+            && _etatListeSuccesUi.DerniereHauteurSectionStable > 0
+            && _etatListeSuccesUi.DerniereHauteurVisibleStable > 0
+        )
+        {
+            JournaliserDimensionsListeSucces(
+                "hauteur_liste_ignoree",
+                $"hauteurDisponible={hauteurDisponible:0.##};hauteurSection={hauteurMaxSection:0.##};stableVisible={_etatListeSuccesUi.DerniereHauteurVisibleStable:0.##};stableSection={_etatListeSuccesUi.DerniereHauteurSectionStable:0.##}"
+            );
+            return;
+        }
+
+        ZoneVisibleListeSuccesJeuEnCours.MinHeight = 0;
+        ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
+        ZoneVisibleListeSuccesJeuEnCours.MaxHeight = hauteurDisponible;
         ConteneurGrilleTousSuccesJeuEnCours.MinHeight = 0;
+        ConteneurGrilleTousSuccesJeuEnCours.Width = double.NaN;
         ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
-        ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = hauteurDisponible;
+        ConteneurGrilleTousSuccesJeuEnCours.MaxWidth = double.PositiveInfinity;
+        ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+        _etatListeSuccesUi.DerniereHauteurSectionStable = hauteurMaxSection;
+        _etatListeSuccesUi.DerniereHauteurVisibleStable = hauteurDisponible;
+        ZoneVisibleListeSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+        JournaliserDimensionsListeSucces(
+            "hauteur_liste_ajustee",
+            $"largeurDisponible={largeurDisponible:0.##};hauteurDisponible={hauteurDisponible:0.##};largeurZone={largeurMaxSection:0.##};hauteurZone={hauteurMaxSection:0.##}"
+        );
         AppliquerEcretageArrondiZoneSucces();
         DefinirVisibiliteBarreDefilementListeSucces(
             ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver

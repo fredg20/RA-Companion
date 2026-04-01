@@ -2,6 +2,7 @@
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
@@ -708,7 +709,11 @@ public partial class MainWindow
             "liste_sizechanged",
             $"largeur={e.NewSize.Width:0.##};hauteur={e.NewSize.Height:0.##}"
         );
-        MettreAJourDispositionGrilleTousSucces();
+        JournaliserDimensionsListeSucces(
+            "conteneur_sizechanged",
+            $"largeur={e.NewSize.Width:0.##};hauteur={e.NewSize.Height:0.##}"
+        );
+        PlanifierMiseAJourDispositionGrilleTousSucces();
         GrilleTousSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
@@ -716,21 +721,111 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique un masque d'écrêtage arrondi à la zone visible de la liste des succès.
+    /// Recalcule la largeur et les gaps de la grille une fois la largeur finale stabilisée.
     /// </summary>
-    private void AppliquerEcretageArrondiZoneSucces()
+    private void PlanifierMiseAJourDispositionGrilleTousSucces()
     {
-        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        if (_etatListeSuccesUi.MiseAJourDispositionPlanifiee)
         {
             return;
         }
 
-        double largeur = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
-        double hauteur = ConteneurGrilleTousSuccesJeuEnCours.ActualHeight;
+        _etatListeSuccesUi.MiseAJourDispositionPlanifiee = true;
+        _ = Dispatcher.BeginInvoke(
+            () =>
+            {
+                _etatListeSuccesUi.MiseAJourDispositionPlanifiee = false;
+                MettreAJourDispositionGrilleTousSucces();
+                AppliquerEcretageArrondiZoneSucces();
+                JournaliserDimensionsListeSucces("disposition_grille_recalculee");
+            },
+            DispatcherPriority.Render
+        );
+    }
+
+    /// <summary>
+    /// Retourne la largeur réellement visible de la liste, hors zone non affichable.
+    /// </summary>
+    private double ObtenirLargeurVisibleListeSucces()
+    {
+        if (ZoneVisibleListeSuccesJeuEnCours is not null)
+        {
+            double largeurZone = Math.Max(0, ZoneVisibleListeSuccesJeuEnCours.ActualWidth);
+
+            if (largeurZone > 0)
+            {
+                return largeurZone;
+            }
+
+            double largeurViewport = Math.Max(
+                0,
+                ConteneurGrilleTousSuccesJeuEnCours?.ViewportWidth ?? 0
+            );
+
+            if (largeurViewport > 0)
+            {
+                return largeurViewport;
+            }
+
+            return largeurZone;
+        }
+
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return 0;
+        }
+
+        double largeurVisible = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ViewportWidth);
+
+        if (largeurVisible > 0)
+        {
+            return largeurVisible;
+        }
+
+        return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualWidth);
+    }
+
+    /// <summary>
+    /// Retourne la hauteur réellement visible de la liste.
+    /// </summary>
+    private double ObtenirHauteurVisibleListeSucces()
+    {
+        if (ZoneVisibleListeSuccesJeuEnCours is not null)
+        {
+            return Math.Max(0, ZoneVisibleListeSuccesJeuEnCours.ActualHeight);
+        }
+
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return 0;
+        }
+
+        double hauteurViewport = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ViewportHeight);
+
+        if (hauteurViewport > 0)
+        {
+            return hauteurViewport;
+        }
+
+        return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualHeight);
+    }
+
+    /// <summary>
+    /// Applique un masque d'écrêtage arrondi à la zone visible de la liste des succès.
+    /// </summary>
+    private void AppliquerEcretageArrondiZoneSucces()
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is null || ZoneVisibleListeSuccesJeuEnCours is null)
+        {
+            return;
+        }
+
+        double largeur = ObtenirLargeurVisibleListeSucces();
+        double hauteur = ObtenirHauteurVisibleListeSucces();
 
         if (largeur <= 0 || hauteur <= 0)
         {
-            ConteneurGrilleTousSuccesJeuEnCours.Clip = null;
+            ZoneVisibleListeSuccesJeuEnCours.Clip = null;
             return;
         }
 
@@ -740,11 +835,13 @@ public partial class MainWindow
             Math.Min(Math.Min(rayon.TopLeft, rayon.TopRight), Math.Min(largeur, hauteur) / 2)
         );
 
-        ConteneurGrilleTousSuccesJeuEnCours.Clip = new RectangleGeometry(
+        RectangleGeometry geometrie = new(
             new Rect(0, 0, largeur, hauteur),
             rayonEffectif,
             rayonEffectif
         );
+        ZoneVisibleListeSuccesJeuEnCours.Clip = geometrie.Clone();
+        ConteneurGrilleTousSuccesJeuEnCours.Clip = null;
     }
 
     /// <summary>
@@ -761,7 +858,7 @@ public partial class MainWindow
             return;
         }
 
-        double largeurDisponible = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
+        double largeurDisponible = ObtenirLargeurVisibleListeSucces();
 
         if (largeurDisponible <= 0)
         {
@@ -781,13 +878,7 @@ public partial class MainWindow
         );
         colonnes = Math.Min(colonnes, nombreBadges);
         int nombreRangees = (int)Math.Ceiling((double)nombreBadges / colonnes);
-        double gapHorizontal =
-            colonnes > 1
-                ? Math.Max(
-                    EspaceMinimalGrilleSucces,
-                    (largeurDisponible - (colonnes * TailleBadgeGrilleSucces)) / (colonnes - 1)
-                )
-                : 0;
+        double gapHorizontal = EspaceMinimalGrilleSucces;
 
         for (int index = 0; index < nombreBadges; index++)
         {

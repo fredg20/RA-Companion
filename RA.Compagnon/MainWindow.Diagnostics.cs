@@ -20,6 +20,11 @@ public partial class MainWindow
         "RA-Compagnon",
         "journal-liste-succes.log"
     );
+    private static readonly string CheminJournalDiagnosticDimensionsListeSucces = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RA-Compagnon",
+        "journal-dimensions-liste-succes.log"
+    );
 
     public static void ReinitialiserJournalDiagnosticPerformance()
     {
@@ -29,6 +34,9 @@ public partial class MainWindow
     public static void ReinitialiserJournalDiagnosticListeSucces()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticListeSucces);
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(
+            CheminJournalDiagnosticDimensionsListeSucces
+        );
     }
 
     private void JournaliserDiagnosticListeSucces(string evenement, string? details = null)
@@ -42,6 +50,31 @@ public partial class MainWindow
 
         _ = ServiceModeDiagnostic.JournaliserLigne(
             CheminJournalDiagnosticListeSucces,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
+        );
+    }
+
+    private void JournaliserDimensionsListeSucces(string evenement, string? details = null)
+    {
+        double largeurZonePrincipale = ZonePrincipaleListeSuccesJeuEnCours?.ActualWidth ?? 0;
+        double hauteurZonePrincipale = ZonePrincipaleListeSuccesJeuEnCours?.ActualHeight ?? 0;
+        double largeurZoneVisible = ZoneVisibleListeSuccesJeuEnCours?.ActualWidth ?? 0;
+        double hauteurZoneVisible = ZoneVisibleListeSuccesJeuEnCours?.ActualHeight ?? 0;
+        double largeurCarte = CarteListeSuccesJeuEnCours?.ActualWidth ?? 0;
+        double hauteurCarte = CarteListeSuccesJeuEnCours?.ActualHeight ?? 0;
+        double largeurConteneur = ConteneurGrilleTousSuccesJeuEnCours?.ActualWidth ?? 0;
+        double hauteurConteneur = ConteneurGrilleTousSuccesJeuEnCours?.ActualHeight ?? 0;
+        double largeurViewport = ConteneurGrilleTousSuccesJeuEnCours?.ViewportWidth ?? 0;
+        double hauteurViewport = ConteneurGrilleTousSuccesJeuEnCours?.ViewportHeight ?? 0;
+        double largeurGrille = GrilleTousSuccesJeuEnCours?.ActualWidth ?? 0;
+        double hauteurGrille = GrilleTousSuccesJeuEnCours?.ActualHeight ?? 0;
+        double extentLargeur = ConteneurGrilleTousSuccesJeuEnCours?.ExtentWidth ?? 0;
+        double extentHauteur = ConteneurGrilleTousSuccesJeuEnCours?.ExtentHeight ?? 0;
+        string etat =
+            $"carteW={largeurCarte:0.##};carteH={hauteurCarte:0.##};contenuW={largeurZonePrincipale:0.##};contenuH={hauteurZonePrincipale:0.##};zoneW={largeurZoneVisible:0.##};zoneH={hauteurZoneVisible:0.##};conteneurW={largeurConteneur:0.##};conteneurH={hauteurConteneur:0.##};viewportW={largeurViewport:0.##};viewportH={hauteurViewport:0.##};grilleW={largeurGrille:0.##};grilleH={hauteurGrille:0.##};extentW={extentLargeur:0.##};extentH={extentHauteur:0.##}";
+
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalDiagnosticDimensionsListeSucces,
             $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
         );
     }

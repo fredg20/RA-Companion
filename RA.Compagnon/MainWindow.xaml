@@ -177,10 +177,11 @@
               x:Name="CarteJeuEnCours"
               Grid.Column="2"
               ClipToBounds="True"
+              SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
               VerticalAlignment="Stretch"
               Style="{StaticResource StyleSectionArrondie}"
             >
-              <Grid x:Name="GrilleCarteJeuEnCours">
+              <Grid x:Name="GrilleCarteJeuEnCours" SizeChanged="CadreSuccesJeuEnCours_TailleChangee">
                 <Grid.RowDefinitions>
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="{StaticResource EspaceRangeesPrincipal}" />
@@ -715,221 +716,234 @@
                   x:Name="CarteListeSuccesJeuEnCours"
                   Grid.Row="6"
                   Margin="2,2,2,6"
+                  HorizontalAlignment="Stretch"
+                  SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
                   VerticalAlignment="Stretch"
                   Style="{StaticResource StyleSousCarteJeu}"
                 >
-                  <Grid>
+                  <Grid x:Name="StructureListeSuccesJeuEnCours">
                     <Grid.RowDefinitions>
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition Height="Auto" />
                       <RowDefinition Height="*" />
                       <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
+                    <Grid x:Name="ZonePrincipaleListeSuccesJeuEnCours" Grid.Row="0">
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
 
-                      <TextBlock FontSize="18" FontWeight="SemiBold" Text="Rétrosuccès du jeu" />
+                      <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                      <ui:Button
-                        x:Name="BoutonOrdreSuccesGrille"
-                        Grid.Column="1"
-                        Margin="12,0,0,0"
-                        Appearance="Secondary"
-                        Click="BoutonOrdreSuccesGrille_Click"
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="Rétrosuccès du jeu" />
+
+                        <ui:Button
+                          x:Name="BoutonOrdreSuccesGrille"
+                          Grid.Column="1"
+                          Margin="12,0,0,0"
+                          Appearance="Secondary"
+                          Click="BoutonOrdreSuccesGrille_Click"
+                        >
+                          <ui:Button.ContextMenu>
+                            <ContextMenu x:Name="MenuOrdreSuccesGrille">
+                              <MenuItem
+                                x:Name="MenuItemOrdreSuccesNormal"
+                                Click="OrdreSuccesGrilleNormal_Click"
+                              >
+                                <MenuItem.Header>
+                                  <StackPanel Orientation="Horizontal">
+                                    <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                      <Ellipse
+                                        x:Name="ContourOrdreSuccesNormal"
+                                        StrokeThickness="1.2"
+                                      />
+                                      <Ellipse
+                                        x:Name="CentreOrdreSuccesNormal"
+                                        Width="6"
+                                        Height="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                      />
+                                    </Grid>
+                                    <TextBlock VerticalAlignment="Center" Text="Normal" />
+                                  </StackPanel>
+                                </MenuItem.Header>
+                              </MenuItem>
+                              <MenuItem
+                                x:Name="MenuItemOrdreSuccesFacile"
+                                Click="OrdreSuccesGrilleFacile_Click"
+                              >
+                                <MenuItem.Header>
+                                  <StackPanel Orientation="Horizontal">
+                                    <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                      <Ellipse
+                                        x:Name="ContourOrdreSuccesFacile"
+                                        StrokeThickness="1.2"
+                                      />
+                                      <Ellipse
+                                        x:Name="CentreOrdreSuccesFacile"
+                                        Width="6"
+                                        Height="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                      />
+                                    </Grid>
+                                    <TextBlock VerticalAlignment="Center" Text="Facile" />
+                                  </StackPanel>
+                                </MenuItem.Header>
+                              </MenuItem>
+                              <MenuItem
+                                x:Name="MenuItemOrdreSuccesDifficile"
+                                Click="OrdreSuccesGrilleDifficile_Click"
+                              >
+                                <MenuItem.Header>
+                                  <StackPanel Orientation="Horizontal">
+                                    <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                      <Ellipse
+                                        x:Name="ContourOrdreSuccesDifficile"
+                                        StrokeThickness="1.2"
+                                      />
+                                      <Ellipse
+                                        x:Name="CentreOrdreSuccesDifficile"
+                                        Width="6"
+                                        Height="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                      />
+                                    </Grid>
+                                    <TextBlock VerticalAlignment="Center" Text="Difficile" />
+                                  </StackPanel>
+                                </MenuItem.Header>
+                              </MenuItem>
+                              <MenuItem
+                                x:Name="MenuItemOrdreSuccesAleatoire"
+                                Click="OrdreSuccesGrilleAleatoire_Click"
+                              >
+                                <MenuItem.Header>
+                                  <StackPanel Orientation="Horizontal">
+                                    <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                      <Ellipse
+                                        x:Name="ContourOrdreSuccesAleatoire"
+                                        StrokeThickness="1.2"
+                                      />
+                                      <Ellipse
+                                        x:Name="CentreOrdreSuccesAleatoire"
+                                        Width="6"
+                                        Height="6"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Visibility="Collapsed"
+                                      />
+                                    </Grid>
+                                    <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
+                                  </StackPanel>
+                                </MenuItem.Header>
+                              </MenuItem>
+                            </ContextMenu>
+                          </ui:Button.ContextMenu>
+                        </ui:Button>
+                      </Grid>
+
+                      <Border
+                        Grid.Row="1"
+                        Margin="{StaticResource MargeBlocStandard}"
+                        Style="{StaticResource StyleSousCarteJeu}"
                       >
-                        <ui:Button.ContextMenu>
-                          <ContextMenu x:Name="MenuOrdreSuccesGrille">
-                            <MenuItem
-                              x:Name="MenuItemOrdreSuccesNormal"
-                              Click="OrdreSuccesGrilleNormal_Click"
-                            >
-                              <MenuItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                    <Ellipse
-                                      x:Name="ContourOrdreSuccesNormal"
-                                      StrokeThickness="1.2"
-                                    />
-                                    <Ellipse
-                                      x:Name="CentreOrdreSuccesNormal"
-                                      Width="6"
-                                      Height="6"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                    />
-                                  </Grid>
-                                  <TextBlock VerticalAlignment="Center" Text="Normal" />
-                                </StackPanel>
-                              </MenuItem.Header>
-                            </MenuItem>
-                            <MenuItem
-                              x:Name="MenuItemOrdreSuccesFacile"
-                              Click="OrdreSuccesGrilleFacile_Click"
-                            >
-                              <MenuItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                    <Ellipse
-                                      x:Name="ContourOrdreSuccesFacile"
-                                      StrokeThickness="1.2"
-                                    />
-                                    <Ellipse
-                                      x:Name="CentreOrdreSuccesFacile"
-                                      Width="6"
-                                      Height="6"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Visibility="Collapsed"
-                                    />
-                                  </Grid>
-                                  <TextBlock VerticalAlignment="Center" Text="Facile" />
-                                </StackPanel>
-                              </MenuItem.Header>
-                            </MenuItem>
-                            <MenuItem
-                              x:Name="MenuItemOrdreSuccesDifficile"
-                              Click="OrdreSuccesGrilleDifficile_Click"
-                            >
-                              <MenuItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                    <Ellipse
-                                      x:Name="ContourOrdreSuccesDifficile"
-                                      StrokeThickness="1.2"
-                                    />
-                                    <Ellipse
-                                      x:Name="CentreOrdreSuccesDifficile"
-                                      Width="6"
-                                      Height="6"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Visibility="Collapsed"
-                                    />
-                                  </Grid>
-                                  <TextBlock VerticalAlignment="Center" Text="Difficile" />
-                                </StackPanel>
-                              </MenuItem.Header>
-                            </MenuItem>
-                            <MenuItem
-                              x:Name="MenuItemOrdreSuccesAleatoire"
-                              Click="OrdreSuccesGrilleAleatoire_Click"
-                            >
-                              <MenuItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                  <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                    <Ellipse
-                                      x:Name="ContourOrdreSuccesAleatoire"
-                                      StrokeThickness="1.2"
-                                    />
-                                    <Ellipse
-                                      x:Name="CentreOrdreSuccesAleatoire"
-                                      Width="6"
-                                      Height="6"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Visibility="Collapsed"
-                                    />
-                                  </Grid>
-                                  <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
-                                </StackPanel>
-                              </MenuItem.Header>
-                            </MenuItem>
-                          </ContextMenu>
-                        </ui:Button.ContextMenu>
-                      </ui:Button>
+                        <StackPanel>
+                          <ProgressBar
+                            x:Name="BarreProgressionJeuEnCours"
+                            Height="8"
+                            Margin="0"
+                            Minimum="0"
+                            Maximum="100"
+                            Value="0"
+                          />
+                          <Grid Margin="{StaticResource MargeBlocStandard}">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                              x:Name="TexteEtatJeuDansProgression"
+                              Grid.Column="0"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Left"
+                              Opacity="0.72"
+                              TextWrapping="Wrap"
+                              Text="Progression du jeu"
+                            />
+                            <TextBox
+                              x:Name="TextePourcentageJeuEnCours"
+                              Grid.Column="1"
+                              Style="{StaticResource StyleTexteCopiable}"
+                              HorizontalAlignment="Center"
+                              HorizontalContentAlignment="Center"
+                              Opacity="0.72"
+                              Text="0 % complété"
+                            />
+                            <TextBox
+                              x:Name="TexteDetailsJeuEnCours"
+                              Grid.Column="2"
+                              Style="{StaticResource StyleTexteCopiable}"
+                              HorizontalAlignment="Center"
+                              HorizontalContentAlignment="Center"
+                              Opacity="0.72"
+                              TextWrapping="Wrap"
+                              Text=""
+                              Visibility="Collapsed"
+                            />
+                            <TextBox
+                              x:Name="TexteResumeProgressionJeuEnCours"
+                              Grid.Column="3"
+                              Style="{StaticResource StyleTexteCopiable}"
+                              HorizontalAlignment="Right"
+                              HorizontalContentAlignment="Right"
+                              Opacity="0.72"
+                              Text="0 / 0"
+                            />
+                          </Grid>
+                        </StackPanel>
+                      </Border>
+
+                      <Grid
+                        x:Name="ZoneVisibleListeSuccesJeuEnCours"
+                        Grid.Row="2"
+                        Margin="{StaticResource MargeGrilleDense}"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        ClipToBounds="True"
+                        SizeChanged="ConteneurGrilleTousSuccesJeuEnCours_TailleChangee"
+                      >
+                        <ScrollViewer
+                          x:Name="ConteneurGrilleTousSuccesJeuEnCours"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          VerticalScrollBarVisibility="Hidden"
+                          HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False"
+                          MouseEnter="ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris"
+                          MouseLeave="ConteneurGrilleTousSuccesJeuEnCours_SortieSouris"
+                          ScrollChanged="ConteneurGrilleTousSuccesJeuEnCours_DefilementChange"
+                        >
+                          <WrapPanel
+                            x:Name="GrilleTousSuccesJeuEnCours"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Stretch"
+                          />
+                        </ScrollViewer>
+                      </Grid>
                     </Grid>
 
-                    <Border
-                      Grid.Row="1"
-                      Margin="{StaticResource MargeBlocStandard}"
-                      Style="{StaticResource StyleSousCarteJeu}"
-                    >
-                      <StackPanel>
-                        <ProgressBar
-                          x:Name="BarreProgressionJeuEnCours"
-                          Height="8"
-                          Margin="0"
-                          Minimum="0"
-                          Maximum="100"
-                          Value="0"
-                        />
-                        <Grid Margin="{StaticResource MargeBlocStandard}">
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                          </Grid.ColumnDefinitions>
-                          <TextBlock
-                            x:Name="TexteEtatJeuDansProgression"
-                            Grid.Column="0"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Opacity="0.72"
-                            TextWrapping="Wrap"
-                            Text="Progression du jeu"
-                          />
-                          <TextBox
-                            x:Name="TextePourcentageJeuEnCours"
-                            Grid.Column="1"
-                            Style="{StaticResource StyleTexteCopiable}"
-                            HorizontalAlignment="Center"
-                            HorizontalContentAlignment="Center"
-                            Opacity="0.72"
-                            Text="0 % complété"
-                          />
-                          <TextBox
-                            x:Name="TexteDetailsJeuEnCours"
-                            Grid.Column="2"
-                            Style="{StaticResource StyleTexteCopiable}"
-                            HorizontalAlignment="Center"
-                            HorizontalContentAlignment="Center"
-                            Opacity="0.72"
-                            TextWrapping="Wrap"
-                            Text=""
-                            Visibility="Collapsed"
-                          />
-                          <TextBox
-                            x:Name="TexteResumeProgressionJeuEnCours"
-                            Grid.Column="3"
-                            Style="{StaticResource StyleTexteCopiable}"
-                            HorizontalAlignment="Right"
-                            HorizontalContentAlignment="Right"
-                            Opacity="0.72"
-                            Text="0 / 0"
-                          />
-                        </Grid>
-                      </StackPanel>
-                    </Border>
-
-                    <ScrollViewer
-                      x:Name="ConteneurGrilleTousSuccesJeuEnCours"
-                      Grid.Row="2"
-                      Margin="{StaticResource MargeGrilleDense}"
-                      VerticalAlignment="Stretch"
-                      VerticalScrollBarVisibility="Hidden"
-                      HorizontalScrollBarVisibility="Disabled"
-                      CanContentScroll="False"
-                      MouseEnter="ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris"
-                      MouseLeave="ConteneurGrilleTousSuccesJeuEnCours_SortieSouris"
-                      PreviewMouseLeftButtonDown="ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheBas"
-                      PreviewMouseLeftButtonUp="ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheHaut"
-                      LostMouseCapture="ConteneurGrilleTousSuccesJeuEnCours_PerteCaptureSouris"
-                      ScrollChanged="ConteneurGrilleTousSuccesJeuEnCours_DefilementChange"
-                      SizeChanged="ConteneurGrilleTousSuccesJeuEnCours_TailleChangee"
-                    >
-                      <WrapPanel
-                        x:Name="GrilleTousSuccesJeuEnCours"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Stretch"
-                      />
-                    </ScrollViewer>
-
-                    <StackPanel Grid.Row="3" Visibility="Collapsed">
+                    <Grid Grid.Row="1" Visibility="Collapsed">
                       <TextBlock
                         x:Name="TexteEtatSuccesRecents"
                         Text="Les succès récents apparaîtront ici."
@@ -946,7 +960,7 @@
                         x:Name="TexteSuccesRecent3"
                         Text="Aucun succès récent à afficher."
                       />
-                    </StackPanel>
+                    </Grid>
                   </Grid>
                 </Border>
               </Grid>

@@ -2,7 +2,7 @@
 
 ## 1. Priorité haute
 
-- [ ] Ajouter une vue détaillée du jeu courant avec plus de contexte sur la progression.
+- [x] Ajouter une vue détaillée du jeu courant avec plus de contexte sur la progression.
 - [ ] Afficher les succès manqués les plus proches d'être obtenus.
 - [ ] Afficher les succès cachés ou à surprise avec une présentation adaptée quand l'utilisateur souhaite éviter les spoilers.
 - [ ] Ajouter une recherche rapide par nom de jeu.
@@ -32,8 +32,8 @@
 - [ ] Permettre de choisir la langue de l'interface.
 - [ ] Ajouter un mode "lecture seule" très épuré pour afficher seulement le jeu et la progression.
 - [ ] Ajouter un bouton pour recharger manuellement le jeu courant.
-- [ ] Ajouter une aide utilisateur plus complète, mais simple, accessible depuis le bouton `?`.
-- [ ] Ajouter un indicateur simple pour montrer où activer les logs de chaque émulateur validé.
+- [x] Ajouter une aide utilisateur plus complète, mais simple, accessible depuis le bouton `?`.
+- [x] Ajouter un indicateur simple pour montrer où activer les logs de chaque émulateur validé.
 - [ ] Ajouter un thème clair en plus du thème actuel.
 - [ ] Permettre de mémoriser la taille et la position de certaines zones de l'interface.
 - [ ] Ajouter une option pour réduire ou désactiver certaines animations.

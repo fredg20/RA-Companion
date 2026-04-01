@@ -73,7 +73,7 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Borne la hauteur visible de la grille des succès et anime son contenu en rebond si nécessaire.
+    /// Réactive l'autodéfilement quand la liste déborde réellement de la zone visible.
     /// </summary>
     private void MettreAJourAnimationGrilleTousSucces()
     {
@@ -88,105 +88,121 @@ public partial class MainWindow
 
         if (GrilleTousSuccesJeuEnCours.Children.Count == 0)
         {
-            JournaliserDiagnosticListeSucces("animation_maj_vide");
             _etatListeSuccesUi.SignatureAnimation = string.Empty;
             _etatListeSuccesUi.AmplitudeAnimation = 0;
-            _etatListeSuccesUi.DernierOffsetInteraction = 0;
-            ArreterAnimationGrilleSucces();
+            DesactiverAutodefilementListeSucces();
             GrilleTousSuccesJeuEnCours.Width = double.NaN;
             GrilleTousSuccesJeuEnCours.Height = double.NaN;
+            if (ZoneVisibleListeSuccesJeuEnCours is not null)
+            {
+                ZoneVisibleListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+                ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
+            }
             ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
             ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
-            ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
-            DefinirVisibiliteBarreDefilementListeSucces(visible: false);
             return;
         }
-        GrilleTousSuccesJeuEnCours.Width = ConteneurGrilleTousSuccesJeuEnCours.ActualWidth;
-        GrilleTousSuccesJeuEnCours.InvalidateMeasure();
-        GrilleTousSuccesJeuEnCours.InvalidateArrange();
-        ConteneurGrilleTousSuccesJeuEnCours.InvalidateMeasure();
-        ConteneurGrilleTousSuccesJeuEnCours.InvalidateArrange();
-        GrilleTousSuccesJeuEnCours.Measure(
-            new Size(ConteneurGrilleTousSuccesJeuEnCours.ActualWidth, double.PositiveInfinity)
-        );
-        ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();
+
+        if (_etatListeSuccesUi.RedimensionnementFenetreActif)
+        {
+            ArreterAnimationGrilleSucces();
+            _etatListeSuccesUi.SignatureAnimation = "redimensionnement_actif";
+            _etatListeSuccesUi.AmplitudeAnimation = 0;
+            DefinirVisibiliteBarreDefilementListeSucces(
+                visible: ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
+            );
+            return;
+        }
+
+        double hauteurVisible = ObtenirHauteurVisibleListeSucces();
         double hauteurContenu = Math.Max(
-            GrilleTousSuccesJeuEnCours.DesiredSize.Height,
+            GrilleTousSuccesJeuEnCours.ActualHeight,
             Math.Max(
-                GrilleTousSuccesJeuEnCours.ActualHeight,
+                GrilleTousSuccesJeuEnCours.DesiredSize.Height,
                 ConteneurGrilleTousSuccesJeuEnCours.ExtentHeight
             )
         );
-        double hauteurVisible = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ViewportHeight);
-
-        if (hauteurVisible <= 0)
-        {
-            hauteurVisible = Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualHeight);
-        }
-        GrilleTousSuccesJeuEnCours.Height = hauteurContenu;
-        double hauteurDefilableMesuree = Math.Max(0, hauteurContenu - hauteurVisible);
-        double hauteurDefilableReelle = Math.Max(
-            hauteurDefilableMesuree,
-            Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight)
+        double amplitude = Math.Max(
+            ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight,
+            hauteurContenu - hauteurVisible
         );
-        _etatListeSuccesUi.AmplitudeAnimation = hauteurDefilableReelle;
 
-        if (_etatListeSuccesUi.AmplitudeAnimation <= SeuilDeclenchementDefilementGrilleSucces)
+        if (
+            hauteurVisible <= 0
+            || amplitude <= SeuilDeclenchementDefilementGrilleSucces
+            || !ListeSuccesPeutDefiler()
+        )
         {
-            ArreterAnimationGrilleSucces();
-            _etatListeSuccesUi.SignatureAnimation =
-                $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurVisible, 1, MidpointRounding.AwayFromZero)}|0";
+            _etatListeSuccesUi.SignatureAnimation = string.Empty;
             _etatListeSuccesUi.AmplitudeAnimation = 0;
-            _etatListeSuccesUi.DernierOffsetInteraction = 0;
-            ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
-            JournaliserDiagnosticListeSucces(
-                "animation_maj_desactivee",
-                $"hauteurContenu={hauteurContenu:0.##};hauteurVisible={hauteurVisible:0.##};scrollable={ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight:0.##}"
-            );
-            DefinirVisibiliteBarreDefilementListeSucces(visible: false);
+            DesactiverAutodefilementListeSucces();
             return;
         }
 
-        string signatureAnimation =
-            $"{GrilleTousSuccesJeuEnCours.Children.Count}|{Math.Round(hauteurContenu, 1, MidpointRounding.AwayFromZero)}|{Math.Round(hauteurVisible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(_etatListeSuccesUi.AmplitudeAnimation, 1, MidpointRounding.AwayFromZero)}";
+        string signature = string.Format(
+            CultureInfo.InvariantCulture,
+            "{0}:{1:0.##}:{2:0.##}:{3:0.##}",
+            GrilleTousSuccesJeuEnCours.Children.Count,
+            hauteurVisible,
+            hauteurContenu,
+            amplitude
+        );
+
+        _etatListeSuccesUi.AmplitudeAnimation = amplitude;
+        DefinirVisibiliteBarreDefilementListeSucces(
+            visible: ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
+        );
+
+        if (_etatListeSuccesUi.InteractionActive || _etatListeSuccesUi.SurvolBadgeActif)
+        {
+            ArreterAnimationGrilleSucces();
+            _etatListeSuccesUi.SignatureAnimation = signature;
+            return;
+        }
 
         if (
-            string.Equals(
+            _etatListeSuccesUi.HorlogeAnimation is not null
+            && string.Equals(
                 _etatListeSuccesUi.SignatureAnimation,
-                signatureAnimation,
+                signature,
                 StringComparison.Ordinal
             )
         )
         {
-            JournaliserDiagnosticListeSucces("animation_maj_skip_signature");
             return;
         }
 
-        ArreterAnimationGrilleSucces();
-        _etatListeSuccesUi.SignatureAnimation = signatureAnimation;
-        double offsetReference = Math.Clamp(
+        double offsetCourant = Math.Clamp(
             ConteneurGrilleTousSuccesJeuEnCours.VerticalOffset,
             0,
-            _etatListeSuccesUi.AmplitudeAnimation
+            amplitude
         );
-        ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetReference);
-        JournaliserDiagnosticListeSucces(
-            "animation_maj_recalculee",
-            $"signature={signatureAnimation};offsetRef={offsetReference:0.##}"
+        ArreterAnimationGrilleSucces();
+        _etatListeSuccesUi.SignatureAnimation = signature;
+        DemarrerAnimationGrilleSuccesDepuisPosition(
+            offsetCourant,
+            amplitude,
+            _etatListeSuccesUi.AnimationVersBas
         );
+    }
 
-        if (_etatListeSuccesUi.AmplitudeAnimation > SeuilDeclenchementDefilementGrilleSucces)
+    /// <summary>
+    /// Coupe tout autodéfilement quand la liste tient entièrement dans la zone visible.
+    /// </summary>
+    private void DesactiverAutodefilementListeSucces()
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
         {
-            DemarrerAnimationGrilleSuccesDepuisPosition(
-                offsetReference,
-                _etatListeSuccesUi.AmplitudeAnimation,
-                allerVersBas: _etatListeSuccesUi.AnimationVersBas
-            );
+            return;
         }
 
-        DefinirVisibiliteBarreDefilementListeSucces(
-            ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
-        );
+        _minuteurRepriseAnimationGrilleSucces.Stop();
+        _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.AutoScroll;
+        _etatListeSuccesUi.AmplitudeAnimation = 0;
+        _etatListeSuccesUi.DernierOffsetInteraction = 0;
+        ArreterAnimationGrilleSucces();
+        ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
+        DefinirVisibiliteBarreDefilementListeSucces(visible: false);
     }
 
     /// <summary>
@@ -227,6 +243,25 @@ public partial class MainWindow
         ArreterAnimationGrilleSucces();
         _etatListeSuccesUi.DernierOffsetInteraction = 0;
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
+    }
+
+    /// <summary>
+    /// Replace la liste en haut avant un recalcul complet après redimensionnement de la fenêtre.
+    /// </summary>
+    private void ReinitialiserListeSuccesPourRedimensionnement()
+    {
+        if (ConteneurGrilleTousSuccesJeuEnCours is null)
+        {
+            return;
+        }
+
+        ReinitialiserPositionGrilleTousSucces();
+        _etatListeSuccesUi.AnimationVersBas = true;
+        _etatListeSuccesUi.SignatureAnimation = string.Empty;
+        _etatListeSuccesUi.AmplitudeAnimation = 0;
+        DefinirVisibiliteBarreDefilementListeSucces(
+            visible: ConteneurGrilleTousSuccesJeuEnCours.IsMouseOver
+        );
     }
 
     /// <summary>
