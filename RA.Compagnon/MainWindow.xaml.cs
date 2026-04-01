@@ -303,6 +303,9 @@ public partial class MainWindow : UiControls.FluentWindow
         App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerConfig");
         _configurationConnexion = await _serviceConfigurationLocale.ChargerAsync();
         App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerConfig");
+        ServiceSourcesLocalesEmulateurs.ConfigurerEmplacementsEmulateursManuels(
+            _configurationConnexion.EmplacementsEmulateursManuels
+        );
         AppliquerGeometrieFenetre();
         MettreAJourResumeConnexion();
         AjusterDisposition();

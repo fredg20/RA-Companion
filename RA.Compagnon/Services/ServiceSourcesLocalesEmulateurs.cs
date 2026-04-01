@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using RA.Compagnon.Modeles.Local;
@@ -6,6 +7,151 @@ namespace RA.Compagnon.Services;
 
 public static class ServiceSourcesLocalesEmulateurs
 {
+    private static readonly Lock VerrouEmplacementsEmulateursManuels = new();
+    private static Dictionary<string, string> _emplacementsEmulateursManuels = [];
+
+    public static void ConfigurerEmplacementsEmulateursManuels(
+        IReadOnlyDictionary<string, string>? emplacements
+    )
+    {
+        lock (VerrouEmplacementsEmulateursManuels)
+        {
+            _emplacementsEmulateursManuels = emplacements?
+                .Where(entree =>
+                    !string.IsNullOrWhiteSpace(entree.Key) && !string.IsNullOrWhiteSpace(entree.Value)
+                )
+                .ToDictionary(
+                    entree => entree.Key.Trim(),
+                    entree => entree.Value.Trim(),
+                    StringComparer.OrdinalIgnoreCase
+                ) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public static string ObtenirEmplacementEmulateurManuel(string nomEmulateur)
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
+            return string.Empty;
+        }
+
+        lock (VerrouEmplacementsEmulateursManuels)
+        {
+            return _emplacementsEmulateursManuels.TryGetValue(nomEmulateur.Trim(), out string? chemin)
+                ? chemin
+                : string.Empty;
+        }
+    }
+
+    public static bool CorrespondAuCheminEmulateurManuel(string nomEmulateur, string cheminExecutable)
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(cheminExecutable))
+        {
+            return false;
+        }
+
+        string cheminManuel = ObtenirEmplacementEmulateurManuel(nomEmulateur);
+
+        if (string.IsNullOrWhiteSpace(cheminManuel))
+        {
+            return false;
+        }
+
+        try
+        {
+            string cheminExecutableNormalise = Path.GetFullPath(cheminExecutable.Trim());
+
+            if (File.Exists(cheminManuel))
+            {
+                string cheminManuelNormalise = Path.GetFullPath(cheminManuel);
+                return string.Equals(
+                    cheminExecutableNormalise,
+                    cheminManuelNormalise,
+                    StringComparison.OrdinalIgnoreCase
+                );
+            }
+
+            if (Directory.Exists(cheminManuel))
+            {
+                string? repertoireExecutable = Path.GetDirectoryName(cheminExecutableNormalise);
+
+                if (string.IsNullOrWhiteSpace(repertoireExecutable))
+                {
+                    return false;
+                }
+
+                string repertoireManuelNormalise = Path.GetFullPath(cheminManuel);
+                return string.Equals(
+                        repertoireExecutable,
+                        repertoireManuelNormalise,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    || cheminExecutableNormalise.StartsWith(
+                        repertoireManuelNormalise + Path.DirectorySeparatorChar,
+                        StringComparison.OrdinalIgnoreCase
+                    );
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    public static string TrouverEmplacementEmulateur(string nomEmulateur)
+    {
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel(nomEmulateur);
+
+        if (!string.IsNullOrWhiteSpace(emplacementManuel))
+        {
+            return emplacementManuel;
+        }
+
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            nomEmulateur
+        );
+
+        if (definition is null)
+        {
+            return string.Empty;
+        }
+
+        string emplacementDepuisProcessus = TrouverEmplacementEmulateurDepuisProcessus(definition);
+
+        if (!string.IsNullOrWhiteSpace(emplacementDepuisProcessus))
+        {
+            return emplacementDepuisProcessus;
+        }
+
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => TrouverParentSiPossible(
+                TrouverRepertoireLogsRetroArch()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => TrouverRepertoireDuckStation(),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverRepertoirePCSX2(),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverRepertoirePPSSPP(),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => TrouverParentSiPossible(
+                TrouverRepertoireRACacheProject64()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => TrouverParentSiPossible(
+                TrouverRepertoireRACacheRALibretro()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => TrouverParentSiPossible(
+                TrouverRepertoireRACacheRANes()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => TrouverParentSiPossible(
+                TrouverRepertoireRACacheRAVBA()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => TrouverParentSiPossible(
+                TrouverRepertoireRACacheRASnes9x()
+            ),
+            _ => string.Empty,
+        };
+    }
+
     public static string TrouverCheminJournalSuccesLocal(string nomEmulateur)
     {
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
@@ -376,6 +522,90 @@ public static class ServiceSourcesLocalesEmulateurs
         catch
         {
             return [];
+        }
+    }
+
+    private static string TrouverEmplacementEmulateurDepuisProcessus(
+        DefinitionEmulateurLocal definition
+    )
+    {
+        try
+        {
+            foreach (Process processus in Process.GetProcesses())
+            {
+                if (!CorrespondNomProcessus(processus, definition.NomsProcessus))
+                {
+                    continue;
+                }
+
+                string cheminExecutable = LireCheminExecutableProcessus(processus);
+
+                if (string.IsNullOrWhiteSpace(cheminExecutable))
+                {
+                    continue;
+                }
+
+                if (File.Exists(cheminExecutable))
+                {
+                    return cheminExecutable;
+                }
+            }
+        }
+        catch
+        {
+            // Une lecture ponctuelle des processus ne doit pas casser l'aide.
+        }
+
+        return string.Empty;
+    }
+
+    private static bool CorrespondNomProcessus(Process processus, IReadOnlyList<string> nomsProcessus)
+    {
+        string nomProcessus = processus.ProcessName?.Trim() ?? string.Empty;
+
+        return nomsProcessus.Any(nom =>
+            string.Equals(nomProcessus, nom, StringComparison.OrdinalIgnoreCase)
+            || nomProcessus.StartsWith(nom, StringComparison.OrdinalIgnoreCase)
+        );
+    }
+
+    private static string LireCheminExecutableProcessus(Process processus)
+    {
+        try
+        {
+            return processus.MainModule?.FileName?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string TrouverParentSiPossible(string chemin)
+    {
+        if (string.IsNullOrWhiteSpace(chemin))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            DirectoryInfo? repertoire = Directory.Exists(chemin)
+                ? new DirectoryInfo(chemin)
+                : File.Exists(chemin)
+                    ? new FileInfo(chemin).Directory
+                    : null;
+
+            if (repertoire?.Parent is not null)
+            {
+                return repertoire.Parent.FullName;
+            }
+
+            return repertoire?.FullName ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
         }
     }
 }

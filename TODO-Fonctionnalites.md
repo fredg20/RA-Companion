@@ -153,7 +153,7 @@
 - [ ] Ajouter une vue des derniers jeux détectés localement, même sans succès.
 - [ ] Ajouter un récap des ouvertures de session locales par émulateur.
 - [ ] Ajouter une carte partageable "jeu du moment" avec image, progression et points.
-- [ ] Intégrer les autres émulateurs RetroAchievements moins connus quand leur détection locale est suffisamment fiable.
+- [x] Intégrer les autres émulateurs RetroAchievements moins connus quand leur détection locale est suffisamment fiable.
 - [ ] Ajouter une vue des succès obtenables rapidement en début de session.
 - [ ] Ajouter une distinction visuelle plus nette entre succès de progression, de performance et cachés.
 - [ ] Ajouter un mode "focus" qui masque tout sauf le jeu courant et un succès suivi.
@@ -200,7 +200,9 @@
 - [ ] Ajouter une vue des jeux avec beaucoup de points encore accessibles rapidement.
 - [ ] Ajouter une option pour faire remonter automatiquement les jeux relancés plusieurs fois récemment.
 - [ ] Ajouter une vue des jeux démarrés sur plusieurs émulateurs différents.
-- [ ] Ajouter une indication simple "détection excellente / bonne / fragile" selon la famille d'émulateur.
+- [x] Ajouter une indication simple "détection excellente / bonne / fragile" selon la famille d'émulateur.
 - [ ] Ajouter un écran d'explication des termes RetroAchievements : mastery, hardcore, softcore, completion.
 - [ ] Ajouter une aide dédiée pour retrouver facilement sa clé API et son profil.
 - [ ] Ajouter une vue des succès ignorés volontairement ou masqués par préférence.
+- [x] Détecter l'emplacement des émulateurs.
+- [x] Ajouter un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement.

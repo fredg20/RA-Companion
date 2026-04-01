@@ -56,4 +56,9 @@ public sealed class ConfigurationConnexion
     /// </summary>
     [JsonIgnore]
     public EtatListeSuccesAfficheeLocal? DerniereListeSuccesAffichee { get; set; }
+
+    /// <summary>
+    /// Emplacements d'émulateurs définis manuellement par l'utilisateur.
+    /// </summary>
+    public Dictionary<string, string> EmplacementsEmulateursManuels { get; set; } = [];
 }

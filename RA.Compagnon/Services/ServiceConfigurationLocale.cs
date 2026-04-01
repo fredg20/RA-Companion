@@ -384,6 +384,23 @@ public sealed class ServiceConfigurationLocale
     private static bool NormaliserEtatApplication(ConfigurationConnexion configuration)
     {
         bool modifie = false;
+        configuration.EmplacementsEmulateursManuels ??= [];
+        List<string> clesInvalides = [];
+
+        foreach ((string cle, string valeur) in configuration.EmplacementsEmulateursManuels)
+        {
+            if (string.IsNullOrWhiteSpace(cle) || string.IsNullOrWhiteSpace(valeur))
+            {
+                clesInvalides.Add(cle);
+            }
+        }
+
+        foreach (string cleInvalide in clesInvalides)
+        {
+            configuration.EmplacementsEmulateursManuels.Remove(cleInvalide);
+            modifie = true;
+        }
+
         EtatJeuAfficheLocal? jeu = configuration.DernierJeuAffiche;
 
         if (jeu is null)

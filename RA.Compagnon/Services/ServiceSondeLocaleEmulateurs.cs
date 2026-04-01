@@ -437,6 +437,16 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return true;
         }
 
+        bool correspondAuxMetadonneesExecutable = CorrespondMetadonneesExecutable(
+            processus,
+            definition
+        );
+
+        if (correspondAuxMetadonneesExecutable)
+        {
+            return true;
+        }
+
         // RetroArch, DuckStation et PCSX2 ont des variantes de fenetres/outils qui rendent
         // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
         if (!definition.AutoriserDetectionParTitreFenetre)
@@ -480,6 +490,106 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             string.Equals(nomProcessus, nom, StringComparison.OrdinalIgnoreCase)
             || nomProcessus.StartsWith(nom, StringComparison.OrdinalIgnoreCase)
         );
+    }
+
+    private static bool CorrespondMetadonneesExecutable(
+        Process processus,
+        DefinitionEmulateurLocal definition
+    )
+    {
+        try
+        {
+            string cheminExecutable = processus.MainModule?.FileName?.Trim() ?? string.Empty;
+
+            if (
+                ServiceSourcesLocalesEmulateurs.CorrespondAuCheminEmulateurManuel(
+                    definition.NomEmulateur,
+                    cheminExecutable
+                )
+            )
+            {
+                return true;
+            }
+
+            FileVersionInfo? version = processus.MainModule?.FileVersionInfo;
+
+            string[] valeurs =
+            [
+                definition.NomEmulateur,
+                cheminExecutable,
+                version?.ProductName ?? string.Empty,
+                version?.FileDescription ?? string.Empty,
+                version?.OriginalFilename ?? string.Empty,
+                version?.InternalName ?? string.Empty,
+            ];
+
+            string[] jetons = ObtenirJetonsCorrespondanceEmulateur(definition);
+
+            return valeurs.Any(valeur => CorrespondValeurEmpreinteEmulateur(valeur, jetons));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool CorrespondValeurEmpreinteEmulateur(string valeur, IReadOnlyList<string> jetons)
+    {
+        string valeurNormalisee = NormaliserEmpreinteExecutable(valeur);
+
+        if (string.IsNullOrWhiteSpace(valeurNormalisee))
+        {
+            return false;
+        }
+
+        return jetons.Any(jeton =>
+        {
+            string jetonNormalise = NormaliserEmpreinteExecutable(jeton);
+            return !string.IsNullOrWhiteSpace(jetonNormalise)
+                && valeurNormalisee.Contains(jetonNormalise, StringComparison.Ordinal);
+        });
+    }
+
+    private static string[] ObtenirJetonsCorrespondanceEmulateur(DefinitionEmulateurLocal definition)
+    {
+        List<string> jetons = [definition.NomEmulateur, .. definition.NomsProcessus];
+
+        if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
+        {
+            jetons.Add("VisualBoyAdvance");
+            jetons.Add("VisualBoyAdvance-M");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RASnes9x", StringComparison.Ordinal))
+        {
+            jetons.Add("Snes9x");
+        }
+        else if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
+        {
+            jetons.Add("Project64");
+            jetons.Add("Luna Project64");
+        }
+
+        return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];
+    }
+
+    private static string NormaliserEmpreinteExecutable(string valeur)
+    {
+        if (string.IsNullOrWhiteSpace(valeur))
+        {
+            return string.Empty;
+        }
+
+        StringBuilder builder = new(valeur.Length);
+
+        foreach (char caractere in valeur)
+        {
+            if (char.IsLetterOrDigit(caractere))
+            {
+                builder.Append(char.ToLowerInvariant(caractere));
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static int ProcessusPossedeUneFenetreVisible(Process processus)

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -845,7 +846,7 @@ public partial class MainWindow
                 Margin = new Thickness(0, 0, 0, 10),
                 Opacity = 0.78,
                 Text =
-                    "Compagnon peut t'indiquer quelle source locale il lit pour chaque émulateur validé. Ouvre cette section si tu dois vérifier un journal ou un dossier RACache.",
+                    "Compagnon peut t'indiquer quelle source locale il lit et où il retrouve chaque émulateur validé. Ouvre cette section si tu dois vérifier un journal, un dossier RACache ou l'emplacement d'un émulateur.",
                 TextWrapping = TextWrapping.Wrap,
             }
         );
@@ -862,7 +863,7 @@ public partial class MainWindow
 
         SystemControls.Expander expander = new()
         {
-            Header = "Voir les chemins et les sources locales",
+            Header = "Voir les chemins, les emplacements et les sources locales",
             IsExpanded = false,
         };
 
@@ -904,6 +905,72 @@ public partial class MainWindow
         string statutChemin = string.IsNullOrWhiteSpace(cheminDetecte)
             ? "Non trouvé sur ce PC"
             : "Détecté sur ce PC";
+        SystemControls.TextBlock texteStatutEmplacement = new()
+        {
+            Margin = new Thickness(0, 6, 0, 0),
+            FontWeight = FontWeights.SemiBold,
+            Opacity = 0.72,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        SystemControls.TextBox texteEmplacement = new()
+        {
+            Margin = new Thickness(0, 4, 0, 0),
+            Style = (Style)FindResource("StyleTexteCopiable"),
+            TextWrapping = TextWrapping.Wrap,
+        };
+        SystemControls.TextBlock texteAideEmplacementManuel = new()
+        {
+            Margin = new Thickness(0, 6, 0, 0),
+            Opacity = 0.66,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        SystemControls.Button boutonChoisirEmplacement = new()
+        {
+            Margin = new Thickness(0, 8, 8, 0),
+            Padding = new Thickness(10, 4, 10, 4),
+            MinWidth = 0,
+        };
+        SystemControls.Button boutonRetirerEmplacement = new()
+        {
+            Margin = new Thickness(0, 8, 0, 0),
+            Padding = new Thickness(10, 4, 10, 4),
+            MinWidth = 0,
+            Content = "Retirer le choix manuel",
+        };
+
+        void RafraichirBlocEmplacement()
+        {
+            string emplacementManuel =
+                ServiceSourcesLocalesEmulateurs.ObtenirEmplacementEmulateurManuel(
+                    definition.NomEmulateur
+                );
+            string emplacementDetecte =
+                ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+                    definition.NomEmulateur
+                );
+
+            texteStatutEmplacement.Text = !string.IsNullOrWhiteSpace(emplacementManuel)
+                ? "Emplacement manuel défini"
+                : string.IsNullOrWhiteSpace(emplacementDetecte)
+                    ? "Emplacement non trouvé sur ce PC"
+                    : "Emplacement détecté sur ce PC";
+
+            texteEmplacement.Text = string.IsNullOrWhiteSpace(emplacementDetecte)
+                ? ConstruireCheminIndicatifEmulateur(definition)
+                : emplacementDetecte;
+
+            texteAideEmplacementManuel.Text = !string.IsNullOrWhiteSpace(emplacementManuel)
+                ? "Ce chemin manuel est prioritaire si Compagnon hésite entre plusieurs signatures d'émulateur."
+                : "Si un exécutable est renommé ou ambigu, tu peux choisir manuellement le bon fichier .exe ici.";
+
+            boutonChoisirEmplacement.Content = !string.IsNullOrWhiteSpace(emplacementManuel)
+                ? "Modifier l'emplacement manuel"
+                : "Choisir un exécutable";
+
+            boutonRetirerEmplacement.Visibility = !string.IsNullOrWhiteSpace(emplacementManuel)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
 
         SystemControls.StackPanel pile = new()
         {
@@ -921,6 +988,25 @@ public partial class MainWindow
                     Opacity = 0.78,
                     Text = source,
                     TextWrapping = TextWrapping.Wrap,
+                },
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 6, 0, 0),
+                    Opacity = 0.72,
+                    Text = ConstruireTexteConfianceDetectionEmulateur(definition),
+                    TextWrapping = TextWrapping.Wrap,
+                },
+                texteStatutEmplacement,
+                texteEmplacement,
+                texteAideEmplacementManuel,
+                new SystemControls.StackPanel
+                {
+                    Orientation = SystemControls.Orientation.Horizontal,
+                    Children =
+                    {
+                        boutonChoisirEmplacement,
+                        boutonRetirerEmplacement,
+                    },
                 },
                 new SystemControls.TextBlock
                 {
@@ -947,7 +1033,7 @@ public partial class MainWindow
             },
         };
 
-        return new SystemControls.Border
+        SystemControls.Border carte = new()
         {
             Margin = new Thickness(0, 0, 0, 8),
             Padding = new Thickness(10, 8, 10, 8),
@@ -955,6 +1041,86 @@ public partial class MainWindow
             Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
             Child = pile,
         };
+
+        boutonChoisirEmplacement.Click += async (_, _) =>
+        {
+            await ChoisirEmplacementEmulateurManuelAsync(definition);
+            RafraichirBlocEmplacement();
+        };
+
+        boutonRetirerEmplacement.Click += async (_, _) =>
+        {
+            await RetirerEmplacementEmulateurManuelAsync(definition);
+            RafraichirBlocEmplacement();
+        };
+
+        RafraichirBlocEmplacement();
+        return carte;
+    }
+
+    private async Task ChoisirEmplacementEmulateurManuelAsync(DefinitionEmulateurLocal definition)
+    {
+        OpenFileDialog dialogue = new()
+        {
+            Title = $"Choisir l'exécutable pour {definition.NomEmulateur}",
+            Filter = "Exécutable Windows (*.exe)|*.exe|Tous les fichiers (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+        string cheminInitial = ServiceSourcesLocalesEmulateurs.ObtenirEmplacementEmulateurManuel(
+            definition.NomEmulateur
+        );
+
+        if (string.IsNullOrWhiteSpace(cheminInitial))
+        {
+            cheminInitial = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+                definition.NomEmulateur
+            );
+        }
+
+        try
+        {
+            if (File.Exists(cheminInitial))
+            {
+                dialogue.InitialDirectory = Path.GetDirectoryName(cheminInitial);
+                dialogue.FileName = Path.GetFileName(cheminInitial);
+            }
+            else if (Directory.Exists(cheminInitial))
+            {
+                dialogue.InitialDirectory = cheminInitial;
+            }
+        }
+        catch
+        {
+            // Le sélecteur reste optionnel et ne doit pas casser l'aide.
+        }
+
+        bool? resultat = dialogue.ShowDialog(this);
+
+        if (resultat != true || string.IsNullOrWhiteSpace(dialogue.FileName))
+        {
+            return;
+        }
+
+        _configurationConnexion.EmplacementsEmulateursManuels[definition.NomEmulateur] =
+            dialogue.FileName.Trim();
+        ServiceSourcesLocalesEmulateurs.ConfigurerEmplacementsEmulateursManuels(
+            _configurationConnexion.EmplacementsEmulateursManuels
+        );
+        await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+    }
+
+    private async Task RetirerEmplacementEmulateurManuelAsync(DefinitionEmulateurLocal definition)
+    {
+        if (_configurationConnexion.EmplacementsEmulateursManuels.Remove(definition.NomEmulateur))
+        {
+            ServiceSourcesLocalesEmulateurs.ConfigurerEmplacementsEmulateursManuels(
+                _configurationConnexion.EmplacementsEmulateursManuels
+            );
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                _configurationConnexion
+            );
+        }
     }
 
     private static bool EstEmulateurValidePourIndicatifLogs(DefinitionEmulateurLocal definition)
@@ -1015,6 +1181,88 @@ public partial class MainWindow
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
                 "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RASnes9x pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             _ => string.Empty,
+        };
+    }
+
+    private static string ConstruireTexteConfianceDetectionEmulateur(
+        DefinitionEmulateurLocal definition
+    )
+    {
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur le processus et sur les journaux locaux de RetroArch.",
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur le processus et sur duckstation.log.",
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur le processus et sur emulog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur le processus et sur les journaux locaux de PPSSPP.",
+            _ =>
+                "Confiance de détection : fragile. L'identification peut demander une vérification manuelle.",
+        };
+    }
+
+    private static string ConstruireCheminIndicatifEmulateur(DefinitionEmulateurLocal definition)
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => Path.Combine(
+                documents,
+                "emulation",
+                "RetroArch"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => Path.Combine(
+                documents,
+                "DuckStation"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => Path.Combine(
+                documents,
+                "PCSX2"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => Path.Combine(
+                documents,
+                "emulation",
+                "Playstation Portable"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
+                documents,
+                "emulation",
+                "Luna_Project64"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RALibretro"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RANes-x64"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache => Path.Combine(
+                documents,
+                "emulation",
+                "RAVBA-x64"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => Path.Combine(
+                documents,
+                "emulation",
+                "RASnes9x-x64"
+            ),
+            _ => "Emplacement local non défini.",
         };
     }
 
