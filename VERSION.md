@@ -3,7 +3,7 @@
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.1`
+- Version : `1.0.2`
 - Statut : version de travail stable
 - Cible de livraison : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
@@ -44,7 +44,7 @@
 - persistance locale et restauration rapide au démarrage
 - premières détections locales d'émulateur
 
-### Version 1.0.1
+### Version 1.0.2
 
 - orchestration d'état renforcée
 - couche émulateurs unifiée

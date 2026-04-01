@@ -1074,7 +1074,7 @@
         FontSize="12"
         FontWeight="SemiBold"
         Opacity="0.68"
-        Text="Version 1.0.1"
+        Text="Version 1.0.2"
         TextAlignment="Right"
       />
     </Border>
