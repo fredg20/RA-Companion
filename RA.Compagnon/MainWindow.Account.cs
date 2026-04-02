@@ -1154,6 +1154,8 @@ public partial class MainWindow
                 "Source suivie : RACache et journal RALog.txt.",
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
                 "Source suivie : RACache et journal RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                "Source suivie : fichier flycast.log à la racine et chemin du jeu chargé en secours.",
             _ => "Source locale non précisée.",
         };
     }
@@ -1180,6 +1182,8 @@ public partial class MainWindow
                 "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RAVBA pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
                 "Où l'activer : ce n'est pas un log classique. Il faut surtout que RetroAchievements soit actif dans RASnes9x pour que RACache et RALog.txt se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                "Où l'activer : active l'écriture du fichier flycast.log à la racine de Flycast. Compagnon s'appuie surtout sur ce journal, puis sur le chemin du jeu lancé si besoin. Garde aussi Flycast à jour.",
             _ => string.Empty,
         };
     }
@@ -1200,6 +1204,8 @@ public partial class MainWindow
                 "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
                 "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur le processus Flycast, sur flycast.log et sur le disque lancé en secours.",
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 "Confiance de détection : bonne. Compagnon s'appuie sur le processus et sur les journaux locaux de RetroArch.",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
@@ -1261,6 +1267,11 @@ public partial class MainWindow
                 documents,
                 "emulation",
                 "RASnes9x-x64"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig => Path.Combine(
+                documents,
+                "emulation",
+                "Dreamcast"
             ),
             _ => "Emplacement local non défini.",
         };
@@ -1333,6 +1344,12 @@ public partial class MainWindow
                 "RASnes9x-x64",
                 "RACache",
                 "RALog.txt"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig => Path.Combine(
+                documents,
+                "emulation",
+                "Dreamcast",
+                "flycast.log"
             ),
             _ => "Chemin local non défini.",
         };

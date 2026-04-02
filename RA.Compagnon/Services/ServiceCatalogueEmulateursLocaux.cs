@@ -135,7 +135,7 @@ public static class ServiceCatalogueEmulateursLocaux
             ["flycast"],
             ["dreamcast", "naomi", "atomiswave"],
             StrategieExtractionTitreEmulateurLocal.Flycast,
-            StrategieRenseignementJeuEmulateurLocal.Aucune,
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig,
             StrategieSurveillanceSuccesLocale.Aucune,
             true,
             false,

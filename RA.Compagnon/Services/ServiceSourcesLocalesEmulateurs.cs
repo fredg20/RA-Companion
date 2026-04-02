@@ -165,6 +165,8 @@ public static class ServiceSourcesLocalesEmulateurs
 
         return definition.StrategieRenseignementJeu switch
         {
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                TrouverCheminJournalFlycast(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 TrouverRepertoireRACacheRALibretro(),
                 "RALog.txt"
@@ -403,6 +405,51 @@ public static class ServiceSourcesLocalesEmulateurs
         ];
 
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverRepertoireFlycast()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "Dreamcast"),
+            Path.Combine(documents, "Flycast"),
+            Path.Combine(localAppData, "Flycast"),
+            Path.Combine(appData, "Flycast"),
+        ];
+
+        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationFlycast()
+    {
+        string repertoireFlycast = TrouverRepertoireFlycast();
+
+        string[] candidats =
+        [
+            Path.Combine(repertoireFlycast, "emu.cfg"),
+            Path.Combine(repertoireFlycast, "flycast.cfg"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminJournalFlycast()
+    {
+        string repertoireFlycast = TrouverRepertoireFlycast();
+
+        string[] candidats =
+        [
+            Path.Combine(repertoireFlycast, "flycast.log"),
+            Path.Combine(repertoireFlycast, "logs", "flycast.log"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
     public static string TrouverCheminJournalPCSX2()

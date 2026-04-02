@@ -252,6 +252,31 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
         else if (
             definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.FlycastConfig
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuFlycastDepuisLog(
+                processusCible,
+                titreJeuProbable
+            );
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
             == StrategieRenseignementJeuEmulateurLocal.RetroArchLog
         )
         {
@@ -533,7 +558,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
-    private static bool CorrespondValeurEmpreinteEmulateur(string valeur, IReadOnlyList<string> jetons)
+    private static bool CorrespondValeurEmpreinteEmulateur(
+        string valeur,
+        IReadOnlyList<string> jetons
+    )
     {
         string valeurNormalisee = NormaliserEmpreinteExecutable(valeur);
 
@@ -550,7 +578,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         });
     }
 
-    private static string[] ObtenirJetonsCorrespondanceEmulateur(DefinitionEmulateurLocal definition)
+    private static string[] ObtenirJetonsCorrespondanceEmulateur(
+        DefinitionEmulateurLocal definition
+    )
     {
         List<string> jetons = [definition.NomEmulateur, .. definition.NomsProcessus];
 
@@ -1270,6 +1300,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.RANesRACache => "ranes_racache",
             StrategieRenseignementJeuEmulateurLocal.RAVBARACache => "ravba_racache",
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache => "rasnes9x_racache",
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig => "flycast_config",
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "retroarch_log",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "duckstation_log",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "pcsx2_log",
@@ -1419,6 +1450,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         string[] extensionsJeuPossibles =
         [
             ".cue",
+            ".cdi",
+            ".gdi",
             ".chd",
             ".iso",
             ".bin",
@@ -1426,7 +1459,43 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             ".pbp",
             ".m3u",
             ".ecm",
+            ".zip",
             ".exe",
+            ".nes",
+            ".fds",
+            ".unf",
+            ".unif",
+            ".smc",
+            ".sfc",
+            ".fig",
+            ".gb",
+            ".gbc",
+            ".gba",
+            ".nds",
+            ".n64",
+            ".z64",
+            ".v64",
+            ".gen",
+            ".md",
+            ".smd",
+            ".sms",
+            ".gg",
+            ".sg",
+            ".32x",
+            ".a26",
+            ".lnx",
+            ".pce",
+            ".sgx",
+            ".ws",
+            ".wsc",
+            ".col",
+            ".int",
+            ".rom",
+            ".prg",
+            ".d64",
+            ".g64",
+            ".crt",
+            ".tap",
         ];
 
         foreach (Match correspondance in correspondances.Cast<Match>().Reverse())
@@ -1434,6 +1503,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             string valeur = correspondance.Groups[1].Success
                 ? correspondance.Groups[1].Value
                 : correspondance.Groups[2].Value;
+
+            if (string.IsNullOrWhiteSpace(valeur))
+            {
+                continue;
+            }
 
             if (string.IsNullOrWhiteSpace(valeur) || valeur.StartsWith('-'))
             {
@@ -1452,6 +1526,114 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return string.Empty;
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuFlycastDepuisLog(
+        Process processus,
+        string titreJeuFenetre
+    )
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalFlycast();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
+            }
+
+            FileInfo fichierJournal = new(cheminJournal);
+
+            if (
+                fichierJournal.Length <= 0
+                || DateTime.UtcNow - fichierJournal.LastWriteTimeUtc > TimeSpan.FromMinutes(15)
+            )
+            {
+                return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceCharge = FlycastGameLoadedRegex().Match(ligne);
+
+                if (
+                    correspondanceCharge.Success
+                    && int.TryParse(
+                        correspondanceCharge.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                    && identifiantJeuCharge > 0
+                )
+                {
+                    string titreJeu = correspondanceCharge.Groups[2].Value.Trim();
+                    return new RenseignementJeuRA(identifiantJeuCharge, titreJeu);
+                }
+
+                Match correspondanceId = JournalGameIdRegex().Match(ligne);
+
+                if (
+                    correspondanceId.Success
+                    && int.TryParse(
+                        correspondanceId.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeu
+                    )
+                    && identifiantJeu > 0
+                )
+                {
+                    return ConstruireRenseignementJeuFlycastDepuisCommande(
+                        processus,
+                        titreJeuFenetre,
+                        identifiantJeu
+                    );
+                }
+            }
+        }
+        catch
+        {
+            // Le journal Flycast reste une aide locale facultative.
+        }
+
+        return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
+    }
+
+    private static RenseignementJeuRA? ConstruireRenseignementJeuFlycastDepuisCommande(
+        Process processus,
+        string titreJeuFenetre,
+        int identifiantJeu = 0
+    )
+    {
+        try
+        {
+            string ligneCommande = LireLigneCommandeProcessus(processus);
+            string cheminJeu = ExtraireCheminJeuDepuisLigneCommande(ligneCommande);
+
+            string titreDepuisCommande = string.IsNullOrWhiteSpace(cheminJeu)
+                ? string.Empty
+                : NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+            string titreRetenu = !string.IsNullOrWhiteSpace(titreDepuisCommande)
+                ? titreDepuisCommande
+                : titreJeuFenetre;
+
+            if (identifiantJeu <= 0 && string.IsNullOrWhiteSpace(titreRetenu))
+            {
+                return null;
+            }
+
+            return new RenseignementJeuRA(identifiantJeu, titreRetenu);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static RenseignementJeuRA? LireRenseignementJeuRetroArchDepuisLog()
@@ -2722,6 +2904,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     [GeneratedRegex("\"([^\"]+)\"|([^\\s]+)", RegexOptions.CultureInvariant)]
     private static partial Regex JetonsLigneCommandeRegex();
+
+    [GeneratedRegex(
+        @"RA:\s*game\s+(\d+)\s+loaded:\s*(.+?),\s*achievements",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex FlycastGameLoadedRegex();
 
     [GeneratedRegex(
         @"(?:Identified game:\s*|Loading game\s+|Starting (?:new )?session for game\s+)(\d+)",

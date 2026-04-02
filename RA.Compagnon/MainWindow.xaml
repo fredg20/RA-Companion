@@ -1130,7 +1130,7 @@
           FontSize="12"
           FontWeight="SemiBold"
           Opacity="0.68"
-          Text="Version 1.0.3"
+          Text="Version 1.0.4"
           TextAlignment="Right"
         />
       </StackPanel>

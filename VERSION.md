@@ -3,7 +3,7 @@
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.3`
+- Version : `1.0.4`
 - Statut : version de travail stable
 - Cible de livraison : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
@@ -16,8 +16,9 @@
 - gestion plus robuste des états de chargement du jeu courant
 - grille des rétrosuccès plus stable visuellement
 - aide utilisateur enrichie
-- indicateur des sources locales et des logs par émulateur
-- mise à jour de l’application intégrée
+- indicateur des sources locales, des emplacements et des logs par émulateur
+- mise à jour de l'application intégrée
+- ajout d'un mapping manuel utilisateur pour corriger un émulateur détecté ou son emplacement
 
 ## Émulateurs validés dans cette version
 
@@ -27,6 +28,7 @@
 - `PCSX2`
 - `PPSSPP`
 - `Luna's Project64`
+- `Flycast`
 - `RANes`
 - `RAVBA`
 - `RASnes9x`
@@ -62,3 +64,11 @@
 - nettoyage du dossier `updates` après installation
 - ajout du support `RACache` pour `RANes`, `RAVBA` et `RASnes9x`
 - suppression des détections transitoires parasites via `explorer`
+
+### Version 1.0.4
+
+- détection de l'emplacement des émulateurs
+- indication de confiance de détection : excellente, bonne ou fragile
+- renforcement de la reconnaissance par métadonnées d'exécutable et chemin réel
+- ajout d'un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement
+- vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours

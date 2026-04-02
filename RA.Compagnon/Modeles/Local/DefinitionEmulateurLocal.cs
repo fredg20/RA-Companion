@@ -23,6 +23,7 @@ public enum StrategieRenseignementJeuEmulateurLocal
     RANesRACache,
     RAVBARACache,
     RASnes9xRACache,
+    FlycastConfig,
     RetroArchLog,
     DuckStationLog,
     PCSX2Log,
