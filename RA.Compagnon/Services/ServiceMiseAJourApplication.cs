@@ -489,7 +489,7 @@ public sealed class ServiceMiseAJourApplication
 
     private static void FinaliserPackageTelecharge(string cheminTemporaire, string cheminFichier)
     {
-        IOException? derniereErreur = null;
+        Exception? derniereErreur = null;
 
         for (int tentative = 0; tentative < 20; tentative++)
         {
@@ -504,6 +504,11 @@ public sealed class ServiceMiseAJourApplication
                 return;
             }
             catch (IOException exception)
+            {
+                derniereErreur = exception;
+                Thread.Sleep(250);
+            }
+            catch (UnauthorizedAccessException exception)
             {
                 derniereErreur = exception;
                 Thread.Sleep(250);

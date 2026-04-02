@@ -8,6 +8,7 @@
 - Cible de livraison : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
 - Archive principale : `dist/RA.Compagnon-win-x64.zip`
+- Archive versionnée : `dist/RA.Compagnon-win-x64-1.0.4.zip`
 
 ## Contenu de cette version
 
@@ -38,7 +39,8 @@
 
 - le dossier publié `RA.Compagnon-win-x64` ne doit pas être restructuré manuellement
 - le build `dist` est généré via `build.ps1`
-- la version pourra être affinée plus tard si on veut passer à un cycle plus formel : `0.x`, `1.x`, etc.
+- la préparation de release peut être figée via `Prepare-Release.ps1`
+- `update.json` doit pointer vers une archive versionnée exacte, pas vers `releases/latest`
 
 ## Historique local
 
@@ -74,3 +76,4 @@
 - ajout d'un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement
 - vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours
 - correction du téléchargement de mise à jour pour finaliser correctement le package `.zip`
+- sécurisation du process de release avec archive versionnée et manifeste figé
