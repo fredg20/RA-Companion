@@ -1,12 +1,12 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
@@ -944,16 +944,14 @@ public partial class MainWindow
                 ServiceSourcesLocalesEmulateurs.ObtenirEmplacementEmulateurManuel(
                     definition.NomEmulateur
                 );
-            string emplacementDetecte =
-                ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
-                    definition.NomEmulateur
-                );
+            string emplacementDetecte = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+                definition.NomEmulateur
+            );
 
-            texteStatutEmplacement.Text = !string.IsNullOrWhiteSpace(emplacementManuel)
-                ? "Emplacement manuel défini"
-                : string.IsNullOrWhiteSpace(emplacementDetecte)
-                    ? "Emplacement non trouvé sur ce PC"
-                    : "Emplacement détecté sur ce PC";
+            texteStatutEmplacement.Text =
+                !string.IsNullOrWhiteSpace(emplacementManuel) ? "Emplacement manuel défini"
+                : string.IsNullOrWhiteSpace(emplacementDetecte) ? "Emplacement non trouvé sur ce PC"
+                : "Emplacement détecté sur ce PC";
 
             texteEmplacement.Text = string.IsNullOrWhiteSpace(emplacementDetecte)
                 ? ConstruireCheminIndicatifEmulateur(definition)
@@ -1002,11 +1000,7 @@ public partial class MainWindow
                 new SystemControls.StackPanel
                 {
                     Orientation = SystemControls.Orientation.Horizontal,
-                    Children =
-                    {
-                        boutonChoisirEmplacement,
-                        boutonRetirerEmplacement,
-                    },
+                    Children = { boutonChoisirEmplacement, boutonRetirerEmplacement },
                 },
                 new SystemControls.TextBlock
                 {
@@ -1234,10 +1228,7 @@ public partial class MainWindow
                 documents,
                 "DuckStation"
             ),
-            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => Path.Combine(
-                documents,
-                "PCSX2"
-            ),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => Path.Combine(documents, "PCSX2"),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => Path.Combine(
                 documents,
                 "emulation",

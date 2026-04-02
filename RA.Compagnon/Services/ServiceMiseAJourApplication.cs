@@ -202,12 +202,7 @@ public sealed class ServiceMiseAJourApplication
                 await fluxSortie.FlushAsync(jetonAnnulation);
             }
 
-            if (File.Exists(cheminFichier))
-            {
-                File.Delete(cheminFichier);
-            }
-
-            File.Move(cheminTemporaire, cheminFichier);
+            FinaliserPackageTelecharge(cheminTemporaire, cheminFichier);
 
             return new ResultatTelechargementMiseAJourApplication(
                 true,
@@ -254,6 +249,23 @@ public sealed class ServiceMiseAJourApplication
         }
 
         string cheminFichier = Path.Combine(dossierTelechargement, ObtenirNomFichierPackage(etat));
+        string cheminTemporaire = $"{cheminFichier}.download";
+
+        if (
+            !File.Exists(cheminFichier)
+            && File.Exists(cheminTemporaire)
+            && new FileInfo(cheminTemporaire).Length > 0
+        )
+        {
+            try
+            {
+                FinaliserPackageTelecharge(cheminTemporaire, cheminFichier);
+            }
+            catch
+            {
+                // On laisse alors l'état appelant considérer que le package n'est pas encore prêt.
+            }
+        }
 
         if (!File.Exists(cheminFichier) || new FileInfo(cheminFichier).Length <= 0)
         {
@@ -473,6 +485,32 @@ public sealed class ServiceMiseAJourApplication
         }
 
         return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
+    }
+
+    private static void FinaliserPackageTelecharge(string cheminTemporaire, string cheminFichier)
+    {
+        IOException? derniereErreur = null;
+
+        for (int tentative = 0; tentative < 20; tentative++)
+        {
+            try
+            {
+                if (File.Exists(cheminFichier))
+                {
+                    File.Delete(cheminFichier);
+                }
+
+                File.Move(cheminTemporaire, cheminFichier);
+                return;
+            }
+            catch (IOException exception)
+            {
+                derniereErreur = exception;
+                Thread.Sleep(250);
+            }
+        }
+
+        throw derniereErreur ?? new IOException("Impossible de finaliser le package téléchargé.");
     }
 
     private static string ObtenirNomFichierPackage(EtatMiseAJourApplication etat)
