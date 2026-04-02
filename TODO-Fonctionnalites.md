@@ -17,6 +17,7 @@
 - [ ] Prévoir une adaptation de l'interface pour mobile ou petit format tactile.
 - [x] Inclure une fonction de mise à jour de l'application.
 - [x] Afficher clairement la version actuelle de l'application dans l'interface.
+- [ ] Authentifier l'application avec OSSING.
 - [ ] Afficher clairement le nombre de succès restants et les points restants pour finir le jeu.
 - [ ] Ajouter une indication de la prochaine récompense importante : completion, mastery ou milestone personnel.
 - [ ] Afficher plus clairement le temps écoulé depuis le début de la session en cours.
@@ -159,7 +160,7 @@
 - [ ] Ajouter un mode "focus" qui masque tout sauf le jeu courant et un succès suivi.
 - [ ] Ajouter une estimation du temps moyen passé par session sur chaque jeu.
 - [ ] Ajouter une vue des jeux laissés à moins de 10 succès de la fin.
-- [ ] Ajouter une alerte douce quand un jeu chargé n'est pas reconnu avec certitude.
+- [x] Détection plus stricte des titres locaux.
 - [ ] Ajouter une vue des succès hardcore encore faisables sur un jeu déjà avancé en softcore.
 - [ ] Ajouter un indicateur de fraîcheur des données affichées : local, cache ou API récente.
 - [ ] Ajouter une vue des jeux où un seul succès débloquerait un gros gain de points.

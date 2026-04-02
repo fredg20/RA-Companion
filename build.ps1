@@ -6,16 +6,10 @@ $runtimeIdentifier = "win-x64"
 $nomLivrable = "RA.Compagnon-$runtimeIdentifier"
 $dossierSortie = Join-Path $racineProjet "dist\$nomLivrable"
 $dossierSortieTemporaire = Join-Path $racineProjet "dist\$nomLivrable.tmp"
-$cheminArchive = Join-Path $racineProjet "dist\$nomLivrable.zip"
+$cheminArchiveGenerique = Join-Path $racineProjet "dist\$nomLivrable.zip"
 $versionProjet = ([xml](Get-Content $cheminProjet)).Project.PropertyGroup.Version
 $nomArchiveVersionnee = "$nomLivrable-$versionProjet.zip"
 $cheminArchiveVersionnee = Join-Path $racineProjet "dist\$nomArchiveVersionnee"
-$cheminPontReparationGenerique = Join-Path $racineProjet "Repair-Update.ps1"
-$cheminPontReparationGeneriqueDist = Join-Path $racineProjet "dist\Repair-Update.ps1"
-$cheminPontReparationGeneriqueLivrable = Join-Path $dossierSortie "Repair-Update.ps1"
-$cheminPontReparation = Join-Path $racineProjet "Repair-Update-1.0.3-to-1.0.4.ps1"
-$cheminPontReparationDist = Join-Path $racineProjet "dist\Repair-Update-1.0.3-to-1.0.4.ps1"
-$cheminPontReparationLivrable = Join-Path $dossierSortie "Repair-Update-1.0.3-to-1.0.4.ps1"
 
 # Evite les echecs si l'application tourne encore.
 $processus = Get-Process -Name "RA.Compagnon" -ErrorAction SilentlyContinue
@@ -56,35 +50,25 @@ if (Test-Path $dossierSortie) {
     Remove-Item $dossierSortie -Recurse -Force
 }
 
-if (Test-Path $cheminArchive) {
-    Remove-Item $cheminArchive -Force
+if (Test-Path $cheminArchiveGenerique) {
+    Remove-Item $cheminArchiveGenerique -Force
 }
 
 if (Test-Path $cheminArchiveVersionnee) {
     Remove-Item $cheminArchiveVersionnee -Force
 }
 
+if (Test-Path (Join-Path $racineProjet "dist\Repair-Update.ps1")) {
+    Remove-Item (Join-Path $racineProjet "dist\Repair-Update.ps1") -Force
+}
+
+if (Test-Path (Join-Path $racineProjet "dist\Repair-Update-1.0.3-to-1.0.4.ps1")) {
+    Remove-Item (Join-Path $racineProjet "dist\Repair-Update-1.0.3-to-1.0.4.ps1") -Force
+}
+
 Move-Item -LiteralPath $dossierSortieTemporaire -Destination $dossierSortie
 
-if (Test-Path $cheminPontReparationGenerique) {
-    Copy-Item -LiteralPath $cheminPontReparationGenerique -Destination $cheminPontReparationGeneriqueLivrable -Force
-}
-
-if (Test-Path $cheminPontReparation) {
-    Copy-Item -LiteralPath $cheminPontReparation -Destination $cheminPontReparationLivrable -Force
-}
-
-Compress-Archive -Path (Join-Path $dossierSortie "*") -DestinationPath $cheminArchive
-Copy-Item -LiteralPath $cheminArchive -Destination $cheminArchiveVersionnee -Force
-
-if (Test-Path $cheminPontReparationGenerique) {
-    Copy-Item -LiteralPath $cheminPontReparationGenerique -Destination $cheminPontReparationGeneriqueDist -Force
-}
-
-if (Test-Path $cheminPontReparation) {
-    Copy-Item -LiteralPath $cheminPontReparation -Destination $cheminPontReparationDist -Force
-}
+Compress-Archive -Path (Join-Path $dossierSortie "*") -DestinationPath $cheminArchiveVersionnee
 
 Write-Host "Livrable autonome genere dans : $dossierSortie"
-Write-Host "Archive generee dans : $cheminArchive"
 Write-Host "Archive versionnee generee dans : $cheminArchiveVersionnee"

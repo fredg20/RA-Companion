@@ -556,7 +556,7 @@ public partial class MainWindow
         }
         TexteTitreJeuEnCours.Text = titre;
         TexteTitreJeuEnCours.Width = double.NaN;
-        TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
+        TexteTitreJeuEnCours.FontSize = ObtenirTaillePoliceTitreJeuNormaleResponsive();
         PlanifierMiseAJourAnimationTitreJeuEnCours();
     }
 
@@ -580,8 +580,9 @@ public partial class MainWindow
         TexteTitreJeuEnCours.RenderTransform = translation;
         translation.BeginAnimation(TranslateTransform.XProperty, null);
         translation.X = 0;
-        TexteTitreJeuEnCours.FontSize = TaillePoliceTitreJeuNormale;
-        double largeurTitreSouhaitee = MesurerLargeurTitreJeuEnCours(TaillePoliceTitreJeuNormale);
+        double taillePoliceTitre = ObtenirTaillePoliceTitreJeuNormaleResponsive();
+        TexteTitreJeuEnCours.FontSize = taillePoliceTitre;
+        double largeurTitreSouhaitee = MesurerLargeurTitreJeuEnCours(taillePoliceTitre);
         double largeurDisponible = ConteneurTitreJeuEnCours.ActualWidth;
 
         if (largeurTitreSouhaitee <= 0 || largeurDisponible <= 0)

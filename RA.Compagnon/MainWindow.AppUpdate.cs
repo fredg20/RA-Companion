@@ -340,16 +340,9 @@ public partial class MainWindow
 
         SystemControls.StackPanel pile = new()
         {
-            Margin = new Thickness(0, 0, 0, 12),
+            Margin = new Thickness(0),
             Children =
             {
-                new SystemControls.TextBlock
-                {
-                    Margin = new Thickness(0, 0, 0, 8),
-                    FontSize = 16,
-                    FontWeight = FontWeights.SemiBold,
-                    Text = "Mise \u00E0 jour",
-                },
                 texteVersionLocale,
                 texteEtat,
                 texteDate,
@@ -364,14 +357,12 @@ public partial class MainWindow
             },
         };
 
-        return new SystemControls.Border
-        {
-            Padding = new Thickness(10, 10, 10, 8),
-            Margin = new Thickness(0, 0, 0, 8),
-            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
-            Child = pile,
-        };
+        return ConstruireSectionAideRabattable(
+            "Mise à jour",
+            pile,
+            "État courant, notes de version et actions de téléchargement.",
+            false
+        );
     }
 
     private async Task TelechargerMiseAJourApplicationAsync()

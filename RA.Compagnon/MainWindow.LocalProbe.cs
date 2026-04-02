@@ -261,7 +261,11 @@ public partial class MainWindow
                 _dernierEtatSondeLocaleEmulateurs = etatBrut;
             }
 
-            _serviceSurveillanceSuccesLocaux.MettreAJourCible(etat.EmulateurDetecte ? etat : null);
+            bool emulateurValide =
+                etat.EmulateurDetecte
+                && ServiceCatalogueEmulateursLocaux.EstEmulateurValide(etat.NomEmulateur);
+
+            _serviceSurveillanceSuccesLocaux.MettreAJourCible(emulateurValide ? etat : null);
             MettreAJourNoticeCompteEntete();
 
             if (!_serviceOrchestrateurEtatJeu.DoitTraiterSondeLocale(etat.Signature))
@@ -273,8 +277,17 @@ public partial class MainWindow
                 !ConfigurationConnexionEstComplete()
                 || !_profilUtilisateurAccessible
                 || !etat.EmulateurDetecte
+                || !emulateurValide
             )
             {
+                if (etat.EmulateurDetecte && !emulateurValide)
+                {
+                    ServiceResolutionJeuLocal.JournaliserEvenementInterface(
+                        "resolution_locale_ignoree",
+                        $"raison=emulateur_non_valide;emulateur={etat.NomEmulateur};processus={etat.NomProcessus};titreFenetre={etat.TitreFenetre}"
+                    );
+                }
+
                 _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
                 _identifiantJeuLocalActif = 0;
                 _titreJeuLocalActif = string.Empty;
@@ -334,6 +347,13 @@ public partial class MainWindow
                 // Pour RALibretro, le titre fenetre/JSON recent peut rester sur l'ancien jeu
                 // pendant une transition. On attend donc le prochain Game ID RA au lieu
                 // de lancer un matching par titre potentiellement faux.
+                return;
+            }
+
+            if (DoitVerrouillerAffichageSurDernierJeuActifRecemment())
+            {
+                ReappliquerDernierJeuActifRecemment();
+                _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
                 return;
             }
 

@@ -150,6 +150,19 @@ public static class ServiceCatalogueEmulateursLocaux
         );
     }
 
+    public static bool EstEmulateurValide(string nomEmulateur)
+    {
+        DefinitionEmulateurLocal? definition = TrouverParNom(nomEmulateur);
+        return definition is not null && EstEmulateurValide(definition);
+    }
+
+    public static bool EstEmulateurValide(DefinitionEmulateurLocal definition)
+    {
+        return definition.StrategieRenseignementJeu
+                != StrategieRenseignementJeuEmulateurLocal.Aucune
+            || definition.StrategieSurveillanceSucces != StrategieSurveillanceSuccesLocale.Aucune;
+    }
+
     public static string[] ObtenirAliasConsoles(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.AliasConsoles ?? [];

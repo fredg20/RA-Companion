@@ -17,6 +17,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
         "journal-surveillance-succes-locaux.log"
     );
     private static readonly TimeSpan DureeDebounceSignal = TimeSpan.FromMilliseconds(700);
+    private static readonly TimeSpan DelaiSignalInitialRetroArch = TimeSpan.FromMilliseconds(850);
     private static readonly TimeSpan DelaiSuiviRACacheLog = TimeSpan.FromMilliseconds(2500);
     private static readonly Regex RegexFichierJeuRACache = new(
         @"^\d+\.json$",
@@ -337,14 +338,14 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
 
         JournaliserEvenement(
             "signal_initial_planifie",
-            $"emulateur=RetroArch;delaiMs={DelaiSuiviRACacheLog.TotalMilliseconds.ToString("0", CultureInfo.InvariantCulture)};repertoire={repertoireLogs}"
+            $"emulateur=RetroArch;delaiMs={DelaiSignalInitialRetroArch.TotalMilliseconds.ToString("0", CultureInfo.InvariantCulture)};repertoire={repertoireLogs}"
         );
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(DelaiSuiviRACacheLog);
+                await Task.Delay(DelaiSignalInitialRetroArch);
 
                 lock (_verrou)
                 {

@@ -1212,28 +1212,175 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         IReadOnlyList<string> titres
     )
     {
+        string titrePrincipal = processus.MainWindowTitle?.Trim() ?? string.Empty;
+
+        if (PeutRetenirTitreFenetrePourEmulateur(definition, processus, titrePrincipal))
+        {
+            return titrePrincipal;
+        }
+
         if (titres.Count > 0)
         {
-            if (string.Equals(definition.NomEmulateur, "PCSX2", StringComparison.Ordinal))
-            {
-                string? titreJeu = titres.FirstOrDefault(titre =>
-                    !string.IsNullOrWhiteSpace(ExtraireTitrePCSX2(processus, titre))
-                );
-
-                if (!string.IsNullOrWhiteSpace(titreJeu))
-                {
-                    return titreJeu;
-                }
-            }
-
             return titres
-                .OrderByDescending(titre => titre.Length)
+                .Where(titre => PeutRetenirTitreFenetrePourEmulateur(definition, processus, titre))
+                .OrderByDescending(titre =>
+                    CalculerPrioriteTitreFenetre(definition, processus, titre, titrePrincipal)
+                )
+                .ThenByDescending(titre => titre.Length)
                 .ThenByDescending(titre => titre.Contains(" - ", StringComparison.Ordinal))
-                .First();
+                .FirstOrDefault()
+                ?? string.Empty;
         }
 
         processus.Refresh();
-        return processus.MainWindowTitle?.Trim() ?? string.Empty;
+        titrePrincipal = processus.MainWindowTitle?.Trim() ?? string.Empty;
+        return PeutRetenirTitreFenetrePourEmulateur(definition, processus, titrePrincipal)
+            ? titrePrincipal
+            : string.Empty;
+    }
+
+    private static bool PeutRetenirTitreFenetrePourEmulateur(
+        DefinitionEmulateurLocal definition,
+        Process processus,
+        string titreFenetre
+    )
+    {
+        string titreNettoye = titreFenetre?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(titreNettoye))
+        {
+            return false;
+        }
+
+        if (TitreFenetreSembleParasite(titreNettoye))
+        {
+            return false;
+        }
+
+        if (TitreFenetreReferenceEmulateur(definition, titreNettoye))
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(
+            ExtraireTitreJeuPourDefinition(definition, processus, titreNettoye)
+        );
+    }
+
+    private static int CalculerPrioriteTitreFenetre(
+        DefinitionEmulateurLocal definition,
+        Process processus,
+        string titre,
+        string titrePrincipal
+    )
+    {
+        int score = 0;
+        string titreNettoye = titre?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(titreNettoye))
+        {
+            return int.MinValue;
+        }
+
+        string titreJeu = ExtraireTitreJeuPourDefinition(definition, processus, titreNettoye);
+
+        if (!string.IsNullOrWhiteSpace(titreJeu))
+        {
+            score += 1000;
+            score += Math.Min(titreJeu.Length, 120);
+        }
+
+        if (
+            !string.IsNullOrWhiteSpace(titrePrincipal)
+            && string.Equals(titreNettoye, titrePrincipal, StringComparison.Ordinal)
+        )
+        {
+            score += 180;
+        }
+
+        if (TitreFenetreReferenceEmulateur(definition, titreNettoye))
+        {
+            score += 80;
+        }
+
+        if (TitreFenetreSembleParasite(titreNettoye))
+        {
+            score -= 220;
+        }
+        else
+        {
+            score += 25;
+        }
+
+        if (titreNettoye.Contains(" - ", StringComparison.Ordinal))
+        {
+            score += 10;
+        }
+
+        return score;
+    }
+
+    private static bool TitreFenetreReferenceEmulateur(
+        DefinitionEmulateurLocal definition,
+        string titreFenetre
+    )
+    {
+        if (
+            titreFenetre.Contains(definition.NomEmulateur, StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return true;
+        }
+
+        return definition.NomsProcessus.Any(nom =>
+            !string.IsNullOrWhiteSpace(nom)
+            && titreFenetre.Contains(nom, StringComparison.OrdinalIgnoreCase)
+        );
+    }
+
+    private static bool TitreFenetreSembleParasite(string titreFenetre)
+    {
+        string titreNormalise = NormaliserTexteComparaison(titreFenetre);
+
+        if (string.IsNullOrWhiteSpace(titreNormalise))
+        {
+            return true;
+        }
+
+        string[] fragmentsParasites =
+        [
+            "explorateur de fichiers",
+            "file explorer",
+            "ouvrir",
+            "open",
+            "enregistrer",
+            "save as",
+            "proprietes",
+            "properties",
+            "parametres",
+            "settings",
+            "options",
+            "configuration",
+            "a propos",
+            "about",
+            "outils",
+            "tools",
+            "debug",
+            "debugger",
+            "console",
+            "plugins",
+            "plugin",
+            "controleur",
+            "controller",
+            "input config",
+            "input settings",
+            "cheats",
+            "retroachievements",
+        ];
+
+        return fragmentsParasites.Any(fragment =>
+            titreNormalise.Contains(fragment, StringComparison.Ordinal)
+        );
     }
 
     private static string NormaliserTexteComparaison(string valeur)

@@ -164,6 +164,14 @@ public partial class MainWindow
     )
     {
         DefinirTitreZoneJeu();
+        EtatRichPresence etatRichPresence = ServiceSondeRichPresence.Sonder(
+            new DonneesCompteUtilisateur
+            {
+                Profil = profil,
+                Resume = _dernierResumeUtilisateurCharge,
+            },
+            journaliser: false
+        );
 
         string messagePresence = string.IsNullOrWhiteSpace(profil.RichPresenceMsg)
             ? "Aucune activité détectée."
@@ -210,6 +218,24 @@ public partial class MainWindow
             profil.LastGame,
             dernierJeuJoue?.Title
         );
+
+        if (
+            !EtatLocalJeuEstActif()
+            && string.Equals(
+                etatRichPresence.StatutAffiche,
+                "Actif récemment",
+                StringComparison.OrdinalIgnoreCase
+            )
+            && _configurationConnexion.DernierJeuAffiche?.Id > 0
+        )
+        {
+            identifiantJeuEffectif = _configurationConnexion.DernierJeuAffiche.Id;
+
+            if (!string.IsNullOrWhiteSpace(_configurationConnexion.DernierJeuAffiche.Title))
+            {
+                titreJeuProvisoire = _configurationConnexion.DernierJeuAffiche.Title;
+            }
+        }
 
         if (EtatLocalJeuEstActif())
         {

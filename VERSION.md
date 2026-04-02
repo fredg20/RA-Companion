@@ -3,12 +3,11 @@
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.4`
+- Version : `1.0.5`
 - Statut : version de travail stable
 - Cible de livraison : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
-- Archive principale : `dist/RA.Compagnon-win-x64.zip`
-- Archive versionnée : `dist/RA.Compagnon-win-x64-1.0.4.zip`
+- Archive de release : `dist/RA.Compagnon-win-x64-1.0.5.zip`
 
 ## Contenu de cette version
 
@@ -40,7 +39,9 @@
 - le dossier publié `RA.Compagnon-win-x64` ne doit pas être restructuré manuellement
 - le build `dist` est généré via `build.ps1`
 - la préparation de release peut être figée via `Prepare-Release.ps1`
+- une seule archive est conservée : l'archive versionnée de release
 - `update.json` doit pointer vers une archive versionnée exacte, pas vers `releases/latest`
+- `publishedAt` est synchronisé automatiquement à la vraie date de publication GitHub lors d'une release
 
 ## Historique local
 
@@ -77,3 +78,18 @@
 - vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours
 - correction du téléchargement de mise à jour pour finaliser correctement le package `.zip`
 - sécurisation du process de release avec archive versionnée et manifeste figé
+
+### Version 1.0.5
+
+- préparation de la prochaine release versionnée
+- manifeste de mise à jour aligné sur `v1.0.5`
+- archive versionnée attendue : `RA.Compagnon-win-x64-1.0.5.zip`
+- modale Aide réorganisée avec des sections rabattables
+- section `Logs des émulateurs` rendue plus lisible avec un panneau rabattable par émulateur
+- instructions des émulateurs réécrites en français dans la modale Aide
+- barre de défilement de la modale Aide visible uniquement au survol
+- détection plus stricte des titres locaux pour éviter l'affichage d'un titre provenant d'une fenêtre non liée à un émulateur validé
+- détection locale `RetroArch` rendue plus réactive au démarrage de la surveillance
+- en mode `Actif récemment`, affichage forcé sur le dernier jeu mémorisé par `GameID`
+- bouton `Détails` déplacé sur la ligne d'en-tête de la carte principale
+- ajustements visuels de la carte `Rétrosuccès en cours` et de ses boutons de navigation

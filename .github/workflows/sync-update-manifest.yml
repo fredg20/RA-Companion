@@ -1,0 +1,72 @@
+name: Sync Update Manifest
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
+
+jobs:
+  sync-update-manifest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Update update.json from published release
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          $publishedAt = "${{ github.event.release.published_at }}"
+          $releaseBody = @'
+          ${{ github.event.release.body }}
+          '@
+
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+              throw "Le tag de release est introuvable."
+          }
+
+          $version = $tag.TrimStart('v')
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+              throw "Impossible de déduire la version depuis le tag '$tag'."
+          }
+
+          $publishedDate = [DateTimeOffset]::Parse($publishedAt).ToString("yyyy-MM-dd")
+          $assetName = "RA.Compagnon-win-x64-$version.zip"
+          $assetUrl = "https://github.com/${{ github.repository }}/releases/download/$tag/$assetName"
+
+          $notes = if ([string]::IsNullOrWhiteSpace($releaseBody)) {
+              "Version courante publiée de RA-Compagnon."
+          }
+          else {
+              $releaseBody.Trim()
+          }
+
+          $manifest = [ordered]@{
+              version = $version
+              url = $assetUrl
+              notes = $notes
+              publishedAt = $publishedDate
+          }
+
+          $manifest | ConvertTo-Json | Set-Content -LiteralPath "update.json" -Encoding utf8
+
+      - name: Commit updated manifest
+        shell: bash
+        run: |
+          if git diff --quiet -- update.json; then
+            echo "Aucun changement à committer."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update.json
+          git commit -m "chore: sync update manifest for ${{ github.event.release.tag_name }}"
+          git push

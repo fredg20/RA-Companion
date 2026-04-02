@@ -21,8 +21,15 @@ public partial class MainWindow
             return Task.CompletedTask;
         }
 
+        AppliquerEtatJeuSauvegarde(jeuSauvegarde);
+        return Task.CompletedTask;
+    }
+
+    private void AppliquerEtatJeuSauvegarde(EtatJeuAfficheLocal jeuSauvegarde)
+    {
         DefinirTitreZoneJeu();
         _dernierTitreJeuApi = jeuSauvegarde.Title;
+        _dernierIdentifiantJeuApi = jeuSauvegarde.Id;
         _dernierIdentifiantJeuAvecInfos = jeuSauvegarde.Id;
         _dernierIdentifiantJeuAvecProgression = jeuSauvegarde.Id;
         DefinirTitreJeuEnCours(jeuSauvegarde.Title);
@@ -55,7 +62,6 @@ public partial class MainWindow
         AppliquerMetaConsoleJeuEnCoursInitiale(jeuLocalReconstruit);
         DemarrerEnrichissementMetaConsoleJeuEnCours(jeuLocalReconstruit);
         DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.Id);
-        return Task.CompletedTask;
     }
 
     private void DemarrerRestaurationSuccesSauvegardesEnArrierePlan(int identifiantJeu)

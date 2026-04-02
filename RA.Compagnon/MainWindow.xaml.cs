@@ -67,6 +67,12 @@ public partial class MainWindow : UiControls.FluentWindow
     private const double LargeurContenuModaleConnexion = 360;
     private const double MargeInterieureModaleConnexion = 16;
     private const double LargeurZoneDetectionBarreDefilement = 18;
+    private const double TaillePoliceInterfaceBase = 14.5;
+    private const double LargeurMinimaleTypographieResponsive = 360;
+    private const double LargeurReferenceTypographieResponsive = 1100;
+    private const double LargeurMaximaleTypographieResponsive = 1800;
+    private const double FacteurTypographieResponsiveMinimal = 0.88;
+    private const double FacteurTypographieResponsiveMaximal = 1.18;
     private const double TaillePoliceTitreJeuNormale = 26;
     private const double TaillePoliceTitreJeuMinimale = 18;
     private const double TailleBadgeGrilleSucces = 34;
@@ -119,6 +125,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly Dictionary<string, ImageSource> _cacheImagesDistantes = new(
         StringComparer.OrdinalIgnoreCase
     );
+    private readonly Dictionary<DependencyObject, double> _taillesPoliceLocalesResponsive = [];
     private readonly Dictionary<string, Task<ImageSource?>> _chargementsImagesDistantesEnCours =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly List<VisuelJeuEnCours> _visuelsJeuEnCours = [];
@@ -178,6 +185,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _versionMiseAJourTelechargee = string.Empty;
     private string _messageTelechargementMiseAJourApplication = string.Empty;
     private string? _cheminFichierMiseAJourTelechargee;
+    private double _facteurTypographieResponsive = 1;
 
     /// <summary>
     /// Initialise la fenêtre principale.
@@ -307,6 +315,7 @@ public partial class MainWindow : UiControls.FluentWindow
             _configurationConnexion.EmplacementsEmulateursManuels
         );
         AppliquerGeometrieFenetre();
+        AjusterTypographieResponsive(true);
         MettreAJourResumeConnexion();
         AjusterDisposition();
         _ = Dispatcher.BeginInvoke(
@@ -382,6 +391,7 @@ public partial class MainWindow : UiControls.FluentWindow
             ReinitialiserListeSuccesPourRedimensionnement();
         }
 
+        AjusterTypographieResponsive();
         AjusterDisposition();
         AjusterHauteurCarteJeuEnCours();
         PlanifierMiseAJourDispositionGrilleTousSucces();
@@ -404,6 +414,7 @@ public partial class MainWindow : UiControls.FluentWindow
             ReinitialiserListeSuccesPourRedimensionnement();
         }
 
+        AjusterTypographieResponsive();
         AjusterHauteurCarteJeuEnCours();
         PlanifierMiseAJourDispositionGrilleTousSucces();
         PlanifierAjustementHauteurListeSuccesJeuEnCours();

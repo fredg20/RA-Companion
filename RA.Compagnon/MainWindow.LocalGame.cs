@@ -45,8 +45,54 @@ public partial class MainWindow
         return string.Empty;
     }
 
+    private bool DoitVerrouillerAffichageSurDernierJeuActifRecemment()
+    {
+        if (EtatLocalJeuEstActif() || _configurationConnexion.DernierJeuAffiche?.Id <= 0)
+        {
+            return false;
+        }
+
+        EtatRichPresence etatRichPresence = ServiceSondeRichPresence.Sonder(
+            new DonneesCompteUtilisateur
+            {
+                Profil = _dernierProfilUtilisateurCharge,
+                Resume = _dernierResumeUtilisateurCharge,
+            },
+            journaliser: false
+        );
+
+        return string.Equals(
+            etatRichPresence.StatutAffiche,
+            "Actif récemment",
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    private void ReappliquerDernierJeuActifRecemment()
+    {
+        if (!DoitVerrouillerAffichageSurDernierJeuActifRecemment())
+        {
+            return;
+        }
+
+        EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
+
+        if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.Title))
+        {
+            return;
+        }
+
+        AppliquerEtatJeuSauvegarde(jeuSauvegarde);
+    }
+
     private void AppliquerTitreJeuLocalProvisoire(EtatSondeLocaleEmulateur etat)
     {
+        if (DoitVerrouillerAffichageSurDernierJeuActifRecemment())
+        {
+            ReappliquerDernierJeuActifRecemment();
+            return;
+        }
+
         string titreJeuProbable = etat.TitreJeuProbable?.Trim() ?? string.Empty;
         if (
             !_serviceOrchestrateurEtatJeu.PeutAfficherEtatLocalProvisoire(
