@@ -18,6 +18,7 @@
 - aide utilisateur enrichie
 - indicateur des sources locales, des emplacements et des logs par émulateur
 - mise à jour de l'application intégrée
+- téléchargement de mise à jour corrigé
 - ajout d'un mapping manuel utilisateur pour corriger un émulateur détecté ou son emplacement
 
 ## Émulateurs validés dans cette version
@@ -72,3 +73,4 @@
 - renforcement de la reconnaissance par métadonnées d'exécutable et chemin réel
 - ajout d'un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement
 - vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours
+- correction du téléchargement de mise à jour pour finaliser correctement le package `.zip`

@@ -186,18 +186,21 @@ public sealed class ServiceMiseAJourApplication
                 );
             }
 
-            await using Stream fluxEntree = await reponse.Content.ReadAsStreamAsync(
-                jetonAnnulation
-            );
-            await using FileStream fluxSortie = new(
-                cheminTemporaire,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None
-            );
-
-            await fluxEntree.CopyToAsync(fluxSortie, jetonAnnulation);
-            await fluxSortie.FlushAsync(jetonAnnulation);
+            await using (
+                Stream fluxEntree = await reponse.Content.ReadAsStreamAsync(jetonAnnulation)
+            )
+            await using (
+                FileStream fluxSortie = new(
+                    cheminTemporaire,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None
+                )
+            )
+            {
+                await fluxEntree.CopyToAsync(fluxSortie, jetonAnnulation);
+                await fluxSortie.FlushAsync(jetonAnnulation);
+            }
 
             if (File.Exists(cheminFichier))
             {
