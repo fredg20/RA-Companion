@@ -25,10 +25,16 @@ public partial class MainWindow
         "RA-Compagnon",
         "journal-dimensions-liste-succes.log"
     );
+    private static readonly string CheminJournalDiagnosticAffichageJeu = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RA-Compagnon",
+        "journal-affichage-jeu.log"
+    );
 
     public static void ReinitialiserJournalDiagnosticPerformance()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticPerformance);
+        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticAffichageJeu);
     }
 
     public static void ReinitialiserJournalDiagnosticListeSucces()
@@ -106,6 +112,19 @@ public partial class MainWindow
         _ = ServiceModeDiagnostic.JournaliserLigne(
             CheminJournalDiagnosticPerformance,
             $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] +{_chronometreDiagnosticChangementJeu.Elapsed.TotalMilliseconds, 6:0} ms | {etape}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
+        );
+    }
+
+    private void JournaliserDiagnosticAffichageJeu(string evenement, string? details = null)
+    {
+        if (!ServiceModeDiagnostic.EstActif)
+        {
+            return;
+        }
+
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalDiagnosticAffichageJeu,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
         );
     }
 

@@ -145,6 +145,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
+    private int _identifiantJeuMetaConsoleAffichee;
     private int _versionChargementContenuJeu;
     private EtatPipelineChargementJeu _etatPipelineChargementJeu = EtatPipelineChargementJeu.Vide;
     private UserProfileV2? _dernierProfilUtilisateurCharge;
@@ -313,6 +314,9 @@ public partial class MainWindow : UiControls.FluentWindow
         App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerConfig");
         ServiceSourcesLocalesEmulateurs.ConfigurerEmplacementsEmulateursManuels(
             _configurationConnexion.EmplacementsEmulateursManuels
+        );
+        ServiceSourcesLocalesEmulateurs.ConfigurerEmplacementsEmulateursDetectes(
+            _configurationConnexion.EmplacementsEmulateursDetectes
         );
         AppliquerGeometrieFenetre();
         AjusterTypographieResponsive(true);

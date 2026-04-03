@@ -11,6 +11,8 @@ public sealed class EtatSondeLocaleEmulateur
 
     public string NomProcessus { get; init; } = string.Empty;
 
+    public string CheminExecutable { get; init; } = string.Empty;
+
     public string TitreFenetre { get; init; } = string.Empty;
 
     public string TitreJeuProbable { get; init; } = string.Empty;

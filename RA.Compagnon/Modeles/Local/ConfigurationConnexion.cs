@@ -61,4 +61,9 @@ public sealed class ConfigurationConnexion
     /// Emplacements d'émulateurs définis manuellement par l'utilisateur.
     /// </summary>
     public Dictionary<string, string> EmplacementsEmulateursManuels { get; set; } = [];
+
+    /// <summary>
+    /// Derniers emplacements d'émulateurs détectés automatiquement par Compagnon.
+    /// </summary>
+    public Dictionary<string, string> EmplacementsEmulateursDetectes { get; set; } = [];
 }

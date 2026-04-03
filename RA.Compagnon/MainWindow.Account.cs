@@ -484,7 +484,7 @@ public partial class MainWindow
 
     private async Task AfficherModaleAideAsync()
     {
-        await VerifierMiseAJourApplicationSiNecessaireAsync();
+        _ = VerifierMiseAJourApplicationSiNecessaireAsync();
 
         SystemControls.StackPanel contenu = new()
         {
@@ -836,7 +836,8 @@ public partial class MainWindow
         string titre,
         UIElement contenu,
         string? resume = null,
-        bool estOuvertParDefaut = false
+        bool estOuvertParDefaut = false,
+        Action? auPremierDeploiement = null
     )
     {
         SystemControls.StackPanel entete = new()
@@ -867,6 +868,19 @@ public partial class MainWindow
             );
         }
 
+        bool contenuInitialise = auPremierDeploiement is null;
+
+        void AssurerContenuInitialise()
+        {
+            if (contenuInitialise)
+            {
+                return;
+            }
+
+            auPremierDeploiement?.Invoke();
+            contenuInitialise = true;
+        }
+
         SystemControls.Expander expander = new()
         {
             Header = entete,
@@ -877,6 +891,12 @@ public partial class MainWindow
                 Child = contenu,
             },
         };
+        expander.Expanded += (_, _) => AssurerContenuInitialise();
+
+        if (estOuvertParDefaut)
+        {
+            AssurerContenuInitialise();
+        }
 
         return new SystemControls.Border
         {
@@ -911,16 +931,36 @@ public partial class MainWindow
                 TextWrapping = TextWrapping.Wrap,
             }
         );
+        pile.Children.Add(
+            new SystemControls.TextBox
+            {
+                Margin = new Thickness(0, 0, 0, 10),
+                Style = (Style)FindResource("StyleTexteCopiable"),
+                Text = ServiceSondeLocaleEmulateurs.ObtenirCheminJournal(),
+                TextWrapping = TextWrapping.Wrap,
+            }
+        );
 
         SystemControls.StackPanel contenu = new() { Margin = new Thickness(0, 2, 0, 0) };
+        bool contenuCharge = false;
 
-        foreach (
-            DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
-                EstEmulateurValidePourIndicatifLogs
-            )
-        )
+        void ChargerContenu()
         {
-            contenu.Children.Add(ConstruireCarteIndicatifLogsEmulateur(definition));
+            if (contenuCharge)
+            {
+                return;
+            }
+
+            foreach (
+                DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
+                    EstEmulateurValidePourIndicatifLogs
+                )
+            )
+            {
+                contenu.Children.Add(ConstruireCarteIndicatifLogsEmulateur(definition));
+            }
+
+            contenuCharge = true;
         }
 
         pile.Children.Add(contenu);
@@ -929,7 +969,8 @@ public partial class MainWindow
             "Logs des émulateurs",
             pile,
             "Chemins surveillés, emplacements détectés et sources locales utilisées.",
-            false
+            false,
+            ChargerContenu
         );
     }
 
@@ -999,12 +1040,18 @@ public partial class MainWindow
                 ServiceSourcesLocalesEmulateurs.ObtenirEmplacementEmulateurManuel(
                     definition.NomEmulateur
                 );
+            string emplacementDetecteMemorise =
+                ServiceSourcesLocalesEmulateurs.ObtenirEmplacementEmulateurDetecte(
+                    definition.NomEmulateur
+                );
             string emplacementDetecte = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
                 definition.NomEmulateur
             );
 
             texteStatutEmplacement.Text =
                 !string.IsNullOrWhiteSpace(emplacementManuel) ? "Emplacement manuel défini"
+                : !string.IsNullOrWhiteSpace(emplacementDetecteMemorise)
+                    ? "Emplacement détecté et mémorisé"
                 : string.IsNullOrWhiteSpace(emplacementDetecte) ? "Emplacement non trouvé sur ce PC"
                 : "Emplacement détecté sur ce PC";
 
@@ -1014,6 +1061,8 @@ public partial class MainWindow
 
             texteAideEmplacementManuel.Text = !string.IsNullOrWhiteSpace(emplacementManuel)
                 ? "Ce chemin manuel est prioritaire si Compagnon hésite entre plusieurs signatures d'émulateur."
+                : !string.IsNullOrWhiteSpace(emplacementDetecteMemorise)
+                    ? "Compagnon a mémorisé cet emplacement après avoir vu l'émulateur ouvert sur ce PC."
                 : "Si un exécutable est renommé ou ambigu, tu peux choisir manuellement le bon fichier .exe ici.";
 
             boutonChoisirEmplacement.Content = !string.IsNullOrWhiteSpace(emplacementManuel)
@@ -1087,6 +1136,18 @@ public partial class MainWindow
             await RetirerEmplacementEmulateurManuelAsync(definition);
             RafraichirBlocEmplacement();
         };
+
+        DispatcherTimer minuteurRafraichissementEmplacement = new()
+        {
+            Interval = TimeSpan.FromSeconds(1),
+        };
+        minuteurRafraichissementEmplacement.Tick += (_, _) => RafraichirBlocEmplacement();
+        pile.Loaded += (_, _) =>
+        {
+            RafraichirBlocEmplacement();
+            minuteurRafraichissementEmplacement.Start();
+        };
+        pile.Unloaded += (_, _) => minuteurRafraichissementEmplacement.Stop();
 
         RafraichirBlocEmplacement();
         return ConstruireSectionAideRabattable(

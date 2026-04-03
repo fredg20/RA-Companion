@@ -912,14 +912,15 @@
                           />
                           <Grid Margin="{StaticResource MargeBlocStandard}">
                             <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock
                               x:Name="TexteEtatJeuDansProgression"
                               Grid.Column="0"
+                              Margin="0,0,12,0"
                               VerticalAlignment="Center"
                               HorizontalAlignment="Left"
                               Opacity="0.72"
@@ -930,8 +931,9 @@
                               x:Name="TextePourcentageJeuEnCours"
                               Grid.Column="1"
                               Style="{StaticResource StyleTexteCopiable}"
-                              HorizontalAlignment="Center"
-                              HorizontalContentAlignment="Center"
+                              Margin="0,0,12,0"
+                              HorizontalAlignment="Left"
+                              HorizontalContentAlignment="Left"
                               Opacity="0.72"
                               Text="0 % complété"
                             />
@@ -939,8 +941,9 @@
                               x:Name="TexteDetailsJeuEnCours"
                               Grid.Column="2"
                               Style="{StaticResource StyleTexteCopiable}"
-                              HorizontalAlignment="Center"
-                              HorizontalContentAlignment="Center"
+                              Margin="0,0,12,0"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Left"
                               Opacity="0.72"
                               TextWrapping="Wrap"
                               Text=""

@@ -264,6 +264,14 @@ public partial class MainWindow
             bool emulateurValide =
                 etat.EmulateurDetecte
                 && ServiceCatalogueEmulateursLocaux.EstEmulateurValide(etat.NomEmulateur);
+            bool emulateurValideBrut =
+                etatBrut.EmulateurDetecte
+                && ServiceCatalogueEmulateursLocaux.EstEmulateurValide(etatBrut.NomEmulateur);
+
+            if (emulateurValideBrut)
+            {
+                await MemoriserEmplacementEmulateurDetecteAsync(etatBrut);
+            }
 
             _serviceSurveillanceSuccesLocaux.MettreAJourCible(emulateurValide ? etat : null);
             MettreAJourNoticeCompteEntete();
@@ -607,6 +615,62 @@ public partial class MainWindow
         }
 
         return [.. identifiants.Distinct()];
+    }
+
+    private async Task MemoriserEmplacementEmulateurDetecteAsync(EtatSondeLocaleEmulateur etat)
+    {
+        if (
+            !etat.EmulateurDetecte
+            || string.IsNullOrWhiteSpace(etat.NomEmulateur)
+            || string.IsNullOrWhiteSpace(etat.CheminExecutable)
+        )
+        {
+            ServiceSondeLocaleEmulateurs.JournaliserEvenement(
+                "memoire_emplacement_ignoree",
+                $"raison=chemin_absent_ou_detection_incomplete;emulateur={etat.NomEmulateur};processus={etat.NomProcessus};chemin={etat.CheminExecutable}"
+            );
+            return;
+        }
+
+        _configurationConnexion.EmplacementsEmulateursDetectes ??= [];
+
+        if (
+            !ServiceSourcesLocalesEmulateurs.MemoriserEmplacementEmulateurDetecte(
+                etat.NomEmulateur,
+                etat.CheminExecutable
+            )
+        )
+        {
+            ServiceSondeLocaleEmulateurs.JournaliserEvenement(
+                "memoire_emplacement_ignoree",
+                $"raison=chemin_non_retenu;emulateur={etat.NomEmulateur};processus={etat.NomProcessus};chemin={etat.CheminExecutable}"
+            );
+            return;
+        }
+
+        _configurationConnexion.EmplacementsEmulateursDetectes[etat.NomEmulateur] =
+            etat.CheminExecutable;
+        ServiceSondeLocaleEmulateurs.JournaliserEvenement(
+            "memoire_emplacement_enregistree",
+            $"emulateur={etat.NomEmulateur};processus={etat.NomProcessus};chemin={etat.CheminExecutable}"
+        );
+
+        try
+        {
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+            ServiceSondeLocaleEmulateurs.JournaliserEvenement(
+                "memoire_emplacement_persistee",
+                $"emulateur={etat.NomEmulateur};chemin={etat.CheminExecutable}"
+            );
+        }
+        catch
+        {
+            ServiceSondeLocaleEmulateurs.JournaliserEvenement(
+                "memoire_emplacement_echec_persistance",
+                $"emulateur={etat.NomEmulateur};chemin={etat.CheminExecutable}"
+            );
+            // La détection locale ne doit pas casser l'application si la persistance échoue ponctuellement.
+        }
     }
 
     private static string[] ObtenirAliasConsolesDepuisEmulateur(string nomEmulateur)

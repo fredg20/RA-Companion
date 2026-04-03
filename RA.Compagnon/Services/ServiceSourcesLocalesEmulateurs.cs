@@ -8,7 +8,9 @@ namespace RA.Compagnon.Services;
 public static class ServiceSourcesLocalesEmulateurs
 {
     private static readonly Lock VerrouEmplacementsEmulateursManuels = new();
+    private static readonly Lock VerrouEmplacementsEmulateursDetectes = new();
     private static Dictionary<string, string> _emplacementsEmulateursManuels = [];
+    private static Dictionary<string, string> _emplacementsEmulateursDetectes = [];
 
     public static void ConfigurerEmplacementsEmulateursManuels(
         IReadOnlyDictionary<string, string>? emplacements
@@ -19,6 +21,26 @@ public static class ServiceSourcesLocalesEmulateurs
             _emplacementsEmulateursManuels = emplacements?
                 .Where(entree =>
                     !string.IsNullOrWhiteSpace(entree.Key) && !string.IsNullOrWhiteSpace(entree.Value)
+                )
+                .ToDictionary(
+                    entree => entree.Key.Trim(),
+                    entree => entree.Value.Trim(),
+                    StringComparer.OrdinalIgnoreCase
+                ) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    public static void ConfigurerEmplacementsEmulateursDetectes(
+        IReadOnlyDictionary<string, string>? emplacements
+    )
+    {
+        lock (VerrouEmplacementsEmulateursDetectes)
+        {
+            _emplacementsEmulateursDetectes = emplacements?
+                .Where(entree =>
+                    !string.IsNullOrWhiteSpace(entree.Key)
+                    && !string.IsNullOrWhiteSpace(entree.Value)
+                    && CheminExecutableCorrespondEmulateur(entree.Key, entree.Value)
                 )
                 .ToDictionary(
                     entree => entree.Key.Trim(),
@@ -40,6 +62,73 @@ public static class ServiceSourcesLocalesEmulateurs
             return _emplacementsEmulateursManuels.TryGetValue(nomEmulateur.Trim(), out string? chemin)
                 ? chemin
                 : string.Empty;
+        }
+    }
+
+    public static string ObtenirEmplacementEmulateurDetecte(string nomEmulateur)
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
+            return string.Empty;
+        }
+
+        lock (VerrouEmplacementsEmulateursDetectes)
+        {
+            return _emplacementsEmulateursDetectes.TryGetValue(
+                nomEmulateur.Trim(),
+                out string? chemin
+            )
+                ? chemin
+                : string.Empty;
+        }
+    }
+
+    public static bool MemoriserEmplacementEmulateurDetecte(
+        string nomEmulateur,
+        string cheminExecutable
+    )
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(cheminExecutable))
+        {
+            return false;
+        }
+
+        string cheminNormalise;
+
+        try
+        {
+            cheminNormalise = Path.GetFullPath(cheminExecutable.Trim());
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (!File.Exists(cheminNormalise) && !Directory.Exists(cheminNormalise))
+        {
+            return false;
+        }
+
+        if (!CheminExecutableCorrespondEmulateur(nomEmulateur, cheminNormalise))
+        {
+            return false;
+        }
+
+        lock (VerrouEmplacementsEmulateursDetectes)
+        {
+            if (
+                _emplacementsEmulateursDetectes.TryGetValue(
+                    nomEmulateur.Trim(),
+                    out string? cheminExistant
+                )
+                && string.Equals(cheminExistant, cheminNormalise, StringComparison.OrdinalIgnoreCase)
+            )
+            {
+                return false;
+            }
+
+            _emplacementsEmulateursDetectes[nomEmulateur.Trim()] = cheminNormalise;
+            return true;
         }
     }
 
@@ -109,6 +198,13 @@ public static class ServiceSourcesLocalesEmulateurs
             return emplacementManuel;
         }
 
+        string emplacementDetecteMemoire = ObtenirEmplacementEmulateurDetecte(nomEmulateur);
+
+        if (!string.IsNullOrWhiteSpace(emplacementDetecteMemoire))
+        {
+            return emplacementDetecteMemoire;
+        }
+
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
             nomEmulateur
         );
@@ -150,6 +246,52 @@ public static class ServiceSourcesLocalesEmulateurs
             ),
             _ => string.Empty,
         };
+    }
+
+    public static bool CheminExecutableCorrespondEmulateur(string nomEmulateur, string cheminExecutable)
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(cheminExecutable))
+        {
+            return false;
+        }
+
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            nomEmulateur
+        );
+
+        if (definition is null)
+        {
+            return false;
+        }
+
+        try
+        {
+            string cheminNormalise = Path.GetFullPath(cheminExecutable.Trim());
+
+            if (!File.Exists(cheminNormalise))
+            {
+                return false;
+            }
+
+            FileVersionInfo version = FileVersionInfo.GetVersionInfo(cheminNormalise);
+            string[] valeurs =
+            [
+                Path.GetFileNameWithoutExtension(cheminNormalise),
+                cheminNormalise,
+                version.ProductName ?? string.Empty,
+                version.FileDescription ?? string.Empty,
+                version.OriginalFilename ?? string.Empty,
+                version.InternalName ?? string.Empty,
+            ];
+
+            string[] jetons = ObtenirJetonsCorrespondanceEmulateur(definition);
+
+            return valeurs.Any(valeur => CorrespondValeurEmpreinteEmulateur(valeur, jetons));
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public static string TrouverCheminJournalSuccesLocal(string nomEmulateur)
@@ -201,21 +343,45 @@ public static class ServiceSourcesLocalesEmulateurs
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("RetroArch");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("RetroArch");
+        string emplacementProcessus = TrouverCheminExecutableRetroArchDepuisProcessus();
 
         string[] candidats =
         [
+            TrouverRepertoireLogsDepuisEmplacementRetroArch(emplacementManuel),
+            TrouverRepertoireLogsDepuisEmplacementRetroArch(emplacementDetecte),
+            TrouverRepertoireLogsDepuisEmplacementRetroArch(emplacementProcessus),
             Path.Combine(documents, "emulation", "RetroArch", "logs"),
             Path.Combine(documents, "RetroArch", "logs"),
             Path.Combine(appData, "RetroArch", "logs"),
         ];
 
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+        return candidats
+            .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+            .FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
     public static string TrouverDernierCheminJournalRetroArch()
     {
         try
         {
+            string[] candidatsDirects =
+            [
+                .. ConstruireCandidatsFichiersJournalRetroArch(ObtenirEmplacementEmulateurManuel("RetroArch")),
+                .. ConstruireCandidatsFichiersJournalRetroArch(ObtenirEmplacementEmulateurDetecte("RetroArch")),
+                .. ConstruireCandidatsFichiersJournalRetroArch(TrouverCheminExecutableRetroArchDepuisProcessus()),
+            ];
+
+            string cheminDirect = candidatsDirects.FirstOrDefault(fichier =>
+                !string.IsNullOrWhiteSpace(fichier) && File.Exists(fichier)
+            ) ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(cheminDirect))
+            {
+                return cheminDirect;
+            }
+
             string repertoireLogs = TrouverRepertoireLogsRetroArch();
 
             if (string.IsNullOrWhiteSpace(repertoireLogs) || !Directory.Exists(repertoireLogs))
@@ -580,11 +746,6 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             foreach (Process processus in Process.GetProcesses())
             {
-                if (!CorrespondNomProcessus(processus, definition.NomsProcessus))
-                {
-                    continue;
-                }
-
                 string cheminExecutable = LireCheminExecutableProcessus(processus);
 
                 if (string.IsNullOrWhiteSpace(cheminExecutable))
@@ -592,7 +753,13 @@ public static class ServiceSourcesLocalesEmulateurs
                     continue;
                 }
 
-                if (File.Exists(cheminExecutable))
+                bool correspondAuNom = CorrespondNomProcessus(processus, definition.NomsProcessus);
+                bool correspondAuBinaire = CheminExecutableCorrespondEmulateur(
+                    definition.NomEmulateur,
+                    cheminExecutable
+                );
+
+                if ((correspondAuNom || correspondAuBinaire) && File.Exists(cheminExecutable))
                 {
                     return cheminExecutable;
                 }
@@ -604,6 +771,71 @@ public static class ServiceSourcesLocalesEmulateurs
         }
 
         return string.Empty;
+    }
+
+    private static string TrouverCheminExecutableRetroArchDepuisProcessus()
+    {
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            "RetroArch"
+        );
+
+        return definition is null ? string.Empty : TrouverEmplacementEmulateurDepuisProcessus(definition);
+    }
+
+    private static string TrouverRepertoireLogsDepuisEmplacementRetroArch(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            string repertoireBase = File.Exists(emplacement)
+                ? Path.GetDirectoryName(emplacement) ?? string.Empty
+                : emplacement;
+
+            if (string.IsNullOrWhiteSpace(repertoireBase))
+            {
+                return string.Empty;
+            }
+
+            string repertoireLogs = Path.Combine(repertoireBase, "logs");
+            return Directory.Exists(repertoireLogs) ? repertoireLogs : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static IEnumerable<string> ConstruireCandidatsFichiersJournalRetroArch(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            yield break;
+        }
+
+        string repertoireBase;
+
+        try
+        {
+            repertoireBase = File.Exists(emplacement)
+                ? Path.GetDirectoryName(emplacement) ?? string.Empty
+                : emplacement;
+        }
+        catch
+        {
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(repertoireBase))
+        {
+            yield break;
+        }
+
+        yield return Path.Combine(repertoireBase, "logs", "retroarch.log");
+        yield return Path.Combine(repertoireBase, "retroarch.log");
     }
 
     private static bool CorrespondNomProcessus(Process processus, IReadOnlyList<string> nomsProcessus)
@@ -626,6 +858,70 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             return string.Empty;
         }
+    }
+
+    private static bool CorrespondValeurEmpreinteEmulateur(
+        string valeur,
+        IReadOnlyList<string> jetons
+    )
+    {
+        string valeurNormalisee = NormaliserEmpreinteExecutable(valeur);
+
+        if (string.IsNullOrWhiteSpace(valeurNormalisee))
+        {
+            return false;
+        }
+
+        return jetons.Any(jeton =>
+        {
+            string jetonNormalise = NormaliserEmpreinteExecutable(jeton);
+            return !string.IsNullOrWhiteSpace(jetonNormalise)
+                && valeurNormalisee.Contains(jetonNormalise, StringComparison.Ordinal);
+        });
+    }
+
+    private static string[] ObtenirJetonsCorrespondanceEmulateur(
+        DefinitionEmulateurLocal definition
+    )
+    {
+        List<string> jetons = [definition.NomEmulateur, .. definition.NomsProcessus];
+
+        if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
+        {
+            jetons.Add("VisualBoyAdvance");
+            jetons.Add("VisualBoyAdvance-M");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RASnes9x", StringComparison.Ordinal))
+        {
+            jetons.Add("Snes9x");
+        }
+        else if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
+        {
+            jetons.Add("Project64");
+            jetons.Add("Luna Project64");
+        }
+
+        return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];
+    }
+
+    private static string NormaliserEmpreinteExecutable(string valeur)
+    {
+        if (string.IsNullOrWhiteSpace(valeur))
+        {
+            return string.Empty;
+        }
+
+        StringBuilder builder = new(valeur.Length);
+
+        foreach (char caractere in valeur)
+        {
+            if (char.IsLetterOrDigit(caractere))
+            {
+                builder.Append(char.ToLowerInvariant(caractere));
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static string TrouverParentSiPossible(string chemin)

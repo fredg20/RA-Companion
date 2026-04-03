@@ -385,7 +385,9 @@ public sealed class ServiceConfigurationLocale
     {
         bool modifie = false;
         configuration.EmplacementsEmulateursManuels ??= [];
+        configuration.EmplacementsEmulateursDetectes ??= [];
         List<string> clesInvalides = [];
+        List<string> clesDetecteesInvalides = [];
 
         foreach ((string cle, string valeur) in configuration.EmplacementsEmulateursManuels)
         {
@@ -398,6 +400,24 @@ public sealed class ServiceConfigurationLocale
         foreach (string cleInvalide in clesInvalides)
         {
             configuration.EmplacementsEmulateursManuels.Remove(cleInvalide);
+            modifie = true;
+        }
+
+        foreach ((string cle, string valeur) in configuration.EmplacementsEmulateursDetectes)
+        {
+            if (
+                string.IsNullOrWhiteSpace(cle)
+                || string.IsNullOrWhiteSpace(valeur)
+                || !ServiceSourcesLocalesEmulateurs.CheminExecutableCorrespondEmulateur(cle, valeur)
+            )
+            {
+                clesDetecteesInvalides.Add(cle);
+            }
+        }
+
+        foreach (string cleInvalide in clesDetecteesInvalides)
+        {
+            configuration.EmplacementsEmulateursDetectes.Remove(cleInvalide);
             modifie = true;
         }
 

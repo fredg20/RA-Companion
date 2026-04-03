@@ -16,6 +16,13 @@ public partial class MainWindow
     /// </summary>
     private void ReinitialiserMetaConsoleJeuEnCours()
     {
+        if (DoitVerrouillerAffichageSurDernierJeuActifRecemment())
+        {
+            JournaliserDiagnosticAffichageJeu("meta_reinitialisation_ignoree_actif_recemment");
+            return;
+        }
+
+        _identifiantJeuMetaConsoleAffichee = 0;
         ImageConsoleJeuEnCours.Source = null;
         ImageConsoleJeuEnCours.Visibility = Visibility.Collapsed;
         TexteConsoleJeuEnCours.Text = string.Empty;
@@ -37,6 +44,26 @@ public partial class MainWindow
         EtiquetteDateSortieJeuEnCours.Visibility = Visibility.Collapsed;
         EtiquetteTempsJeuEnCours.Visibility = Visibility.Collapsed;
         GrilleInformationsJeuEnCours.Visibility = Visibility.Collapsed;
+        JournaliserDiagnosticAffichageJeu("meta_reinitialisee");
+    }
+
+    private bool PreparerAffichageMetaConsoleJeuEnCours(GameInfoAndUserProgressV2 jeu)
+    {
+        bool reinitialisationNecessaire = _identifiantJeuMetaConsoleAffichee != jeu.Id;
+
+        if (reinitialisationNecessaire)
+        {
+            ReinitialiserMetaConsoleJeuEnCours();
+        }
+
+        _identifiantJeuMetaConsoleAffichee = jeu.Id;
+        DefinirTitreJeuEnCours(jeu.Title);
+        JournaliserDiagnosticAffichageJeu(
+            "meta_preparee",
+            $"jeu={jeu.Id};reinit={(reinitialisationNecessaire ? "oui" : "non")}"
+        );
+
+        return reinitialisationNecessaire;
     }
 
     /// <summary>
@@ -44,10 +71,9 @@ public partial class MainWindow
     /// </summary>
     private async Task MettreAJourMetaConsoleJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
-        ReinitialiserMetaConsoleJeuEnCours();
+        bool reinitialisationNecessaire = PreparerAffichageMetaConsoleJeuEnCours(jeu);
 
         string dateSortieComplete = FormaterDateSortieJeu(jeu.Released);
-        DefinirTitreJeuEnCours(jeu.Title);
 
         if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
         {
@@ -117,6 +143,10 @@ public partial class MainWindow
         }
 
         MettreAJourVisibiliteInformationsJeuEnCours();
+        JournaliserDiagnosticAffichageJeu(
+            "meta_mise_a_jour",
+            $"jeu={jeu.Id};reinit={reinitialisationNecessaire};console={TexteConsoleJeuEnCours.Text};genre={TexteTypeJeuEnCours.Text};credits={TexteDeveloppeurJeuEnCours.Text};sortie={TexteDateSortieJeuEnCours.Text};temps={TexteTempsJeuEnCours.Text}"
+        );
     }
 
     /// <summary>
@@ -124,10 +154,9 @@ public partial class MainWindow
     /// </summary>
     private void AppliquerMetaConsoleJeuEnCoursInitiale(GameInfoAndUserProgressV2 jeu)
     {
-        ReinitialiserMetaConsoleJeuEnCours();
+        bool reinitialisationNecessaire = PreparerAffichageMetaConsoleJeuEnCours(jeu);
 
         string dateSortieComplete = FormaterDateSortieJeu(jeu.Released);
-        DefinirTitreJeuEnCours(jeu.Title);
 
         if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
         {
@@ -168,6 +197,10 @@ public partial class MainWindow
         }
 
         MettreAJourVisibiliteInformationsJeuEnCours();
+        JournaliserDiagnosticAffichageJeu(
+            "meta_initiale",
+            $"jeu={jeu.Id};reinit={reinitialisationNecessaire};console={TexteConsoleJeuEnCours.Text};genre={TexteTypeJeuEnCours.Text};credits={TexteDeveloppeurJeuEnCours.Text};sortie={TexteDateSortieJeuEnCours.Text};temps={TexteTempsJeuEnCours.Text}"
+        );
     }
 
     /// <summary>
@@ -257,6 +290,10 @@ public partial class MainWindow
         TexteDetailsJeuEnCours.Visibility = string.IsNullOrWhiteSpace(details)
             ? Visibility.Collapsed
             : Visibility.Visible;
+        JournaliserDiagnosticAffichageJeu(
+            "details_jeu",
+            $"visible={TexteDetailsJeuEnCours.Visibility};details={details}"
+        );
     }
 
     /// <summary>
@@ -613,11 +650,16 @@ public partial class MainWindow
             || TexteTypeJeuEnCours.Visibility == Visibility.Visible
             || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
             || TexteDateSortieJeuEnCours.Visibility == Visibility.Visible
-            || TexteTempsJeuEnCours.Visibility == Visibility.Visible;
+            || TexteTempsJeuEnCours.Visibility == Visibility.Visible
+            || TexteDetailsJeuEnCours.Visibility == Visibility.Visible;
 
         GrilleInformationsJeuEnCours.Visibility = auMoinsUneLigneVisible
             ? Visibility.Visible
             : Visibility.Collapsed;
+        JournaliserDiagnosticAffichageJeu(
+            "visibilite_meta",
+            $"grille={GrilleInformationsJeuEnCours.Visibility};console={ZoneConsoleJeuEnCours.Visibility};genre={TexteTypeJeuEnCours.Visibility};credits={TexteDeveloppeurJeuEnCours.Visibility};sortie={TexteDateSortieJeuEnCours.Visibility};temps={TexteTempsJeuEnCours.Visibility};details={TexteDetailsJeuEnCours.Visibility}"
+        );
     }
 
     /// <summary>

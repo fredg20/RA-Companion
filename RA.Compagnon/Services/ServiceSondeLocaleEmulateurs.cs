@@ -51,6 +51,19 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalSondeLocale);
     }
 
+    public static string ObtenirCheminJournal() => CheminJournalSondeLocale;
+
+    public static void JournaliserEvenement(string evenement, string details)
+    {
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalSondeLocale,
+            string.Create(
+                CultureInfo.InvariantCulture,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={NettoyerPourJournal(evenement)};details={NettoyerPourJournal(details)}{Environment.NewLine}"
+            )
+        );
+    }
+
     public EtatSondeLocaleEmulateur Sonder(bool journaliser = true)
     {
         try
@@ -125,8 +138,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return null;
         }
 
+        bool correspondAuNomProcessus = CorrespondNomProcessus(processusCible, definition);
+        bool correspondAuxMetadonneesExecutable = CorrespondMetadonneesExecutable(
+            processusCible,
+            definition
+        );
         IReadOnlyList<string> titresFenetres = LireTitresFenetresVisibles(processusCible);
         string titreFenetre = ChoisirTitreFenetre(definition, processusCible, titresFenetres);
+        string cheminExecutable =
+            correspondAuNomProcessus || correspondAuxMetadonneesExecutable
+                ? LireCheminExecutableProcessus(processusCible)
+                : string.Empty;
         string titreJeuProbable = ExtraireTitreJeuPourDefinition(
             definition,
             processusCible,
@@ -387,6 +409,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             EmulateurDetecte = true,
             NomEmulateur = definition.NomEmulateur,
             NomProcessus = processusCible.ProcessName,
+            CheminExecutable = cheminExecutable,
             TitreFenetre = titreFenetre,
             TitreJeuProbable = titreJeuProbable,
             IdentifiantJeuProbable = identifiantJeuProbable,
@@ -540,7 +563,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
             string[] valeurs =
             [
-                definition.NomEmulateur,
                 cheminExecutable,
                 version?.ProductName ?? string.Empty,
                 version?.FileDescription ?? string.Empty,
@@ -576,6 +598,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return !string.IsNullOrWhiteSpace(jetonNormalise)
                 && valeurNormalisee.Contains(jetonNormalise, StringComparison.Ordinal);
         });
+    }
+
+    private static string LireCheminExecutableProcessus(Process processus)
+    {
+        try
+        {
+            return processus.MainModule?.FileName?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static string[] ObtenirJetonsCorrespondanceEmulateur(
@@ -1141,7 +1175,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             CheminJournalSondeLocale,
             string.Create(
                 CultureInfo.InvariantCulture,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};gameId={etat.IdentifiantJeuProbable.ToString(CultureInfo.InvariantCulture)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] detecte={etat.EmulateurDetecte};emulateur={NettoyerPourJournal(etat.NomEmulateur)};processus={NettoyerPourJournal(etat.NomProcessus)};cheminExecutable={NettoyerPourJournal(etat.CheminExecutable)};titreFenetre={NettoyerPourJournal(etat.TitreFenetre)};titreJeu={NettoyerPourJournal(etat.TitreJeuProbable)};gameId={etat.IdentifiantJeuProbable.ToString(CultureInfo.InvariantCulture)};diagnostic={NettoyerPourJournal(etat.InformationsDiagnostic)};signature={NettoyerPourJournal(etat.Signature)}{Environment.NewLine}"
             )
         );
     }
@@ -1792,6 +1826,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
             if (string.IsNullOrWhiteSpace(cheminJournal))
             {
+                JournaliserEvenement("retroarch_log_absent", "chemin=");
                 return null;
             }
 
@@ -1800,8 +1835,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 > TimeSpan.FromMinutes(15)
             )
             {
+                JournaliserEvenement(
+                    "retroarch_log_trop_ancien",
+                    $"chemin={cheminJournal}"
+                );
                 return LireRenseignementJeuRetroArchDepuisCache();
             }
+
+            int? identifiantJeuSessionObserve = null;
+            string titreJeuObserve = string.Empty;
 
             foreach (
                 string ligne in ServiceSourcesLocalesEmulateurs
@@ -1823,9 +1865,28 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 )
                 {
                     string titreJeu = correspondanceIdentifie.Groups[2].Value.Trim();
+                    JournaliserEvenement(
+                        "retroarch_log_identified",
+                        $"chemin={cheminJournal};gameId={identifiantJeuIdentifie.ToString(CultureInfo.InvariantCulture)};titre={titreJeu}"
+                    );
                     return MemoriserRenseignementRetroArch(
                         new RenseignementJeuRA(identifiantJeuIdentifie, titreJeu)
                     );
+                }
+
+                Match correspondanceCharge = RetroArchGameChargeRegex().Match(ligne);
+
+                if (
+                    correspondanceCharge.Success
+                    && int.TryParse(
+                        correspondanceCharge.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                )
+                {
+                    identifiantJeuSessionObserve ??= identifiantJeuCharge;
                 }
 
                 Match correspondanceSession = RetroArchSessionJeuRegex().Match(ligne);
@@ -1840,11 +1901,39 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     )
                 )
                 {
-                    return MemoriserRenseignementRetroArch(
-                        new RenseignementJeuRA(identifiantJeuSession, string.Empty)
-                    );
+                    identifiantJeuSessionObserve ??= identifiantJeuSession;
+                }
+
+                if (string.IsNullOrWhiteSpace(titreJeuObserve))
+                {
+                    Match correspondanceContenu = RetroArchContenuChargeRegex().Match(ligne);
+
+                    if (correspondanceContenu.Success)
+                    {
+                        string cheminJeu = correspondanceContenu.Groups[1].Value.Trim();
+
+                        if (!string.IsNullOrWhiteSpace(cheminJeu))
+                        {
+                            titreJeuObserve = NettoyerNomFichierJeu(
+                                Path.GetFileNameWithoutExtension(cheminJeu)
+                            );
+                        }
+                    }
                 }
             }
+
+            if (identifiantJeuSessionObserve.HasValue)
+            {
+                JournaliserEvenement(
+                    "retroarch_log_fallback",
+                    $"chemin={cheminJournal};gameId={identifiantJeuSessionObserve.Value.ToString(CultureInfo.InvariantCulture)};titre={titreJeuObserve}"
+                );
+                return MemoriserRenseignementRetroArch(
+                    new RenseignementJeuRA(identifiantJeuSessionObserve.Value, titreJeuObserve)
+                );
+            }
+
+            JournaliserEvenement("retroarch_log_aucune_correspondance", $"chemin={cheminJournal}");
         }
         catch
         {
@@ -3146,16 +3235,28 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static partial Regex SuffixeCodeJeuDolphinRegex();
 
     [GeneratedRegex(
-        @"\[RCHEEVOS\]\s+Identified game:\s*(\d+)\s+""([^""]+)""",
+        @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex RetroArchGameIdentifieRegex();
 
     [GeneratedRegex(
-        @"\[RCHEEVOS\]\s+Starting session for game\s+(\d+)",
+        @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Starting session for game\s+(\d+)",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex RetroArchSessionJeuRegex();
+
+    [GeneratedRegex(
+        @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Game\s+(\d+)\s+loaded",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RetroArchGameChargeRegex();
+
+    [GeneratedRegex(
+        @"(?:\[[^\]]+\]\s+)*\[(?:Core|Content)\]\s+(?:Using content|Chargement du fichier de contenu):\s+""([^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RetroArchContenuChargeRegex();
 
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]
