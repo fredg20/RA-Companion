@@ -53,6 +53,7 @@ public partial class MainWindow
                 ? []
                 : [new VisuelJeuEnCours("Jaquette", jeuSauvegarde.ImageBoxArt)]
         );
+        MettreAJourActionRejouerJeuEnCours(jeuSauvegarde);
 
         GameInfoAndUserProgressV2 jeuLocalReconstruit = ConstruireJeuUtilisateurDepuisEtatLocal(
             jeuSauvegarde
@@ -185,6 +186,12 @@ public partial class MainWindow
         string detailsEtatJeu
     )
     {
+        EtatJeuAfficheLocal? precedent = _configurationConnexion.DernierJeuAffiche;
+        bool contexteRelanceCourantValide =
+            _identifiantJeuRejouableCourant == jeu.Id
+            && !string.IsNullOrWhiteSpace(_nomEmulateurRejouableCourant)
+            && !string.IsNullOrWhiteSpace(_cheminEmulateurRejouableCourant)
+            && !string.IsNullOrWhiteSpace(_cheminJeuRejouableCourant);
         _configurationConnexion.DernierJeuAffiche = new EtatJeuAfficheLocal
         {
             IdentifiantJeu = jeu.Id,
@@ -205,7 +212,20 @@ public partial class MainWindow
             DateSortie = jeu.Released,
             Genre = jeu.Genre,
             Developpeur = jeu.Developer,
+            NomEmulateurRelance =
+                contexteRelanceCourantValide ? _nomEmulateurRejouableCourant
+                : precedent?.Id == jeu.Id ? precedent.NomEmulateurRelance
+                : string.Empty,
+            CheminExecutableEmulateur =
+                contexteRelanceCourantValide ? _cheminEmulateurRejouableCourant
+                : precedent?.Id == jeu.Id ? precedent.CheminExecutableEmulateur
+                : string.Empty,
+            CheminJeuLocal =
+                contexteRelanceCourantValide ? _cheminJeuRejouableCourant
+                : precedent?.Id == jeu.Id ? precedent.CheminJeuLocal
+                : string.Empty,
         };
+        MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
         GarantirCoherenceEtatPersistantJeu(jeu.Id);
         _dernierJeuAfficheModifie = true;
         return Task.CompletedTask;
@@ -365,7 +385,10 @@ public partial class MainWindow
             && precedent.ConsoleId == courant.ConsoleId
             && precedent.Released == courant.Released
             && precedent.Genre == courant.Genre
-            && precedent.Developer == courant.Developer;
+            && precedent.Developer == courant.Developer
+            && precedent.NomEmulateurRelance == courant.NomEmulateurRelance
+            && precedent.CheminExecutableEmulateur == courant.CheminExecutableEmulateur
+            && precedent.CheminJeuLocal == courant.CheminJeuLocal;
     }
 
     private static GameInfoAndUserProgressV2 ConstruireJeuUtilisateurDepuisEtatLocal(

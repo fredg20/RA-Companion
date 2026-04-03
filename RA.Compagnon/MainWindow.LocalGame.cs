@@ -1,3 +1,4 @@
+using System.IO;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Etat;
@@ -82,7 +83,54 @@ public partial class MainWindow
             return;
         }
 
+        HydraterActionRejouerDepuisSourcesLocalesActifRecemment(jeuSauvegarde);
         AppliquerEtatJeuSauvegarde(jeuSauvegarde);
+    }
+
+    private void HydraterActionRejouerDepuisSourcesLocalesActifRecemment(
+        EtatJeuAfficheLocal jeuSauvegarde
+    )
+    {
+        if (
+            jeuSauvegarde.Id <= 0
+            || (
+                !string.IsNullOrWhiteSpace(jeuSauvegarde.NomEmulateurRelance)
+                && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminExecutableEmulateur)
+                && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
+                && File.Exists(jeuSauvegarde.CheminExecutableEmulateur)
+                && File.Exists(jeuSauvegarde.CheminJeuLocal)
+            )
+        )
+        {
+            return;
+        }
+
+        foreach (
+            DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
+                ServiceCatalogueEmulateursLocaux.EstEmulateurValide
+            )
+        )
+        {
+            if (
+                !ServiceSondeLocaleEmulateurs.EssayerObtenirContexteRejouerDepuisSources(
+                    definition.NomEmulateur,
+                    out int identifiantJeu,
+                    out _,
+                    out string cheminExecutable,
+                    out string cheminJeu
+                )
+                || identifiantJeu != jeuSauvegarde.Id
+            )
+            {
+                continue;
+            }
+
+            jeuSauvegarde.NomEmulateurRelance = definition.NomEmulateur;
+            jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
+            jeuSauvegarde.CheminJeuLocal = cheminJeu;
+            _dernierJeuAfficheModifie = true;
+            break;
+        }
     }
 
     private void AppliquerTitreJeuLocalProvisoire(EtatSondeLocaleEmulateur etat)

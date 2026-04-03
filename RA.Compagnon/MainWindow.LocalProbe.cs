@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
@@ -114,6 +115,7 @@ public partial class MainWindow
         _titreJeuLocalResolutEnAttente = string.Empty;
         _identifiantJeuLocalActif = 0;
         _titreJeuLocalActif = string.Empty;
+        ReinitialiserContexteRejouerJeu();
         _serviceOrchestrateurEtatJeu.Reinitialiser();
         _consolesResolutionLocale = [];
         _serviceSurveillanceSuccesLocaux.ArreterSurveillance();
@@ -301,6 +303,7 @@ public partial class MainWindow
                 _titreJeuLocalActif = string.Empty;
                 _identifiantJeuLocalResolutEnAttente = 0;
                 _titreJeuLocalResolutEnAttente = string.Empty;
+                ReinitialiserContexteRejouerJeu();
                 MettreAJourNoticeCompteEntete();
                 return;
             }
@@ -333,6 +336,7 @@ public partial class MainWindow
                     )
                 )
                 {
+                    ActualiserContexteRejouerJeu(etat, etat.IdentifiantJeuProbable);
                     _identifiantJeuLocalActif = etat.IdentifiantJeuProbable;
                     _titreJeuLocalActif = titreJeuRacache;
                     _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
@@ -394,6 +398,7 @@ public partial class MainWindow
                     )
                 )
                 {
+                    ActualiserContexteRejouerJeu(etat, jeuResolutImmediate.IdentifiantJeu);
                     _identifiantJeuLocalActif = jeuResolutImmediate.IdentifiantJeu;
                     _titreJeuLocalActif = jeuResolutImmediate.TitreRetroAchievements;
                     _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
@@ -442,6 +447,7 @@ public partial class MainWindow
                     return;
                 }
 
+                ActualiserContexteRejouerJeu(etat, jeuResolut.IdentifiantJeu);
                 _identifiantJeuLocalActif = jeuResolut.IdentifiantJeu;
                 _titreJeuLocalActif = jeuResolut.TitreRetroAchievements;
                 _serviceOrchestrateurEtatJeu.EnregistrerResolutionJeuLocalValide();
@@ -615,6 +621,64 @@ public partial class MainWindow
         }
 
         return [.. identifiants.Distinct()];
+    }
+
+    private void ReinitialiserContexteRejouerJeu()
+    {
+        _identifiantJeuRejouableCourant = 0;
+        _nomEmulateurRejouableCourant = string.Empty;
+        _cheminEmulateurRejouableCourant = string.Empty;
+        _cheminJeuRejouableCourant = string.Empty;
+    }
+
+    private void ActualiserContexteRejouerJeu(EtatSondeLocaleEmulateur etat, int identifiantJeu)
+    {
+        if (
+            identifiantJeu <= 0
+            || string.IsNullOrWhiteSpace(etat.NomEmulateur)
+            || string.IsNullOrWhiteSpace(etat.CheminExecutable)
+            || string.IsNullOrWhiteSpace(etat.CheminJeuProbable)
+            || !File.Exists(etat.CheminExecutable)
+            || !File.Exists(etat.CheminJeuProbable)
+        )
+        {
+            if (_identifiantJeuRejouableCourant != identifiantJeu)
+            {
+                ReinitialiserContexteRejouerJeu();
+            }
+
+            return;
+        }
+
+        _identifiantJeuRejouableCourant = identifiantJeu;
+        _nomEmulateurRejouableCourant = etat.NomEmulateur;
+        _cheminEmulateurRejouableCourant = etat.CheminExecutable;
+        _cheminJeuRejouableCourant = etat.CheminJeuProbable;
+
+        if (_configurationConnexion.DernierJeuAffiche?.Id == identifiantJeu)
+        {
+            bool modifie =
+                _configurationConnexion.DernierJeuAffiche.NomEmulateurRelance
+                    != _nomEmulateurRejouableCourant
+                || _configurationConnexion.DernierJeuAffiche.CheminExecutableEmulateur
+                    != _cheminEmulateurRejouableCourant
+                || _configurationConnexion.DernierJeuAffiche.CheminJeuLocal
+                    != _cheminJeuRejouableCourant;
+
+            _configurationConnexion.DernierJeuAffiche.NomEmulateurRelance =
+                _nomEmulateurRejouableCourant;
+            _configurationConnexion.DernierJeuAffiche.CheminExecutableEmulateur =
+                _cheminEmulateurRejouableCourant;
+            _configurationConnexion.DernierJeuAffiche.CheminJeuLocal =
+                _cheminJeuRejouableCourant;
+
+            if (modifie)
+            {
+                _dernierJeuAfficheModifie = true;
+            }
+
+            MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
+        }
     }
 
     private async Task MemoriserEmplacementEmulateurDetecteAsync(EtatSondeLocaleEmulateur etat)

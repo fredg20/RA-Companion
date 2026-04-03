@@ -53,6 +53,94 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     public static string ObtenirCheminJournal() => CheminJournalSondeLocale;
 
+    public static bool EssayerObtenirContexteRejouerDepuisSources(
+        string nomEmulateur,
+        out int identifiantJeu,
+        out string titreJeu,
+        out string cheminExecutable,
+        out string cheminJeu
+    )
+    {
+        identifiantJeu = 0;
+        titreJeu = string.Empty;
+        cheminExecutable = string.Empty;
+        cheminJeu = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
+            return false;
+        }
+
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            nomEmulateur
+        );
+
+        if (definition is null || !ServiceCatalogueEmulateursLocaux.EstEmulateurValide(definition))
+        {
+            return false;
+        }
+
+        cheminExecutable = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+            definition.NomEmulateur
+        );
+
+        if (string.IsNullOrWhiteSpace(cheminExecutable) || !File.Exists(cheminExecutable))
+        {
+            return false;
+        }
+
+        RenseignementJeuRA? renseignementJeu = definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                LireRenseignementJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                LireRenseignementJeuDuckStationDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
+                LireRenseignementJeuPCSX2DepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
+                LireRenseignementJeuPPSSPPDepuisLog(string.Empty),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                LireRenseignementJeuProject64DepuisRACache(),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                LireRenseignementJeuRALibretroDepuisRACache(),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                LireRenseignementJeuRANesDepuisRACache(),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                LireRenseignementJeuRAVBADepuisRACache(),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                LireRenseignementJeuRASnes9xDepuisRACache(),
+            _ => null,
+        };
+
+        cheminJeu = definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                LireCheminJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                LireCheminJeuDuckStationDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                LireCheminJeuProject64DepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                LireCheminJeuRALibretroDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                LireCheminJeuRANesDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                LireCheminJeuRAVBADepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                LireCheminJeuRASnes9xDepuisConfiguration(),
+            _ => string.Empty,
+        };
+
+        identifiantJeu = renseignementJeu?.IdentifiantJeu ?? 0;
+        titreJeu = renseignementJeu?.TitreJeu ?? string.Empty;
+
+        return identifiantJeu > 0
+            && !string.IsNullOrWhiteSpace(cheminJeu)
+            && File.Exists(cheminJeu);
+    }
+
     public static void JournaliserEvenement(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -154,6 +242,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             processusCible,
             titreFenetre
         );
+        string cheminJeuProbable = ExtraireCheminJeuPourDefinition(definition, processusCible);
         int identifiantJeuProbable = 0;
         string informationsDiagnostic = string.Empty;
 
@@ -402,7 +491,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         string signature =
-            $"{definition.NomEmulateur}|{processusCible.ProcessName}|{titreFenetre}|{titreJeuProbable}|{identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}|{informationsDiagnostic}";
+            $"{definition.NomEmulateur}|{processusCible.ProcessName}|{titreFenetre}|{titreJeuProbable}|{cheminJeuProbable}|{identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}|{informationsDiagnostic}";
 
         return new EtatSondeLocaleEmulateur
         {
@@ -412,10 +501,64 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             CheminExecutable = cheminExecutable,
             TitreFenetre = titreFenetre,
             TitreJeuProbable = titreJeuProbable,
+            CheminJeuProbable = cheminJeuProbable,
             IdentifiantJeuProbable = identifiantJeuProbable,
             InformationsDiagnostic = informationsDiagnostic,
             Signature = signature,
             HorodatageUtc = DateTimeOffset.UtcNow,
+        };
+    }
+
+    private static string ExtraireCheminJeuPourDefinition(
+        DefinitionEmulateurLocal definition,
+        Process processus
+    )
+    {
+        string cheminDepuisCommande = NormaliserCheminJeuProbable(
+            ExtraireCheminJeuDepuisLigneCommande(LireLigneCommandeProcessus(processus))
+        );
+
+        if (!string.IsNullOrWhiteSpace(cheminDepuisCommande))
+        {
+            string cheminExecutable = LireCheminExecutableProcessus(processus);
+
+            if (
+                !string.IsNullOrWhiteSpace(cheminExecutable)
+                && string.Equals(
+                    cheminDepuisCommande,
+                    cheminExecutable,
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                cheminDepuisCommande = string.Empty;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(cheminDepuisCommande))
+        {
+            return cheminDepuisCommande;
+        }
+
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                LireCheminJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                LireCheminJeuDuckStationDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                LireCheminJeuProject64DepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
+                LireCheminJeuRALibretroDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
+                LireCheminJeuRANesDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
+                LireCheminJeuRAVBADepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
+                LireCheminJeuRASnes9xDepuisConfiguration(),
+            _ => string.Empty,
         };
     }
 
@@ -927,6 +1070,252 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    private static string LireCheminJeuRALibretroDepuisConfiguration()
+    {
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRALibretro();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminConfiguration, Encoding.UTF8)
+            );
+
+            if (
+                document.RootElement.TryGetProperty("recent", out JsonElement recent)
+                && recent.ValueKind == JsonValueKind.Array
+                && recent.GetArrayLength() > 0
+                && recent[0].TryGetProperty("path", out JsonElement path)
+                && path.ValueKind == JsonValueKind.String
+            )
+            {
+                return NormaliserCheminJeuProbable(path.GetString()?.Trim() ?? string.Empty);
+            }
+        }
+        catch
+        {
+            // Le JSON local reste un fallback opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuProject64DepuisConfiguration()
+    {
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationProject64();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            {
+                const string prefixe = "Recent Rom 0=";
+
+                if (!ligne.StartsWith(prefixe, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    ligne[prefixe.Length..].Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le fichier local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuRANesDepuisConfiguration()
+    {
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRANes();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            {
+                if (ligne.StartsWith("ResumeROM ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string cheminNormalise = NormaliserCheminJeuProbable(
+                        ligne["ResumeROM ".Length..].Trim()
+                    );
+
+                    if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                    {
+                        return cheminNormalise;
+                    }
+                }
+
+                if (ligne.StartsWith("recent_files[0] ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string cheminNormalise = NormaliserCheminJeuProbable(
+                        ligne["recent_files[0] ".Length..].Trim()
+                    );
+
+                    if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                    {
+                        return cheminNormalise;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Le fichier local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuRASnes9xDepuisConfiguration()
+    {
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRASnes9x();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            {
+                const string prefixe = "Rom:RecentGame1";
+
+                if (!ligne.StartsWith(prefixe, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                int indexSeparateur = ligne.IndexOf('=');
+
+                if (indexSeparateur < 0 || indexSeparateur == ligne.Length - 1)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    ligne[(indexSeparateur + 1)..].Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le fichier local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuRAVBADepuisConfiguration()
+    {
+        string cheminConfiguration = ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRAVBA();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            {
+                if (!ligne.StartsWith("file1=", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    ligne["file1=".Length..].Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le fichier local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuPCSX2DepuisLog()
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalPCSX2();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return string.Empty;
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceIso = PCSX2IsoOuverteRegex().Match(ligne);
+
+                if (!correspondanceIso.Success)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    correspondanceIso.Groups[1].Value.Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le log local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
     private static string ExtraireTitreRALibretroDepuisFenetre(string titreFenetre)
     {
         string titre = titreFenetre.Trim();
@@ -1256,13 +1645,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         if (titres.Count > 0)
         {
             return titres
-                .Where(titre => PeutRetenirTitreFenetrePourEmulateur(definition, processus, titre))
-                .OrderByDescending(titre =>
-                    CalculerPrioriteTitreFenetre(definition, processus, titre, titrePrincipal)
-                )
-                .ThenByDescending(titre => titre.Length)
-                .ThenByDescending(titre => titre.Contains(" - ", StringComparison.Ordinal))
-                .FirstOrDefault()
+                    .Where(titre =>
+                        PeutRetenirTitreFenetrePourEmulateur(definition, processus, titre)
+                    )
+                    .OrderByDescending(titre =>
+                        CalculerPrioriteTitreFenetre(definition, processus, titre, titrePrincipal)
+                    )
+                    .ThenByDescending(titre => titre.Length)
+                    .ThenByDescending(titre => titre.Contains(" - ", StringComparison.Ordinal))
+                    .FirstOrDefault()
                 ?? string.Empty;
         }
 
@@ -1359,9 +1750,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         string titreFenetre
     )
     {
-        if (
-            titreFenetre.Contains(definition.NomEmulateur, StringComparison.OrdinalIgnoreCase)
-        )
+        if (titreFenetre.Contains(definition.NomEmulateur, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -1709,6 +2098,24 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    private static string NormaliserCheminJeuProbable(string cheminJeu)
+    {
+        if (string.IsNullOrWhiteSpace(cheminJeu))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            string cheminNormalise = Path.GetFullPath(cheminJeu.Trim());
+            return File.Exists(cheminNormalise) ? cheminNormalise : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
     private static RenseignementJeuRA? LireRenseignementJeuFlycastDepuisLog(
         Process processus,
         string titreJeuFenetre
@@ -1786,6 +2193,50 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
     }
 
+    private static string LireCheminJeuRetroArchDepuisLog()
+    {
+        try
+        {
+            string cheminJournal =
+                ServiceSourcesLocalesEmulateurs.TrouverDernierCheminJournalRetroArch();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return string.Empty;
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceContenu = RetroArchContenuChargeRegex().Match(ligne);
+
+                if (!correspondanceContenu.Success)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    correspondanceContenu.Groups[1].Value.Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le log local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
     private static RenseignementJeuRA? ConstruireRenseignementJeuFlycastDepuisCommande(
         Process processus,
         string titreJeuFenetre,
@@ -1835,10 +2286,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 > TimeSpan.FromMinutes(15)
             )
             {
-                JournaliserEvenement(
-                    "retroarch_log_trop_ancien",
-                    $"chemin={cheminJournal}"
-                );
+                JournaliserEvenement("retroarch_log_trop_ancien", $"chemin={cheminJournal}");
                 return LireRenseignementJeuRetroArchDepuisCache();
             }
 
@@ -2323,6 +2771,49 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         titre = TexteEntreParenthesesRegex().Replace(titre, " ");
         titre = titre.Replace("\u00AE", string.Empty, StringComparison.Ordinal);
         return EspacesMultiplesRegex().Replace(titre, " ").Trim();
+    }
+
+    private static string LireCheminJeuPPSSPPDepuisLog()
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalPPSSPP();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return string.Empty;
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceDemarrage = PPSSPPJeuDemarreRegex().Match(ligne);
+
+                if (!correspondanceDemarrage.Success)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    correspondanceDemarrage.Groups[1].Value.Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le log local reste un secours opportuniste.
+        }
+
+        return string.Empty;
     }
 
     private static RenseignementJeuRA? MemoriserRenseignementPPSSPP(
@@ -2987,6 +3478,111 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    private static string TrouverCheminJeuDuckStationDepuisMemcardRecente()
+    {
+        try
+        {
+            string repertoireDuckStation =
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireDuckStation();
+
+            if (string.IsNullOrWhiteSpace(repertoireDuckStation))
+            {
+                return string.Empty;
+            }
+
+            string repertoireMemcards = Path.Combine(repertoireDuckStation, "memcards");
+
+            if (!Directory.Exists(repertoireMemcards))
+            {
+                return string.Empty;
+            }
+
+            FileInfo? memcardRecente = new DirectoryInfo(repertoireMemcards)
+                .EnumerateFiles("*.mcd", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(fichier => fichier.LastWriteTimeUtc)
+                .FirstOrDefault();
+
+            if (memcardRecente is null)
+            {
+                return string.Empty;
+            }
+
+            if (DateTime.UtcNow - memcardRecente.LastWriteTimeUtc > TimeSpan.FromMinutes(15))
+            {
+                return string.Empty;
+            }
+
+            string nomBase = Path.GetFileNameWithoutExtension(memcardRecente.Name);
+            nomBase = SuffixeSlotCarteMemoireRegex().Replace(nomBase, string.Empty);
+
+            if (!SerialJeuPlayStationRegex().IsMatch(nomBase))
+            {
+                return string.Empty;
+            }
+
+            return NormaliserCheminJeuProbable(
+                ResoudreCheminJeuDuckStationDepuisSerial(repertoireDuckStation, nomBase)
+            );
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string LireCheminJeuDuckStationDepuisLog()
+    {
+        try
+        {
+            string cheminJournal =
+                ServiceSourcesLocalesEmulateurs.TrouverCheminJournalDuckStation();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return TrouverCheminJeuDuckStationDepuisMemcardRecente();
+            }
+
+            FileInfo fichierJournal = new(cheminJournal);
+
+            if (
+                fichierJournal.Length <= 0
+                || DateTime.UtcNow - fichierJournal.LastWriteTimeUtc > TimeSpan.FromMinutes(15)
+            )
+            {
+                return TrouverCheminJeuDuckStationDepuisMemcardRecente();
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceBootPath = DuckStationBootPathRegex().Match(ligne);
+
+                if (!correspondanceBootPath.Success)
+                {
+                    continue;
+                }
+
+                string cheminJeu = correspondanceBootPath.Groups[1].Value.Trim();
+                string cheminNormalise = NormaliserCheminJeuProbable(cheminJeu);
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le log DuckStation reste une aide locale facultative.
+        }
+
+        return TrouverCheminJeuDuckStationDepuisMemcardRecente();
+    }
+
     private static string ResoudreCheminJeuDuckStationDepuisSerial(
         string repertoireDuckStation,
         string serial
@@ -3165,6 +3761,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     )]
     private static partial Regex DuckStationGameLoadedRegex();
 
+    [GeneratedRegex(@"Boot Path:\s*(.+)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    private static partial Regex DuckStationBootPathRegex();
+
     [GeneratedRegex(
         @"Achievements:\s+Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
@@ -3176,6 +3775,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex PCSX2GameChargeRegex();
+
+    [GeneratedRegex(@"isoFile open ok:\s*(.+)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    private static partial Regex PCSX2IsoOuverteRegex();
 
     [GeneratedRegex(
         @"Load callback:\s*(\d+)\s*\(([^)]*)\)",

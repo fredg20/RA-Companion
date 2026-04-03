@@ -1,8 +1,11 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
@@ -12,15 +15,320 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
+    private static readonly string CheminJournalRejouer = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RA-Compagnon",
+        "journal-rejouer.log"
+    );
+
     private void ReinitialiserVueDetailleeJeuEnCours()
     {
         BoutonVueDetailleeJeuEnCours.Visibility = Visibility.Collapsed;
+        BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
     }
 
     private void MettreAJourActionVueDetailleeJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         BoutonVueDetailleeJeuEnCours.Visibility =
             jeu.Id > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void MettreAJourActionRejouerJeuEnCours(EtatJeuAfficheLocal? jeuSauvegarde)
+    {
+        if (DoitMasquerActionRejouerPendantJeu())
+        {
+            BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (
+            jeuSauvegarde is null
+            || jeuSauvegarde.Id <= 0
+            || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
+            || !File.Exists(jeuSauvegarde.CheminJeuLocal)
+        )
+        {
+            BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        string cheminExecutable = DeterminerCheminExecutableRelance(jeuSauvegarde);
+        BoutonRejouerJeuEnCours.Visibility = string.IsNullOrWhiteSpace(cheminExecutable)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    private bool DoitMasquerActionRejouerPendantJeu()
+    {
+        if (
+            TexteEtatCompteUtilisateur is not null
+            && TexteEtatCompteUtilisateur.Text.Contains(
+                "En jeu",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return true;
+        }
+
+        if (EtatLocalJeuEstActif() || EtatLocalEmulateurEstActifPourNotice())
+        {
+            return true;
+        }
+
+        EtatRichPresence etatRichPresence = ServiceSondeRichPresence.Sonder(
+            new DonneesCompteUtilisateur
+            {
+                Profil = _dernierProfilUtilisateurCharge,
+                Resume = _dernierResumeUtilisateurCharge,
+            },
+            journaliser: false
+        );
+
+        return string.Equals(
+            etatRichPresence.StatutAffiche,
+            "En jeu",
+            StringComparison.OrdinalIgnoreCase
+        );
+    }
+
+    private static string DeterminerCheminExecutableRelance(EtatJeuAfficheLocal jeuSauvegarde)
+    {
+        if (
+            !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminExecutableEmulateur)
+            && File.Exists(jeuSauvegarde.CheminExecutableEmulateur)
+            && ServiceSourcesLocalesEmulateurs.CheminExecutableCorrespondEmulateur(
+                jeuSauvegarde.NomEmulateurRelance,
+                jeuSauvegarde.CheminExecutableEmulateur
+            )
+        )
+        {
+            return jeuSauvegarde.CheminExecutableEmulateur;
+        }
+
+        if (string.IsNullOrWhiteSpace(jeuSauvegarde.NomEmulateurRelance))
+        {
+            return string.Empty;
+        }
+
+        string cheminDetecte = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+            jeuSauvegarde.NomEmulateurRelance
+        );
+
+        return !string.IsNullOrWhiteSpace(cheminDetecte) && File.Exists(cheminDetecte)
+            ? cheminDetecte
+            : string.Empty;
+    }
+
+    private static string ConstruireArgumentsRelance(
+        EtatJeuAfficheLocal jeuSauvegarde,
+        string cheminExecutable
+    )
+    {
+        if (
+            string.Equals(
+                jeuSauvegarde.NomEmulateurRelance,
+                "RetroArch",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            string cheminCore = TrouverCheminCoreRetroArch(cheminExecutable, jeuSauvegarde.CheminJeuLocal);
+
+            if (!string.IsNullOrWhiteSpace(cheminCore))
+            {
+                return $"-L \"{cheminCore}\" \"{jeuSauvegarde.CheminJeuLocal}\"";
+            }
+        }
+
+        return $"\"{jeuSauvegarde.CheminJeuLocal}\"";
+    }
+
+    private static string TrouverCheminCoreRetroArch(string cheminExecutable, string cheminJeu)
+    {
+        try
+        {
+            string? repertoireRetroArch = Path.GetDirectoryName(cheminExecutable);
+
+            if (string.IsNullOrWhiteSpace(repertoireRetroArch))
+            {
+                return string.Empty;
+            }
+
+            string cheminHistorique = Path.Combine(
+                repertoireRetroArch,
+                "playlists",
+                "builtin",
+                "content_history.lpl"
+            );
+
+            if (!File.Exists(cheminHistorique))
+            {
+                return string.Empty;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminHistorique));
+
+            if (
+                !document.RootElement.TryGetProperty("items", out JsonElement items)
+                || items.ValueKind != JsonValueKind.Array
+            )
+            {
+                return string.Empty;
+            }
+
+            foreach (JsonElement item in items.EnumerateArray())
+            {
+                if (
+                    !item.TryGetProperty("path", out JsonElement pathElement)
+                    || pathElement.ValueKind != JsonValueKind.String
+                )
+                {
+                    continue;
+                }
+
+                string cheminJeuHistorique = pathElement.GetString()?.Trim() ?? string.Empty;
+
+                if (
+                    !string.Equals(
+                        cheminJeuHistorique,
+                        cheminJeu,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    !item.TryGetProperty("core_path", out JsonElement corePathElement)
+                    || corePathElement.ValueKind != JsonValueKind.String
+                )
+                {
+                    return string.Empty;
+                }
+
+                string cheminCore = corePathElement.GetString()?.Trim() ?? string.Empty;
+                return !string.IsNullOrWhiteSpace(cheminCore) && File.Exists(cheminCore)
+                    ? cheminCore
+                    : string.Empty;
+            }
+        }
+        catch
+        {
+            return string.Empty;
+        }
+
+        return string.Empty;
+    }
+
+    private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)
+    {
+        EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
+
+        if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal))
+        {
+            JournaliserRejouer(
+                "ignore",
+                "raison=jeu_absent_ou_chemin_absent"
+            );
+            MessageBox.Show(
+                "Aucun dernier jeu local relancable n'est disponible pour le moment.",
+                "Rejouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
+            return;
+        }
+
+        string cheminExecutable = DeterminerCheminExecutableRelance(jeuSauvegarde);
+
+        if (string.IsNullOrWhiteSpace(cheminExecutable) || !File.Exists(cheminExecutable))
+        {
+            JournaliserRejouer(
+                "ignore",
+                $"raison=emulateur_introuvable;emulateur={jeuSauvegarde.NomEmulateurRelance};cheminExecutable={cheminExecutable}"
+            );
+            MessageBox.Show(
+                "L'emulateur n'a pas ete retrouve. Ouvre-le une fois ou corrige son emplacement dans l'aide.",
+                "Rejouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning
+            );
+            return;
+        }
+
+        if (!File.Exists(jeuSauvegarde.CheminJeuLocal))
+        {
+            JournaliserRejouer(
+                "ignore",
+                $"raison=jeu_introuvable;cheminJeu={jeuSauvegarde.CheminJeuLocal}"
+            );
+            MessageBox.Show(
+                "Le fichier du jeu n'a pas ete retrouve a son dernier emplacement connu.",
+                "Rejouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning
+            );
+            return;
+        }
+
+        try
+        {
+            string arguments = ConstruireArgumentsRelance(jeuSauvegarde, cheminExecutable);
+            JournaliserRejouer(
+                "tentative",
+                $"emulateur={jeuSauvegarde.NomEmulateurRelance};executable={cheminExecutable};arguments={arguments};shell=false"
+            );
+
+            Process? processus = Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = cheminExecutable,
+                    Arguments = arguments,
+                    WorkingDirectory = Path.GetDirectoryName(cheminExecutable) ?? string.Empty,
+                    UseShellExecute = false,
+                }
+            );
+
+            if (processus is null)
+            {
+                JournaliserRejouer("echec", "raison=processus_null");
+                MessageBox.Show(
+                    "Le lancement a ete refuse ou n'a pas pu etre demarre.",
+                    "Rejouer",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return;
+            }
+
+            JournaliserRejouer(
+                "demarre",
+                $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName}"
+            );
+        }
+        catch (Exception exception)
+        {
+            JournaliserRejouer(
+                "exception",
+                $"type={exception.GetType().Name};message={exception.Message}"
+            );
+            MessageBox.Show(
+                "Impossible de relancer ce jeu pour le moment.",
+                "Rejouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+        }
+    }
+
+    private static void JournaliserRejouer(string evenement, string details)
+    {
+        _ = ServiceModeDiagnostic.JournaliserLigne(
+            CheminJournalRejouer,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};details={details}{Environment.NewLine}"
+        );
     }
 
     private async void BoutonVueDetailleeJeuEnCours_Click(object sender, RoutedEventArgs e)

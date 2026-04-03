@@ -178,6 +178,10 @@ public partial class MainWindow : UiControls.FluentWindow
     private string _titreJeuLocalActif = string.Empty;
     private int _identifiantJeuLocalResolutEnAttente;
     private string _titreJeuLocalResolutEnAttente = string.Empty;
+    private int _identifiantJeuRejouableCourant;
+    private string _nomEmulateurRejouableCourant = string.Empty;
+    private string _cheminEmulateurRejouableCourant = string.Empty;
+    private string _cheminJeuRejouableCourant = string.Empty;
     private EtatMiseAJourApplication _etatMiseAJourApplication =
         EtatMiseAJourApplication.CreerEtatInitial("inconnue");
     private DateTimeOffset _horodatageDerniereVerificationMiseAJourUtc = DateTimeOffset.MinValue;

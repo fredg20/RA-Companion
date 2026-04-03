@@ -515,6 +515,80 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    public static string TrouverCheminConfigurationProject64()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "Luna_Project64", "Config", "Project64.cfg"),
+            Path.Combine(documents, "Luna_Project64", "Config", "Project64.cfg"),
+            Path.Combine(appData, "Luna-Project64", "Config", "Project64.cfg"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationRANes()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RANes-x64", "fceux.cfg"),
+            Path.Combine(documents, "emulation", "RANes", "fceux.cfg"),
+            Path.Combine(documents, "RANes-x64", "fceux.cfg"),
+            Path.Combine(documents, "RANes", "fceux.cfg"),
+            Path.Combine(appData, "RANes-x64", "fceux.cfg"),
+            Path.Combine(appData, "RANes", "fceux.cfg"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationRASnes9x()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RASnes9x-x64", "snes9x.conf"),
+            Path.Combine(documents, "emulation", "RASnes9x", "snes9x.conf"),
+            Path.Combine(documents, "RASnes9x-x64", "snes9x.conf"),
+            Path.Combine(documents, "RASnes9x", "snes9x.conf"),
+            Path.Combine(appData, "RASnes9x-x64", "snes9x.conf"),
+            Path.Combine(appData, "RASnes9x", "snes9x.conf"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationRAVBA()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "emulation", "RAVBA-M", "vbam.ini"),
+            Path.Combine(documents, "emulation", "RAVBA", "vbam.ini"),
+            Path.Combine(documents, "RAVBA-M", "vbam.ini"),
+            Path.Combine(documents, "RAVBA", "vbam.ini"),
+            Path.Combine(localAppData, "visualboyadvance-m", "vbam.ini"),
+            Path.Combine(localAppData, "RAVBA-M", "vbam.ini"),
+            Path.Combine(appData, "visualboyadvance-m", "vbam.ini"),
+            Path.Combine(appData, "RAVBA-M", "vbam.ini"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
     public static string TrouverRepertoireDuckStation()
     {
         string[] candidats =

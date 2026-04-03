@@ -3,11 +3,11 @@
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.5`
+- Version : `1.0.6`
 - Statut : version de travail stable
 - Cible de livraison : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
-- Archive de release : `dist/RA.Compagnon-win-x64-1.0.5.zip`
+- Archive de release : `dist/RA.Compagnon-win-x64-1.0.6.zip`
 
 ## Contenu de cette version
 
@@ -16,10 +16,11 @@
 - gestion plus robuste des états de chargement du jeu courant
 - grille des rétrosuccès plus stable visuellement
 - aide utilisateur enrichie
-- indicateur des sources locales, des emplacements et des logs par émulateur
-- mise à jour de l'application intégrée
+- affichage des sources locales, des emplacements et des logs par émulateur
+- mise à jour intégrée de l'application
 - téléchargement de mise à jour corrigé
-- ajout d'un mapping manuel utilisateur pour corriger un émulateur détecté ou son emplacement
+- ajout d'un mapping manuel pour corriger l'émulateur détecté ou son emplacement
+- ajout du bouton `Rejouer` pour relancer un jeu local détecté
 
 ## Émulateurs validés dans cette version
 
@@ -41,7 +42,7 @@
 - la préparation de release peut être figée via `Prepare-Release.ps1`
 - une seule archive est conservée : l'archive versionnée de release
 - `update.json` doit pointer vers une archive versionnée exacte, pas vers `releases/latest`
-- `publishedAt` est synchronisé automatiquement à la vraie date de publication GitHub lors d'une release
+- `publishedAt` est synchronisé automatiquement avec la vraie date de publication GitHub lors d'une release
 
 ## Historique local
 
@@ -49,7 +50,7 @@
 
 - première base publiable de `Compagnon`
 - affichage du dernier jeu joué et de la progression principale
-- connexion utilisateur RetroAchievements
+- connexion du compte RetroAchievements
 - persistance locale et restauration rapide au démarrage
 - premières détections locales d'émulateur
 
@@ -59,7 +60,7 @@
 - couche émulateurs unifiée
 - pipeline de chargement du jeu consolidé
 - stabilisation des animations et de la liste des succès
-- aide utilisateur enrichie avec la section logs
+- aide utilisateur enrichie avec la section des logs
 - ajout d'une vue détaillée du jeu courant en modale
 
 ### Version 1.0.3
@@ -77,13 +78,13 @@
 - ajout d'un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement
 - vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours
 - correction du téléchargement de mise à jour pour finaliser correctement le package `.zip`
-- sécurisation du process de release avec archive versionnée et manifeste figé
+- sécurisation du processus de release avec archive versionnée et manifeste figé
 
 ### Version 1.0.5
 
-- préparation de la prochaine release versionnée
+- préparation de la release versionnée `1.0.5`
 - manifeste de mise à jour aligné sur `v1.0.5`
-- archive versionnée attendue : `RA.Compagnon-win-x64-1.0.5.zip`
+- archive de release attendue : `RA.Compagnon-win-x64-1.0.5.zip`
 - modale Aide réorganisée avec des sections rabattables
 - section `Logs des émulateurs` rendue plus lisible avec un panneau rabattable par émulateur
 - instructions des émulateurs réécrites en français dans la modale Aide
@@ -93,3 +94,18 @@
 - en mode `Actif récemment`, affichage forcé sur le dernier jeu mémorisé par `GameID`
 - bouton `Détails` déplacé sur la ligne d'en-tête de la carte principale
 - ajustements visuels de la carte `Rétrosuccès en cours` et de ses boutons de navigation
+
+### Version 1.0.6
+
+- préparation de la release versionnée `1.0.6`
+- manifeste de mise à jour aligné sur `v1.0.6`
+- archive de release attendue : `RA.Compagnon-win-x64-1.0.6.zip`
+- modale Aide rendue plus réactive à l'ouverture
+- mémorisation automatique de l'emplacement des émulateurs validés ouverts
+- journalisation de la sonde locale et de l'affichage des informations du jeu
+- lecture de `retroarch.log` fiabilisée pour les changements de jeu et le `GameID`
+- ajout du bouton `Rejouer` pour relancer un jeu local détecté
+- extension de `Rejouer` à l'ensemble des émulateurs validés via leurs sources locales
+- prise en charge spécifique de `RetroArch` avec relance via le bon core
+- masquage du bouton `Rejouer` pendant l'état `En jeu`
+- conservation plus stable des informations affichées sur le jeu courant

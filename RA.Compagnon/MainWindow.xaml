@@ -70,7 +70,7 @@
             FontWeight="SemiBold"
             LineHeight="22"
             LineStackingStrategy="BlockLineHeight"
-            Text="RA-Compagnon - Suivi RetroAchievements"
+            Text="RA-Compagnon - Suivi des rétrosuccès"
             TextWrapping="NoWrap"
             TextAlignment="Center"
           />
@@ -271,20 +271,40 @@
                     />
                   </StackPanel>
 
-                  <ui:Button
-                    x:Name="BoutonVueDetailleeJeuEnCours"
+                  <StackPanel
                     Grid.Column="1"
                     Margin="12,0,8,0"
-                    Height="28"
-                    Padding="10,2"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
-                    Appearance="Secondary"
-                    Click="BoutonVueDetailleeJeuEnCours_Click"
-                    Visibility="Collapsed"
+                    Orientation="Horizontal"
                   >
-                    Détails
-                  </ui:Button>
+                    <ui:Button
+                      x:Name="BoutonRejouerJeuEnCours"
+                      Margin="0,0,8,0"
+                      Height="28"
+                      Padding="10,2"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Appearance="Secondary"
+                      Click="BoutonRejouerJeuEnCours_Click"
+                      Visibility="Collapsed"
+                    >
+                      Rejouer
+                    </ui:Button>
+
+                    <ui:Button
+                      x:Name="BoutonVueDetailleeJeuEnCours"
+                      Height="28"
+                      Padding="10,2"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Top"
+                      Appearance="Secondary"
+                      Click="BoutonVueDetailleeJeuEnCours_Click"
+                      Visibility="Collapsed"
+                    >
+                      Détails
+                    </ui:Button>
+                  </StackPanel>
                 </Grid>
                 <Border Grid.Row="2" Style="{StaticResource StyleSousCarteJeu}">
                   <Grid>

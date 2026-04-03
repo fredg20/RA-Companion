@@ -80,6 +80,21 @@ public sealed class EtatJeuAfficheLocal
     /// </summary>
     public string Developpeur { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Nom de l'emulateur utilise pour le dernier lancement local connu.
+    /// </summary>
+    public string NomEmulateurRelance { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Chemin de l'executable a reutiliser pour relancer le jeu.
+    /// </summary>
+    public string CheminExecutableEmulateur { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Chemin local du dernier jeu detecte pouvant etre relance.
+    /// </summary>
+    public string CheminJeuLocal { get; set; } = string.Empty;
+
     public int Id
     {
         get => IdentifiantJeu;

@@ -440,6 +440,28 @@ public sealed class ServiceConfigurationLocale
             return modifie;
         }
 
+        bool cheminRelanceInvalide =
+            !string.IsNullOrWhiteSpace(jeu.CheminExecutableEmulateur)
+            && (
+                string.IsNullOrWhiteSpace(jeu.NomEmulateurRelance)
+                || !File.Exists(jeu.CheminExecutableEmulateur)
+                || !ServiceSourcesLocalesEmulateurs.CheminExecutableCorrespondEmulateur(
+                    jeu.NomEmulateurRelance,
+                    jeu.CheminExecutableEmulateur
+                )
+            );
+
+        bool cheminJeuRelanceInvalide =
+            !string.IsNullOrWhiteSpace(jeu.CheminJeuLocal) && !File.Exists(jeu.CheminJeuLocal);
+
+        if (cheminRelanceInvalide || cheminJeuRelanceInvalide)
+        {
+            jeu.NomEmulateurRelance = string.Empty;
+            jeu.CheminExecutableEmulateur = string.Empty;
+            jeu.CheminJeuLocal = string.Empty;
+            modifie = true;
+        }
+
         int identifiantJeu = jeu.IdentifiantJeu;
 
         if (

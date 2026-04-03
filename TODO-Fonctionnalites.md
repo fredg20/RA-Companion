@@ -33,6 +33,9 @@
 - [ ] Permettre de choisir la langue de l'interface.
 - [ ] Ajouter un mode "lecture seule" très épuré pour afficher seulement le jeu et la progression.
 - [ ] Ajouter un bouton pour recharger manuellement le jeu courant.
+- [x] Ajouter un bouton "Rejouer" pour relancer le dernier jeu local detecte avec son emulateur.
+- [ ] Développer et fiabiliser davantage la fonctionnalité "Rejouer" sur tous les émulateurs validés.
+- [ ] Ajouter une modale des jeux récemment joués avec action "Rejouer".
 - [x] Ajouter une aide utilisateur plus complète, mais simple, accessible depuis le bouton `?`.
 - [x] Ajouter un indicateur simple pour montrer où activer les logs de chaque émulateur validé.
 - [ ] Inclure plusieurs variantes de thèmes.

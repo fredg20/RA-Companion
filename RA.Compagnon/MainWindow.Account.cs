@@ -983,7 +983,8 @@ public partial class MainWindow
             definition.NomEmulateur
         );
         if (
-            definition.StrategieRenseignementJeu == StrategieRenseignementJeuEmulateurLocal.RetroArchLog
+            definition.StrategieRenseignementJeu
+                == StrategieRenseignementJeuEmulateurLocal.RetroArchLog
             && !string.IsNullOrWhiteSpace(cheminDetecte)
         )
         {
@@ -1059,8 +1060,9 @@ public partial class MainWindow
                 ? ConstruireCheminIndicatifEmulateur(definition)
                 : emplacementDetecte;
 
-            texteAideEmplacementManuel.Text = !string.IsNullOrWhiteSpace(emplacementManuel)
-                ? "Ce chemin manuel est prioritaire si Compagnon hésite entre plusieurs signatures d'émulateur."
+            texteAideEmplacementManuel.Text =
+                !string.IsNullOrWhiteSpace(emplacementManuel)
+                    ? "Ce chemin manuel est prioritaire si Compagnon hésite entre plusieurs signatures d'émulateur."
                 : !string.IsNullOrWhiteSpace(emplacementDetecteMemorise)
                     ? "Compagnon a mémorisé cet emplacement après avoir vu l'émulateur ouvert sur ce PC."
                 : "Si un exécutable est renommé ou ambigu, tu peux choisir manuellement le bon fichier .exe ici.";
@@ -1811,6 +1813,7 @@ public partial class MainWindow
             TexteSousEtatCompteUtilisateur.Text = string.Empty;
             ZoneEtatCompteUtilisateur.ToolTip = null;
             _signatureDerniereNoticeCompteJournalisee = string.Empty;
+            MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
 
@@ -1839,6 +1842,7 @@ public partial class MainWindow
                     ? $"En jeu{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                     : "En jeu (détection locale)";
             JournaliserNoticeCompteEntete("En jeu", texteIdentifiantJeu, "local");
+            MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
 
@@ -1858,6 +1862,7 @@ public partial class MainWindow
             TexteEtatCompteUtilisateur.Text = string.Empty;
             TexteSousEtatCompteUtilisateur.Text = string.Empty;
             ZoneEtatCompteUtilisateur.ToolTip = null;
+            MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
 
@@ -1877,6 +1882,7 @@ public partial class MainWindow
                 ? $"{compte.Statut}{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                 : compte.Statut;
         JournaliserNoticeCompteEntete(compte.Statut, texteIdentifiantJeu, "api");
+        MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
     }
 
     private int DeterminerIdentifiantJeuNoticeCompte()
