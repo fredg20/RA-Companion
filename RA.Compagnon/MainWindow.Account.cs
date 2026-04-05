@@ -1090,6 +1090,19 @@ public partial class MainWindow
                 new SystemControls.TextBlock
                 {
                     Margin = new Thickness(0, 6, 0, 0),
+                    FontWeight = FontWeights.SemiBold,
+                    Opacity = 0.78,
+                    Text = ConstruireTexteValidationEmulateur(definition),
+                    TextWrapping = TextWrapping.Wrap,
+                    Visibility = string.IsNullOrWhiteSpace(
+                        ConstruireTexteValidationEmulateur(definition)
+                    )
+                        ? Visibility.Collapsed
+                        : Visibility.Visible,
+                },
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 6, 0, 0),
                     Opacity = 0.72,
                     Text = ConstruireTexteConfianceDetectionEmulateur(definition),
                     TextWrapping = TextWrapping.Wrap,
@@ -1332,6 +1345,16 @@ public partial class MainWindow
         };
     }
 
+    private static string ConstruireTexteValidationEmulateur(DefinitionEmulateurLocal definition)
+    {
+        return definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "Validé et testé.",
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "Validé et testé.",
+            _ => string.Empty,
+        };
+    }
+
     private static string ConstruireCheminIndicatifEmulateur(DefinitionEmulateurLocal definition)
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -1524,6 +1547,11 @@ public partial class MainWindow
         return $"https://retroachievements.org/user/{Uri.EscapeDataString(nomUtilisateur)}";
     }
 
+    private static string ConstruireUrlDepotGitHub()
+    {
+        return "https://github.com/fredg20/RA-Companion";
+    }
+
     private static void OuvrirProfilRetroAchievements(string nomUtilisateur)
     {
         if (string.IsNullOrWhiteSpace(nomUtilisateur))
@@ -1545,6 +1573,29 @@ public partial class MainWindow
         {
             // L'ouverture du navigateur reste facultative.
         }
+    }
+
+    private static void OuvrirDepotGitHub()
+    {
+        try
+        {
+            Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = ConstruireUrlDepotGitHub(),
+                    UseShellExecute = true,
+                }
+            );
+        }
+        catch
+        {
+            // L'ouverture du navigateur reste facultative.
+        }
+    }
+
+    private void BoutonDepotGitHub_Click(object sender, RoutedEventArgs e)
+    {
+        OuvrirDepotGitHub();
     }
 
     private static string ConstruireUrlImageRetroAchievements(string? cheminImage)

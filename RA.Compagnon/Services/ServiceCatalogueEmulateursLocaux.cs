@@ -45,7 +45,7 @@ public static class ServiceCatalogueEmulateursLocaux
             ["playstation", "sony playstation", "ps1", "psx", "ps one"],
             StrategieExtractionTitreEmulateurLocal.DuckStation,
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog,
-            StrategieSurveillanceSuccesLocale.Aucune,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
             false,
             true,
             ["logs"]
@@ -56,7 +56,7 @@ public static class ServiceCatalogueEmulateursLocaux
             ["playstation 2", "ps2"],
             StrategieExtractionTitreEmulateurLocal.PCSX2,
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log,
-            StrategieSurveillanceSuccesLocale.Aucune,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
             false,
             true,
             ["logs"]
@@ -67,7 +67,7 @@ public static class ServiceCatalogueEmulateursLocaux
             ["playstation portable", "psp"],
             StrategieExtractionTitreEmulateurLocal.PPSSPP,
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog,
-            StrategieSurveillanceSuccesLocale.Aucune,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
             true,
             true,
             ["logs"]
@@ -139,10 +139,10 @@ public static class ServiceCatalogueEmulateursLocaux
             ["dreamcast", "naomi", "atomiswave"],
             StrategieExtractionTitreEmulateurLocal.Flycast,
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig,
-            StrategieSurveillanceSuccesLocale.Aucune,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
             true,
-            false,
-            []
+            true,
+            ["logs"]
         ),
     ];
 
@@ -195,6 +195,7 @@ public static class ServiceCatalogueEmulateursLocaux
         return TrouverParNom(nomEmulateur)?.StrategieRenseignementJeu switch
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "logs",
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig => "logs",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "logs",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "logs",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => "logs",
@@ -212,6 +213,7 @@ public static class ServiceCatalogueEmulateursLocaux
         return TrouverParNom(nomEmulateur)?.StrategieSurveillanceSucces switch
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => true,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple => true,
             StrategieSurveillanceSuccesLocale.Project64RACache => true,
             StrategieSurveillanceSuccesLocale.RALibretroRACache => true,
             StrategieSurveillanceSuccesLocale.RANesRACache => true,
@@ -239,6 +241,7 @@ public static class ServiceCatalogueEmulateursLocaux
         return definition.StrategieSurveillanceSucces switch
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => typeSource == "logs",
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple => typeSource == "logs",
             StrategieSurveillanceSuccesLocale.Project64RACache => typeSource == "racache_log",
             StrategieSurveillanceSuccesLocale.RALibretroRACache => typeSource
                 is "racache_log"

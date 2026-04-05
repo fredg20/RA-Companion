@@ -636,81 +636,82 @@
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="84" />
-                        <ColumnDefinition Width="*" />
-                      </Grid.ColumnDefinitions>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="84" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-                      <Border
-                        Grid.Column="0"
-                        x:Name="CartePremierSuccesNonDebloqueVisuel"
-                        VerticalAlignment="Top"
-                        CornerRadius="{StaticResource RayonCoinsPetit}"
-                        BorderThickness="0"
-                        Background="Transparent"
-                      >
-                        <Grid>
-                          <Image
-                            x:Name="ImagePremierSuccesNonDebloque"
-                            Margin="0"
-                            MaxWidth="84"
-                            MaxHeight="84"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Opacity="0.58"
-                            Stretch="Uniform"
-                            SizeChanged="ImagePremierSuccesNonDebloque_TailleChangee"
+                        <Border
+                          Grid.Column="0"
+                          x:Name="CartePremierSuccesNonDebloqueVisuel"
+                          VerticalAlignment="Top"
+                          CornerRadius="{StaticResource RayonCoinsPetit}"
+                          BorderThickness="0"
+                          Background="Transparent"
+                        >
+                          <Grid>
+                            <Image
+                              x:Name="ImagePremierSuccesNonDebloque"
+                              Margin="0"
+                              MaxWidth="84"
+                              MaxHeight="84"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Opacity="0.58"
+                              Stretch="Uniform"
+                              SizeChanged="ImagePremierSuccesNonDebloque_TailleChangee"
+                              Visibility="Collapsed"
+                            />
+                            <TextBlock
+                              x:Name="TexteImagePremierSuccesNonDebloque"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Opacity="0.62"
+                              Text=""
+                              TextAlignment="Center"
+                              TextWrapping="Wrap"
+                              Visibility="Collapsed"
+                            />
+                          </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Column="1" Margin="12,0,12,0">
+                          <TextBox
+                            x:Name="TexteTitrePremierSuccesNonDebloque"
+                            Style="{StaticResource StyleTexteCopiable}"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Text=""
                             Visibility="Collapsed"
                           />
-                          <TextBlock
-                            x:Name="TexteImagePremierSuccesNonDebloque"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center"
-                            Opacity="0.62"
+                          <TextBox
+                            x:Name="TexteDescriptionPremierSuccesNonDebloque"
+                            Margin="0,4,0,0"
+                            Style="{StaticResource StyleTexteCopiable}"
+                            Opacity="0.78"
                             Text=""
-                            TextAlignment="Center"
                             TextWrapping="Wrap"
                             Visibility="Collapsed"
                           />
-                        </Grid>
-                      </Border>
-
-                      <StackPanel Grid.Column="1" Margin="12,0,12,0">
-                        <TextBox
-                          x:Name="TexteTitrePremierSuccesNonDebloque"
-                          Style="{StaticResource StyleTexteCopiable}"
-                          FontSize="18"
-                          FontWeight="SemiBold"
-                          Text=""
-                          Visibility="Collapsed"
-                        />
-                        <TextBox
-                          x:Name="TexteDescriptionPremierSuccesNonDebloque"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource StyleTexteCopiable}"
-                          Opacity="0.78"
-                          Text=""
-                          TextWrapping="Wrap"
-                          Visibility="Collapsed"
-                        />
-                        <TextBox
-                          x:Name="TextePointsPremierSuccesNonDebloque"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource StyleTexteCopiable}"
-                          Opacity="0.72"
-                          TextWrapping="Wrap"
-                          Visibility="Collapsed"
-                        />
-                        <TextBox
-                          x:Name="TexteFaisabilitePremierSuccesNonDebloque"
-                          Margin="0,4,0,0"
-                          Style="{StaticResource StyleTexteCopiable}"
-                          Opacity="0.72"
-                          TextWrapping="Wrap"
-                          Visibility="Collapsed"
-                        />
-                      </StackPanel>
-
+                          <TextBox
+                            x:Name="TextePointsPremierSuccesNonDebloque"
+                            Margin="0,4,0,0"
+                            Style="{StaticResource StyleTexteCopiable}"
+                            Opacity="0.72"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed"
+                          />
+                          <TextBox
+                            x:Name="TexteFaisabilitePremierSuccesNonDebloque"
+                            Margin="0,4,0,0"
+                            Style="{StaticResource StyleTexteCopiable}"
+                            Opacity="0.72"
+                            TextWrapping="Wrap"
+                            Visibility="Collapsed"
+                          />
+                        </StackPanel>
+                      </Grid>
                     </Grid>
 
                     <Grid Grid.Row="2">
@@ -1133,11 +1134,49 @@
       Padding="0,3,0,0"
       Background="Transparent"
     >
-      <StackPanel
-        Orientation="Horizontal"
-        HorizontalAlignment="Right"
-        VerticalAlignment="Center"
-      >
+      <Grid VerticalAlignment="Center">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Button
+          x:Name="BoutonDepotGitHub"
+          Grid.Column="0"
+          Width="24"
+          Height="24"
+          Padding="2"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Center"
+          ToolTip="Projet GitHub RA-Compagnon"
+          Background="Transparent"
+          BorderThickness="0"
+          Cursor="Hand"
+          Click="BoutonDepotGitHub_Click"
+        >
+          <Viewbox Stretch="Uniform">
+            <Path
+              Fill="#E6E6E6"
+              Opacity="0.74"
+              Data="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+                    0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+                    -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+                    .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+                    -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82A7.56 7.56 0 0 1 8 4.69c.68 0 1.36.09
+                    2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15
+                    0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2
+                    0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+            />
+          </Viewbox>
+        </Button>
+
+        <StackPanel
+          Grid.Column="2"
+          Orientation="Horizontal"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Center"
+        >
           <Button
             x:Name="BoutonMiseAJourApplication"
             Margin="0,0,10,0"
@@ -1199,7 +1238,8 @@
           Text="Version"
           TextAlignment="Right"
         />
-      </StackPanel>
+        </StackPanel>
+      </Grid>
     </Border>
 
     <ui:ContentDialogHost

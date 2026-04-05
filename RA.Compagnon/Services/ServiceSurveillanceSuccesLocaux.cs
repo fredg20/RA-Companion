@@ -116,6 +116,9 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             ?.StrategieSurveillanceSucces switch
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => ConstruireSurveillanceRetroArch(),
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple => ConstruireSurveillanceJournalSimple(
+                nomEmulateur
+            ),
             StrategieSurveillanceSuccesLocale.Project64RACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
                 ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64()
@@ -166,6 +169,38 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             "retroarch.log"
         );
         return (principale, secondaire, $"RetroArch|{repertoireLogs}");
+    }
+
+    private (
+        FileSystemWatcher? Principale,
+        FileSystemWatcher? Secondaire,
+        string Signature
+    ) ConstruireSurveillanceJournalSimple(string nomEmulateur)
+    {
+        string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(
+            nomEmulateur
+        );
+
+        if (string.IsNullOrWhiteSpace(cheminJournal))
+        {
+            return (null, null, string.Empty);
+        }
+
+        string? repertoire = Path.GetDirectoryName(cheminJournal);
+        string filtre = Path.GetFileName(cheminJournal);
+
+        if (string.IsNullOrWhiteSpace(repertoire) || string.IsNullOrWhiteSpace(filtre))
+        {
+            return (null, null, string.Empty);
+        }
+
+        if (!Directory.Exists(repertoire))
+        {
+            return (null, null, string.Empty);
+        }
+
+        FileSystemWatcher principale = CreerSurveillance(nomEmulateur, "logs", repertoire, filtre);
+        return (principale, null, $"{nomEmulateur}|{cheminJournal}");
     }
 
     private (

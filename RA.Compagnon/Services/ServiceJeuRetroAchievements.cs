@@ -58,6 +58,27 @@ public sealed class ServiceJeuRetroAchievements
         return donnees;
     }
 
+    public async Task<DonneesJeuAffiche> ObtenirDonneesJeuRapidesSansCacheAsync(
+        string pseudo,
+        string cleApiWeb,
+        int identifiantJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        GameInfoAndUserProgressV2 jeu =
+            await ClientRetroAchievements.ObtenirJeuEtProgressionUtilisateurSansCacheAsync(
+                pseudo,
+                cleApiWeb,
+                identifiantJeu,
+                jetonAnnulation
+            );
+
+        DonneesJeuAffiche donnees = new() { Jeu = jeu };
+        string cleCache = ConstruireCleCache(pseudo, identifiantJeu);
+        _cacheJeuxRapides[cleCache] = new EntreeCacheJeu<DonneesJeuAffiche>(Cloner(donnees));
+        return donnees;
+    }
+
     public async Task<DonneesJeuAffiche> EnrichirDonneesJeuAsync(
         string pseudo,
         string cleApiWeb,

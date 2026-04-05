@@ -55,6 +55,11 @@ public partial class MainWindow
         {
             _minuteurSondeLocaleEmulateurs.Start();
         }
+
+        if (_profilUtilisateurAccessible && !_minuteurVerificationSuccesFlycastApi.IsEnabled)
+        {
+            _minuteurVerificationSuccesFlycastApi.Start();
+        }
     }
 
     /// <summary>
@@ -80,6 +85,7 @@ public partial class MainWindow
         _minuteurActualisationRichPresence.Stop();
         _minuteurPresenceLocaleCompte.Stop();
         _minuteurSondeLocaleEmulateurs.Stop();
+        _minuteurVerificationSuccesFlycastApi.Stop();
         _minuteurRotationVisuelsJeuEnCours.Stop();
     }
 
@@ -789,7 +795,19 @@ public partial class MainWindow
             return;
         }
 
-        if (!EtatLocalJeuEstActif())
+        bool jeuLocalActif = EtatLocalJeuEstActif();
+        int identifiantJeuSignal = _identifiantJeuLocalActif > 0
+            ? _identifiantJeuLocalActif
+            : etat.IdentifiantJeuProbable > 0
+                ? etat.IdentifiantJeuProbable
+                : _identifiantJeuSuccesCourant;
+        string titreJeuSignal = !string.IsNullOrWhiteSpace(_titreJeuLocalActif)
+            ? _titreJeuLocalActif
+            : !string.IsNullOrWhiteSpace(etat.TitreJeuProbable)
+                ? etat.TitreJeuProbable
+                : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty;
+
+        if (!jeuLocalActif && identifiantJeuSignal <= 0)
         {
             ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
                 "signal_ignore",
@@ -798,7 +816,7 @@ public partial class MainWindow
             return;
         }
 
-        if (await TenterAfficherSuccesLocalDirectAsync(signal))
+        if (await TenterAfficherSuccesLocalDirectAsync(signal, identifiantJeuSignal, titreJeuSignal))
         {
             return;
         }
@@ -813,6 +831,11 @@ public partial class MainWindow
         }
 
         _serviceOrchestrateurEtatJeu.EnregistrerSignalSuccesLocal();
+
+        if (await TenterAfficherSuccesApiSansCacheAsync(signal, identifiantJeuSignal))
+        {
+            return;
+        }
 
         if (_chargementJeuEnCoursActif)
         {
@@ -832,7 +855,11 @@ public partial class MainWindow
         RedemarrerMinuteurActualisationApi();
     }
 
-    private async Task<bool> TenterAfficherSuccesLocalDirectAsync(SignalSuccesLocal signal)
+    private async Task<bool> TenterAfficherSuccesLocalDirectAsync(
+        SignalSuccesLocal signal,
+        int identifiantJeu,
+        string titreJeu
+    )
     {
         if (
             !EstEmulateurSuccesLocalDirectPrisEnCharge(signal.NomEmulateur)
@@ -845,12 +872,8 @@ public partial class MainWindow
         SuccesDebloqueDetecte? succesDirect =
             ServiceSondeLocaleEmulateurs.LireDernierSuccesDebloqueDepuisSourceLocale(
                 signal.NomEmulateur,
-                _identifiantJeuLocalActif > 0
-                    ? _identifiantJeuLocalActif
-                    : _identifiantJeuSuccesCourant,
-                !string.IsNullOrWhiteSpace(_titreJeuLocalActif)
-                    ? _titreJeuLocalActif
-                    : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty,
+                identifiantJeu,
+                titreJeu,
                 _succesJeuCourant
             );
 
@@ -901,6 +924,116 @@ public partial class MainWindow
             $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesDirect.IdentifiantJeu};succes={succesDirect.IdentifiantSucces}"
         );
         return true;
+    }
+
+    private async Task<bool> TenterAfficherSuccesApiSansCacheAsync(
+        SignalSuccesLocal signal,
+        int identifiantJeu
+    )
+    {
+        if (
+            !string.Equals(signal.NomEmulateur, "DuckStation", StringComparison.Ordinal)
+            || identifiantJeu <= 0
+            || _identifiantJeuSuccesCourant != identifiantJeu
+            || _succesJeuCourant.Count == 0
+        )
+        {
+            return false;
+        }
+
+        try
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_succes_api_sans_cache_debut",
+                $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={identifiantJeu}"
+            );
+
+            DonneesJeuAffiche donneesJeu =
+                await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesSansCacheAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    identifiantJeu
+                );
+            GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
+
+            if (jeu.Id != identifiantJeu)
+            {
+                ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                    "signal_succes_api_sans_cache_ignore",
+                    $"raison=jeu_mismatch;emulateur={signal.NomEmulateur};attendu={identifiantJeu};recu={jeu.Id}"
+                );
+                return false;
+            }
+
+            List<GameAchievementV2> succesCourants = [.. jeu.Succes.Values];
+
+            if (_identifiantJeuSuccesObserve != jeu.Id)
+            {
+                _identifiantJeuSuccesObserve = jeu.Id;
+                _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
+                ServiceDetectionSuccesJeu.JournaliserInitialisation(
+                    jeu.Id,
+                    jeu.Title,
+                    succesCourants.Count
+                );
+                ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                    "signal_succes_api_sans_cache_initialise",
+                    $"emulateur={signal.NomEmulateur};jeu={jeu.Id};succes={succesCourants.Count}"
+                );
+                return false;
+            }
+
+            IReadOnlyList<SuccesDebloqueDetecte> nouveauxSucces =
+                ServiceDetectionSuccesJeu.DetecterNouveauxSucces(
+                    jeu.Id,
+                    jeu.Title,
+                    _etatSuccesObserves,
+                    succesCourants
+                );
+            List<SuccesDebloqueDetecte> nouveauxSuccesFiltres =
+            [
+                .. nouveauxSucces.Where(succes => !SuccesDejaTraiteRecemment(succes)),
+            ];
+
+            SynchroniserEtatSuccesDepuisApi(jeu);
+            _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
+
+            foreach (SuccesDebloqueDetecte succes in nouveauxSuccesFiltres)
+            {
+                ServiceDetectionSuccesJeu.JournaliserDetection(succes, "duckstation_api");
+                MarquerSuccesCommeTraite(succes);
+            }
+
+            SuccesDebloqueDetecte? succesLePlusRecent = SelectionnerSuccesDebloqueLePlusRecent(
+                nouveauxSuccesFiltres
+            );
+
+            if (succesLePlusRecent is null)
+            {
+                ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                    "signal_succes_api_sans_cache_aucun_deblocage",
+                    $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={jeu.Id}"
+                );
+                return false;
+            }
+
+            bool affiche = await AfficherSuccesDebloqueDetecteAsync(succesLePlusRecent);
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                affiche
+                    ? "signal_succes_api_sans_cache_affiche"
+                    : "signal_succes_api_sans_cache_echec_ui",
+                $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesLePlusRecent.IdentifiantJeu};succes={succesLePlusRecent.IdentifiantSucces}"
+            );
+            return affiche;
+        }
+        catch
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_succes_api_sans_cache_echec",
+                $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={identifiantJeu}"
+            );
+            return false;
+        }
     }
 
     private static bool EstEmulateurSuccesLocalDirectPrisEnCharge(string nomEmulateur)

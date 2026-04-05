@@ -1117,7 +1117,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
-            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminConfiguration
+                )
+            )
             {
                 const string prefixe = "Recent Rom 0=";
 
@@ -1156,7 +1160,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
-            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminConfiguration
+                )
+            )
             {
                 if (ligne.StartsWith("ResumeROM ", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1203,7 +1211,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
-            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminConfiguration
+                )
+            )
             {
                 const string prefixe = "Rom:RecentGame1";
 
@@ -1239,7 +1251,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     private static string LireCheminJeuRAVBADepuisConfiguration()
     {
-        string cheminConfiguration = ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRAVBA();
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRAVBA();
 
         if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
         {
@@ -1248,7 +1261,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
-            foreach (string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(cheminConfiguration))
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminConfiguration
+                )
+            )
             {
                 if (!ligne.StartsWith("file1=", StringComparison.OrdinalIgnoreCase))
                 {
@@ -3296,6 +3313,25 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                         correspondanceAttribution.Groups[2].Value.Trim()
                     );
                 }
+
+                Match correspondanceDeblocageDuckStation =
+                    JournalSuccesDebloqueDuckStationRegex().Match(ligne);
+
+                if (
+                    correspondanceDeblocageDuckStation.Success
+                    && int.TryParse(
+                        correspondanceDeblocageDuckStation.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantSuccesDebloqueDuckStation
+                    )
+                )
+                {
+                    return new RenseignementSuccesRA(
+                        identifiantSuccesDebloqueDuckStation,
+                        correspondanceDeblocageDuckStation.Groups[2].Value.Trim()
+                    );
+                }
             }
         }
         catch
@@ -3776,7 +3812,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     )]
     private static partial Regex PCSX2GameChargeRegex();
 
-    [GeneratedRegex(@"isoFile open ok:\s*(.+)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(
+        @"isoFile open ok:\s*(.+)$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
     private static partial Regex PCSX2IsoOuverteRegex();
 
     [GeneratedRegex(
@@ -3808,6 +3847,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex JournalSuccesAttribueRegex();
+
+    [GeneratedRegex(
+        @"Achievement\s+(\d+)\s+\((.+?)\)\s+for game\s+\d+\s+unlocked\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex JournalSuccesDebloqueDuckStationRegex();
 
     [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
     private static partial Regex FichierDonneesJeuRegex();

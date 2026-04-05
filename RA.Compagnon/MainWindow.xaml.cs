@@ -50,6 +50,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private static readonly TimeSpan IntervalleActualisationApi = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan IntervalleActualisationRichPresence = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan IntervalleSondeLocaleEmulateurs = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan IntervalleVerificationSuccesFlycastApi = TimeSpan.FromSeconds(
+        3
+    );
     private static readonly TimeSpan IntervallePresenceLocaleCompte = TimeSpan.FromMilliseconds(
         250
     );
@@ -116,6 +119,9 @@ public partial class MainWindow : UiControls.FluentWindow
     private readonly DispatcherTimer _minuteurSondeLocaleEmulateurs = new(
         DispatcherPriority.Background
     );
+    private readonly DispatcherTimer _minuteurVerificationSuccesFlycastApi = new(
+        DispatcherPriority.Background
+    );
     private readonly DispatcherTimer _minuteurMasquageBarreDefilement = new();
     private readonly DispatcherTimer _minuteurRelayoutApresRedimensionnement = new();
     private readonly DispatcherTimer _minuteurRepriseAnimationGrilleSucces = new();
@@ -137,6 +143,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private bool _surveillanceRichPresenceEnCours;
     private bool _surveillancePresenceLocaleCompteEnCours;
     private bool _surveillanceLocaleEmulateursEnCours;
+    private bool _verificationSuccesFlycastApiEnCours;
     private bool _profilUtilisateurAccessible = true;
     private bool _dernierJeuAfficheModifie;
     private bool _dernierSuccesAfficheModifie;
@@ -201,6 +208,7 @@ public partial class MainWindow : UiControls.FluentWindow
         InitializeComponent();
         App.JournaliserDemarrage("MainWindow ctor fin");
         ServiceSurveillanceSuccesLocaux.ReinitialiserJournalSession();
+        ReinitialiserJournalDetectionFlycastApiSession();
         ReinitialiserJournalDiagnosticListeSucces();
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
         AppliquerIconeApplication();
@@ -279,6 +287,9 @@ public partial class MainWindow : UiControls.FluentWindow
 
         _minuteurSondeLocaleEmulateurs.Interval = IntervalleSondeLocaleEmulateurs;
         _minuteurSondeLocaleEmulateurs.Tick += ActualisationSondeLocaleEmulateurs_Tick;
+
+        _minuteurVerificationSuccesFlycastApi.Interval = IntervalleVerificationSuccesFlycastApi;
+        _minuteurVerificationSuccesFlycastApi.Tick += ActualisationSuccesFlycastApi_Tick;
 
         _minuteurMasquageBarreDefilement.Interval = IntervalleMasquageBarreDefilement;
         _minuteurMasquageBarreDefilement.Tick += MinuteurMasquageBarreDefilement_Tick;

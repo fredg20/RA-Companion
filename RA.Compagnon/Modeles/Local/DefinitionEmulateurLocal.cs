@@ -34,6 +34,7 @@ public enum StrategieSurveillanceSuccesLocale
 {
     Aucune,
     RetroArchLogs,
+    JournalLogsSimple,
     Project64RACache,
     RALibretroRACache,
     RANesRACache,

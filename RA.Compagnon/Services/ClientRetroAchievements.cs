@@ -397,6 +397,67 @@ public sealed class ClientRetroAchievements
         return jeu;
     }
 
+    public static async Task<GameInfoAndUserProgressV2> ObtenirJeuEtProgressionUtilisateurSansCacheAsync(
+        string pseudo,
+        string cleApiWeb,
+        int identifiantJeu,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        if (string.IsNullOrWhiteSpace(pseudo))
+        {
+            throw new ArgumentException("Le pseudo utilisateur est obligatoire.", nameof(pseudo));
+        }
+
+        if (string.IsNullOrWhiteSpace(cleApiWeb))
+        {
+            throw new ArgumentException(
+                "La clé API RetroAchievements est obligatoire.",
+                nameof(cleApiWeb)
+            );
+        }
+
+        if (identifiantJeu <= 0)
+        {
+            throw new ArgumentException(
+                "L'identifiant du jeu est invalide.",
+                nameof(identifiantJeu)
+            );
+        }
+
+        string cheminRequete =
+            $"API_GetGameInfoAndUserProgress.php?u={Uri.EscapeDataString(pseudo)}&g={identifiantJeu}&y={Uri.EscapeDataString(cleApiWeb)}";
+
+        using HttpResponseMessage reponse = await HttpClient.GetAsync(
+            cheminRequete,
+            jetonAnnulation
+        );
+        reponse.EnsureSuccessStatusCode();
+
+        await using Stream fluxReponse = await reponse.Content.ReadAsStreamAsync(jetonAnnulation);
+        GameInfoAndUserProgressV2? jeu =
+            await JsonSerializer.DeserializeAsync<GameInfoAndUserProgressV2>(
+                fluxReponse,
+                OptionsJson,
+                jetonAnnulation
+            )
+            ?? throw new InvalidOperationException("La réponse du jeu RetroAchievements est vide.");
+        if (string.IsNullOrWhiteSpace(jeu.Title))
+        {
+            throw new InvalidOperationException(
+                "Les données du jeu RetroAchievements sont incomplètes."
+            );
+        }
+
+        string cleCacheJeuUtilisateur = $"{pseudo.Trim().ToLowerInvariant()}|{identifiantJeu}";
+        _cacheJeuxUtilisateur[cleCacheJeuUtilisateur] = new JeuUtilisateurCache(
+            jeu,
+            DateTimeOffset.UtcNow
+        );
+
+        return jeu;
+    }
+
     /// <summary>
     /// Récupère le résumé simple d'un jeu.
     /// </summary>

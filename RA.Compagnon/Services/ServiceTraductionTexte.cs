@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace RA.Compagnon.Services;
 
 /// <summary>
-/// Traduit des libellés courts vers le français en s'appuyant sur Google Translate.
+/// Traduit des libelles courts vers le francais en s'appuyant sur Google Translate.
 /// </summary>
 public sealed partial class ServiceTraductionTexte
 {
@@ -17,7 +17,7 @@ public sealed partial class ServiceTraductionTexte
     );
 
     /// <summary>
-    /// Traduit un texte court vers le français avec repli sur le texte d'origine.
+    /// Traduit un texte court vers le francais avec repli sur le texte d'origine.
     /// </summary>
     public async Task<string> TraduireVersFrancaisAsync(
         string texte,
