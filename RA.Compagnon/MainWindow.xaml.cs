@@ -171,6 +171,7 @@ public partial class MainWindow : UiControls.FluentWindow
     private List<GameAchievementV2> _succesJeuCourant = [];
     private SuccesDebloqueDetecte? _succesDebloqueDetecteEnAttente;
     private EtatSondeLocaleEmulateur? _dernierEtatSondeLocaleEmulateurs;
+    private bool _emulateurValideDetecteEnDirect;
     private bool _presenceLocaleCompteActive;
     private string _signatureDernierSuccesLocalDirectAffiche = string.Empty;
     private int _identifiantJeuSuccesObserve;

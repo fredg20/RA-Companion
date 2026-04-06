@@ -434,40 +434,6 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Calcule la hauteur visible maximale de la grille des succès dans la fenêtre.
-    /// </summary>
-    private double CalculerHauteurDisponibleGrilleTousSucces()
-    {
-        if (
-            ConteneurGrilleTousSuccesJeuEnCours is null
-            || ZonePrincipale is null
-            || !ConteneurGrilleTousSuccesJeuEnCours.IsLoaded
-        )
-        {
-            return 0;
-        }
-
-        double hauteurViewport =
-            ZonePrincipale.ViewportHeight > 0
-                ? ZonePrincipale.ViewportHeight
-                : ZonePrincipale.ActualHeight;
-
-        if (hauteurViewport <= 0)
-        {
-            return 0;
-        }
-
-        Point positionDansScrollViewer = ConteneurGrilleTousSuccesJeuEnCours.TranslatePoint(
-            new Point(0, 0),
-            ZonePrincipale
-        );
-        double margeBas = 12;
-        double hauteurDisponible = hauteurViewport - positionDansScrollViewer.Y - margeBas;
-
-        return Math.Max(HauteurMinimaleGrilleSucces, hauteurDisponible);
-    }
-
-    /// <summary>
     /// Met en pause l'animation des succès lors du survol d'un badge.
     /// </summary>
     private void BadgeGrilleSucces_EntreeSouris(object sender, MouseEventArgs e)

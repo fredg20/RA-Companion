@@ -127,7 +127,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
-                LireCheminJeuFlycastDepuisConfiguration(titreJeu),
+                LireCheminJeuFlycastDepuisLogOuConfiguration(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
                 LireCheminJeuProject64DepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
@@ -568,7 +568,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
-                LireCheminJeuFlycastDepuisConfiguration(
+                LireCheminJeuFlycastDepuisLogOuConfiguration(
                     ExtraireTitreJeuPourDefinition(
                         definition,
                         processus,
@@ -1414,6 +1414,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             return string.Empty;
         }
+    }
+
+    private static string LireCheminJeuFlycastDepuisLogOuConfiguration(string titreJeuProbable)
+    {
+        string cheminDepuisLog = LireCheminJeuFlycastDepuisLog();
+
+        if (!string.IsNullOrWhiteSpace(cheminDepuisLog))
+        {
+            return cheminDepuisLog;
+        }
+
+        return LireCheminJeuFlycastDepuisConfiguration(titreJeuProbable);
     }
 
     private static string TrouverCheminJeuFlycastDepuisRepertoireContenu(
@@ -2557,6 +2569,49 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             )
             {
                 Match correspondanceContenu = RetroArchContenuChargeRegex().Match(ligne);
+
+                if (!correspondanceContenu.Success)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    correspondanceContenu.Groups[1].Value.Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch
+        {
+            // Le log local reste un secours opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuFlycastDepuisLog()
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalFlycast();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return string.Empty;
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceContenu = FlycastContenuChargeRegex().Match(ligne);
 
                 if (!correspondanceContenu.Success)
                 {
@@ -4124,6 +4179,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex FlycastGameLoadedRegex();
+
+    [GeneratedRegex(
+        @"RA:\s*cdreader_open_track\s+(.+?)\s+track\s+\d+",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex FlycastContenuChargeRegex();
 
     [GeneratedRegex(
         @"(?:Identified game:\s*|Loading game\s+|Starting (?:new )?session for game\s+)(\d+)",

@@ -46,6 +46,8 @@ public partial class MainWindow
             HydraterActionRejouerDepuisSourcesLocalesActifRecemment(jeuSauvegarde);
         }
 
+        jeuSauvegarde = ObtenirEtatRejouableCourant(jeuSauvegarde);
+
         if (
             jeuSauvegarde is null
             || jeuSauvegarde.Id <= 0
@@ -63,20 +65,43 @@ public partial class MainWindow
             : Visibility.Visible;
     }
 
-    private bool DoitMasquerActionRejouerPendantJeu()
+    private EtatJeuAfficheLocal? ObtenirEtatRejouableCourant(EtatJeuAfficheLocal? jeuSauvegarde)
     {
         if (
-            TexteEtatCompteUtilisateur is not null
-            && TexteEtatCompteUtilisateur.Text.Contains(
-                "En jeu",
-                StringComparison.OrdinalIgnoreCase
-            )
+            jeuSauvegarde is not null
+            && jeuSauvegarde.Id > 0
+            && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
         )
         {
-            return true;
+            return jeuSauvegarde;
         }
 
-        if (EtatLocalJeuEstActif() || EtatLocalEmulateurEstActifPourNotice())
+        int identifiantJeuAffiche =
+            _dernieresDonneesJeuAffichees?.Jeu.Id ?? _dernierIdentifiantJeuApi;
+
+        if (
+            identifiantJeuAffiche <= 0
+            || _identifiantJeuRejouableCourant != identifiantJeuAffiche
+            || string.IsNullOrWhiteSpace(_nomEmulateurRejouableCourant)
+            || string.IsNullOrWhiteSpace(_cheminEmulateurRejouableCourant)
+            || string.IsNullOrWhiteSpace(_cheminJeuRejouableCourant)
+        )
+        {
+            return jeuSauvegarde;
+        }
+
+        EtatJeuAfficheLocal etat =
+            jeuSauvegarde ?? new EtatJeuAfficheLocal { IdentifiantJeu = identifiantJeuAffiche };
+        etat.Id = identifiantJeuAffiche;
+        etat.NomEmulateurRelance = _nomEmulateurRejouableCourant;
+        etat.CheminExecutableEmulateur = _cheminEmulateurRejouableCourant;
+        etat.CheminJeuLocal = _cheminJeuRejouableCourant;
+        return etat;
+    }
+
+    private bool DoitMasquerActionRejouerPendantJeu()
+    {
+        if (_emulateurValideDetecteEnDirect)
         {
             return true;
         }
@@ -232,7 +257,9 @@ public partial class MainWindow
 
     private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)
     {
-        EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
+        EtatJeuAfficheLocal? jeuSauvegarde = ObtenirEtatRejouableCourant(
+            _configurationConnexion.DernierJeuAffiche
+        );
 
         if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal))
         {

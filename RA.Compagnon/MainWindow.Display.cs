@@ -69,86 +69,6 @@ public partial class MainWindow
     /// <summary>
     /// Met à jour l'année du jeu, sa console, son type, ses crédits et l'icône officielle.
     /// </summary>
-    private async Task MettreAJourMetaConsoleJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
-    {
-        bool reinitialisationNecessaire = PreparerAffichageMetaConsoleJeuEnCours(jeu);
-
-        string dateSortieComplete = FormaterDateSortieJeu(jeu.Released);
-
-        if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
-        {
-            TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
-            TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
-            ZoneConsoleJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteConsoleJeuEnCours.Visibility = Visibility.Visible;
-        }
-
-        if (!string.IsNullOrWhiteSpace(jeu.Genre))
-        {
-            string genreTraduit = await _serviceTraductionTexte.TraduireVersFrancaisAsync(
-                jeu.Genre
-            );
-            TexteTypeJeuEnCours.Text = genreTraduit.Trim();
-            TexteTypeJeuEnCours.Visibility = string.IsNullOrWhiteSpace(TexteTypeJeuEnCours.Text)
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-            EtiquetteTypeJeuEnCours.Visibility = TexteTypeJeuEnCours.Visibility;
-        }
-
-        string creditsJeu = ConstruireCreditsJeu(jeu);
-
-        if (!string.IsNullOrWhiteSpace(creditsJeu))
-        {
-            TexteDeveloppeurJeuEnCours.Text = creditsJeu;
-            TexteDeveloppeurJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteCreditsJeuEnCours.Visibility = Visibility.Visible;
-        }
-
-        if (!string.IsNullOrWhiteSpace(dateSortieComplete))
-        {
-            TexteDateSortieJeuEnCours.Text = dateSortieComplete;
-            TexteDateSortieJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteDateSortieJeuEnCours.Visibility = Visibility.Visible;
-        }
-
-        if (jeu.UserTotalPlaytime > 0)
-        {
-            TexteTempsJeuEnCours.Text = FormaterTempsJeuTotal(jeu.UserTotalPlaytime);
-            TexteTempsJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteTempsJeuEnCours.Visibility = Visibility.Visible;
-        }
-
-        try
-        {
-            IReadOnlyList<ConsoleV2> consoles =
-                await _serviceCatalogueRetroAchievements.ObtenirConsolesAsync(
-                    _configurationConnexion.CleApiWeb
-                );
-            ConsoleV2? console = consoles.FirstOrDefault(item => item.ConsoleId == jeu.ConsoleId);
-
-            if (console is not null && !string.IsNullOrWhiteSpace(console.IconUrl))
-            {
-                ImageSource? imageConsole = await ChargerImageDistanteAsync(console.IconUrl);
-
-                if (imageConsole is not null)
-                {
-                    ImageConsoleJeuEnCours.Source = imageConsole;
-                    ImageConsoleJeuEnCours.Visibility = Visibility.Visible;
-                }
-            }
-        }
-        catch
-        {
-            // L'icône de console reste facultative. En cas d'échec, on conserve au moins l'année.
-        }
-
-        MettreAJourVisibiliteInformationsJeuEnCours();
-        JournaliserDiagnosticAffichageJeu(
-            "meta_mise_a_jour",
-            $"jeu={jeu.Id};reinit={reinitialisationNecessaire};console={TexteConsoleJeuEnCours.Text};genre={TexteTypeJeuEnCours.Text};credits={TexteDeveloppeurJeuEnCours.Text};sortie={TexteDateSortieJeuEnCours.Text};temps={TexteTempsJeuEnCours.Text}"
-        );
-    }
-
     /// <summary>
     /// Affiche immédiatement les métadonnées déjà connues du jeu sans attendre les enrichissements lents.
     /// </summary>
@@ -549,40 +469,6 @@ public partial class MainWindow
     /// <summary>
     /// Extrait l'année de sortie d'un jeu à partir du champ API de date.
     /// </summary>
-    private static string ExtraireAnneeJeu(string dateSortie)
-    {
-        if (string.IsNullOrWhiteSpace(dateSortie))
-        {
-            return string.Empty;
-        }
-
-        if (
-            DateTimeOffset.TryParse(
-                dateSortie,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal,
-                out DateTimeOffset dateParsee
-            )
-        )
-        {
-            return dateParsee.Year.ToString(CultureInfo.InvariantCulture);
-        }
-
-        if (
-            DateTime.TryParse(
-                dateSortie,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AllowWhiteSpaces,
-                out DateTime dateSimple
-            )
-        )
-        {
-            return dateSimple.Year.ToString(CultureInfo.InvariantCulture);
-        }
-
-        return dateSortie.Length >= 4 ? dateSortie[..4] : string.Empty;
-    }
-
     /// <summary>
     /// Formate la date de sortie la plus complète possible pour l'affichage.
     /// </summary>

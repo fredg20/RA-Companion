@@ -86,11 +86,6 @@ public partial class MainWindow
     /// <summary>
     /// Aucun amorçage local : l'application reste entièrement autonome.
     /// </summary>
-    private static Task AmorcerEtatJeuLocalAuDemarrageAsync()
-    {
-        return Task.CompletedTask;
-    }
-
     /// <summary>
     /// Réinitialise les derniers marqueurs utilisés pour éviter les rechargements API inutiles.
     /// </summary>
@@ -269,6 +264,7 @@ public partial class MainWindow
             bool emulateurValideBrut =
                 etatBrut.EmulateurDetecte
                 && ServiceCatalogueEmulateursLocaux.EstEmulateurValide(etatBrut.NomEmulateur);
+            _emulateurValideDetecteEnDirect = emulateurValideBrut;
 
             if (emulateurValideBrut)
             {
@@ -655,21 +651,18 @@ public partial class MainWindow
         _cheminEmulateurRejouableCourant = etat.CheminExecutable;
         _cheminJeuRejouableCourant = etat.CheminJeuProbable;
 
-        if (_configurationConnexion.DernierJeuAffiche?.Id == identifiantJeu)
+        EtatJeuAfficheLocal? jeuAffiche = ObtenirEtatJeuAffichePourContexteRejouer(identifiantJeu);
+
+        if (jeuAffiche is not null)
         {
             bool modifie =
-                _configurationConnexion.DernierJeuAffiche.NomEmulateurRelance
-                    != _nomEmulateurRejouableCourant
-                || _configurationConnexion.DernierJeuAffiche.CheminExecutableEmulateur
-                    != _cheminEmulateurRejouableCourant
-                || _configurationConnexion.DernierJeuAffiche.CheminJeuLocal
-                    != _cheminJeuRejouableCourant;
+                jeuAffiche.NomEmulateurRelance != _nomEmulateurRejouableCourant
+                || jeuAffiche.CheminExecutableEmulateur != _cheminEmulateurRejouableCourant
+                || jeuAffiche.CheminJeuLocal != _cheminJeuRejouableCourant;
 
-            _configurationConnexion.DernierJeuAffiche.NomEmulateurRelance =
-                _nomEmulateurRejouableCourant;
-            _configurationConnexion.DernierJeuAffiche.CheminExecutableEmulateur =
-                _cheminEmulateurRejouableCourant;
-            _configurationConnexion.DernierJeuAffiche.CheminJeuLocal = _cheminJeuRejouableCourant;
+            jeuAffiche.NomEmulateurRelance = _nomEmulateurRejouableCourant;
+            jeuAffiche.CheminExecutableEmulateur = _cheminEmulateurRejouableCourant;
+            jeuAffiche.CheminJeuLocal = _cheminJeuRejouableCourant;
 
             if (modifie)
             {
@@ -677,8 +670,45 @@ public partial class MainWindow
                 _ = PersisterDernierJeuAfficheSiNecessaireAsync();
             }
 
-            MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
+            MettreAJourActionRejouerJeuEnCours(jeuAffiche);
         }
+    }
+
+    private EtatJeuAfficheLocal? ObtenirEtatJeuAffichePourContexteRejouer(int identifiantJeu)
+    {
+        if (_configurationConnexion.DernierJeuAffiche?.Id == identifiantJeu)
+        {
+            return _configurationConnexion.DernierJeuAffiche;
+        }
+
+        if (_dernieresDonneesJeuAffichees?.Jeu.Id != identifiantJeu)
+        {
+            return null;
+        }
+
+        JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(_dernieresDonneesJeuAffichees);
+        GameInfoAndUserProgressV2 jeu = _dernieresDonneesJeuAffichees.Jeu;
+
+        _configurationConnexion.DernierJeuAffiche = new EtatJeuAfficheLocal
+        {
+            IdentifiantJeu = jeu.Id,
+            EstJeuEnCours = EtatLocalJeuEstActif(),
+            Titre = jeu.Title,
+            Details = jeuAffiche.Details,
+            ResumeProgression = jeuAffiche.ResumeProgression,
+            PourcentageProgression = jeuAffiche.PourcentageTexte,
+            ValeurProgression = jeuAffiche.PourcentageValeur,
+            TempsJeuSousImage = jeuAffiche.TempsJeu,
+            EtatJeu = jeuAffiche.Statut,
+            CheminImageBoite = jeu.ImageBoxArt,
+            IdentifiantConsole = jeu.ConsoleId,
+            DateSortie = jeu.Released,
+            Genre = jeu.Genre,
+            Developpeur = jeu.Developer,
+        };
+
+        _dernierJeuAfficheModifie = true;
+        return _configurationConnexion.DernierJeuAffiche;
     }
 
     private async Task MemoriserEmplacementEmulateurDetecteAsync(EtatSondeLocaleEmulateur etat)

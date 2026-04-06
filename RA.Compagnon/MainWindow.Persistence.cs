@@ -366,36 +366,6 @@ public partial class MainWindow
         return true;
     }
 
-    private static bool EtatJeuAfficheEquivalent(
-        EtatJeuAfficheLocal? precedent,
-        EtatJeuAfficheLocal courant
-    )
-    {
-        if (precedent is null)
-        {
-            return false;
-        }
-
-        return precedent.SignatureLocale == courant.SignatureLocale
-            && precedent.Id == courant.Id
-            && precedent.EstJeuEnCours == courant.EstJeuEnCours
-            && precedent.Title == courant.Title
-            && precedent.Details == courant.Details
-            && precedent.ResumeProgression == courant.ResumeProgression
-            && precedent.PourcentageProgression == courant.PourcentageProgression
-            && Math.Abs(precedent.ValeurProgression - courant.ValeurProgression) < 0.01
-            && precedent.TempsJeuSousImage == courant.TempsJeuSousImage
-            && precedent.EtatJeu == courant.EtatJeu
-            && precedent.ImageBoxArt == courant.ImageBoxArt
-            && precedent.ConsoleId == courant.ConsoleId
-            && precedent.Released == courant.Released
-            && precedent.Genre == courant.Genre
-            && precedent.Developer == courant.Developer
-            && precedent.NomEmulateurRelance == courant.NomEmulateurRelance
-            && precedent.CheminExecutableEmulateur == courant.CheminExecutableEmulateur
-            && precedent.CheminJeuLocal == courant.CheminJeuLocal;
-    }
-
     private static GameInfoAndUserProgressV2 ConstruireJeuUtilisateurDepuisEtatLocal(
         EtatJeuAfficheLocal jeuSauvegarde
     )

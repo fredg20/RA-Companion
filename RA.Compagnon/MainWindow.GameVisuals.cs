@@ -421,29 +421,6 @@ public partial class MainWindow
         AjouterVisuelJeu(visuels, visuel.Libelle, visuel.CheminImage);
     }
 
-    private async Task<VisuelJeuEnCours?> ObtenirVisuelSecondaireJeuAsync(
-        GameInfoAndUserProgressV2 jeu
-    )
-    {
-        UserSummaryV2? resume = await ObtenirResumeUtilisateurPourVisuelsAsync();
-
-        if (resume?.LastGame?.IdentifiantJeu == jeu.Id)
-        {
-            return ConstruireVisuelSecondaire(
-                resume.LastGame.CheminImageTitre,
-                resume.LastGame.CheminImageEnJeu
-            );
-        }
-
-        RecentlyPlayedGameV2? jeuRecent = resume?.RecentlyPlayed.FirstOrDefault(item =>
-            item.IdentifiantJeu == jeu.Id
-        );
-
-        return jeuRecent is null
-            ? null
-            : ConstruireVisuelSecondaire(jeuRecent.CheminImageTitre, jeuRecent.CheminImageEnJeu);
-    }
-
     private async Task<UserSummaryV2?> ObtenirResumeUtilisateurPourVisuelsAsync()
     {
         if (_dernierResumeUtilisateurCharge is not null)

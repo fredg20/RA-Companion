@@ -2021,42 +2021,6 @@ public partial class MainWindow
         MettreAJourResumeConnexion();
     }
 
-    private static void OuvrirDocumentProjet(string nomFichier)
-    {
-        if (string.IsNullOrWhiteSpace(nomFichier))
-        {
-            return;
-        }
-
-        string? dossierCourant = string.IsNullOrWhiteSpace(AppContext.BaseDirectory)
-            ? null
-            : System.IO.Path.GetFullPath(AppContext.BaseDirectory);
-
-        while (!string.IsNullOrWhiteSpace(dossierCourant))
-        {
-            string cheminCandidat = System.IO.Path.Combine(dossierCourant, nomFichier);
-
-            if (System.IO.File.Exists(cheminCandidat))
-            {
-                try
-                {
-                    Process.Start(
-                        new ProcessStartInfo { FileName = cheminCandidat, UseShellExecute = true }
-                    );
-                }
-                catch
-                {
-                    // L'ouverture d'un document local reste facultative.
-                }
-
-                return;
-            }
-
-            System.IO.DirectoryInfo? parent = System.IO.Directory.GetParent(dossierCourant);
-            dossierCourant = parent?.FullName;
-        }
-    }
-
     private bool ConfigurationConnexionEstComplete()
     {
         return !string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)

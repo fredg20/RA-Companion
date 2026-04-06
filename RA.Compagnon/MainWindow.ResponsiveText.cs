@@ -47,11 +47,6 @@ public partial class MainWindow
         return CalculerTaillePoliceResponsive(TaillePoliceTitreJeuNormale);
     }
 
-    private double ObtenirTaillePoliceTitreJeuMinimaleResponsive()
-    {
-        return CalculerTaillePoliceResponsive(TaillePoliceTitreJeuMinimale);
-    }
-
     private void AjusterTypographieResponsive(bool forcer = false)
     {
         double nouveauFacteur = CalculerFacteurTypographieResponsive(ActualWidth);
