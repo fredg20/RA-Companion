@@ -225,6 +225,11 @@ public partial class MainWindow
                 : precedent?.Id == jeu.Id ? precedent.CheminJeuLocal
                 : string.Empty,
         };
+
+        HydraterActionRejouerDepuisSourcesLocalesActifRecemment(
+            _configurationConnexion.DernierJeuAffiche
+        );
+
         MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
         GarantirCoherenceEtatPersistantJeu(jeu.Id);
         _dernierJeuAfficheModifie = true;

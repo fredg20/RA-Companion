@@ -55,11 +55,6 @@ public partial class MainWindow
         {
             _minuteurSondeLocaleEmulateurs.Start();
         }
-
-        if (_profilUtilisateurAccessible && !_minuteurVerificationSuccesFlycastApi.IsEnabled)
-        {
-            _minuteurVerificationSuccesFlycastApi.Start();
-        }
     }
 
     /// <summary>
@@ -85,7 +80,6 @@ public partial class MainWindow
         _minuteurActualisationRichPresence.Stop();
         _minuteurPresenceLocaleCompte.Stop();
         _minuteurSondeLocaleEmulateurs.Stop();
-        _minuteurVerificationSuccesFlycastApi.Stop();
         _minuteurRotationVisuelsJeuEnCours.Stop();
     }
 
@@ -675,12 +669,12 @@ public partial class MainWindow
                 _nomEmulateurRejouableCourant;
             _configurationConnexion.DernierJeuAffiche.CheminExecutableEmulateur =
                 _cheminEmulateurRejouableCourant;
-            _configurationConnexion.DernierJeuAffiche.CheminJeuLocal =
-                _cheminJeuRejouableCourant;
+            _configurationConnexion.DernierJeuAffiche.CheminJeuLocal = _cheminJeuRejouableCourant;
 
             if (modifie)
             {
                 _dernierJeuAfficheModifie = true;
+                _ = PersisterDernierJeuAfficheSiNecessaireAsync();
             }
 
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
@@ -727,7 +721,9 @@ public partial class MainWindow
 
         try
         {
-            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                _configurationConnexion
+            );
             ServiceSondeLocaleEmulateurs.JournaliserEvenement(
                 "memoire_emplacement_persistee",
                 $"emulateur={etat.NomEmulateur};chemin={etat.CheminExecutable}"
@@ -796,16 +792,14 @@ public partial class MainWindow
         }
 
         bool jeuLocalActif = EtatLocalJeuEstActif();
-        int identifiantJeuSignal = _identifiantJeuLocalActif > 0
-            ? _identifiantJeuLocalActif
-            : etat.IdentifiantJeuProbable > 0
-                ? etat.IdentifiantJeuProbable
-                : _identifiantJeuSuccesCourant;
-        string titreJeuSignal = !string.IsNullOrWhiteSpace(_titreJeuLocalActif)
-            ? _titreJeuLocalActif
-            : !string.IsNullOrWhiteSpace(etat.TitreJeuProbable)
-                ? etat.TitreJeuProbable
-                : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty;
+        int identifiantJeuSignal =
+            _identifiantJeuLocalActif > 0 ? _identifiantJeuLocalActif
+            : etat.IdentifiantJeuProbable > 0 ? etat.IdentifiantJeuProbable
+            : _identifiantJeuSuccesCourant;
+        string titreJeuSignal =
+            !string.IsNullOrWhiteSpace(_titreJeuLocalActif) ? _titreJeuLocalActif
+            : !string.IsNullOrWhiteSpace(etat.TitreJeuProbable) ? etat.TitreJeuProbable
+            : _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty;
 
         if (!jeuLocalActif && identifiantJeuSignal <= 0)
         {
@@ -816,7 +810,9 @@ public partial class MainWindow
             return;
         }
 
-        if (await TenterAfficherSuccesLocalDirectAsync(signal, identifiantJeuSignal, titreJeuSignal))
+        if (
+            await TenterAfficherSuccesLocalDirectAsync(signal, identifiantJeuSignal, titreJeuSignal)
+        )
         {
             return;
         }
@@ -995,7 +991,6 @@ public partial class MainWindow
                 .. nouveauxSucces.Where(succes => !SuccesDejaTraiteRecemment(succes)),
             ];
 
-            SynchroniserEtatSuccesDepuisApi(jeu);
             _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
 
             foreach (SuccesDebloqueDetecte succes in nouveauxSuccesFiltres)

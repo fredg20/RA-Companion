@@ -74,9 +74,8 @@ public partial class MainWindow
             return;
         }
 
-        double facteurReductionTitre = ActualWidth < 760
-            ? Math.Max(0.8, 1 - ((760 - ActualWidth) / 900))
-            : 1;
+        double facteurReductionTitre =
+            ActualWidth < 760 ? Math.Max(0.8, 1 - ((760 - ActualWidth) / 900)) : 1;
         double taillePoliceTitre = CalculerTaillePoliceResponsive(18) * facteurReductionTitre;
         double hauteurLigne = CalculerTaillePoliceResponsive(22) * facteurReductionTitre;
         double hauteurConteneur = Math.Clamp(hauteurLigne, 20, 28);

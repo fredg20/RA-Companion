@@ -18,15 +18,18 @@ public static class ServiceSourcesLocalesEmulateurs
     {
         lock (VerrouEmplacementsEmulateursManuels)
         {
-            _emplacementsEmulateursManuels = emplacements?
-                .Where(entree =>
-                    !string.IsNullOrWhiteSpace(entree.Key) && !string.IsNullOrWhiteSpace(entree.Value)
-                )
-                .ToDictionary(
-                    entree => entree.Key.Trim(),
-                    entree => entree.Value.Trim(),
-                    StringComparer.OrdinalIgnoreCase
-                ) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _emplacementsEmulateursManuels =
+                emplacements
+                    ?.Where(entree =>
+                        !string.IsNullOrWhiteSpace(entree.Key)
+                        && !string.IsNullOrWhiteSpace(entree.Value)
+                    )
+                    .ToDictionary(
+                        entree => entree.Key.Trim(),
+                        entree => entree.Value.Trim(),
+                        StringComparer.OrdinalIgnoreCase
+                    )
+                ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -36,17 +39,19 @@ public static class ServiceSourcesLocalesEmulateurs
     {
         lock (VerrouEmplacementsEmulateursDetectes)
         {
-            _emplacementsEmulateursDetectes = emplacements?
-                .Where(entree =>
-                    !string.IsNullOrWhiteSpace(entree.Key)
-                    && !string.IsNullOrWhiteSpace(entree.Value)
-                    && CheminExecutableCorrespondEmulateur(entree.Key, entree.Value)
-                )
-                .ToDictionary(
-                    entree => entree.Key.Trim(),
-                    entree => entree.Value.Trim(),
-                    StringComparer.OrdinalIgnoreCase
-                ) ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            _emplacementsEmulateursDetectes =
+                emplacements
+                    ?.Where(entree =>
+                        !string.IsNullOrWhiteSpace(entree.Key)
+                        && !string.IsNullOrWhiteSpace(entree.Value)
+                        && CheminExecutableCorrespondEmulateur(entree.Key, entree.Value)
+                    )
+                    .ToDictionary(
+                        entree => entree.Key.Trim(),
+                        entree => entree.Value.Trim(),
+                        StringComparer.OrdinalIgnoreCase
+                    )
+                ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
     }
 
@@ -59,7 +64,10 @@ public static class ServiceSourcesLocalesEmulateurs
 
         lock (VerrouEmplacementsEmulateursManuels)
         {
-            return _emplacementsEmulateursManuels.TryGetValue(nomEmulateur.Trim(), out string? chemin)
+            return _emplacementsEmulateursManuels.TryGetValue(
+                nomEmulateur.Trim(),
+                out string? chemin
+            )
                 ? chemin
                 : string.Empty;
         }
@@ -121,7 +129,11 @@ public static class ServiceSourcesLocalesEmulateurs
                     nomEmulateur.Trim(),
                     out string? cheminExistant
                 )
-                && string.Equals(cheminExistant, cheminNormalise, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    cheminExistant,
+                    cheminNormalise,
+                    StringComparison.OrdinalIgnoreCase
+                )
             )
             {
                 return false;
@@ -132,7 +144,10 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
-    public static bool CorrespondAuCheminEmulateurManuel(string nomEmulateur, string cheminExecutable)
+    public static bool CorrespondAuCheminEmulateurManuel(
+        string nomEmulateur,
+        string cheminExecutable
+    )
     {
         if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(cheminExecutable))
         {
@@ -226,7 +241,8 @@ public static class ServiceSourcesLocalesEmulateurs
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => TrouverParentSiPossible(
                 TrouverRepertoireLogsRetroArch()
             ),
-            StrategieRenseignementJeuEmulateurLocal.DuckStationLog => TrouverRepertoireDuckStation(),
+            StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
+                TrouverRepertoireDuckStation(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverRepertoirePCSX2(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverRepertoirePPSSPP(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => TrouverParentSiPossible(
@@ -248,7 +264,10 @@ public static class ServiceSourcesLocalesEmulateurs
         };
     }
 
-    public static bool CheminExecutableCorrespondEmulateur(string nomEmulateur, string cheminExecutable)
+    public static bool CheminExecutableCorrespondEmulateur(
+        string nomEmulateur,
+        string cheminExecutable
+    )
     {
         if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(cheminExecutable))
         {
@@ -307,8 +326,7 @@ public static class ServiceSourcesLocalesEmulateurs
 
         return definition.StrategieRenseignementJeu switch
         {
-            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
-                TrouverCheminJournalFlycast(),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig => TrouverCheminJournalFlycast(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 TrouverRepertoireRACacheRALibretro(),
                 "RALog.txt"
@@ -358,8 +376,9 @@ public static class ServiceSourcesLocalesEmulateurs
         ];
 
         return candidats
-            .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
-            .FirstOrDefault(Directory.Exists) ?? string.Empty;
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(Directory.Exists)
+            ?? string.Empty;
     }
 
     public static string TrouverDernierCheminJournalRetroArch()
@@ -368,14 +387,21 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             string[] candidatsDirects =
             [
-                .. ConstruireCandidatsFichiersJournalRetroArch(ObtenirEmplacementEmulateurManuel("RetroArch")),
-                .. ConstruireCandidatsFichiersJournalRetroArch(ObtenirEmplacementEmulateurDetecte("RetroArch")),
-                .. ConstruireCandidatsFichiersJournalRetroArch(TrouverCheminExecutableRetroArchDepuisProcessus()),
+                .. ConstruireCandidatsFichiersJournalRetroArch(
+                    ObtenirEmplacementEmulateurManuel("RetroArch")
+                ),
+                .. ConstruireCandidatsFichiersJournalRetroArch(
+                    ObtenirEmplacementEmulateurDetecte("RetroArch")
+                ),
+                .. ConstruireCandidatsFichiersJournalRetroArch(
+                    TrouverCheminExecutableRetroArchDepuisProcessus()
+                ),
             ];
 
-            string cheminDirect = candidatsDirects.FirstOrDefault(fichier =>
-                !string.IsNullOrWhiteSpace(fichier) && File.Exists(fichier)
-            ) ?? string.Empty;
+            string cheminDirect =
+                candidatsDirects.FirstOrDefault(fichier =>
+                    !string.IsNullOrWhiteSpace(fichier) && File.Exists(fichier)
+                ) ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(cheminDirect))
             {
@@ -853,7 +879,9 @@ public static class ServiceSourcesLocalesEmulateurs
             "RetroArch"
         );
 
-        return definition is null ? string.Empty : TrouverEmplacementEmulateurDepuisProcessus(definition);
+        return definition is null
+            ? string.Empty
+            : TrouverEmplacementEmulateurDepuisProcessus(definition);
     }
 
     private static string TrouverRepertoireLogsDepuisEmplacementRetroArch(string emplacement)
@@ -883,7 +911,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
-    private static IEnumerable<string> ConstruireCandidatsFichiersJournalRetroArch(string emplacement)
+    private static IEnumerable<string> ConstruireCandidatsFichiersJournalRetroArch(
+        string emplacement
+    )
     {
         if (string.IsNullOrWhiteSpace(emplacement))
         {
@@ -912,7 +942,10 @@ public static class ServiceSourcesLocalesEmulateurs
         yield return Path.Combine(repertoireBase, "retroarch.log");
     }
 
-    private static bool CorrespondNomProcessus(Process processus, IReadOnlyList<string> nomsProcessus)
+    private static bool CorrespondNomProcessus(
+        Process processus,
+        IReadOnlyList<string> nomsProcessus
+    )
     {
         string nomProcessus = processus.ProcessName?.Trim() ?? string.Empty;
 
@@ -1007,11 +1040,10 @@ public static class ServiceSourcesLocalesEmulateurs
 
         try
         {
-            DirectoryInfo? repertoire = Directory.Exists(chemin)
-                ? new DirectoryInfo(chemin)
-                : File.Exists(chemin)
-                    ? new FileInfo(chemin).Directory
-                    : null;
+            DirectoryInfo? repertoire =
+                Directory.Exists(chemin) ? new DirectoryInfo(chemin)
+                : File.Exists(chemin) ? new FileInfo(chemin).Directory
+                : null;
 
             if (repertoire?.Parent is not null)
             {

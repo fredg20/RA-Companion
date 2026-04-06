@@ -9,7 +9,7 @@ namespace RA.Compagnon.Services;
 /// Surveille les fichiers locaux RetroAchievements de certains émulateurs pour déclencher
 /// des rafraîchissements plus réactifs que le simple tick API.
 /// </summary>
-public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
+public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
 {
     private static readonly string CheminJournalSurveillanceSucces = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -19,10 +19,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
     private static readonly TimeSpan DureeDebounceSignal = TimeSpan.FromMilliseconds(700);
     private static readonly TimeSpan DelaiSignalInitialRetroArch = TimeSpan.FromMilliseconds(850);
     private static readonly TimeSpan DelaiSuiviRACacheLog = TimeSpan.FromMilliseconds(2500);
-    private static readonly Regex RegexFichierJeuRACache = new(
-        @"^\d+\.json$",
-        RegexOptions.CultureInvariant
-    );
+    private static readonly Regex RegexFichierJeuRACache = MyRegex();
     private readonly Lock _verrou = new();
     private FileSystemWatcher? _surveillancePrincipale;
     private FileSystemWatcher? _surveillanceSecondaire;
@@ -116,9 +113,8 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             ?.StrategieSurveillanceSucces switch
         {
             StrategieSurveillanceSuccesLocale.RetroArchLogs => ConstruireSurveillanceRetroArch(),
-            StrategieSurveillanceSuccesLocale.JournalLogsSimple => ConstruireSurveillanceJournalSimple(
-                nomEmulateur
-            ),
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple =>
+                ConstruireSurveillanceJournalSimple(nomEmulateur),
             StrategieSurveillanceSuccesLocale.Project64RACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
                 ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64()
@@ -243,7 +239,7 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
             EnableRaisingEvents = true,
         };
 
-        FileSystemEventHandler gestionnaireEvenement = (_, evenement) =>
+        void gestionnaireEvenement(object _, FileSystemEventArgs evenement) =>
             SignalerChangement(nomEmulateur, typeSource, evenement.FullPath);
         RenamedEventHandler gestionnaireRenommage = (_, evenement) =>
             SignalerChangement(nomEmulateur, typeSource, evenement.FullPath);
@@ -462,9 +458,14 @@ public sealed class ServiceSurveillanceSuccesLocaux : IDisposable
                 "RALog.txt",
                 StringComparison.OrdinalIgnoreCase
             ),
-            "logs" => Path.GetExtension(nomFichier)
-                .Equals(".log", StringComparison.OrdinalIgnoreCase),
+            // Les journaux "logs" sont deja filtres par le FileSystemWatcher
+            // (retroarch.log, emulog.txt, duckstation.log, etc.).
+            // Ici, on accepte donc tout nom de fichier reel plutot que seulement ".log".
+            "logs" => !string.IsNullOrWhiteSpace(nomFichier),
             _ => true,
         };
     }
+
+    [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
+    private static partial Regex MyRegex();
 }

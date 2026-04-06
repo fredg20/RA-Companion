@@ -129,6 +129,7 @@ public partial class MainWindow
             jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
             jeuSauvegarde.CheminJeuLocal = cheminJeu;
             _dernierJeuAfficheModifie = true;
+            _ = PersisterDernierJeuAfficheSiNecessaireAsync();
             break;
         }
     }

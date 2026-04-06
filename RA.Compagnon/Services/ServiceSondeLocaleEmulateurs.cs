@@ -26,6 +26,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static readonly Lock VerrouCacheRALibretro = new();
     private static readonly Lock VerrouCachePPSSPP = new();
     private static readonly Lock VerrouCacheRetroArch = new();
+    private static readonly Lock VerrouCacheFlycast = new();
     private static string _dernierRepertoireDuckStation = string.Empty;
     private static DateTime _dernierHorodatageCacheGamelistUtc = DateTime.MinValue;
     private static Dictionary<string, string> _cacheSerialVersCheminDuckStation = [];
@@ -35,6 +36,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static DateTime _dernierHorodatageRenseignementPPSSPPUtc = DateTime.MinValue;
     private static RenseignementJeuRA? _dernierRenseignementRetroArch;
     private static DateTime _dernierHorodatageRenseignementRetroArchUtc = DateTime.MinValue;
+    private static string _dernierRepertoireContenuFlycast = string.Empty;
+    private static DateTime _dernierHorodatageCacheContenuFlycastUtc = DateTime.MinValue;
+    private static List<string> _cacheFichiersJeuFlycast = [];
 
     private static readonly IReadOnlyList<DefinitionEmulateurLocal> Definitions =
         ServiceCatalogueEmulateursLocaux.Definitions;
@@ -99,6 +103,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireRenseignementJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
                 LireRenseignementJeuPPSSPPDepuisLog(string.Empty),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                LireRenseignementJeuFlycastDepuisSourcesRejouer(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
                 LireRenseignementJeuProject64DepuisRACache(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
@@ -120,6 +126,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                LireCheminJeuFlycastDepuisConfiguration(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
                 LireCheminJeuProject64DepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
@@ -237,6 +245,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             correspondAuNomProcessus || correspondAuxMetadonneesExecutable
                 ? LireCheminExecutableProcessus(processusCible)
                 : string.Empty;
+
+        if (
+            string.IsNullOrWhiteSpace(cheminExecutable)
+            && (correspondAuNomProcessus || correspondAuxMetadonneesExecutable)
+        )
+        {
+            cheminExecutable = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+                definition.NomEmulateur
+            );
+        }
+
         string titreJeuProbable = ExtraireTitreJeuPourDefinition(
             definition,
             processusCible,
@@ -548,6 +567,14 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
+                LireCheminJeuFlycastDepuisConfiguration(
+                    ExtraireTitreJeuPourDefinition(
+                        definition,
+                        processus,
+                        LireTitreFenetre(processus)
+                    )
+                ),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
                 LireCheminJeuProject64DepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
@@ -1331,6 +1358,229 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return string.Empty;
+    }
+
+    private static string LireCheminJeuFlycastDepuisConfiguration(string titreJeuProbable)
+    {
+        try
+        {
+            string cheminConfiguration =
+                ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationFlycast();
+
+            if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+            {
+                return string.Empty;
+            }
+
+            string repertoireContenu = string.Empty;
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminConfiguration
+                )
+            )
+            {
+                const string prefixe = "Dreamcast.ContentPath";
+
+                if (!ligne.StartsWith(prefixe, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                int indexSeparateur = ligne.IndexOf('=');
+
+                if (indexSeparateur < 0 || indexSeparateur == ligne.Length - 1)
+                {
+                    continue;
+                }
+
+                repertoireContenu = ligne[(indexSeparateur + 1)..].Trim();
+                break;
+            }
+
+            if (
+                string.IsNullOrWhiteSpace(repertoireContenu) || !Directory.Exists(repertoireContenu)
+            )
+            {
+                return string.Empty;
+            }
+
+            return TrouverCheminJeuFlycastDepuisRepertoireContenu(
+                repertoireContenu,
+                titreJeuProbable
+            );
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string TrouverCheminJeuFlycastDepuisRepertoireContenu(
+        string repertoireContenu,
+        string titreJeuProbable
+    )
+    {
+        if (
+            string.IsNullOrWhiteSpace(repertoireContenu)
+            || string.IsNullOrWhiteSpace(titreJeuProbable)
+        )
+        {
+            return string.Empty;
+        }
+
+        string repertoireNormalise;
+
+        try
+        {
+            repertoireNormalise = Path.GetFullPath(repertoireContenu.Trim());
+        }
+        catch
+        {
+            return string.Empty;
+        }
+
+        if (!Directory.Exists(repertoireNormalise))
+        {
+            return string.Empty;
+        }
+
+        string titreNormalise = NormaliserTitreComparaisonSouple(titreJeuProbable);
+
+        if (string.IsNullOrWhiteSpace(titreNormalise))
+        {
+            return string.Empty;
+        }
+
+        List<string> fichiersJeu = ObtenirFichiersJeuFlycast(repertoireNormalise);
+        string meilleurChemin = string.Empty;
+        int meilleurScore = int.MinValue;
+
+        foreach (string cheminFichier in fichiersJeu)
+        {
+            string nomFichier = NettoyerNomFichierJeu(
+                Path.GetFileNameWithoutExtension(cheminFichier)
+            );
+            string nomDossier = NettoyerNomFichierJeu(
+                Path.GetFileName(Path.GetDirectoryName(cheminFichier) ?? string.Empty)
+            );
+
+            int score = 0;
+
+            if (TitresSemblables(nomFichier, titreJeuProbable))
+            {
+                score += 120;
+            }
+            else
+            {
+                score += CalculerScoreProximiteTitreSouple(titreNormalise, nomFichier) * 10;
+            }
+
+            if (TitresSemblables(nomDossier, titreJeuProbable))
+            {
+                score += 80;
+            }
+            else
+            {
+                score += CalculerScoreProximiteTitreSouple(titreNormalise, nomDossier) * 6;
+            }
+
+            if (score <= meilleurScore)
+            {
+                continue;
+            }
+
+            meilleurScore = score;
+            meilleurChemin = cheminFichier;
+        }
+
+        return meilleurScore >= 30 ? meilleurChemin : string.Empty;
+    }
+
+    private static List<string> ObtenirFichiersJeuFlycast(string repertoireContenu)
+    {
+        lock (VerrouCacheFlycast)
+        {
+            if (
+                string.Equals(
+                    _dernierRepertoireContenuFlycast,
+                    repertoireContenu,
+                    StringComparison.OrdinalIgnoreCase
+                )
+                && DateTime.UtcNow - _dernierHorodatageCacheContenuFlycastUtc
+                    < TimeSpan.FromMinutes(5)
+                && _cacheFichiersJeuFlycast.Count > 0
+            )
+            {
+                return [.. _cacheFichiersJeuFlycast];
+            }
+
+            string[] extensions = [".cue", ".cdi", ".gdi", ".chd"];
+
+            _cacheFichiersJeuFlycast =
+            [
+                .. new DirectoryInfo(repertoireContenu)
+                    .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                    .Where(fichier =>
+                        extensions.Contains(fichier.Extension, StringComparer.OrdinalIgnoreCase)
+                    )
+                    .Select(fichier => fichier.FullName),
+            ];
+            _dernierRepertoireContenuFlycast = repertoireContenu;
+            _dernierHorodatageCacheContenuFlycastUtc = DateTime.UtcNow;
+            return [.. _cacheFichiersJeuFlycast];
+        }
+    }
+
+    private static int CalculerScoreProximiteTitreSouple(
+        string titreReferenceNormalise,
+        string titreCandidat
+    )
+    {
+        string candidatNormalise = NormaliserTitreComparaisonSouple(titreCandidat);
+
+        if (
+            string.IsNullOrWhiteSpace(titreReferenceNormalise)
+            || string.IsNullOrWhiteSpace(candidatNormalise)
+        )
+        {
+            return 0;
+        }
+
+        HashSet<string> jetonsReference =
+        [
+            .. titreReferenceNormalise
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(jeton => jeton.Length >= 3),
+        ];
+        HashSet<string> jetonsCandidats =
+        [
+            .. candidatNormalise
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(jeton => jeton.Length >= 3),
+        ];
+
+        if (jetonsReference.Count == 0 || jetonsCandidats.Count == 0)
+        {
+            return 0;
+        }
+
+        int communs = jetonsReference.Intersect(jetonsCandidats, StringComparer.Ordinal).Count();
+
+        if (communs <= 0)
+        {
+            return 0;
+        }
+
+        if (
+            candidatNormalise.Contains(titreReferenceNormalise, StringComparison.Ordinal)
+            || titreReferenceNormalise.Contains(candidatNormalise, StringComparison.Ordinal)
+        )
+        {
+            communs += 3;
+        }
+
+        return communs;
     }
 
     private static string ExtraireTitreRALibretroDepuisFenetre(string titreFenetre)
@@ -2208,6 +2458,83 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuFlycastDepuisSourcesRejouer()
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalFlycast();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return null;
+            }
+
+            int identifiantJeu = 0;
+            string titreJeu = string.Empty;
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                if (string.IsNullOrWhiteSpace(titreJeu))
+                {
+                    Match correspondanceCharge = FlycastGameLoadedRegex().Match(ligne);
+
+                    if (correspondanceCharge.Success)
+                    {
+                        if (
+                            int.TryParse(
+                                correspondanceCharge.Groups[1].Value,
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out int identifiantCharge
+                            )
+                        )
+                        {
+                            identifiantJeu = identifiantCharge;
+                        }
+
+                        titreJeu = correspondanceCharge.Groups[2].Value.Trim();
+                    }
+                }
+
+                if (identifiantJeu <= 0)
+                {
+                    Match correspondanceId = JournalGameIdRegex().Match(ligne);
+
+                    if (
+                        correspondanceId.Success
+                        && int.TryParse(
+                            correspondanceId.Groups[1].Value,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int identifiantTrouve
+                        )
+                    )
+                    {
+                        identifiantJeu = identifiantTrouve;
+                    }
+                }
+
+                if (identifiantJeu > 0 && !string.IsNullOrWhiteSpace(titreJeu))
+                {
+                    return new RenseignementJeuRA(identifiantJeu, titreJeu);
+                }
+            }
+
+            return identifiantJeu > 0 || !string.IsNullOrWhiteSpace(titreJeu)
+                ? new RenseignementJeuRA(identifiantJeu, titreJeu)
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string LireCheminJeuRetroArchDepuisLog()
@@ -3314,8 +3641,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     );
                 }
 
-                Match correspondanceDeblocageDuckStation =
-                    JournalSuccesDebloqueDuckStationRegex().Match(ligne);
+                Match correspondanceDeblocageDuckStation = JournalSuccesDebloqueDuckStationRegex()
+                    .Match(ligne);
 
                 if (
                     correspondanceDeblocageDuckStation.Success
@@ -3330,6 +3657,25 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                     return new RenseignementSuccesRA(
                         identifiantSuccesDebloqueDuckStation,
                         correspondanceDeblocageDuckStation.Groups[2].Value.Trim()
+                    );
+                }
+
+                Match correspondanceDeblocageFlycast = JournalSuccesDebloqueFlycastRegex()
+                    .Match(ligne);
+
+                if (
+                    correspondanceDeblocageFlycast.Success
+                    && int.TryParse(
+                        correspondanceDeblocageFlycast.Groups[2].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantSuccesDebloqueFlycast
+                    )
+                )
+                {
+                    return new RenseignementSuccesRA(
+                        identifiantSuccesDebloqueFlycast,
+                        correspondanceDeblocageFlycast.Groups[1].Value.Trim()
                     );
                 }
             }
@@ -3853,6 +4199,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex JournalSuccesDebloqueDuckStationRegex();
+
+    [GeneratedRegex(
+        @"Achievement\s+(.+?)\s+\((\d+)\)\s+for game\s+.+?\s+unlocked\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex JournalSuccesDebloqueFlycastRegex();
 
     [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
     private static partial Regex FichierDonneesJeuRegex();

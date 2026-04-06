@@ -520,8 +520,7 @@ public partial class MainWindow
 
         int nombreSucces = _succesJeuCourant.Count;
         int nombreDebloques = _succesJeuCourant.Count(SuccesEstDebloquePourAffichage);
-        double pourcentage =
-            nombreSucces <= 0 ? 0 : (double)nombreDebloques * 100d / nombreSucces;
+        double pourcentage = nombreSucces <= 0 ? 0 : (double)nombreDebloques * 100d / nombreSucces;
 
         TexteResumeProgressionJeuEnCours.Text = string.Create(
             CultureInfo.CurrentCulture,

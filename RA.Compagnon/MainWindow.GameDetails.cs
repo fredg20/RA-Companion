@@ -41,6 +41,11 @@ public partial class MainWindow
             return;
         }
 
+        if (jeuSauvegarde is not null)
+        {
+            HydraterActionRejouerDepuisSourcesLocalesActifRecemment(jeuSauvegarde);
+        }
+
         if (
             jeuSauvegarde is null
             || jeuSauvegarde.Id <= 0
@@ -133,7 +138,10 @@ public partial class MainWindow
             )
         )
         {
-            string cheminCore = TrouverCheminCoreRetroArch(cheminExecutable, jeuSauvegarde.CheminJeuLocal);
+            string cheminCore = TrouverCheminCoreRetroArch(
+                cheminExecutable,
+                jeuSauvegarde.CheminJeuLocal
+            );
 
             if (!string.IsNullOrWhiteSpace(cheminCore))
             {
@@ -228,10 +236,7 @@ public partial class MainWindow
 
         if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal))
         {
-            JournaliserRejouer(
-                "ignore",
-                "raison=jeu_absent_ou_chemin_absent"
-            );
+            JournaliserRejouer("ignore", "raison=jeu_absent_ou_chemin_absent");
             MessageBox.Show(
                 "Aucun dernier jeu local relancable n'est disponible pour le moment.",
                 "Rejouer",

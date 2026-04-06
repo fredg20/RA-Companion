@@ -140,7 +140,7 @@ public static class ServiceCatalogueEmulateursLocaux
             StrategieExtractionTitreEmulateurLocal.Flycast,
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig,
             StrategieSurveillanceSuccesLocale.JournalLogsSimple,
-            true,
+            false,
             true,
             ["logs"]
         ),

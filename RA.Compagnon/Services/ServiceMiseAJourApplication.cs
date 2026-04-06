@@ -318,18 +318,12 @@ public sealed class ServiceMiseAJourApplication
 
             Directory.CreateDirectory(dossierInstalleur);
 
-            string cheminScript = Path.Combine(
-                dossierInstalleur,
-                "installer-mise-a-jour.ps1"
-            );
+            string cheminScript = Path.Combine(dossierInstalleur, "installer-mise-a-jour.ps1");
             string cheminLanceur = Path.Combine(
                 dossierInstalleur,
                 "lancer-installer-mise-a-jour.cmd"
             );
-            string cheminJournal = Path.Combine(
-                dossierInstalleur,
-                "installer-mise-a-jour.log"
-            );
+            string cheminJournal = Path.Combine(dossierInstalleur, "installer-mise-a-jour.log");
             string cheminJournalLanceur = Path.Combine(
                 dossierInstalleur,
                 "lancer-installer-mise-a-jour.log"
@@ -658,8 +652,7 @@ catch {
         string cheminJournalLanceur
     )
     {
-        return
-            "@echo off\r\n"
+        return "@echo off\r\n"
             + $"echo %date% %time% Lanceur démarré > \"{cheminJournalLanceur}\"\r\n"
             + "start \"\" /min powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden"
             + $" -File \"{cheminScript}\""
