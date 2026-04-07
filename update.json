@@ -1,6 +1,7 @@
+
 ﻿{
   "version": "1.0.7",
   "url": "https://github.com/fredg20/RA-Companion/releases/download/v1.0.7/RA.Compagnon-win-x64-1.0.7.zip",
-  "notes": "Version courante publiée de RA-Compagnon.",
+  "notes": "- modale Aide rendue plus réactive à l'ouverture\r\n- mémorisation automatique de l'emplacement des émulateurs validés ouverts\r\n- journalisation de la sonde locale et de l'affichage des informations du jeu\r\n- lecture des journaux locaux fiabilisée pour les changements de jeu, le `GameID` et les succès\r\n- ajout du bouton `Rejouer` pour relancer un jeu local détecté\r\n- extension de `Rejouer` à l'ensemble des émulateurs validés à partir de leurs sources locales\r\n- prise en charge spécifique de `RetroArch`, `RALibretro` et `Dolphin` pour la relance adaptée\r\n- masquage du bouton `Rejouer` pendant l'état `En jeu`\r\n- conservation plus stable des informations affichées sur le jeu courant\r\n- ajout et validation des supports `BizHawk`, `Dolphin` et `RAP64`\r\n- retrait du support `LunaProject64`\r\n\r\nCe package vient avec 2 émulateurs modifiés pour le bon fonctionnement de Compagnon, car les émulateurs originaux produisaient mal leurs caches",
   "publishedAt": "2026-04-07"
 }
