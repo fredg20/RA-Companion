@@ -91,19 +91,17 @@ public partial class MainWindow
         EtatJeuAfficheLocal jeuSauvegarde
     )
     {
-        if (
-            jeuSauvegarde.Id <= 0
-            || (
-                !string.IsNullOrWhiteSpace(jeuSauvegarde.NomEmulateurRelance)
-                && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminExecutableEmulateur)
-                && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
-                && File.Exists(jeuSauvegarde.CheminExecutableEmulateur)
-                && File.Exists(jeuSauvegarde.CheminJeuLocal)
-            )
-        )
+        if (jeuSauvegarde.Id <= 0)
         {
             return;
         }
+
+        bool contexteRelanceActuelValide =
+            !string.IsNullOrWhiteSpace(jeuSauvegarde.NomEmulateurRelance)
+            && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminExecutableEmulateur)
+            && !string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
+            && File.Exists(jeuSauvegarde.CheminExecutableEmulateur)
+            && File.Exists(jeuSauvegarde.CheminJeuLocal);
 
         foreach (
             DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
@@ -125,11 +123,33 @@ public partial class MainWindow
                 continue;
             }
 
-            jeuSauvegarde.NomEmulateurRelance = definition.NomEmulateur;
-            jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
-            jeuSauvegarde.CheminJeuLocal = cheminJeu;
-            _dernierJeuAfficheModifie = true;
-            _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+            bool modifie =
+                !contexteRelanceActuelValide
+                || !string.Equals(
+                    jeuSauvegarde.NomEmulateurRelance,
+                    definition.NomEmulateur,
+                    StringComparison.Ordinal
+                )
+                || !string.Equals(
+                    jeuSauvegarde.CheminExecutableEmulateur,
+                    cheminExecutable,
+                    StringComparison.OrdinalIgnoreCase
+                )
+                || !string.Equals(
+                    jeuSauvegarde.CheminJeuLocal,
+                    cheminJeu,
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+            if (modifie)
+            {
+                jeuSauvegarde.NomEmulateurRelance = definition.NomEmulateur;
+                jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
+                jeuSauvegarde.CheminJeuLocal = cheminJeu;
+                _dernierJeuAfficheModifie = true;
+                _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+            }
+
             break;
         }
     }

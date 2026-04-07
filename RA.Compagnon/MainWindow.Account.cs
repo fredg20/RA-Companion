@@ -1298,8 +1298,13 @@ public partial class MainWindow
                 "Dans PCSX2 : en général, rien de plus n'est nécessaire. L'émulateur génère normalement `emulog.txt` dans son dossier `logs`. Si ce fichier n'apparaît pas, vérifie les options de console ou de débogage propres à ta version. Garde aussi PCSX2 à jour.",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
                 "Dans PPSSPP : ouvre `Tools -> Developer Tools`, puis active `Enable debug logging`. Si aucun fichier n'est encore écrit sur disque, lance PPSSPP avec une option du type `--log=...` pour forcer la création du journal. Garde aussi PPSSPP à jour.",
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
-                "Dans Luna's Project64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
+                definition.NomEmulateur,
+                "RAP64",
+                StringComparison.Ordinal
+            )
+                ? "Dans RAP64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour."
+                : "Dans Luna's Project64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 "Dans RALibretro : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
@@ -1376,11 +1381,13 @@ public partial class MainWindow
                 "emulation",
                 "Playstation Portable"
             ),
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
-                documents,
-                "emulation",
-                "Luna_Project64"
-            ),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
+                definition.NomEmulateur,
+                "RAP64",
+                StringComparison.Ordinal
+            )
+                ? Path.Combine(documents, "emulation", "RAP64")
+                : Path.Combine(documents, "emulation", "Luna_Project64"),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 documents,
                 "emulation",
@@ -1443,13 +1450,13 @@ public partial class MainWindow
                 "DUMP",
                 "log.txt"
             ),
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
-                documents,
-                "emulation",
-                "Luna_Project64",
-                "RACache",
-                "RALog.txt"
-            ),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
+                definition.NomEmulateur,
+                "RAP64",
+                StringComparison.Ordinal
+            )
+                ? Path.Combine(documents, "emulation", "RAP64", "RACache", "RALog.txt")
+                : Path.Combine(documents, "emulation", "Luna_Project64", "RACache", "RALog.txt"),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 documents,
                 "emulation",

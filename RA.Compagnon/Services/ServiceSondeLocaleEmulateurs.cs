@@ -106,7 +106,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
                 LireRenseignementJeuFlycastDepuisSourcesRejouer(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
-                LireRenseignementJeuProject64DepuisRACache(),
+                LireRenseignementJeuProject64DepuisRACache(definition.NomEmulateur),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 LireRenseignementJeuRALibretroDepuisRACache(),
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
@@ -117,6 +117,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireRenseignementJeuRASnes9xDepuisRACache(),
             _ => null,
         };
+
+        identifiantJeu = renseignementJeu?.IdentifiantJeu ?? 0;
+        titreJeu = renseignementJeu?.TitreJeu ?? string.Empty;
 
         cheminJeu = definition.StrategieRenseignementJeu switch
         {
@@ -129,20 +132,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
                 LireCheminJeuFlycastDepuisLogOuConfiguration(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
-                LireCheminJeuProject64DepuisConfiguration(),
+                LireCheminJeuProject64DepuisConfiguration(definition.NomEmulateur),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 LireCheminJeuRALibretroDepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
-                LireCheminJeuRANesDepuisConfiguration(),
+                LireCheminJeuRANesDepuisConfiguration(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
                 LireCheminJeuRAVBADepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
                 LireCheminJeuRASnes9xDepuisConfiguration(),
             _ => string.Empty,
         };
-
-        identifiantJeu = renseignementJeu?.IdentifiantJeu ?? 0;
-        titreJeu = renseignementJeu?.TitreJeu ?? string.Empty;
 
         return identifiantJeu > 0
             && !string.IsNullOrWhiteSpace(cheminJeu)
@@ -261,7 +261,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             processusCible,
             titreFenetre
         );
-        string cheminJeuProbable = ExtraireCheminJeuPourDefinition(definition, processusCible);
+        string cheminJeuProbable = ExtraireCheminJeuPourDefinition(
+            definition,
+            processusCible,
+            titreJeuProbable
+        );
         int identifiantJeuProbable = 0;
         string informationsDiagnostic = string.Empty;
 
@@ -270,7 +274,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             == StrategieRenseignementJeuEmulateurLocal.Project64RACache
         )
         {
-            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuProject64DepuisRACache();
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuProject64DepuisRACache(
+                definition.NomEmulateur
+            );
 
             if (renseignementJeu is not null)
             {
@@ -509,6 +515,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             );
         }
 
+        string cheminJeuRecalcule = ExtraireCheminJeuPourDefinition(
+            definition,
+            processusCible,
+            titreJeuProbable
+        );
+
+        if (!string.IsNullOrWhiteSpace(cheminJeuRecalcule))
+        {
+            cheminJeuProbable = cheminJeuRecalcule;
+        }
+
         string signature =
             $"{definition.NomEmulateur}|{processusCible.ProcessName}|{titreFenetre}|{titreJeuProbable}|{cheminJeuProbable}|{identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}|{informationsDiagnostic}";
 
@@ -530,7 +547,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
     private static string ExtraireCheminJeuPourDefinition(
         DefinitionEmulateurLocal definition,
-        Process processus
+        Process processus,
+        string titreJeuProbable = ""
     )
     {
         string cheminDepuisCommande = NormaliserCheminJeuProbable(
@@ -568,19 +586,13 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
-                LireCheminJeuFlycastDepuisLogOuConfiguration(
-                    ExtraireTitreJeuPourDefinition(
-                        definition,
-                        processus,
-                        LireTitreFenetre(processus)
-                    )
-                ),
+                LireCheminJeuFlycastDepuisLogOuConfiguration(titreJeuProbable),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
-                LireCheminJeuProject64DepuisConfiguration(),
+                LireCheminJeuProject64DepuisConfiguration(definition.NomEmulateur),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 LireCheminJeuRALibretroDepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
-                LireCheminJeuRANesDepuisConfiguration(),
+                LireCheminJeuRANesDepuisConfiguration(titreJeuProbable),
             StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
                 LireCheminJeuRAVBADepuisConfiguration(),
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
@@ -801,6 +813,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             jetons.Add("Project64");
             jetons.Add("Luna Project64");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RAP64", StringComparison.Ordinal))
+        {
+            jetons.Add("RAProject64");
+            jetons.Add("RA Project64");
+            jetons.Add("RAP64");
         }
 
         return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];
@@ -1132,10 +1150,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
-    private static string LireCheminJeuProject64DepuisConfiguration()
+    private static string LireCheminJeuProject64DepuisConfiguration(string nomEmulateur)
     {
         string cheminConfiguration =
-            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationProject64();
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationProject64(nomEmulateur);
 
         if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
         {
@@ -1175,7 +1193,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
-    private static string LireCheminJeuRANesDepuisConfiguration()
+    private static string LireCheminJeuRANesDepuisConfiguration(string titreJeuProbable)
     {
         string cheminConfiguration =
             ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationRANes();
@@ -1187,6 +1205,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
+            List<string> cheminsCandidats = [];
+
             foreach (
                 string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
                     cheminConfiguration
@@ -1195,28 +1215,102 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             {
                 if (ligne.StartsWith("ResumeROM ", StringComparison.OrdinalIgnoreCase))
                 {
-                    string cheminNormalise = NormaliserCheminJeuProbable(
+                    string cheminResume = NormaliserCheminJeuProbable(
                         ligne["ResumeROM ".Length..].Trim()
                     );
 
-                    if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                    if (!string.IsNullOrWhiteSpace(cheminResume))
                     {
-                        return cheminNormalise;
+                        cheminsCandidats.Add(cheminResume);
                     }
                 }
 
-                if (ligne.StartsWith("recent_files[0] ", StringComparison.OrdinalIgnoreCase))
+                if (!ligne.StartsWith("recent_files[", StringComparison.OrdinalIgnoreCase))
                 {
-                    string cheminNormalise = NormaliserCheminJeuProbable(
-                        ligne["recent_files[0] ".Length..].Trim()
-                    );
+                    continue;
+                }
 
-                    if (!string.IsNullOrWhiteSpace(cheminNormalise))
-                    {
-                        return cheminNormalise;
-                    }
+                int indexSeparateur = ligne.IndexOf(' ');
+
+                if (indexSeparateur < 0 || indexSeparateur == ligne.Length - 1)
+                {
+                    continue;
+                }
+
+                string cheminNormalise = NormaliserCheminJeuProbable(
+                    ligne[(indexSeparateur + 1)..].Trim()
+                );
+
+                if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    cheminsCandidats.Add(cheminNormalise);
                 }
             }
+
+            cheminsCandidats = [.. cheminsCandidats.Distinct(StringComparer.OrdinalIgnoreCase)];
+
+            if (cheminsCandidats.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(titreJeuProbable))
+            {
+                return cheminsCandidats[0];
+            }
+
+            string meilleurChemin = string.Empty;
+            int meilleurScore = int.MinValue;
+
+            foreach (string cheminCandidat in cheminsCandidats)
+            {
+                string nomFichier = NettoyerNomFichierJeu(
+                    Path.GetFileNameWithoutExtension(cheminCandidat)
+                );
+                string nomDossier = NettoyerNomFichierJeu(
+                    Path.GetFileName(Path.GetDirectoryName(cheminCandidat) ?? string.Empty)
+                );
+
+                int score = 0;
+
+                if (TitresSemblables(nomFichier, titreJeuProbable))
+                {
+                    score += 120;
+                }
+                else
+                {
+                    score +=
+                        CalculerScoreProximiteTitreSouple(
+                            NormaliserTitreComparaisonSouple(titreJeuProbable),
+                            nomFichier
+                        ) * 10;
+                }
+
+                if (TitresSemblables(nomDossier, titreJeuProbable))
+                {
+                    score += 80;
+                }
+                else
+                {
+                    score +=
+                        CalculerScoreProximiteTitreSouple(
+                            NormaliserTitreComparaisonSouple(titreJeuProbable),
+                            nomDossier
+                        ) * 6;
+                }
+
+                if (score <= meilleurScore)
+                {
+                    continue;
+                }
+
+                meilleurScore = score;
+                meilleurChemin = cheminCandidat;
+            }
+
+            return !string.IsNullOrWhiteSpace(meilleurChemin)
+                ? meilleurChemin
+                : cheminsCandidats[0];
         }
         catch
         {
@@ -1688,18 +1782,30 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             {
                 if (morceaux.Length == 3)
                 {
-                    // Format "LunaProject64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
+                    // Format "LunaProject64 / RAP64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
                     return string.Empty;
                 }
 
                 string candidat = morceaux.Length >= 4 ? morceaux[^2] : morceaux[^1];
-                return NettoyerTitreJeu(candidat, ["Project64", "LunaProject64"]);
+                return NettoyerTitreJeu(
+                    candidat,
+                    ["Project64", "LunaProject64", "RAP64", "RAProject64"]
+                );
             }
 
-            return NettoyerTitreJeu(morceaux[^1], ["Project64", "LunaProject64"]);
+            return NettoyerTitreJeu(
+                morceaux[^1],
+                ["Project64", "LunaProject64", "RAP64", "RAProject64"]
+            );
         }
 
-        return ExtraireTitreAvecSeparateurs(titreFenetre, "Project64", "LunaProject64");
+        return ExtraireTitreAvecSeparateurs(
+            titreFenetre,
+            "Project64",
+            "LunaProject64",
+            "RAP64",
+            "RAProject64"
+        );
     }
 
     private static bool EstBlocVersionProject64(string valeur)
@@ -3282,12 +3388,14 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
-    private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisRACache()
+    private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisRACache(
+        string nomEmulateur
+    )
     {
         try
         {
             string repertoireRACache =
-                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64();
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64(nomEmulateur);
 
             if (string.IsNullOrWhiteSpace(repertoireRACache))
             {

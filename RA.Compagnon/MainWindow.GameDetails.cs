@@ -174,6 +174,25 @@ public partial class MainWindow
             }
         }
 
+        if (
+            string.Equals(
+                jeuSauvegarde.NomEmulateurRelance,
+                "RALibretro",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            string cheminCore = TrouverCheminCoreRALibretro(
+                cheminExecutable,
+                jeuSauvegarde.CheminJeuLocal
+            );
+
+            if (!string.IsNullOrWhiteSpace(cheminCore))
+            {
+                return $"-L \"{cheminCore}\" \"{jeuSauvegarde.CheminJeuLocal}\"";
+            }
+        }
+
         return $"\"{jeuSauvegarde.CheminJeuLocal}\"";
     }
 
@@ -245,6 +264,91 @@ public partial class MainWindow
                 return !string.IsNullOrWhiteSpace(cheminCore) && File.Exists(cheminCore)
                     ? cheminCore
                     : string.Empty;
+            }
+        }
+        catch
+        {
+            return string.Empty;
+        }
+
+        return string.Empty;
+    }
+
+    private static string TrouverCheminCoreRALibretro(string cheminExecutable, string cheminJeu)
+    {
+        try
+        {
+            string? repertoireRALibretro = Path.GetDirectoryName(cheminExecutable);
+
+            if (string.IsNullOrWhiteSpace(repertoireRALibretro))
+            {
+                return string.Empty;
+            }
+
+            string cheminConfiguration = Path.Combine(repertoireRALibretro, "RALibretro.json");
+
+            if (!File.Exists(cheminConfiguration))
+            {
+                return string.Empty;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminConfiguration));
+
+            if (
+                !document.RootElement.TryGetProperty("recent", out JsonElement recent)
+                || recent.ValueKind != JsonValueKind.Array
+            )
+            {
+                return string.Empty;
+            }
+
+            foreach (JsonElement item in recent.EnumerateArray())
+            {
+                if (
+                    !item.TryGetProperty("path", out JsonElement pathElement)
+                    || pathElement.ValueKind != JsonValueKind.String
+                )
+                {
+                    continue;
+                }
+
+                string cheminJeuHistorique = pathElement.GetString()?.Trim() ?? string.Empty;
+
+                if (
+                    !string.Equals(
+                        cheminJeuHistorique,
+                        cheminJeu,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    !item.TryGetProperty("core", out JsonElement coreElement)
+                    || coreElement.ValueKind != JsonValueKind.String
+                )
+                {
+                    return string.Empty;
+                }
+
+                string nomCore = coreElement.GetString()?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(nomCore))
+                {
+                    return string.Empty;
+                }
+
+                string fichierCore = nomCore.EndsWith(
+                    "_libretro",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                    ? $"{nomCore}.dll"
+                    : $"{nomCore}_libretro.dll";
+
+                string cheminCore = Path.Combine(repertoireRALibretro, "Cores", fichierCore);
+                return File.Exists(cheminCore) ? cheminCore : string.Empty;
             }
         }
         catch

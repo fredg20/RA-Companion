@@ -246,7 +246,7 @@ public static class ServiceSourcesLocalesEmulateurs
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverRepertoirePCSX2(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverRepertoirePPSSPP(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => TrouverParentSiPossible(
-                TrouverRepertoireRACacheProject64()
+                TrouverRepertoireRACacheProject64(definition.NomEmulateur)
             ),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => TrouverParentSiPossible(
                 TrouverRepertoireRACacheRALibretro()
@@ -332,7 +332,7 @@ public static class ServiceSourcesLocalesEmulateurs
                 "RALog.txt"
             ),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
-                TrouverRepertoireRACacheProject64(),
+                TrouverRepertoireRACacheProject64(definition.NomEmulateur),
                 "RALog.txt"
             ),
             StrategieRenseignementJeuEmulateurLocal.RANesRACache => Path.Combine(
@@ -436,17 +436,31 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
-    public static string TrouverRepertoireRACacheProject64()
+    public static string TrouverRepertoireRACacheProject64(string nomEmulateur = "LunaProject64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        string[] candidats =
+        string[] candidatsRAP64 =
+        [
+            Path.Combine(documents, "emulation", "RAP64", "RACache"),
+            Path.Combine(documents, "emulation", "RAProject64", "RACache"),
+            Path.Combine(documents, "RAP64", "RACache"),
+            Path.Combine(documents, "RAProject64", "RACache"),
+            Path.Combine(appData, "RAP64", "RACache"),
+            Path.Combine(appData, "RAProject64", "RACache"),
+        ];
+
+        string[] candidatsLunaProject64 =
         [
             Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
             Path.Combine(documents, "Luna_Project64", "RACache"),
             Path.Combine(appData, "Luna-Project64", "RACache"),
         ];
+
+        string[] candidats = string.Equals(nomEmulateur, "RAP64", StringComparison.Ordinal)
+            ? [.. candidatsRAP64, .. candidatsLunaProject64]
+            : [.. candidatsLunaProject64, .. candidatsRAP64];
 
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
@@ -541,17 +555,31 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
-    public static string TrouverCheminConfigurationProject64()
+    public static string TrouverCheminConfigurationProject64(string nomEmulateur = "LunaProject64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-        string[] candidats =
+        string[] candidatsRAP64 =
+        [
+            Path.Combine(documents, "emulation", "RAP64", "Config", "Project64.cfg"),
+            Path.Combine(documents, "emulation", "RAProject64", "Config", "Project64.cfg"),
+            Path.Combine(documents, "RAP64", "Config", "Project64.cfg"),
+            Path.Combine(documents, "RAProject64", "Config", "Project64.cfg"),
+            Path.Combine(appData, "RAP64", "Config", "Project64.cfg"),
+            Path.Combine(appData, "RAProject64", "Config", "Project64.cfg"),
+        ];
+
+        string[] candidatsLunaProject64 =
         [
             Path.Combine(documents, "emulation", "Luna_Project64", "Config", "Project64.cfg"),
             Path.Combine(documents, "Luna_Project64", "Config", "Project64.cfg"),
             Path.Combine(appData, "Luna-Project64", "Config", "Project64.cfg"),
         ];
+
+        string[] candidats = string.Equals(nomEmulateur, "RAP64", StringComparison.Ordinal)
+            ? [.. candidatsRAP64, .. candidatsLunaProject64]
+            : [.. candidatsLunaProject64, .. candidatsRAP64];
 
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
@@ -1006,6 +1034,12 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             jetons.Add("Project64");
             jetons.Add("Luna Project64");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RAP64", StringComparison.Ordinal))
+        {
+            jetons.Add("RAProject64");
+            jetons.Add("RA Project64");
+            jetons.Add("RAP64");
         }
 
         return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];

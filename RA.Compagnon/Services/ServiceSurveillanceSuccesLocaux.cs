@@ -117,7 +117,7 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
                 ConstruireSurveillanceJournalSimple(nomEmulateur),
             StrategieSurveillanceSuccesLocale.Project64RACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
-                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64()
+                ServiceSourcesLocalesEmulateurs.TrouverRepertoireRACacheProject64(nomEmulateur)
             ),
             StrategieSurveillanceSuccesLocale.RALibretroRACache => ConstruireSurveillanceRACache(
                 nomEmulateur,
