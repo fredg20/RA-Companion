@@ -241,6 +241,11 @@ public static class ServiceSourcesLocalesEmulateurs
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => TrouverParentSiPossible(
                 TrouverRepertoireLogsRetroArch()
             ),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => TrouverRepertoireFichier(
+                TrouverCheminConfigurationBizHawk()
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                TrouverCheminExecutableDolphin(),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 TrouverRepertoireDuckStation(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverRepertoirePCSX2(),
@@ -327,6 +332,10 @@ public static class ServiceSourcesLocalesEmulateurs
         return definition.StrategieRenseignementJeu switch
         {
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig => TrouverCheminJournalFlycast(),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                TrouverCheminJournalJeuBizHawk(),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                TrouverCheminJournalDolphin(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 TrouverRepertoireRACacheRALibretro(),
                 "RALog.txt"
@@ -436,7 +445,7 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
-    public static string TrouverRepertoireRACacheProject64(string nomEmulateur = "LunaProject64")
+    public static string TrouverRepertoireRACacheProject64(string nomEmulateur = "RAP64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -451,18 +460,7 @@ public static class ServiceSourcesLocalesEmulateurs
             Path.Combine(appData, "RAProject64", "RACache"),
         ];
 
-        string[] candidatsLunaProject64 =
-        [
-            Path.Combine(documents, "emulation", "Luna_Project64", "RACache"),
-            Path.Combine(documents, "Luna_Project64", "RACache"),
-            Path.Combine(appData, "Luna-Project64", "RACache"),
-        ];
-
-        string[] candidats = string.Equals(nomEmulateur, "RAP64", StringComparison.Ordinal)
-            ? [.. candidatsRAP64, .. candidatsLunaProject64]
-            : [.. candidatsLunaProject64, .. candidatsRAP64];
-
-        return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
+        return candidatsRAP64.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
     public static string TrouverRepertoireRACacheRALibretro()
@@ -555,7 +553,157 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
-    public static string TrouverCheminConfigurationProject64(string nomEmulateur = "LunaProject64")
+    public static string TrouverCheminConfigurationBizHawk()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("BizHawk");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("BizHawk");
+
+        string[] candidats =
+        [
+            TrouverFichierConfigurationBizHawkDepuisEmplacement(emplacementManuel),
+            TrouverFichierConfigurationBizHawkDepuisEmplacement(emplacementDetecte),
+            Path.Combine(documents, "emulation", "BizHawk", "config.ini"),
+            Path.Combine(documents, "BizHawk", "config.ini"),
+            Path.Combine(appData, "BizHawk", "config.ini"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationRetroAchievementsDolphin()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats =
+        [
+            Path.Combine(documents, "Dolphin Emulator", "Config", "RetroAchievements.ini"),
+            Path.Combine(appData, "Dolphin Emulator", "Config", "RetroAchievements.ini"),
+        ];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationDolphin()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("Dolphin");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("Dolphin");
+
+        string[] candidats =
+        [
+            TrouverFichierDolphinDepuisEmplacement(emplacementManuel, "Config", "Dolphin.ini"),
+            TrouverFichierDolphinDepuisEmplacement(emplacementDetecte, "Config", "Dolphin.ini"),
+            Path.Combine(appData, "Dolphin Emulator", "Config", "Dolphin.ini"),
+            Path.Combine(documents, "Dolphin Emulator", "Config", "Dolphin.ini"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationQtDolphin()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("Dolphin");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("Dolphin");
+
+        string[] candidats =
+        [
+            TrouverFichierDolphinDepuisEmplacement(emplacementManuel, "Config", "Qt.ini"),
+            TrouverFichierDolphinDepuisEmplacement(emplacementDetecte, "Config", "Qt.ini"),
+            Path.Combine(appData, "Dolphin Emulator", "Config", "Qt.ini"),
+            Path.Combine(documents, "Dolphin Emulator", "Config", "Qt.ini"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminJournalDolphin()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("Dolphin");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("Dolphin");
+
+        string[] candidats =
+        [
+            TrouverFichierDolphinDepuisEmplacement(emplacementManuel, "Logs", "dolphin.log"),
+            TrouverFichierDolphinDepuisEmplacement(emplacementDetecte, "Logs", "dolphin.log"),
+            Path.Combine(appData, "Dolphin Emulator", "Logs", "dolphin.log"),
+            Path.Combine(documents, "Dolphin Emulator", "Logs", "dolphin.log"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminJournalJeuBizHawk()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("BizHawk");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("BizHawk");
+
+        string[] candidats =
+        [
+            TrouverFichierBizHawkDepuisEmplacement(
+                emplacementManuel,
+                "retroachievements-game-log.json"
+            ),
+            TrouverFichierBizHawkDepuisEmplacement(
+                emplacementDetecte,
+                "retroachievements-game-log.json"
+            ),
+            Path.Combine(documents, "emulation", "BizHawk", "retroachievements-game-log.json"),
+            Path.Combine(documents, "BizHawk", "retroachievements-game-log.json"),
+            Path.Combine(appData, "BizHawk", "retroachievements-game-log.json"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminExecutableDolphin()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("Dolphin");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("Dolphin");
+        string emplacementProcessus = TrouverCheminExecutableDolphinDepuisProcessus();
+
+        string[] candidats =
+        [
+            TrouverFichierDolphinDepuisEmplacement(emplacementManuel),
+            TrouverFichierDolphinDepuisEmplacement(emplacementDetecte),
+            TrouverFichierDolphinDepuisEmplacement(emplacementProcessus),
+            Path.Combine(documents, "emulation", "Gamecube", "Dolphin.exe"),
+            Path.Combine(documents, "emulation", "Gamecube", "Slippi Dolphin.exe"),
+            Path.Combine(documents, "emulation", "Gamecube", "Slippi Dolphin Launcher.exe"),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    public static string TrouverCheminConfigurationProject64(string nomEmulateur = "RAP64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -570,18 +718,7 @@ public static class ServiceSourcesLocalesEmulateurs
             Path.Combine(appData, "RAProject64", "Config", "Project64.cfg"),
         ];
 
-        string[] candidatsLunaProject64 =
-        [
-            Path.Combine(documents, "emulation", "Luna_Project64", "Config", "Project64.cfg"),
-            Path.Combine(documents, "Luna_Project64", "Config", "Project64.cfg"),
-            Path.Combine(appData, "Luna-Project64", "Config", "Project64.cfg"),
-        ];
-
-        string[] candidats = string.Equals(nomEmulateur, "RAP64", StringComparison.Ordinal)
-            ? [.. candidatsRAP64, .. candidatsLunaProject64]
-            : [.. candidatsLunaProject64, .. candidatsRAP64];
-
-        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+        return candidatsRAP64.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
     public static string TrouverCheminConfigurationRANes()
@@ -912,6 +1049,17 @@ public static class ServiceSourcesLocalesEmulateurs
             : TrouverEmplacementEmulateurDepuisProcessus(definition);
     }
 
+    private static string TrouverCheminExecutableDolphinDepuisProcessus()
+    {
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            "Dolphin"
+        );
+
+        return definition is null
+            ? string.Empty
+            : TrouverEmplacementEmulateurDepuisProcessus(definition);
+    }
+
     private static string TrouverRepertoireLogsDepuisEmplacementRetroArch(string emplacement)
     {
         if (string.IsNullOrWhiteSpace(emplacement))
@@ -995,6 +1143,112 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    private static string TrouverFichierConfigurationBizHawkDepuisEmplacement(string emplacement)
+    {
+        return TrouverFichierBizHawkDepuisEmplacement(emplacement, "config.ini");
+    }
+
+    private static string TrouverFichierDolphinDepuisEmplacement(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (File.Exists(emplacement))
+            {
+                return emplacement;
+            }
+
+            if (!Directory.Exists(emplacement))
+            {
+                return string.Empty;
+            }
+
+            string[] candidats =
+            [
+                Path.Combine(emplacement, "Dolphin.exe"),
+                Path.Combine(emplacement, "Slippi Dolphin.exe"),
+                Path.Combine(emplacement, "Slippi Dolphin Launcher.exe"),
+            ];
+
+            return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string TrouverFichierDolphinDepuisEmplacement(
+        string emplacement,
+        params string[] segments
+    )
+    {
+        if (string.IsNullOrWhiteSpace(emplacement) || segments.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (Directory.Exists(emplacement))
+            {
+                string[] fragments = [emplacement, .. segments];
+                return Path.Combine(fragments);
+            }
+
+            if (File.Exists(emplacement))
+            {
+                string? repertoire = Path.GetDirectoryName(emplacement);
+
+                if (!string.IsNullOrWhiteSpace(repertoire))
+                {
+                    string[] fragments = [repertoire, .. segments];
+                    return Path.Combine(fragments);
+                }
+            }
+        }
+        catch
+        {
+            return string.Empty;
+        }
+
+        return string.Empty;
+    }
+
+    private static string TrouverFichierBizHawkDepuisEmplacement(
+        string emplacement,
+        string nomFichier
+    )
+    {
+        if (string.IsNullOrWhiteSpace(emplacement) || string.IsNullOrWhiteSpace(nomFichier))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            string repertoireBase = File.Exists(emplacement)
+                ? Path.GetDirectoryName(emplacement) ?? string.Empty
+                : emplacement;
+
+            if (string.IsNullOrWhiteSpace(repertoireBase))
+            {
+                return string.Empty;
+            }
+
+            string cheminConfiguration = Path.Combine(repertoireBase, nomFichier);
+            return File.Exists(cheminConfiguration) ? cheminConfiguration : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
     private static bool CorrespondValeurEmpreinteEmulateur(
         string valeur,
         IReadOnlyList<string> jetons
@@ -1021,7 +1275,12 @@ public static class ServiceSourcesLocalesEmulateurs
     {
         List<string> jetons = [definition.NomEmulateur, .. definition.NomsProcessus];
 
-        if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
+        if (string.Equals(definition.NomEmulateur, "BizHawk", StringComparison.Ordinal))
+        {
+            jetons.Add("EmuHawk");
+            jetons.Add("BizHawk");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
         {
             jetons.Add("VisualBoyAdvance");
             jetons.Add("VisualBoyAdvance-M");
@@ -1030,13 +1289,9 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             jetons.Add("Snes9x");
         }
-        else if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
-        {
-            jetons.Add("Project64");
-            jetons.Add("Luna Project64");
-        }
         else if (string.Equals(definition.NomEmulateur, "RAP64", StringComparison.Ordinal))
         {
+            jetons.Add("Project64");
             jetons.Add("RAProject64");
             jetons.Add("RA Project64");
             jetons.Add("RAP64");
@@ -1085,6 +1340,28 @@ public static class ServiceSourcesLocalesEmulateurs
             }
 
             return repertoire?.FullName ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string TrouverRepertoireFichier(string chemin)
+    {
+        if (string.IsNullOrWhiteSpace(chemin))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (File.Exists(chemin))
+            {
+                return Path.GetDirectoryName(chemin) ?? string.Empty;
+            }
+
+            return Directory.Exists(chemin) ? chemin : string.Empty;
         }
         catch
         {

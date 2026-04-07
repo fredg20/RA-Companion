@@ -182,14 +182,15 @@ public partial class MainWindow
             )
         )
         {
-            string cheminCore = TrouverCheminCoreRALibretro(
+            (string nomCore, int systeme) = TrouverContexteRelanceRALibretro(
                 cheminExecutable,
                 jeuSauvegarde.CheminJeuLocal
             );
 
-            if (!string.IsNullOrWhiteSpace(cheminCore))
+            if (!string.IsNullOrWhiteSpace(nomCore) && systeme > 0)
             {
-                return $"-L \"{cheminCore}\" \"{jeuSauvegarde.CheminJeuLocal}\"";
+                return
+                    $"--core \"{nomCore}\" --system {systeme.ToString(CultureInfo.InvariantCulture)} --game \"{jeuSauvegarde.CheminJeuLocal}\"";
             }
         }
 
@@ -274,7 +275,10 @@ public partial class MainWindow
         return string.Empty;
     }
 
-    private static string TrouverCheminCoreRALibretro(string cheminExecutable, string cheminJeu)
+    private static (string NomCore, int Systeme) TrouverContexteRelanceRALibretro(
+        string cheminExecutable,
+        string cheminJeu
+    )
     {
         try
         {
@@ -282,14 +286,14 @@ public partial class MainWindow
 
             if (string.IsNullOrWhiteSpace(repertoireRALibretro))
             {
-                return string.Empty;
+                return (string.Empty, 0);
             }
 
             string cheminConfiguration = Path.Combine(repertoireRALibretro, "RALibretro.json");
 
             if (!File.Exists(cheminConfiguration))
             {
-                return string.Empty;
+                return (string.Empty, 0);
             }
 
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(cheminConfiguration));
@@ -299,7 +303,7 @@ public partial class MainWindow
                 || recent.ValueKind != JsonValueKind.Array
             )
             {
-                return string.Empty;
+                return (string.Empty, 0);
             }
 
             foreach (JsonElement item in recent.EnumerateArray())
@@ -330,33 +334,30 @@ public partial class MainWindow
                     || coreElement.ValueKind != JsonValueKind.String
                 )
                 {
-                    return string.Empty;
+                    return (string.Empty, 0);
                 }
 
                 string nomCore = coreElement.GetString()?.Trim() ?? string.Empty;
+                int systeme =
+                    item.TryGetProperty("system", out JsonElement systemElement)
+                    && systemElement.TryGetInt32(out int systemeExtrait)
+                        ? systemeExtrait
+                        : 0;
 
-                if (string.IsNullOrWhiteSpace(nomCore))
+                if (string.IsNullOrWhiteSpace(nomCore) || systeme <= 0)
                 {
-                    return string.Empty;
+                    return (string.Empty, 0);
                 }
 
-                string fichierCore = nomCore.EndsWith(
-                    "_libretro",
-                    StringComparison.OrdinalIgnoreCase
-                )
-                    ? $"{nomCore}.dll"
-                    : $"{nomCore}_libretro.dll";
-
-                string cheminCore = Path.Combine(repertoireRALibretro, "Cores", fichierCore);
-                return File.Exists(cheminCore) ? cheminCore : string.Empty;
+                return (nomCore, systeme);
             }
         }
         catch
         {
-            return string.Empty;
+            return (string.Empty, 0);
         }
 
-        return string.Empty;
+        return (string.Empty, 0);
     }
 
     private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)

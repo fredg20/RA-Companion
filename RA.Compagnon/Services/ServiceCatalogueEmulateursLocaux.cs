@@ -29,6 +29,17 @@ public static class ServiceCatalogueEmulateursLocaux
             ["racache"]
         ),
         new(
+            "BizHawk",
+            ["emuhawk", "bizhawk"],
+            [],
+            StrategieExtractionTitreEmulateurLocal.BizHawk,
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
+            false,
+            true,
+            ["logs"]
+        ),
+        new(
             "DuckStation",
             [
                 "duckstation",
@@ -116,11 +127,11 @@ public static class ServiceCatalogueEmulateursLocaux
             ],
             ["gamecube", "nintendo gamecube", "wii", "nintendo wii", "wiiware"],
             StrategieExtractionTitreEmulateurLocal.Dolphin,
-            StrategieRenseignementJeuEmulateurLocal.Aucune,
-            StrategieSurveillanceSuccesLocale.Aucune,
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig,
+            StrategieSurveillanceSuccesLocale.JournalLogsSimple,
             true,
-            false,
-            []
+            true,
+            ["logs"]
         ),
         new(
             "RAP64",
@@ -148,17 +159,6 @@ public static class ServiceCatalogueEmulateursLocaux
                 "raproject64_d.exe",
                 "raproject64d.exe",
             ],
-            ["nintendo 64", "n64"],
-            StrategieExtractionTitreEmulateurLocal.Project64,
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache,
-            StrategieSurveillanceSuccesLocale.Project64RACache,
-            true,
-            true,
-            ["racache"]
-        ),
-        new(
-            "LunaProject64",
-            ["project64", "lunaproject64"],
             ["nintendo 64", "n64"],
             StrategieExtractionTitreEmulateurLocal.Project64,
             StrategieRenseignementJeuEmulateurLocal.Project64RACache,
@@ -229,6 +229,8 @@ public static class ServiceCatalogueEmulateursLocaux
         return TrouverParNom(nomEmulateur)?.StrategieRenseignementJeu switch
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog => "logs",
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => "logs",
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => "config",
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig => "logs",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "logs",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "logs",

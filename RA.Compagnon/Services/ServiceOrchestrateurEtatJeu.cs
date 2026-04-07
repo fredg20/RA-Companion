@@ -389,7 +389,6 @@ public sealed class ServiceOrchestrateurEtatJeu
             "local" => 30,
             "RetroArch" => 30,
             "RALibretro" => 30,
-            "LunaProject64" => 30,
             "RAP64" => 30,
             "DuckStation" => 30,
             "profil_inaccessible" => 10,

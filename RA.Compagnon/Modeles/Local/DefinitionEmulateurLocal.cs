@@ -4,6 +4,7 @@ public enum StrategieExtractionTitreEmulateurLocal
 {
     SeparateursRetroArch,
     RALibretro,
+    BizHawk,
     DuckStation,
     PCSX2,
     PPSSPP,
@@ -18,6 +19,8 @@ public enum StrategieExtractionTitreEmulateurLocal
 public enum StrategieRenseignementJeuEmulateurLocal
 {
     Aucune,
+    BizHawkConfig,
+    DolphinConfig,
     Project64RACache,
     RALibretroRACache,
     RANesRACache,

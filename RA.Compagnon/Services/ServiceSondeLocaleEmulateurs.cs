@@ -18,11 +18,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 {
     private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
 
+    private sealed record EtatSuccesBizHawk(bool DebloqueSoftcore, bool DebloqueHardcore);
+
     public sealed record RenseignementSuccesRA(int IdentifiantSucces, string TitreSucces);
 
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
     private const int ProcessCommandLineInformation = 60;
+    private static readonly Lock VerrouCacheSuccesBizHawk = new();
     private static readonly Lock VerrouCacheDuckStation = new();
+    private static readonly Lock VerrouCacheProject64 = new();
     private static readonly Lock VerrouCacheRALibretro = new();
     private static readonly Lock VerrouCachePPSSPP = new();
     private static readonly Lock VerrouCacheRetroArch = new();
@@ -30,6 +34,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static string _dernierRepertoireDuckStation = string.Empty;
     private static DateTime _dernierHorodatageCacheGamelistUtc = DateTime.MinValue;
     private static Dictionary<string, string> _cacheSerialVersCheminDuckStation = [];
+    private static Dictionary<string, RenseignementJeuRA> _cacheRenseignementProject64 = [];
+    private static Dictionary<string, DateTime> _cacheHorodatageRenseignementProject64Utc = [];
     private static RenseignementJeuRA? _dernierRenseignementRALibretro;
     private static DateTime _dernierHorodatageRenseignementRALibretroUtc = DateTime.MinValue;
     private static RenseignementJeuRA? _dernierRenseignementPPSSPP;
@@ -39,6 +45,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static string _dernierRepertoireContenuFlycast = string.Empty;
     private static DateTime _dernierHorodatageCacheContenuFlycastUtc = DateTime.MinValue;
     private static List<string> _cacheFichiersJeuFlycast = [];
+    private static int _dernierIdentifiantJeuSuccesBizHawk;
+    private static Dictionary<int, EtatSuccesBizHawk> _cacheSuccesBizHawk = [];
 
     private static readonly IReadOnlyList<DefinitionEmulateurLocal> Definitions =
         ServiceCatalogueEmulateursLocaux.Definitions;
@@ -97,6 +105,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 LireRenseignementJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                LireRenseignementJeuBizHawkDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                LireRenseignementJeuDolphinDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 LireRenseignementJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
@@ -125,6 +137,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 LireCheminJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                LireCheminJeuBizHawkDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                LireCheminJeuDolphin(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
@@ -270,6 +286,49 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         string informationsDiagnostic = string.Empty;
 
         if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.BizHawkConfig
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuBizHawkDepuisConfiguration();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic = "source=bizhawk_json";
+            }
+        }
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.DolphinConfig
+        )
+        {
+            RenseignementJeuRA? renseignementJeu = LireRenseignementJeuDolphinDepuisLog();
+
+            if (renseignementJeu is not null)
+            {
+                identifiantJeuProbable = renseignementJeu.IdentifiantJeu;
+
+                if (!string.IsNullOrWhiteSpace(renseignementJeu.TitreJeu))
+                {
+                    titreJeuProbable = renseignementJeu.TitreJeu;
+                }
+
+                informationsDiagnostic =
+                    $"source=dolphin_log;gameId={identifiantJeuProbable.ToString(CultureInfo.InvariantCulture)}";
+            }
+            else if (!string.IsNullOrWhiteSpace(titreJeuProbable))
+            {
+                informationsDiagnostic = "source=dolphin_process;gameId=0";
+            }
+        }
+        else if (
             definition.StrategieRenseignementJeu
             == StrategieRenseignementJeuEmulateurLocal.Project64RACache
         )
@@ -581,6 +640,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 LireCheminJeuRetroArchDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                LireCheminJeuBizHawkDepuisConfiguration(),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                LireCheminJeuDolphin(titreJeuProbable),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
@@ -614,6 +677,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieExtractionTitreEmulateurLocal.RALibretro => ExtraireTitreRALibretro(
                 processus,
                 titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.BizHawk => ExtraireTitreAvecSeparateurs(
+                titreFenetre,
+                "EmuHawk",
+                "BizHawk"
             ),
             StrategieExtractionTitreEmulateurLocal.DuckStation => ExtraireTitreDuckStation(
                 processus,
@@ -800,7 +868,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         List<string> jetons = [definition.NomEmulateur, .. definition.NomsProcessus];
 
-        if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
+        if (string.Equals(definition.NomEmulateur, "BizHawk", StringComparison.Ordinal))
+        {
+            jetons.Add("EmuHawk");
+            jetons.Add("BizHawk");
+        }
+        else if (string.Equals(definition.NomEmulateur, "RAVBA", StringComparison.Ordinal))
         {
             jetons.Add("VisualBoyAdvance");
             jetons.Add("VisualBoyAdvance-M");
@@ -809,13 +882,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         {
             jetons.Add("Snes9x");
         }
-        else if (string.Equals(definition.NomEmulateur, "LunaProject64", StringComparison.Ordinal))
-        {
-            jetons.Add("Project64");
-            jetons.Add("Luna Project64");
-        }
         else if (string.Equals(definition.NomEmulateur, "RAP64", StringComparison.Ordinal))
         {
+            jetons.Add("Project64");
             jetons.Add("RAProject64");
             jetons.Add("RA Project64");
             jetons.Add("RAP64");
@@ -1029,7 +1098,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return titreNettoye;
     }
 
-    private static string ExtraireTitreDolphin(Process _, string titreFenetre)
+    private static string ExtraireTitreDolphin(Process processus, string titreFenetre)
     {
         string titre = ExtraireTitreAvecSeparateurs(
             titreFenetre,
@@ -1048,12 +1117,25 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         if (EstDialogueDolphin(titreNettoye))
         {
-            return string.Empty;
+            return ExtraireTitreDolphinDepuisCommande(processus);
         }
 
         titreNettoye = SuffixeCodeJeuDolphinRegex().Replace(titreNettoye, string.Empty).Trim();
 
-        return titreNettoye;
+        return string.IsNullOrWhiteSpace(titreNettoye)
+            ? ExtraireTitreDolphinDepuisCommande(processus)
+            : titreNettoye;
+    }
+
+    private static string ExtraireTitreDolphinDepuisCommande(Process processus)
+    {
+        string cheminJeu = NormaliserCheminJeuProbable(
+            ExtraireCheminJeuDepuisLigneCommande(LireLigneCommandeProcessus(processus))
+        );
+
+        return string.IsNullOrWhiteSpace(cheminJeu)
+            ? string.Empty
+            : NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
     }
 
     private static string ExtraireTitreProject64(Process _, string titreFenetre)
@@ -1782,27 +1864,40 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             {
                 if (morceaux.Length == 3)
                 {
-                    // Format "LunaProject64 / RAP64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
+                    // Format "RAP64 / RAProject64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
                     return string.Empty;
                 }
 
                 string candidat = morceaux.Length >= 4 ? morceaux[^2] : morceaux[^1];
-                return NettoyerTitreJeu(
-                    candidat,
-                    ["Project64", "LunaProject64", "RAP64", "RAProject64"]
-                );
+                return NettoyerTitreJeu(candidat, ["Project64", "RAP64", "RAProject64"]);
             }
 
-            return NettoyerTitreJeu(
-                morceaux[^1],
-                ["Project64", "LunaProject64", "RAP64", "RAProject64"]
-            );
+            return NettoyerTitreJeu(morceaux[^1], ["Project64", "RAP64", "RAProject64"]);
+        }
+
+        if (
+            morceaux.Length == 2
+            && morceaux[0].Contains("Project64", StringComparison.OrdinalIgnoreCase)
+            && EstBlocVersionProject64(morceaux[1])
+        )
+        {
+            return string.Empty;
+        }
+
+        if (
+            titreFenetre.Contains("Project64", StringComparison.OrdinalIgnoreCase)
+            && (
+                TitreFenetreProject64VersionSeuleRegex().IsMatch(titreFenetre.Trim())
+                || TitreFenetreProject64GeneriqueRegex().IsMatch(titreFenetre.Trim())
+            )
+        )
+        {
+            return string.Empty;
         }
 
         return ExtraireTitreAvecSeparateurs(
             titreFenetre,
             "Project64",
-            "LunaProject64",
             "RAP64",
             "RAProject64"
         );
@@ -2250,6 +2345,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     {
         string source = strategie switch
         {
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => "dolphin_process",
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => "project64_racache",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => "ralibretro_racache",
             StrategieRenseignementJeuEmulateurLocal.RANesRACache => "ranes_racache",
@@ -2481,6 +2577,310 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
 
         return string.Empty;
+    }
+
+    private static string LireCheminJeuDolphin(string titreJeuProbable)
+    {
+        string cheminDepuisProcessus = LireCheminJeuDolphinDepuisProcessusActif();
+
+        if (!string.IsNullOrWhiteSpace(cheminDepuisProcessus))
+        {
+            return cheminDepuisProcessus;
+        }
+
+        return LireCheminJeuDolphinDepuisConfiguration(titreJeuProbable);
+    }
+
+    private static string LireCheminJeuDolphinDepuisProcessusActif()
+    {
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            "Dolphin"
+        );
+
+        if (definition is null)
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            foreach (Process processus in Process.GetProcesses())
+            {
+                if (!Correspond(processus, definition))
+                {
+                    continue;
+                }
+
+                string cheminExecutable = LireCheminExecutableProcessus(processus);
+                string cheminJeu = NormaliserCheminJeuProbable(
+                    ExtraireCheminJeuDepuisLigneCommande(LireLigneCommandeProcessus(processus))
+                );
+
+                if (
+                    !string.IsNullOrWhiteSpace(cheminJeu)
+                    && !string.Equals(
+                        cheminJeu,
+                        cheminExecutable,
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    && !string.Equals(
+                        Path.GetExtension(cheminJeu),
+                        ".exe",
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                )
+                {
+                    return cheminJeu;
+                }
+            }
+        }
+        catch
+        {
+            // La relance Dolphin reste opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static string LireCheminJeuDolphinDepuisConfiguration(string titreJeuProbable)
+    {
+        try
+        {
+            List<string> repertoiresCandidats = [];
+            string cheminQt = ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationQtDolphin();
+
+            if (File.Exists(cheminQt))
+            {
+                foreach (string ligne in File.ReadLines(cheminQt))
+                {
+                    if (!ligne.StartsWith("lastdir=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    string valeur = ligne[(ligne.IndexOf('=') + 1)..].Trim().Trim('"');
+
+                    if (!string.IsNullOrWhiteSpace(valeur))
+                    {
+                        repertoiresCandidats.Add(valeur);
+                    }
+                }
+            }
+
+            string cheminDolphinIni = ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationDolphin();
+
+            if (File.Exists(cheminDolphinIni))
+            {
+                foreach (string ligne in File.ReadLines(cheminDolphinIni))
+                {
+                    if (!ligne.StartsWith("ISOPath", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    int indexSeparateur = ligne.IndexOf('=');
+
+                    if (indexSeparateur < 0 || indexSeparateur == ligne.Length - 1)
+                    {
+                        continue;
+                    }
+
+                    string valeur = ligne[(indexSeparateur + 1)..].Trim().Trim('"');
+
+                    if (!string.IsNullOrWhiteSpace(valeur))
+                    {
+                        repertoiresCandidats.Add(valeur);
+                    }
+                }
+            }
+
+            repertoiresCandidats =
+            [
+                .. repertoiresCandidats
+                    .Select(repertoire => repertoire.Replace('/', Path.DirectorySeparatorChar))
+                    .Distinct(StringComparer.OrdinalIgnoreCase),
+            ];
+
+            if (repertoiresCandidats.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return TrouverCheminJeuDolphinDepuisRepertoires(repertoiresCandidats, titreJeuProbable);
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string TrouverCheminJeuDolphinDepuisRepertoires(
+        IReadOnlyCollection<string> repertoires,
+        string titreJeuProbable
+    )
+    {
+        string[] extensions = [".iso", ".gcm", ".wbfs", ".ciso", ".gcz", ".rvz", ".wia", ".wad", ".elf", ".dol"];
+        List<string> cheminsCandidats = [];
+
+        foreach (string repertoire in repertoires)
+        {
+            if (string.IsNullOrWhiteSpace(repertoire) || !Directory.Exists(repertoire))
+            {
+                continue;
+            }
+
+            IEnumerable<string> cheminsTrouves = new DirectoryInfo(repertoire)
+                .EnumerateFiles("*.*", SearchOption.AllDirectories)
+                .Where(fichier =>
+                    extensions.Contains(fichier.Extension, StringComparer.OrdinalIgnoreCase)
+                )
+                .Select(fichier => fichier.FullName);
+
+            cheminsCandidats.AddRange(cheminsTrouves);
+        }
+
+        cheminsCandidats = [.. cheminsCandidats.Distinct(StringComparer.OrdinalIgnoreCase)];
+
+        if (cheminsCandidats.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(titreJeuProbable))
+        {
+            return cheminsCandidats[0];
+        }
+
+        string titreNormalise = NormaliserTitreComparaisonSouple(titreJeuProbable);
+        string meilleurChemin = string.Empty;
+        int meilleurScore = int.MinValue;
+
+        foreach (string cheminCandidat in cheminsCandidats)
+        {
+            string nomFichier = NettoyerNomFichierJeu(
+                Path.GetFileNameWithoutExtension(cheminCandidat)
+            );
+            string nomDossier = NettoyerNomFichierJeu(
+                Path.GetFileName(Path.GetDirectoryName(cheminCandidat) ?? string.Empty)
+            );
+
+            int score = 0;
+
+            if (TitresSemblables(nomFichier, titreJeuProbable))
+            {
+                score += 120;
+            }
+            else
+            {
+                score += CalculerScoreProximiteTitreSouple(titreNormalise, nomFichier) * 10;
+            }
+
+            if (TitresSemblables(nomDossier, titreJeuProbable))
+            {
+                score += 80;
+            }
+            else
+            {
+                score += CalculerScoreProximiteTitreSouple(titreNormalise, nomDossier) * 6;
+            }
+
+            if (score <= meilleurScore)
+            {
+                continue;
+            }
+
+            meilleurScore = score;
+            meilleurChemin = cheminCandidat;
+        }
+
+        return meilleurScore >= 30 ? meilleurChemin : string.Empty;
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuDolphinDepuisLog()
+    {
+        try
+        {
+            string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalDolphin();
+
+            if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+            {
+                return null;
+            }
+
+            RenseignementJeuRA? renseignementSecours = null;
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs
+                    .LireToutesLesLignesAvecPartage(cheminJournal)
+                    .AsEnumerable()
+                    .Reverse()
+            )
+            {
+                Match correspondanceIdentifiee = DolphinGameIdentifieRegex().Match(ligne);
+
+                if (
+                    correspondanceIdentifiee.Success
+                    && int.TryParse(
+                        correspondanceIdentifiee.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuIdentifie
+                    )
+                    && identifiantJeuIdentifie > 0
+                )
+                {
+                    return new RenseignementJeuRA(
+                        identifiantJeuIdentifie,
+                        correspondanceIdentifiee.Groups[2].Value.Trim()
+                    );
+                }
+
+                Match correspondanceChargee = DolphinGameChargeRegex().Match(ligne);
+
+                if (
+                    correspondanceChargee.Success
+                    && int.TryParse(
+                        correspondanceChargee.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuCharge
+                    )
+                    && identifiantJeuCharge > 0
+                )
+                {
+                    renseignementSecours ??= new RenseignementJeuRA(
+                        identifiantJeuCharge,
+                        string.Empty
+                    );
+                    continue;
+                }
+
+                Match correspondanceGenerique = JournalGameIdRegex().Match(ligne);
+
+                if (
+                    correspondanceGenerique.Success
+                    && int.TryParse(
+                        correspondanceGenerique.Groups[1].Value,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int identifiantJeuGenerique
+                    )
+                    && identifiantJeuGenerique > 0
+                )
+                {
+                    renseignementSecours ??= new RenseignementJeuRA(
+                        identifiantJeuGenerique,
+                        string.Empty
+                    );
+                }
+            }
+
+            return renseignementSecours;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string NormaliserCheminJeuProbable(string cheminJeu)
@@ -3413,19 +3813,72 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
                     if (identifiantJeu > 0)
                     {
-                        return LireRenseignementJeuProject64DepuisFichierData(
+                        RenseignementJeuRA renseignement =
+                            LireRenseignementJeuProject64DepuisFichierData(
                                 repertoireRACache,
                                 identifiantJeu
                             ) ?? new RenseignementJeuRA(identifiantJeu, string.Empty);
+                        return MemoriserRenseignementProject64(nomEmulateur, renseignement);
                     }
                 }
             }
 
-            return LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
+            RenseignementJeuRA? dernierRenseignement =
+                LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
+
+            return dernierRenseignement is null
+                ? LireRenseignementJeuProject64DepuisCache(nomEmulateur)
+                : MemoriserRenseignementProject64(nomEmulateur, dernierRenseignement);
         }
         catch
         {
+            return LireRenseignementJeuProject64DepuisCache(nomEmulateur);
+        }
+    }
+
+    private static RenseignementJeuRA? MemoriserRenseignementProject64(
+        string nomEmulateur,
+        RenseignementJeuRA renseignement
+    )
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
+            return renseignement;
+        }
+
+        lock (VerrouCacheProject64)
+        {
+            _cacheRenseignementProject64[nomEmulateur] = renseignement;
+            _cacheHorodatageRenseignementProject64Utc[nomEmulateur] = DateTime.UtcNow;
+            return renseignement;
+        }
+    }
+
+    private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisCache(string nomEmulateur)
+    {
+        if (string.IsNullOrWhiteSpace(nomEmulateur))
+        {
             return null;
+        }
+
+        lock (VerrouCacheProject64)
+        {
+            if (
+                !_cacheRenseignementProject64.TryGetValue(
+                    nomEmulateur,
+                    out RenseignementJeuRA? renseignement
+                )
+                || !_cacheHorodatageRenseignementProject64Utc.TryGetValue(
+                    nomEmulateur,
+                    out DateTime horodatage
+                )
+                || DateTime.UtcNow - horodatage > TimeSpan.FromSeconds(20)
+            )
+            {
+                return null;
+            }
+
+            return renseignement;
         }
     }
 
@@ -3659,6 +4112,356 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    private static RenseignementJeuRA? LireRenseignementJeuBizHawkDepuisConfiguration()
+    {
+        string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalJeuBizHawk();
+
+        if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminJournal, Encoding.UTF8)
+            );
+
+            if (
+                !document.RootElement.TryGetProperty("rom_loaded", out JsonElement romLoaded)
+                || romLoaded.ValueKind != JsonValueKind.True
+            )
+            {
+                return null;
+            }
+
+            if (
+                !document.RootElement.TryGetProperty("game", out JsonElement game)
+                || game.ValueKind != JsonValueKind.Object
+            )
+            {
+                return null;
+            }
+
+            int identifiantJeu =
+                game.TryGetProperty("game_id", out JsonElement gameId)
+                && gameId.ValueKind == JsonValueKind.Number
+                && gameId.TryGetInt32(out int valeurGameId)
+                    ? valeurGameId
+                    : 0;
+
+            string titreJeu =
+                game.TryGetProperty("title", out JsonElement title)
+                && title.ValueKind == JsonValueKind.String
+                    ? title.GetString()?.Trim() ?? string.Empty
+                    : string.Empty;
+
+            if (identifiantJeu <= 0 && string.IsNullOrWhiteSpace(titreJeu))
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(titreJeu))
+            {
+                string cheminJeu = LireCheminJeuBizHawkDepuisConfiguration();
+                titreJeu = NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+            }
+
+            return new RenseignementJeuRA(identifiantJeu, titreJeu);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string LireCheminJeuBizHawkDepuisConfiguration()
+    {
+        string cheminConfiguration =
+            ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationBizHawk();
+
+        if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminConfiguration, Encoding.UTF8)
+            );
+
+            if (
+                document.RootElement.TryGetProperty("RecentRoms", out JsonElement recentRoms)
+                && recentRoms.ValueKind == JsonValueKind.Object
+                && recentRoms.TryGetProperty("recentlist", out JsonElement recentList)
+                && recentList.ValueKind == JsonValueKind.Array
+            )
+            {
+                foreach (JsonElement entree in recentList.EnumerateArray())
+                {
+                    if (entree.ValueKind != JsonValueKind.String)
+                    {
+                        continue;
+                    }
+
+                    string valeur = entree.GetString()?.Trim() ?? string.Empty;
+
+                    if (string.IsNullOrWhiteSpace(valeur))
+                    {
+                        continue;
+                    }
+
+                    string cheminNormalise = valeur.StartsWith(
+                        "*OpenRom*",
+                        StringComparison.Ordinal
+                    )
+                        ? valeur["*OpenRom*".Length..].Trim()
+                        : valeur;
+
+                    cheminNormalise = NormaliserCheminJeuProbable(cheminNormalise);
+
+                    if (!string.IsNullOrWhiteSpace(cheminNormalise) && File.Exists(cheminNormalise))
+                    {
+                        return cheminNormalise;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Le fichier BizHawk reste un secours local opportuniste.
+        }
+
+        return string.Empty;
+    }
+
+    private static SuccesDebloqueDetecte? LireDernierSuccesDebloqueBizHawkDepuisJournalJeu(
+        int identifiantJeu,
+        string titreJeu,
+        IReadOnlyCollection<GameAchievementV2> succesConnus
+    )
+    {
+        string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalJeuBizHawk();
+
+        if (string.IsNullOrWhiteSpace(cheminJournal) || !File.Exists(cheminJournal))
+        {
+            return null;
+        }
+
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(
+                File.ReadAllText(cheminJournal, Encoding.UTF8)
+            );
+
+            if (
+                !document.RootElement.TryGetProperty("rom_loaded", out JsonElement romLoaded)
+                || romLoaded.ValueKind != JsonValueKind.True
+            )
+            {
+                return null;
+            }
+
+            if (
+                !document.RootElement.TryGetProperty("game", out JsonElement jeu)
+                || jeu.ValueKind != JsonValueKind.Object
+            )
+            {
+                return null;
+            }
+
+            int identifiantJeuJournal =
+                jeu.TryGetProperty("game_id", out JsonElement gameId)
+                && gameId.ValueKind == JsonValueKind.Number
+                && gameId.TryGetInt32(out int valeurGameId)
+                    ? valeurGameId
+                    : 0;
+
+            if (identifiantJeuJournal <= 0)
+            {
+                return null;
+            }
+
+            if (identifiantJeu > 0 && identifiantJeuJournal != identifiantJeu)
+            {
+                ReinitialiserCacheSuccesBizHawk(identifiantJeuJournal);
+                return null;
+            }
+
+            if (
+                !document.RootElement.TryGetProperty("achievements", out JsonElement succes)
+                || succes.ValueKind != JsonValueKind.Array
+            )
+            {
+                return null;
+            }
+
+            List<(int Id, string Titre, bool Softcore, bool Hardcore)> etatsActuels = [];
+
+            foreach (JsonElement succesElement in succes.EnumerateArray())
+            {
+                if (succesElement.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                int identifiantSucces =
+                    succesElement.TryGetProperty("id", out JsonElement id)
+                    && id.ValueKind == JsonValueKind.Number
+                    && id.TryGetInt32(out int valeurId)
+                        ? valeurId
+                        : 0;
+
+                if (identifiantSucces <= 0)
+                {
+                    continue;
+                }
+
+                string titreSucces =
+                    succesElement.TryGetProperty("title", out JsonElement titreElement)
+                    && titreElement.ValueKind == JsonValueKind.String
+                        ? titreElement.GetString()?.Trim() ?? string.Empty
+                        : string.Empty;
+
+                bool debloqueSoftcore = LireBooleenBizHawk(succesElement, "unlocked_softcore");
+                bool debloqueHardcore = LireBooleenBizHawk(succesElement, "unlocked_hardcore");
+
+                etatsActuels.Add(
+                    (identifiantSucces, titreSucces, debloqueSoftcore, debloqueHardcore)
+                );
+            }
+
+            if (etatsActuels.Count == 0)
+            {
+                return null;
+            }
+
+            lock (VerrouCacheSuccesBizHawk)
+            {
+                if (_dernierIdentifiantJeuSuccesBizHawk != identifiantJeuJournal)
+                {
+                    _dernierIdentifiantJeuSuccesBizHawk = identifiantJeuJournal;
+                    _cacheSuccesBizHawk = ConstruireCacheSuccesBizHawk(etatsActuels);
+                    return null;
+                }
+
+                (int Id, string Titre, bool Softcore, bool Hardcore)? changementDetecte = null;
+
+                foreach (
+                    (
+                        int Id,
+                        string Titre,
+                        bool Softcore,
+                        bool Hardcore
+                    ) succesActuel in etatsActuels
+                )
+                {
+                    if (
+                        !_cacheSuccesBizHawk.TryGetValue(
+                            succesActuel.Id,
+                            out EtatSuccesBizHawk? etatPrecedent
+                        )
+                    )
+                    {
+                        continue;
+                    }
+
+                    bool softcoreVientDEtreDebloque =
+                        !etatPrecedent.DebloqueSoftcore && succesActuel.Softcore;
+                    bool hardcoreVientDEtreDebloque =
+                        !etatPrecedent.DebloqueHardcore && succesActuel.Hardcore;
+
+                    if (!softcoreVientDEtreDebloque && !hardcoreVientDEtreDebloque)
+                    {
+                        continue;
+                    }
+
+                    changementDetecte = succesActuel;
+
+                    if (hardcoreVientDEtreDebloque)
+                    {
+                        break;
+                    }
+                }
+
+                _cacheSuccesBizHawk = ConstruireCacheSuccesBizHawk(etatsActuels);
+
+                if (changementDetecte is null)
+                {
+                    return null;
+                }
+
+                GameAchievementV2? succesConnu = succesConnus.FirstOrDefault(item =>
+                    item.Id == changementDetecte.Value.Id
+                );
+
+                return new SuccesDebloqueDetecte
+                {
+                    IdentifiantJeu = identifiantJeuJournal,
+                    TitreJeu = titreJeu?.Trim() ?? string.Empty,
+                    IdentifiantSucces = changementDetecte.Value.Id,
+                    TitreSucces =
+                        succesConnu?.Title?.Trim() ?? changementDetecte.Value.Titre ?? string.Empty,
+                    Points = succesConnu?.Points ?? 0,
+                    Hardcore = changementDetecte.Value.Hardcore,
+                    DateObtention = DateTimeOffset.Now.ToString(
+                        "yyyy-MM-dd HH:mm:ss",
+                        CultureInfo.InvariantCulture
+                    ),
+                };
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Dictionary<int, EtatSuccesBizHawk> ConstruireCacheSuccesBizHawk(
+        IEnumerable<(int Id, string Titre, bool Softcore, bool Hardcore)> etats
+    )
+    {
+        return etats.ToDictionary(
+            succes => succes.Id,
+            succes => new EtatSuccesBizHawk(succes.Softcore, succes.Hardcore)
+        );
+    }
+
+    private static void ReinitialiserCacheSuccesBizHawk(int identifiantJeu)
+    {
+        lock (VerrouCacheSuccesBizHawk)
+        {
+            _dernierIdentifiantJeuSuccesBizHawk = identifiantJeu;
+            _cacheSuccesBizHawk = [];
+        }
+    }
+
+    private static bool LireBooleenBizHawk(JsonElement parent, string nomPropriete)
+    {
+        if (!parent.TryGetProperty(nomPropriete, out JsonElement valeur))
+        {
+            return false;
+        }
+
+        return valeur.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.Number => valeur.TryGetInt32(out int nombre) && nombre != 0,
+            JsonValueKind.String => bool.TryParse(valeur.GetString(), out bool booleen)
+                ? booleen
+                : int.TryParse(
+                    valeur.GetString(),
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int nombreTexte
+                )
+                    && nombreTexte != 0,
+            _ => false,
+        };
+    }
+
     public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueDepuisSourceLocale(
         string nomEmulateur,
         int identifiantJeu,
@@ -3673,6 +4476,15 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         try
         {
+            if (string.Equals(nomEmulateur, "BizHawk", StringComparison.Ordinal))
+            {
+                return LireDernierSuccesDebloqueBizHawkDepuisJournalJeu(
+                    identifiantJeu,
+                    titreJeu,
+                    succesConnus
+                );
+            }
+
             string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalSuccesLocal(
                 nomEmulateur
             );
@@ -4358,6 +5170,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static partial Regex PPSSPPJeuDemarreRegex();
 
     [GeneratedRegex(
+        @"RetroAchievements\]:\s*Identified game:\s*(\d+)\s+""([^""]+)""",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex DolphinGameIdentifieRegex();
+
+    [GeneratedRegex(
+        @"RetroAchievements\]:\s*Game\s+(\d+)\s+loaded\b",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex DolphinGameChargeRegex();
+
+    [GeneratedRegex(
         @"Achievement\s+(\d+)\s+awarded\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
@@ -4425,6 +5249,18 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
     private static partial Regex RetroArchContenuChargeRegex();
+
+    [GeneratedRegex(
+        @"^(?:Luna'?s?\s+)?Project64\s+v?\d+(?:\.\d+)+$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex TitreFenetreProject64VersionSeuleRegex();
+
+    [GeneratedRegex(
+        @"^(?:RAP64|RAProject64)\s*-\s*\d+(?:\.\d+)+(?:\s*-\s*[\w\s]+)?$",
+        RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
+    )]
+    private static partial Regex TitreFenetreProject64GeneriqueRegex();
 
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]

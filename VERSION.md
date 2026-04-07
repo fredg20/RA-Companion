@@ -29,7 +29,6 @@
 - `DuckStation`
 - `PCSX2`
 - `PPSSPP`
-- `Luna's Project64`
 - `Flycast`
 - `RANes`
 - `RAVBA`

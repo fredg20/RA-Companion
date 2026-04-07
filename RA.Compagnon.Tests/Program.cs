@@ -386,7 +386,7 @@ static class TestRunner
             );
         }
 
-        string[] emulateursRACache = ["RALibretro", "LunaProject64"];
+        string[] emulateursRACache = ["RALibretro", "RAP64"];
 
         foreach (string nomEmulateur in emulateursRACache)
         {

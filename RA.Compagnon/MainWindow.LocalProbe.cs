@@ -840,6 +840,8 @@ public partial class MainWindow
             return;
         }
 
+        EnregistrerContexteSignalSuccesLocal(signal, identifiantJeuSignal);
+
         if (
             await TenterAfficherSuccesLocalDirectAsync(signal, identifiantJeuSignal, titreJeuSignal)
         )
@@ -926,7 +928,13 @@ public partial class MainWindow
             return false;
         }
 
-        string sourceDetectionDirecte = $"{signal.NomEmulateur.ToLowerInvariant()}_log";
+        string sourceDetectionDirecte = string.Equals(
+            signal.NomEmulateur,
+            "BizHawk",
+            StringComparison.Ordinal
+        )
+            ? "bizhawk_json"
+            : $"{signal.NomEmulateur.ToLowerInvariant()}_log";
         ServiceDetectionSuccesJeu.JournaliserDetection(succesDirect, sourceDetectionDirecte);
         MarquerSuccesCommeTraite(succesDirect);
         ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
@@ -1072,5 +1080,46 @@ public partial class MainWindow
             signal.NomEmulateur,
             signal.TypeSource
         );
+    }
+
+    private void EnregistrerContexteSignalSuccesLocal(
+        SignalSuccesLocal signal,
+        int identifiantJeuSignal
+    )
+    {
+        _identifiantJeuDernierSignalSuccesLocal = identifiantJeuSignal;
+        _nomEmulateurDernierSignalSuccesLocal = signal.NomEmulateur?.Trim() ?? string.Empty;
+        _typeSourceDernierSignalSuccesLocal = signal.TypeSource?.Trim() ?? string.Empty;
+        _horodatageDernierSignalSuccesLocalUtc = signal.HorodatageUtc;
+    }
+
+    private string DeterminerSourceDetectionDepuisContexteLocalRecent(int identifiantJeu)
+    {
+        if (
+            identifiantJeu <= 0
+            || _horodatageDernierSignalSuccesLocalUtc == DateTimeOffset.MinValue
+            || _identifiantJeuDernierSignalSuccesLocal != identifiantJeu
+        )
+        {
+            return "session";
+        }
+
+        if (
+            DateTimeOffset.UtcNow - _horodatageDernierSignalSuccesLocalUtc
+            > TimeSpan.FromSeconds(10)
+        )
+        {
+            return "session";
+        }
+
+        if (
+            string.Equals(_nomEmulateurDernierSignalSuccesLocal, "BizHawk", StringComparison.Ordinal)
+            && _typeSourceDernierSignalSuccesLocal.StartsWith("logs", StringComparison.Ordinal)
+        )
+        {
+            return "bizhawk_json";
+        }
+
+        return "session";
     }
 }

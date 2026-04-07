@@ -1264,6 +1264,10 @@ public partial class MainWindow
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 "Source suivie : journal local de RetroArch.",
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                "Source suivie : fichier retroachievements-game-log.json de BizHawk.",
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                "Source suivie : fichier dolphin.log de Dolphin, avec le processus en secours.",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 "Source suivie : fichier duckstation.log.",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
@@ -1292,19 +1296,18 @@ public partial class MainWindow
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 "Dans RetroArch : active d'abord `Settings -> User Interface -> Show Advanced Settings`, puis `Settings -> Logging -> Log to File`. Désactive aussi l'option de fichiers de journalisation horodatés pour conserver un fichier stable `retroarch.log`. Le journal doit ensuite être écrit dans le dossier `logs` pendant la session. Garde aussi RetroArch à jour.",
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                "Dans BizHawk : garde `retroachievements-game-log.json` à la racine du dossier de l'émulateur. Compagnon lit d'abord ce fichier pour le Game ID et le titre, puis garde `config.ini` seulement en secours pour retrouver le chemin de la ROM.",
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                "Dans Dolphin : ouvre `View -> Show Log Configuration`, coche `Write to File`, garde le type `RetroAchievements` activé et une verbosité au moins sur `Info`. Compagnon lit ensuite `dolphin.log` pour le jeu et les succès.",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 "Dans DuckStation : ouvre `Settings -> Advanced Settings`, règle `Log Level` sur `Debug`, puis active `Log To File`. Si `duckstation.log` n'apparaît pas tout de suite, redémarre DuckStation pour forcer son écriture. Garde aussi DuckStation à jour.",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
                 "Dans PCSX2 : en général, rien de plus n'est nécessaire. L'émulateur génère normalement `emulog.txt` dans son dossier `logs`. Si ce fichier n'apparaît pas, vérifie les options de console ou de débogage propres à ta version. Garde aussi PCSX2 à jour.",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
                 "Dans PPSSPP : ouvre `Tools -> Developer Tools`, puis active `Enable debug logging`. Si aucun fichier n'est encore écrit sur disque, lance PPSSPP avec une option du type `--log=...` pour forcer la création du journal. Garde aussi PPSSPP à jour.",
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
-                definition.NomEmulateur,
-                "RAP64",
-                StringComparison.Ordinal
-            )
-                ? "Dans RAP64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour."
-                : "Dans Luna's Project64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
+                "Dans RAP64 : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
                 "Dans RALibretro : ce n'est pas un journal classique. Il faut surtout que RetroAchievements soit bien activé pour que `RACache` et `RALog.txt` se mettent à jour pendant la session. Garde aussi l'émulateur à jour.",
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
@@ -1325,6 +1328,10 @@ public partial class MainWindow
     {
         return definition.StrategieRenseignementJeu switch
         {
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                "Confiance de détection : bonne. Compagnon s'appuie sur EmuHawk et sur retroachievements-game-log.json, avec config.ini en secours pour la ROM.",
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
+                "Confiance de détection : bonne. Compagnon s'appuie d'abord sur dolphin.log, avec le processus Dolphin en secours.",
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
                 "Confiance de détection : excellente. Compagnon croise le processus émulateur avec RACache et RALog.txt.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
@@ -1371,6 +1378,16 @@ public partial class MainWindow
                 "emulation",
                 "RetroArch"
             ),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => Path.Combine(
+                documents,
+                "emulation",
+                "BizHawk"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => Path.Combine(
+                documents,
+                "emulation",
+                "Gamecube"
+            ),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => Path.Combine(
                 documents,
                 "DuckStation"
@@ -1381,13 +1398,11 @@ public partial class MainWindow
                 "emulation",
                 "Playstation Portable"
             ),
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
-                definition.NomEmulateur,
-                "RAP64",
-                StringComparison.Ordinal
-            )
-                ? Path.Combine(documents, "emulation", "RAP64")
-                : Path.Combine(documents, "emulation", "Luna_Project64"),
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
+                documents,
+                "emulation",
+                "RAP64"
+            ),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 documents,
                 "emulation",
@@ -1429,6 +1444,18 @@ public partial class MainWindow
                 "RetroArch",
                 "logs"
             ),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => Path.Combine(
+                documents,
+                "emulation",
+                "BizHawk",
+                "retroachievements-game-log.json"
+            ),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Dolphin Emulator",
+                "Logs",
+                "dolphin.log"
+            ),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => Path.Combine(
                 documents,
                 "DuckStation",
@@ -1450,13 +1477,13 @@ public partial class MainWindow
                 "DUMP",
                 "log.txt"
             ),
-            StrategieRenseignementJeuEmulateurLocal.Project64RACache => string.Equals(
-                definition.NomEmulateur,
+            StrategieRenseignementJeuEmulateurLocal.Project64RACache => Path.Combine(
+                documents,
+                "emulation",
                 "RAP64",
-                StringComparison.Ordinal
-            )
-                ? Path.Combine(documents, "emulation", "RAP64", "RACache", "RALog.txt")
-                : Path.Combine(documents, "emulation", "Luna_Project64", "RACache", "RALog.txt"),
+                "RACache",
+                "RALog.txt"
+            ),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 documents,
                 "emulation",

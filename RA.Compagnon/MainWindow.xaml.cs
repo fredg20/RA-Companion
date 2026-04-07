@@ -175,6 +175,10 @@ public partial class MainWindow : UiControls.FluentWindow
     private bool _presenceLocaleCompteActive;
     private string _signatureDernierSuccesLocalDirectAffiche = string.Empty;
     private int _identifiantJeuSuccesObserve;
+    private int _identifiantJeuDernierSignalSuccesLocal;
+    private string _nomEmulateurDernierSignalSuccesLocal = string.Empty;
+    private string _typeSourceDernierSignalSuccesLocal = string.Empty;
+    private DateTimeOffset _horodatageDernierSignalSuccesLocalUtc = DateTimeOffset.MinValue;
     private int _identifiantJeuLocalActif;
     private string _titreJeuLocalActif = string.Empty;
     private int _identifiantJeuLocalResolutEnAttente;

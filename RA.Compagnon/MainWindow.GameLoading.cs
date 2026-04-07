@@ -866,9 +866,11 @@ public partial class MainWindow
             .. nouveauxSucces.Where(succes => !SuccesDejaTraiteRecemment(succes)),
         ];
 
+        string sourceDetection = DeterminerSourceDetectionDepuisContexteLocalRecent(jeu.Id);
+
         foreach (SuccesDebloqueDetecte succes in nouveauxSuccesFiltres)
         {
-            ServiceDetectionSuccesJeu.JournaliserDetection(succes, "session");
+            ServiceDetectionSuccesJeu.JournaliserDetection(succes, sourceDetection);
             MarquerSuccesCommeTraite(succes);
         }
 

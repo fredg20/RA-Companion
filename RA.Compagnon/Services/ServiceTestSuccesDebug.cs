@@ -306,7 +306,6 @@ public sealed class ServiceTestSuccesDebug
         {
             "RetroArch" => $"retroarch{suffixe}",
             "RALibretro" => $"ralibretro{suffixe}",
-            "LunaProject64" => $"lunaproject64{suffixe}",
             "RAP64" => $"rap64{suffixe}",
             "DuckStation" => $"duckstation{suffixe}",
             "PCSX2" => $"pcsx2{suffixe}",
