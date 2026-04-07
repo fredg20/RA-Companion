@@ -1,22 +1,22 @@
-# Version
+﻿# Version
 
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.6`
-- Statut : version de travail stable
-- Cible de livraison : `Windows x64`
+- Version : `1.0.7`
+- Statut : version stable en cours de diffusion
+- Cible : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
-- Archive de release : `dist/RA.Compagnon-win-x64-1.0.6.zip`
+- Archive de release : `dist/RA.Compagnon-win-x64-1.0.7.zip`
 
 ## Contenu de cette version
 
 - interface principale stabilisée
 - détection locale consolidée pour les émulateurs validés
 - gestion plus robuste des états de chargement du jeu courant
-- grille des rétrosuccès plus stable visuellement
-- aide utilisateur enrichie
-- affichage des sources locales, des emplacements et des logs par émulateur
+- affichage des rétrosuccès rendu plus stable visuellement
+- aide utilisateur enrichie et plus lisible
+- affichage des sources locales, des emplacements et des journaux par émulateur
 - mise à jour intégrée de l'application
 - téléchargement de mise à jour corrigé
 - ajout d'un mapping manuel pour corriger l'émulateur détecté ou son emplacement
@@ -30,18 +30,21 @@
 - `PCSX2`
 - `PPSSPP`
 - `Flycast`
+- `BizHawk`
+- `Dolphin`
 - `RANes`
 - `RAVBA`
 - `RASnes9x`
+- `RAP64`
 
-## Remarques
+## Notes de release
 
 - le dossier publié `RA.Compagnon-win-x64` ne doit pas être restructuré manuellement
 - le build `dist` est généré via `build.ps1`
 - la préparation de release peut être figée via `Prepare-Release.ps1`
 - une seule archive est conservée : l'archive versionnée de release
-- `update.json` doit pointer vers une archive versionnée exacte, pas vers `releases/latest`
-- `publishedAt` est synchronisé automatiquement avec la vraie date de publication GitHub lors d'une release
+- `update.json` doit pointer vers une archive versionnée exacte, et non vers `releases/latest`
+- `publishedAt` est synchronisé avec la date réelle de publication GitHub lors d'une release
 
 ## Historique local
 
@@ -59,7 +62,7 @@
 - couche émulateurs unifiée
 - pipeline de chargement du jeu consolidé
 - stabilisation des animations et de la liste des succès
-- aide utilisateur enrichie avec la section des logs
+- aide utilisateur enrichie avec une section dédiée aux journaux
 - ajout d'une vue détaillée du jeu courant en modale
 
 ### Version 1.0.3
@@ -72,10 +75,10 @@
 ### Version 1.0.4
 
 - détection de l'emplacement des émulateurs
-- indication de confiance de détection : excellente, bonne ou fragile
+- indication du niveau de confiance de détection : excellente, bonne ou fragile
 - renforcement de la reconnaissance par métadonnées d'exécutable et chemin réel
 - ajout d'un mapping manuel utilisateur pour corriger l'émulateur détecté ou son emplacement
-- vrai support local ajouté pour `Flycast` via `flycast.log` et le chemin du jeu lancé en secours
+- vrai support local ajouté pour `Flycast` via `flycast.log`, avec le chemin du jeu lancé en secours
 - correction du téléchargement de mise à jour pour finaliser correctement le package `.zip`
 - sécurisation du processus de release avec archive versionnée et manifeste figé
 
@@ -91,8 +94,18 @@
 - détection plus stricte des titres locaux pour éviter l'affichage d'un titre provenant d'une fenêtre non liée à un émulateur validé
 - détection locale `RetroArch` rendue plus réactive au démarrage de la surveillance
 - en mode `Actif récemment`, affichage forcé sur le dernier jeu mémorisé par `GameID`
-- bouton `Détails` déplacé sur la ligne d'en-tête de la carte principale
+- bouton `Details` déplacé sur la ligne d'en-tête de la carte principale
 - ajustements visuels de la carte `Rétrosuccès en cours` et de ses boutons de navigation
+
+### Version 1.0.7
+
+- préparation de la release versionnée `1.0.7`
+- manifeste de mise à jour aligné sur `v1.0.7`
+- archive de release attendue : `RA.Compagnon-win-x64-1.0.7.zip`
+- amélioration du français dans la documentation visible
+- `RALibretro` entièrement validé pour `Rejouer`
+- `Dolphin` ajouté aux émulateurs validés et testés
+- retrait du support `LunaProject64`
 
 ### Version 1.0.6
 
@@ -102,9 +115,11 @@
 - modale Aide rendue plus réactive à l'ouverture
 - mémorisation automatique de l'emplacement des émulateurs validés ouverts
 - journalisation de la sonde locale et de l'affichage des informations du jeu
-- lecture de `retroarch.log` fiabilisée pour les changements de jeu et le `GameID`
+- lecture des journaux locaux fiabilisée pour les changements de jeu, le `GameID` et les succès
 - ajout du bouton `Rejouer` pour relancer un jeu local détecté
-- extension de `Rejouer` à l'ensemble des émulateurs validés via leurs sources locales
-- prise en charge spécifique de `RetroArch` avec relance via le bon core
+- extension de `Rejouer` à l'ensemble des émulateurs validés à partir de leurs sources locales
+- prise en charge spécifique de `RetroArch`, `RALibretro` et `Dolphin` pour la relance adaptée
 - masquage du bouton `Rejouer` pendant l'état `En jeu`
 - conservation plus stable des informations affichées sur le jeu courant
+- ajout et validation des supports `BizHawk`, `Dolphin` et `RAP64`
+- retrait du support `LunaProject64`

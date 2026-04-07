@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$RepositoryOwner = "fredg20",
     [string]$RepositoryName = "RA-Companion",

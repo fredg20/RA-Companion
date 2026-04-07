@@ -51,43 +51,64 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 
 Validation confirmée :
 
+- `RetroArch`
+  - détection locale du processus `retroarch`
+  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier log horodaté
+  - mise à jour correcte du `Game ID` lors des changements de jeu
+  - succès et `Rejouer` validés
+- `RALibretro`
+  - détection locale du processus `RALibretro`
+  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier fichier `Data/<GameID>.json` modifié dans le `RACache`
+  - succès validés
+  - `Rejouer` validé avec la vraie ligne de commande `--core --system --game`
 - `Flycast`
   - détection locale du processus
-  - extraction du titre du jeu depuis la fenêtre
-  - résolution rapide vers le `Game ID` RetroAchievements
-  - priorité locale correcte tant que l'émulateur est ouvert
+  - lecture locale du jeu et des succès depuis `flycast.log`
+  - résolution fiable du `Game ID`
+  - `Rejouer` validé
 - `DuckStation`
   - détection locale du processus
   - extraction du titre du jeu via fenêtre, automatisation ou fallback local
   - résolution vers le `Game ID` RetroAchievements
-  - maintien de l'état local même si le titre disparaît temporairement
+  - succès et `Rejouer` validés
 - `PCSX2`
   - détection locale du processus
   - filtrage des fenêtres de dialogue et outils internes
   - extraction du titre du vrai jeu depuis la fenêtre
   - résolution vers le `Game ID` RetroAchievements, y compris via le catalogue local
+  - succès et `Rejouer` validés
 - `PPSSPP`
   - détection locale du processus
   - extraction du titre du jeu depuis la fenêtre avec nettoyage du serial PSP
   - résolution vers le `Game ID` RetroAchievements
   - appui sur le catalogue local quand il est déjà disponible
-- `RetroArch`
-  - détection locale du processus `retroarch`
-  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier log horodaté
-  - mise à jour correcte du `Game ID` lors des changements de jeu
-  - application locale du bon jeu même quand la fenêtre n'expose pas le titre
-- `RALibretro`
-  - détection locale du processus `RALibretro`
-  - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier fichier `Data/<GameID>.json` modifié dans le `RACache`
-  - suivi correct des changements de jeu successifs
-  - application locale du bon jeu sans dépendre du titre de fenêtre
+  - succès et `Rejouer` validés
+- `BizHawk`
+  - lecture du jeu et des succès depuis `retroachievements-game-log.json`
+  - suivi des déblocages par changement de `unlocked_softcore` ou `unlocked_hardcore`
+  - `Rejouer` et aide validés
+- `Dolphin`
+  - lecture du jeu et des succès depuis `dolphin.log`
+  - résolution du chemin du jeu pour `Rejouer` via les fichiers de configuration locaux
+  - `Rejouer` et aide validés
+- `RANes`
+  - détection via `RACache` et configuration locale
+  - succès et `Rejouer` validés
+- `RAVBA`
+  - détection via `RACache` et configuration locale
+  - succès et `Rejouer` validés
+- `RASnes9x`
+  - détection via `RACache` et configuration locale
+  - succès et `Rejouer` validés
+- `RAP64`
+  - détection via `RACache` et configuration `Project64`
+  - succès et `Rejouer` validés
 
 Exclusion confirmée :
 
-- `BizHawk`
-  - détection de jeu possible par titre ou ROM récente, mais pas de source locale fiable pour le `Game ID`
-  - pas de `RACache`, pas de log RA exploitable, pas de `Game ID` lisible dans les fichiers `.State.rap` ou `SaveRAM`
-  - support volontairement exclu pour éviter des détections fragiles
+- `LunaProject64`
+  - support retiré du projet pour éviter les conflits avec `RAP64`
+  - maintenance et détection simplifiées autour de la seule variante `Project64` réellement validée
 
 ## Direction produit
 
