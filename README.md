@@ -42,10 +42,15 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - affichage des visuels du jeu
 - affichage d'un rétrosuccès mis en avant
 - grille complète des rétrosuccès du jeu
+- bouton `Recharger` pour forcer un rechargement du jeu courant
+- bouton `Rejouer` pour relancer le jeu courant quand le contexte local le permet
+- bouton `Passer` pour repousser localement un rétrosuccès non débloqué et afficher le suivant
+- estimation simple de faisabilité d'un rétrosuccès à partir du ratio `déblocages / joueurs distincts`
 - succès récents du compte
 - détection locale du jeu en cours via certains émulateurs pris en charge
 - ordre de grille `Normal`, `Aléatoire`, `Facile`, `Difficile`
 - restauration locale au démarrage
+- indicateur discret de synchronisation quand l'état local restauré est en cours de rafraîchissement
 
 ## Validation émulateurs
 
@@ -138,36 +143,19 @@ Fichiers principaux :
 - `achievements_list.json`
 - `image_cache`
 
+## Prérequis
+
+- Windows
+- SDK `.NET 9`
+
 ## Structure
 
 - `RA.Compagnon/MainWindow.xaml` : interface principale
 - `RA.Compagnon/MainWindow.xaml.cs` : point d'entrée de la fenêtre
 - `RA.Compagnon/Services/ClientRetroAchievements.cs` : appels API
 - `RA.Compagnon/Services/ServiceConfigurationLocale.cs` : persistance locale
+- `RA.Compagnon/Services/ServiceEvaluationFaisabiliteSucces.cs` : estimation de faisabilité des rétrosuccès
 - `RA.Compagnon/Services/ServiceTraductionTexte.cs` : traduction de certains textes
 - `RA.Compagnon/Modeles/Api` : modèles API
 - `RA.Compagnon/Modeles/Local` : modèles locaux
-
-## Build
-
-Build de la solution :
-
-```powershell
-dotnet build RA.Compagnon.sln -m:1
-```
-
-Generation du livrable autonome `RA.Compagnon-win-x64` dans `dist` :
-
-```powershell
-./build.ps1
-```
-
-Tests ciblés :
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\run-tests.ps1
-```
-
-Checklist de validation :
-
-- [CHECKLIST.md](CHECKLIST.md)
+- `RA.Compagnon/ViewModels` : couche MVVM utilisée par l'interface
