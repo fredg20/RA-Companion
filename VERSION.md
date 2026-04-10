@@ -4,7 +4,7 @@
 
 - Nom : `RA-Compagnon`
 - Version : `1.0.7`
-- Statut : version stable en cours de diffusion
+- Statut : base stable en cours d'évolution
 - Cible : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
 - Archive de release : `dist/RA.Compagnon-win-x64-1.0.7.zip`
@@ -21,6 +21,11 @@
 - téléchargement de mise à jour corrigé
 - ajout d'un mapping manuel pour corriger l'émulateur détecté ou son emplacement
 - ajout du bouton `Rejouer` pour relancer un jeu local détecté
+- ajout du bouton `Recharger` pour forcer un rechargement complet du jeu courant
+- ajout du bouton `Passer` pour repousser localement un rétrosuccès non débloqué
+- faisabilité des rétrosuccès basée sur le ratio `déblocages / joueurs distincts`
+- interface WPF réorganisée avec boutons d'action déplacés à l'intérieur des cartes
+- restauration locale au démarrage avec indicateur discret de synchronisation
 
 ## Émulateurs validés dans cette version
 
@@ -123,3 +128,7 @@
 - `RALibretro` entièrement validé pour `Rejouer`
 - `Dolphin` ajouté aux émulateurs validés et testés
 - retrait du support `LunaProject64`
+- poursuite du nettoyage de `MainWindow` et de la couche `ViewModel`
+- ajout de `Recharger`, `Passer` et de l'indicateur `Synchronisation...`
+- estimation simplifiée de faisabilité des rétrosuccès
+- ajustements de layout sur les cartes `Jeu en cours`, `Rétrosuccès en cours` et `Rétrosuccès du jeu`
