@@ -88,17 +88,16 @@ public sealed class ServicePresentationSucces
 
     private static string ConstruireDetailsFaisabiliteSucces(EvaluationFaisabiliteSucces evaluation)
     {
-        if (
-            string.IsNullOrWhiteSpace(evaluation.Libelle)
-            || evaluation.NombreJoueursDistincts <= 0
-        )
+        if (string.IsNullOrWhiteSpace(evaluation.Libelle) || evaluation.NombreJoueursDistincts <= 0)
         {
             return string.Empty;
         }
 
         double pourcentage =
             evaluation.NombreJoueursDistincts > 0
-                ? (double)evaluation.NombreJoueursDebloques / evaluation.NombreJoueursDistincts * 100d
+                ? (double)evaluation.NombreJoueursDebloques
+                    / evaluation.NombreJoueursDistincts
+                    * 100d
                 : 0d;
         return $"{evaluation.Libelle} ({pourcentage:0.#} %)";
     }

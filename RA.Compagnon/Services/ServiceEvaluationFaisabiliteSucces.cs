@@ -27,10 +27,8 @@ public sealed class ServiceEvaluationFaisabiliteSucces
         }
 
         double tauxDeblocage = (double)succes.NumAwarded / joueursDistincts;
-        int score = (int)Math.Round(
-            Math.Clamp(tauxDeblocage * 100d, 0d, 100d),
-            MidpointRounding.AwayFromZero
-        );
+        int score = (int)
+            Math.Round(Math.Clamp(tauxDeblocage * 100d, 0d, 100d), MidpointRounding.AwayFromZero);
 
         return new EvaluationFaisabiliteSucces
         {

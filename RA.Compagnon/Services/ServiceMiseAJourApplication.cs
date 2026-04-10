@@ -360,11 +360,7 @@ public sealed class ServiceMiseAJourApplication
             string cheminScript = Path.Combine(dossierInstalleur, "installer-mise-a-jour.ps1");
             string cheminJournal = Path.Combine(dossierInstalleur, "installer-mise-a-jour.log");
 
-            File.WriteAllText(
-                cheminScript,
-                ConstruireScriptInstallation(),
-                new UTF8Encoding(true)
-            );
+            File.WriteAllText(cheminScript, ConstruireScriptInstallation(), new UTF8Encoding(true));
 
             string versionCible = string.IsNullOrWhiteSpace(versionDistante)
                 ? "disponible"

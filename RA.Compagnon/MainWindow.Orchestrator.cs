@@ -15,7 +15,8 @@ public partial class MainWindow
         }
 
         _vueModele.JeuCourant.Progression = "-- / --";
-        _vueModele.JeuCourant.Pourcentage = _serviceOrchestrateurEtatJeu.ObtenirTexteEtatAffichable();
+        _vueModele.JeuCourant.Pourcentage =
+            _serviceOrchestrateurEtatJeu.ObtenirTexteEtatAffichable();
         _vueModele.JeuCourant.ProgressionValeur = 0;
     }
 

@@ -557,15 +557,9 @@ public partial class MainWindow
         }
         else if (dispositionEtendue)
         {
-            GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(
-                1,
-                GridUnitType.Star
-            );
+            GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
             GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(16);
-            GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(
-                1,
-                GridUnitType.Star
-            );
+            GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
             GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(0);
             GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(0);
 
@@ -573,10 +567,7 @@ public partial class MainWindow
             GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
             GrilleCarteJeuEnCours.RowDefinitions[2].Height = GridLength.Auto;
             GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(16);
-            GrilleCarteJeuEnCours.RowDefinitions[4].Height = new GridLength(
-                1,
-                GridUnitType.Star
-            );
+            GrilleCarteJeuEnCours.RowDefinitions[4].Height = new GridLength(1, GridUnitType.Star);
             GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(0);
             GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(0);
 

@@ -147,6 +147,7 @@ public partial class MainWindow
             _dernierResumeUtilisateurCharge = null;
             _dernieresDonneesJeuAffichees = null;
             DefinirEtatConnexion("Hors ligne ou erreur API");
+            ReinitialiserEtatSynchronisationJeu();
 
             if (afficherEtatChargement)
             {
@@ -251,6 +252,7 @@ public partial class MainWindow
             )
         )
         {
+            ReinitialiserEtatSynchronisationJeu();
             return;
         }
 
@@ -414,18 +416,17 @@ public partial class MainWindow
     {
         try
         {
-            DonneesJeuAffiche donneesJeu =
-                forcerChargementSansCache
-                    ? await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesSansCacheAsync(
-                        _configurationConnexion.Pseudo,
-                        _configurationConnexion.CleApiWeb,
-                        identifiantJeuEffectif
-                    )
-                    : await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesAsync(
-                        _configurationConnexion.Pseudo,
-                        _configurationConnexion.CleApiWeb,
-                        identifiantJeuEffectif
-                    );
+            DonneesJeuAffiche donneesJeu = forcerChargementSansCache
+                ? await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesSansCacheAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    identifiantJeuEffectif
+                )
+                : await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesAsync(
+                    _configurationConnexion.Pseudo,
+                    _configurationConnexion.CleApiWeb,
+                    identifiantJeuEffectif
+                );
 
             if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
             {

@@ -107,9 +107,7 @@ public partial class MainWindow
         _vueModele.ContourOrdreSuccesNormal = modeNormal ? contourActif : contourInactif;
         _vueModele.ContourOrdreSuccesAleatoire = modeAleatoire ? contourActif : contourInactif;
         _vueModele.ContourOrdreSuccesFacile = modeFacile ? contourActif : contourInactif;
-        _vueModele.ContourOrdreSuccesDifficile = modeDifficile
-            ? contourActif
-            : contourInactif;
+        _vueModele.ContourOrdreSuccesDifficile = modeDifficile ? contourActif : contourInactif;
 
         if (ContourOrdreSuccesNormal is not null)
         {
@@ -163,7 +161,9 @@ public partial class MainWindow
         return AppliquerOrdreSuccesPasses(succesOrdonnes);
     }
 
-    private List<GameAchievementV2> AppliquerOrdreSuccesPasses(List<GameAchievementV2> succesOrdonnes)
+    private List<GameAchievementV2> AppliquerOrdreSuccesPasses(
+        List<GameAchievementV2> succesOrdonnes
+    )
     {
         if (_etatListeSuccesUi.SuccesPasses.Count == 0)
         {
@@ -171,8 +171,7 @@ public partial class MainWindow
         }
 
         Dictionary<int, int> positionsPassage = _etatListeSuccesUi
-            .SuccesPasses
-            .Select((id, index) => new { id, index })
+            .SuccesPasses.Select((id, index) => new { id, index })
             .ToDictionary(item => item.id, item => item.index);
 
         List<GameAchievementV2> succesNonDebloquesNormaux =

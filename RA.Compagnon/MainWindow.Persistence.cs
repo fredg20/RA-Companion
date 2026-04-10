@@ -114,8 +114,9 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = !string.IsNullOrWhiteSpace(
             succesSauvegarde.DetailsFaisabilite
         );
-        _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite =
-            NormaliserToolTipFaisabilite(succesSauvegarde.ExplicationFaisabilite);
+        _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = NormaliserToolTipFaisabilite(
+            succesSauvegarde.ExplicationFaisabilite
+        );
         if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
         {
             ImageSource? imageSucces = await ChargerImageDistanteAsync(

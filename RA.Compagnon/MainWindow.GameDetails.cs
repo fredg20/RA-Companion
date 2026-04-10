@@ -62,7 +62,9 @@ public partial class MainWindow
         }
 
         bool actionDisponible =
-            identifiantJeu > 0 && ConfigurationConnexionEstComplete() && !_chargementJeuEnCoursActif;
+            identifiantJeu > 0
+            && ConfigurationConnexionEstComplete()
+            && !_chargementJeuEnCoursActif;
         _vueModele.LibelleRechargerJeu = "Recharger";
         _vueModele.RechargerJeuActif = actionDisponible;
         _vueModele.ToolTipRechargerJeu = actionDisponible

@@ -1928,8 +1928,9 @@ public partial class MainWindow
             _vueModele.Compte.SousEtatVisible = !string.IsNullOrWhiteSpace(
                 texteIdentifiantJeuAffiche
             );
-            (Brush fondNoticeLocal, Brush bordureNoticeLocale) =
-                ObtenirCouleursNoticeCompteEntete("En jeu");
+            (Brush fondNoticeLocal, Brush bordureNoticeLocale) = ObtenirCouleursNoticeCompteEntete(
+                "En jeu"
+            );
             _vueModele.Compte.FondNotice = fondNoticeLocal;
             _vueModele.Compte.BordureNotice = bordureNoticeLocale;
 
@@ -2014,32 +2015,20 @@ public partial class MainWindow
     {
         if (statut.Contains("En jeu", StringComparison.OrdinalIgnoreCase))
         {
-            return (
-                Brushes.Transparent,
-                new SolidColorBrush(Color.FromArgb(96, 58, 188, 116))
-            );
+            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(96, 58, 188, 116)));
         }
 
         if (statut.Contains("Actif", StringComparison.OrdinalIgnoreCase))
         {
-            return (
-                Brushes.Transparent,
-                new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
-            );
+            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 120, 200, 255)));
         }
 
         if (statut.Contains("Inactif", StringComparison.OrdinalIgnoreCase))
         {
-            return (
-                Brushes.Transparent,
-                new SolidColorBrush(Color.FromArgb(56, 160, 160, 160))
-            );
+            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 160, 160, 160)));
         }
 
-        return (
-            Brushes.Transparent,
-            new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
-        );
+        return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 120, 200, 255)));
     }
 
     private void JournaliserNoticeCompteEntete(string statut, string identifiantJeu, string source)

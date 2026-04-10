@@ -1076,8 +1076,11 @@ public partial class MainWindow
         }
 
         if (
-            string.Equals(_nomEmulateurDernierSignalSuccesLocal, "BizHawk", StringComparison.Ordinal)
-            && _typeSourceDernierSignalSuccesLocal.StartsWith("logs", StringComparison.Ordinal)
+            string.Equals(
+                _nomEmulateurDernierSignalSuccesLocal,
+                "BizHawk",
+                StringComparison.Ordinal
+            ) && _typeSourceDernierSignalSuccesLocal.StartsWith("logs", StringComparison.Ordinal)
         )
         {
             return "bizhawk_json";

@@ -81,8 +81,7 @@ public partial class MainWindow
             _vueModele.VisibiliteMiseAJourApplication = Visibility.Visible;
             _vueModele.MiseAJourApplicationActivee = false;
             _vueModele.LibelleMiseAJourApplication = "Téléchargement...";
-            _vueModele.ToolTipMiseAJourApplication =
-                "Téléchargement de la mise à jour en cours.";
+            _vueModele.ToolTipMiseAJourApplication = "Téléchargement de la mise à jour en cours.";
             return;
         }
 
@@ -106,8 +105,7 @@ public partial class MainWindow
             }
 
             _vueModele.LibelleMiseAJourApplication = "Mise à jour";
-            _vueModele.ToolTipMiseAJourApplication =
-                $"Télécharger la version {versionDistante}";
+            _vueModele.ToolTipMiseAJourApplication = $"Télécharger la version {versionDistante}";
             return;
         }
 
