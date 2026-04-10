@@ -415,6 +415,12 @@ public partial class MainWindow
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
         RafraichirStyleBadgesGrilleSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        ServiceDiagnosticFaisabiliteSucces.JournaliserJeu(
+            identifiantJeu,
+            _dernieresDonneesJeuAffichees?.Jeu.Title ?? _dernierTitreJeuApi,
+            succesOrdonnes,
+            _dernieresDonneesJeuAffichees?.Jeu.NumDistinctPlayers ?? 0
+        );
         JournaliserDiagnosticListeSucces(
             "grille_fin",
             $"jeu={identifiantJeu};version={versionGrille};badgesAjoutes={etatsBadges.Count};succesAttendus={succesOrdonnes.Count}"

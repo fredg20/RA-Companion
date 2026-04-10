@@ -11,7 +11,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _titreCarteJeuEnCours = "Dernier jeu joué";
     private string _libelleMiseAJourApplication = "Mise à jour";
     private string _toolTipMiseAJourApplication = string.Empty;
+    private string _libelleRechargerJeu = "Recharger";
+    private string _toolTipRechargerJeu = string.Empty;
     private string _libelleOrdreSuccesGrille = "Normal";
+    private string _etatSynchronisationJeu = string.Empty;
     private bool _ordreSuccesNormalActif = true;
     private bool _ordreSuccesAleatoireActif;
     private bool _ordreSuccesFacileActif;
@@ -24,10 +27,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     private Visibility _visibiliteCarteConnexion = Visibility.Collapsed;
     private Visibility _visibiliteCarteJeuEnCours = Visibility.Visible;
     private Visibility _visibiliteMiseAJourApplication = Visibility.Collapsed;
+    private Visibility _visibiliteSynchronisationJeu = Visibility.Collapsed;
     private bool _miseAJourApplicationActivee;
+    private bool _rechargerJeuActif;
     private Action? _executerActionAfficherCompte;
     private Action? _executerActionAfficherAide;
     private Action? _executerActionMiseAJourApplication;
+    private Action? _executerActionRechargerJeu;
     private Action? _executerActionOrdreSuccesNormal;
     private Action? _executerActionOrdreSuccesAleatoire;
     private Action? _executerActionOrdreSuccesFacile;
@@ -44,13 +50,21 @@ public sealed class MainWindowViewModel : ViewModelBase
             () => _executerActionMiseAJourApplication?.Invoke(),
             () => MiseAJourApplicationActivee
         );
-        CommandeOrdreSuccesNormal = new RelayCommand(() => _executerActionOrdreSuccesNormal?.Invoke());
-        CommandeOrdreSuccesAleatoire = new RelayCommand(
-            () => _executerActionOrdreSuccesAleatoire?.Invoke()
+        CommandeRechargerJeu = new RelayCommand(
+            () => _executerActionRechargerJeu?.Invoke(),
+            () => RechargerJeuActif
         );
-        CommandeOrdreSuccesFacile = new RelayCommand(() => _executerActionOrdreSuccesFacile?.Invoke());
-        CommandeOrdreSuccesDifficile = new RelayCommand(
-            () => _executerActionOrdreSuccesDifficile?.Invoke()
+        CommandeOrdreSuccesNormal = new RelayCommand(() =>
+            _executerActionOrdreSuccesNormal?.Invoke()
+        );
+        CommandeOrdreSuccesAleatoire = new RelayCommand(() =>
+            _executerActionOrdreSuccesAleatoire?.Invoke()
+        );
+        CommandeOrdreSuccesFacile = new RelayCommand(() =>
+            _executerActionOrdreSuccesFacile?.Invoke()
+        );
+        CommandeOrdreSuccesDifficile = new RelayCommand(() =>
+            _executerActionOrdreSuccesDifficile?.Invoke()
         );
     }
 
@@ -65,6 +79,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     public RelayCommand CommandeAfficherAide { get; }
 
     public RelayCommand CommandeMiseAJourApplication { get; }
+
+    public RelayCommand CommandeRechargerJeu { get; }
 
     public RelayCommand CommandeOrdreSuccesNormal { get; }
 
@@ -110,10 +126,28 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _toolTipMiseAJourApplication, value);
     }
 
+    public string LibelleRechargerJeu
+    {
+        get => _libelleRechargerJeu;
+        set => SetProperty(ref _libelleRechargerJeu, value);
+    }
+
+    public string ToolTipRechargerJeu
+    {
+        get => _toolTipRechargerJeu;
+        set => SetProperty(ref _toolTipRechargerJeu, value);
+    }
+
     public string LibelleOrdreSuccesGrille
     {
         get => _libelleOrdreSuccesGrille;
         set => SetProperty(ref _libelleOrdreSuccesGrille, value);
+    }
+
+    public string EtatSynchronisationJeu
+    {
+        get => _etatSynchronisationJeu;
+        set => SetProperty(ref _etatSynchronisationJeu, value);
     }
 
     public bool OrdreSuccesNormalActif
@@ -188,6 +222,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _visibiliteMiseAJourApplication, value);
     }
 
+    public Visibility VisibiliteSynchronisationJeu
+    {
+        get => _visibiliteSynchronisationJeu;
+        set => SetProperty(ref _visibiliteSynchronisationJeu, value);
+    }
+
     public bool MiseAJourApplicationActivee
     {
         get => _miseAJourApplicationActivee;
@@ -196,6 +236,18 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (SetProperty(ref _miseAJourApplicationActivee, value))
             {
                 CommandeMiseAJourApplication.NotifierPeutExecuterChange();
+            }
+        }
+    }
+
+    public bool RechargerJeuActif
+    {
+        get => _rechargerJeuActif;
+        set
+        {
+            if (SetProperty(ref _rechargerJeuActif, value))
+            {
+                CommandeRechargerJeu.NotifierPeutExecuterChange();
             }
         }
     }
@@ -216,6 +268,12 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _executerActionMiseAJourApplication = action;
         CommandeMiseAJourApplication.NotifierPeutExecuterChange();
+    }
+
+    public void ConfigurerActionRechargerJeu(Action? action)
+    {
+        _executerActionRechargerJeu = action;
+        CommandeRechargerJeu.NotifierPeutExecuterChange();
     }
 
     public void ConfigurerActionOrdreSuccesNormal(Action? action)

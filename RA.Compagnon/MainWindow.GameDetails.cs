@@ -31,6 +31,7 @@ public partial class MainWindow
         _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
         _vueModele.JeuCourant.ActionRejouerActivee = false;
         _vueModele.JeuCourant.ActionRejouerVisible = false;
+        MettreAJourActionRechargerJeuEnCours();
     }
 
     private void MettreAJourActionVueDetailleeJeuEnCours(GameInfoAndUserProgressV2 jeu)
@@ -41,6 +42,31 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionDetailsVisible = actionDisponible;
         _vueModele.JeuCourant.ToolTipActionDetails = actionDisponible
             ? $"Afficher les détails de {jeu.Title?.Trim() ?? "ce jeu"}"
+            : string.Empty;
+        MettreAJourActionRechargerJeuEnCours(jeu.Id, jeu.Title);
+    }
+
+    private void MettreAJourActionRechargerJeuEnCours(
+        int identifiantJeu = 0,
+        string? titreJeu = null
+    )
+    {
+        if (identifiantJeu <= 0)
+        {
+            identifiantJeu = _dernieresDonneesJeuAffichees?.Jeu.Id ?? _dernierIdentifiantJeuApi;
+        }
+
+        if (string.IsNullOrWhiteSpace(titreJeu))
+        {
+            titreJeu = _dernieresDonneesJeuAffichees?.Jeu.Title ?? _dernierTitreJeuApi;
+        }
+
+        bool actionDisponible =
+            identifiantJeu > 0 && ConfigurationConnexionEstComplete() && !_chargementJeuEnCoursActif;
+        _vueModele.LibelleRechargerJeu = "Recharger";
+        _vueModele.RechargerJeuActif = actionDisponible;
+        _vueModele.ToolTipRechargerJeu = actionDisponible
+            ? $"Recharger {titreJeu?.Trim() ?? "ce jeu"} depuis l'API"
             : string.Empty;
     }
 
@@ -500,6 +526,41 @@ public partial class MainWindow
 
         JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(_dernieresDonneesJeuAffichees);
         await AfficherModaleVueDetailleeJeuAsync(jeu, jeuAffiche);
+    }
+
+    private async Task ExecuterActionRechargerJeuEnCoursAsync()
+    {
+        if (!ConfigurationConnexionEstComplete() || _chargementJeuEnCoursActif)
+        {
+            MettreAJourActionRechargerJeuEnCours();
+            return;
+        }
+
+        int identifiantJeu = _dernieresDonneesJeuAffichees?.Jeu.Id ?? _dernierIdentifiantJeuApi;
+
+        if (identifiantJeu <= 0)
+        {
+            MettreAJourActionRechargerJeuEnCours();
+            return;
+        }
+
+        _vueModele.RechargerJeuActif = false;
+
+        try
+        {
+            _dernieresDonneesJeuAffichees = null;
+            _dernierIdentifiantJeuAvecInfos = 0;
+            _dernierIdentifiantJeuAvecProgression = 0;
+            _identifiantJeuSuccesCourant = 0;
+            _succesJeuCourant = [];
+            _identifiantJeuSuccesObserve = 0;
+            _etatSuccesObserves = [];
+            await ChargerJeuEnCoursAsync(false, true, true);
+        }
+        finally
+        {
+            MettreAJourActionRechargerJeuEnCours();
+        }
     }
 
     private async void BoutonVueDetailleeJeuEnCours_Click(object sender, RoutedEventArgs e)

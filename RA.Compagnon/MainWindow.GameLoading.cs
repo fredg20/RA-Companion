@@ -14,19 +14,34 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
+    private void DefinirEtatSynchronisationJeu(string texte)
+    {
+        _vueModele.EtatSynchronisationJeu = texte;
+        _vueModele.VisibiliteSynchronisationJeu = string.IsNullOrWhiteSpace(texte)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    private void ReinitialiserEtatSynchronisationJeu()
+    {
+        DefinirEtatSynchronisationJeu(string.Empty);
+    }
+
     private async Task ChargerJeuEnCoursAsync(
         bool afficherEtatChargement = true,
-        bool forcerChargementJeu = true
+        bool forcerChargementJeu = true,
+        bool forcerChargementSansCache = false
     )
     {
         App.JournaliserDemarrage("ChargerJeuEnCours début");
         JournaliserDiagnosticChangementJeu(
             "charger_jeu_debut",
-            $"forcer={forcerChargementJeu};chargement={afficherEtatChargement}"
+            $"forcer={forcerChargementJeu};chargement={afficherEtatChargement};sans_cache={forcerChargementSansCache}"
         );
 
         if (!ConfigurationConnexionEstComplete())
         {
+            ReinitialiserEtatSynchronisationJeu();
             ReinitialiserJeuEnCours();
             return;
         }
@@ -37,11 +52,24 @@ public partial class MainWindow
         }
 
         _chargementJeuEnCoursActif = true;
+        MettreAJourActionRechargerJeuEnCours();
+
+        if (
+            !afficherEtatChargement
+            && (
+                _configurationConnexion.DernierJeuAffiche is not null
+                || _dernieresDonneesJeuAffichees is not null
+            )
+        )
+        {
+            DefinirEtatSynchronisationJeu("Synchronisation...");
+        }
 
         try
         {
             if (afficherEtatChargement)
             {
+                ReinitialiserEtatSynchronisationJeu();
                 ReinitialiserPremierSuccesNonDebloque();
                 ReinitialiserGrilleTousSucces();
                 DefinirTempsJeuSousImage(string.Empty);
@@ -60,7 +88,11 @@ public partial class MainWindow
             _dernierProfilUtilisateurCharge = profil;
             _dernierResumeUtilisateurCharge = null;
             DefinirEtatConnexion("Connecté");
-            await AppliquerProfilUtilisateurAsync(profil, forcerChargementJeu);
+            await AppliquerProfilUtilisateurAsync(
+                profil,
+                forcerChargementJeu,
+                forcerChargementSansCache
+            );
             App.JournaliserDemarrage("ChargerJeuEnCours apres uppliquerProfil");
             DemarrerChargementSuccesRecentsEnArrierePlan(
                 profil,
@@ -90,12 +122,14 @@ public partial class MainWindow
 
             if (!afficherErreur)
             {
+                ReinitialiserEtatSynchronisationJeu();
                 ReinitialiserSuccesRecents();
                 TexteEtatSuccesRecents.Text =
                     "Impossible de charger les succès récents pour ce compte.";
                 return;
             }
 
+            ReinitialiserEtatSynchronisationJeu();
             ReinitialiserMetaConsoleJeuEnCours();
             ReinitialiserPremierSuccesNonDebloque();
             ReinitialiserGrilleTousSucces();
@@ -118,10 +152,12 @@ public partial class MainWindow
             {
                 if (!EnregistrerPhaseErreurChargementOrchestrateur(0, string.Empty, "api"))
                 {
+                    ReinitialiserEtatSynchronisationJeu();
                     ReinitialiserSuccesRecents();
                     return;
                 }
 
+                ReinitialiserEtatSynchronisationJeu();
                 ReinitialiserMetaConsoleJeuEnCours();
                 ReinitialiserPremierSuccesNonDebloque();
                 ReinitialiserGrilleTousSucces();
@@ -135,6 +171,7 @@ public partial class MainWindow
         finally
         {
             _chargementJeuEnCoursActif = false;
+            MettreAJourActionRechargerJeuEnCours();
             App.JournaliserDemarrage("ChargerJeuEnCours fin");
 
             if (_identifiantJeuLocalResolutEnAttente > 0 && ConfigurationConnexionEstComplete())
@@ -160,7 +197,8 @@ public partial class MainWindow
 
     private async Task AppliquerProfilUtilisateurAsync(
         UserProfileV2 profil,
-        bool forcerChargementJeu
+        bool forcerChargementJeu,
+        bool forcerChargementSansCache
     )
     {
         DefinirTitreZoneJeu();
@@ -190,9 +228,11 @@ public partial class MainWindow
         {
             if (!EnregistrerPhaseAucunJeuOrchestrateur("aucun_jeu_recent"))
             {
+                ReinitialiserEtatSynchronisationJeu();
                 return;
             }
 
+            ReinitialiserEtatSynchronisationJeu();
             ReinitialiserMetaConsoleJeuEnCours();
             ReinitialiserCarrouselVisuelsJeuEnCours();
             ReinitialiserPremierSuccesNonDebloque();
@@ -295,6 +335,7 @@ public partial class MainWindow
 
         if (contexteApiInchange)
         {
+            ReinitialiserEtatSynchronisationJeu();
             DefinirTitreJeuEnCours(_dernierTitreJeuApi);
             return;
         }
@@ -320,7 +361,8 @@ public partial class MainWindow
             titreJeuProvisoire,
             infosJeuDejaAfficheesPourCeJeu,
             progressionDejaAfficheePourCeJeu,
-            versionChargement
+            versionChargement,
+            forcerChargementSansCache
         );
     }
 
@@ -347,7 +389,8 @@ public partial class MainWindow
         string titreJeuProvisoire,
         bool infosJeuDejaAfficheesPourCeJeu,
         bool progressionDejaAfficheePourCeJeu,
-        int versionChargement
+        int versionChargement,
+        bool forcerChargementSansCache
     )
     {
         _ = ChargerJeuUtilisateurEnArrierePlanAsync(
@@ -355,7 +398,8 @@ public partial class MainWindow
             titreJeuProvisoire,
             infosJeuDejaAfficheesPourCeJeu,
             progressionDejaAfficheePourCeJeu,
-            versionChargement
+            versionChargement,
+            forcerChargementSansCache
         );
     }
 
@@ -364,17 +408,24 @@ public partial class MainWindow
         string titreJeuProvisoire,
         bool infosJeuDejaAfficheesPourCeJeu,
         bool progressionDejaAfficheePourCeJeu,
-        int versionChargement
+        int versionChargement,
+        bool forcerChargementSansCache
     )
     {
         try
         {
             DonneesJeuAffiche donneesJeu =
-                await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesAsync(
-                    _configurationConnexion.Pseudo,
-                    _configurationConnexion.CleApiWeb,
-                    identifiantJeuEffectif
-                );
+                forcerChargementSansCache
+                    ? await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesSansCacheAsync(
+                        _configurationConnexion.Pseudo,
+                        _configurationConnexion.CleApiWeb,
+                        identifiantJeuEffectif
+                    )
+                    : await _serviceJeuRetroAchievements.ObtenirDonneesJeuRapidesAsync(
+                        _configurationConnexion.Pseudo,
+                        _configurationConnexion.CleApiWeb,
+                        identifiantJeuEffectif
+                    );
 
             if (!ChargementContenuJeuEstToujoursActuel(versionChargement, identifiantJeuEffectif))
             {
@@ -642,6 +693,7 @@ public partial class MainWindow
         if (DonneesJeuSontIdempotentes(donneesJeu, _dernieresDonneesJeuAffichees))
         {
             _dernieresDonneesJeuAffichees = donneesJeu;
+            ReinitialiserEtatSynchronisationJeu();
             JournaliserDiagnosticChangementJeu(
                 "pipeline_idempotent_progression",
                 $"jeu={donneesJeu.Jeu.Id};succes={donneesJeu.Jeu.Succes.Count}"
@@ -663,6 +715,7 @@ public partial class MainWindow
         _dernierIdentifiantJeuAvecInfos = jeu.Id;
         _dernierIdentifiantJeuAvecProgression = jeu.Id;
         _dernieresDonneesJeuAffichees = donneesJeu;
+        ReinitialiserEtatSynchronisationJeu();
         MarquerEtapePipelineChargementJeu(
             EtapePipelineChargementJeu.DonneesMinimales,
             jeu.Id,

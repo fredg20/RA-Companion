@@ -114,6 +114,8 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = !string.IsNullOrWhiteSpace(
             succesSauvegarde.DetailsFaisabilite
         );
+        _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite =
+            NormaliserToolTipFaisabilite(succesSauvegarde.ExplicationFaisabilite);
         if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
         {
             ImageSource? imageSucces = await ChargerImageDistanteAsync(
@@ -140,6 +142,41 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.TexteVisuelVisible = !string.IsNullOrWhiteSpace(
             succesSauvegarde.TexteVisuel
         );
+    }
+
+    private static string NormaliserToolTipFaisabilite(string valeur)
+    {
+        if (string.IsNullOrWhiteSpace(valeur))
+        {
+            return string.Empty;
+        }
+
+        const string prefixeAncien = "Succès obtenu par ";
+        const string prefixeHardcore = "Succès obtenu hardcore : ";
+
+        if (valeur.StartsWith(prefixeAncien, StringComparison.Ordinal))
+        {
+            string suiteAncienne = valeur[prefixeAncien.Length..].Trim();
+            if (suiteAncienne.EndsWith('.'))
+            {
+                suiteAncienne = suiteAncienne[..^1];
+            }
+
+            return $"Succès obtenu : {suiteAncienne}";
+        }
+
+        if (valeur.StartsWith(prefixeHardcore, StringComparison.Ordinal))
+        {
+            string suiteHardcore = valeur[prefixeHardcore.Length..].Trim();
+            if (suiteHardcore.EndsWith('.'))
+            {
+                suiteHardcore = suiteHardcore[..^1];
+            }
+
+            return $"Succès obtenu : {suiteHardcore}";
+        }
+
+        return valeur;
     }
 
     private Task AppliquerDerniereListeSuccesSauvegardeeAsync(int identifiantJeu)
@@ -302,11 +339,7 @@ public partial class MainWindow
             _configurationConnexion.DerniereListeSuccesAffichee is { } etatCourant
             && etatCourant.Id == identifiantJeu
                 ? etatCourant
-                : new EtatListeSuccesAfficheeLocal
-                {
-                    IdentifiantJeu = identifiantJeu,
-                    Succes = [],
-                };
+                : new EtatListeSuccesAfficheeLocal { IdentifiantJeu = identifiantJeu, Succes = [] };
 
         etat.SuccesPasses = [.. succesPasses];
         _configurationConnexion.DerniereListeSuccesAffichee = etat;

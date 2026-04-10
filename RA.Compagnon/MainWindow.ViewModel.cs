@@ -18,9 +18,14 @@ public partial class MainWindow
         _vueModele.VisibiliteCarteConnexion = Visibility.Collapsed;
         _vueModele.VisibiliteCarteJeuEnCours = Visibility.Visible;
         _vueModele.VisibiliteMiseAJourApplication = Visibility.Collapsed;
+        _vueModele.VisibiliteSynchronisationJeu = Visibility.Collapsed;
         _vueModele.MiseAJourApplicationActivee = false;
         _vueModele.LibelleMiseAJourApplication = "Mise à jour";
         _vueModele.ToolTipMiseAJourApplication = string.Empty;
+        _vueModele.EtatSynchronisationJeu = string.Empty;
+        _vueModele.LibelleRechargerJeu = "Recharger";
+        _vueModele.ToolTipRechargerJeu = string.Empty;
+        _vueModele.RechargerJeuActif = false;
         _vueModele.LibelleOrdreSuccesGrille = "Normal";
         _vueModele.OrdreSuccesNormalActif = true;
         _vueModele.OrdreSuccesAleatoireActif = false;
@@ -55,6 +60,7 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsPointsVisible = false;
         _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
+        _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
         _vueModele.JeuCourant.VisuelsSecondairesVisible = false;
         _vueModele.JeuCourant.LibelleVisuelCourant = string.Empty;
         _vueModele.JeuCourant.TexteVisuelPrincipal = string.Empty;
@@ -67,6 +73,7 @@ public partial class MainWindow
         _vueModele.ConfigurerActionMiseAJourApplication(() =>
             _ = ExecuterActionMiseAJourApplicationAsync()
         );
+        _vueModele.ConfigurerActionRechargerJeu(() => _ = ExecuterActionRechargerJeuEnCoursAsync());
         _vueModele.ConfigurerActionOrdreSuccesNormal(() =>
             _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Normal)
         );

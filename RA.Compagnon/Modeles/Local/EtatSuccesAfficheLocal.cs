@@ -36,6 +36,11 @@ public sealed class EtatSuccesAfficheLocal
     public string DetailsFaisabilite { get; set; } = string.Empty;
 
     /// <summary>
+    /// Explication affichée en aide contextuelle pour la faisabilité.
+    /// </summary>
+    public string ExplicationFaisabilite { get; set; } = string.Empty;
+
+    /// <summary>
     /// Indique si ce succès a été épinglé manuellement depuis la grille.
     /// </summary>
     public bool EstEpingleManuellement { get; set; }

@@ -772,6 +772,7 @@
                                 Style="{StaticResource StyleTexteCopiable}"
                                 Opacity="0.72"
                                 Text="{Binding SuccesEnCours.DetailsFaisabilite}"
+                                ToolTip="{Binding SuccesEnCours.ToolTipDetailsFaisabilite}"
                                 TextWrapping="Wrap"
                                 Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
@@ -863,22 +864,27 @@
                         Text="Rétrosuccès du jeu"
                       />
 
-                      <ui:Button
-                        x:Name="BoutonOrdreSuccesGrille"
+                      <StackPanel
                         Grid.Column="1"
                         Margin="12,0,8,0"
-                        Height="28"
-                        Padding="10,2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
                         VerticalAlignment="Top"
-                        Appearance="Secondary"
-                        Click="BoutonOrdreSuccesGrille_Click"
-                        Content="{Binding LibelleOrdreSuccesGrille}"
                       >
-                        <ui:Button.ContextMenu>
-                          <ContextMenu
-                            x:Name="MenuOrdreSuccesGrille"
-                            DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                          >
+                        <ui:Button
+                          x:Name="BoutonOrdreSuccesGrille"
+                          Height="28"
+                          Padding="10,2"
+                          VerticalAlignment="Top"
+                          Appearance="Secondary"
+                          Click="BoutonOrdreSuccesGrille_Click"
+                          Content="{Binding LibelleOrdreSuccesGrille}"
+                        >
+                          <ui:Button.ContextMenu>
+                            <ContextMenu
+                              x:Name="MenuOrdreSuccesGrille"
+                              DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                            >
                             <MenuItem
                               x:Name="MenuItemOrdreSuccesNormal"
                               Command="{Binding CommandeOrdreSuccesNormal}"
@@ -979,9 +985,23 @@
                                 </StackPanel>
                               </MenuItem.Header>
                             </MenuItem>
-                          </ContextMenu>
-                        </ui:Button.ContextMenu>
-                      </ui:Button>
+                            </ContextMenu>
+                          </ui:Button.ContextMenu>
+                        </ui:Button>
+
+                        <ui:Button
+                          x:Name="BoutonRechargerJeu"
+                          Margin="8,0,0,0"
+                          Height="28"
+                          Padding="10,2"
+                          VerticalAlignment="Top"
+                          Appearance="Secondary"
+                          Command="{Binding CommandeRechargerJeu}"
+                          Content="{Binding LibelleRechargerJeu}"
+                          IsEnabled="{Binding RechargerJeuActif}"
+                          ToolTip="{Binding ToolTipRechargerJeu}"
+                        />
+                      </StackPanel>
                     </Grid>
 
                     <Border
@@ -1273,6 +1293,15 @@
             />
           </Viewbox>
         </Button>
+
+        <TextBlock
+          Grid.Column="1"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Opacity="0.62"
+          Text="{Binding EtatSynchronisationJeu}"
+          Visibility="{Binding VisibiliteSynchronisationJeu}"
+        />
 
         <StackPanel
           Grid.Column="2"

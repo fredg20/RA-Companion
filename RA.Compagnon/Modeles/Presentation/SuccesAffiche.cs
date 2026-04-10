@@ -13,6 +13,14 @@ public sealed class SuccesAffiche
 
     public string DetailsFaisabilite { get; init; } = string.Empty;
 
+    public int ScoreFaisabilite { get; init; }
+
+    public string LibelleFaisabilite { get; init; } = string.Empty;
+
+    public string ConfianceFaisabilite { get; init; } = string.Empty;
+
+    public string ExplicationFaisabilite { get; init; } = string.Empty;
+
     public string UrlBadge { get; init; } = string.Empty;
 
     public bool EstDebloque { get; init; }

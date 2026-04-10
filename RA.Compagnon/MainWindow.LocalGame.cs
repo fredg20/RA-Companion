@@ -284,7 +284,8 @@ public partial class MainWindow
             titreAffichage,
             infosJeuDejaAfficheesPourCeJeu,
             progressionDejaAfficheePourCeJeu,
-            versionChargement
+            versionChargement,
+            false
         );
     }
 

@@ -24,11 +24,16 @@ public sealed class ServicePresentationSucces
 
     public static SuccesAffiche Construire(
         GameAchievementV2 succes,
-        IReadOnlyCollection<GameAchievementV2> succesJeu,
-        int identifiantJeu
+        int identifiantJeu,
+        int nombreJoueursDistinctsJeu = 0
     )
     {
         bool estDebloque = EstDebloque(succes);
+        EvaluationFaisabiliteSucces evaluation = ServiceEvaluationFaisabiliteSucces.Evaluer(
+            succes,
+            identifiantJeu,
+            nombreJoueursDistinctsJeu
+        );
 
         return new SuccesAffiche
         {
@@ -37,11 +42,11 @@ public sealed class ServicePresentationSucces
                 ? "Aucune description disponible."
                 : succes.Description,
             DetailsPoints = ConstruireDetailsPointsSucces(succes),
-            DetailsFaisabilite = ConstruireDetailsFaisabiliteSucces(
-                succes,
-                succesJeu,
-                identifiantJeu
-            ),
+            DetailsFaisabilite = ConstruireDetailsFaisabiliteSucces(evaluation),
+            ScoreFaisabilite = evaluation.Score,
+            LibelleFaisabilite = evaluation.Libelle,
+            ConfianceFaisabilite = evaluation.Confiance,
+            ExplicationFaisabilite = evaluation.Explication,
             UrlBadge = ConstruireUrlBadgeDepuisNom(succes.BadgeName, !estDebloque),
             EstDebloque = estDebloque,
         };
@@ -81,46 +86,21 @@ public sealed class ServicePresentationSucces
         return string.Join(" • ", segments);
     }
 
-    private static string ConstruireDetailsFaisabiliteSucces(
-        GameAchievementV2 succes,
-        IReadOnlyCollection<GameAchievementV2> succesJeu,
-        int identifiantJeu
-    )
+    private static string ConstruireDetailsFaisabiliteSucces(EvaluationFaisabiliteSucces evaluation)
     {
-        if (identifiantJeu <= 0)
+        if (
+            string.IsNullOrWhiteSpace(evaluation.Libelle)
+            || evaluation.NombreJoueursDistincts <= 0
+        )
         {
             return string.Empty;
         }
 
-        int joueursDistincts = DeterminerNombreJoueursDistinctsJeu(succesJeu);
-
-        if (joueursDistincts <= 0 || succes.NumAwardedHardcore <= 0)
-        {
-            return string.Empty;
-        }
-
-        double tauxHardcore = (double)succes.NumAwardedHardcore / joueursDistincts;
-
-        return tauxHardcore switch
-        {
-            >= 0.20 => "Très faisable",
-            >= 0.10 => "Faisable",
-            >= 0.03 => "Intermédiaire",
-            >= 0.01 => "Difficile",
-            _ => "Extrême",
-        };
-    }
-
-    private static int DeterminerNombreJoueursDistinctsJeu(
-        IReadOnlyCollection<GameAchievementV2> succesJeu
-    )
-    {
-        if (succesJeu.Count == 0)
-        {
-            return 0;
-        }
-
-        return succesJeu.Max(item => Math.Max(item.NumAwarded, item.NumAwardedHardcore));
+        double pourcentage =
+            evaluation.NombreJoueursDistincts > 0
+                ? (double)evaluation.NombreJoueursDebloques / evaluation.NombreJoueursDistincts * 100d
+                : 0d;
+        return $"{evaluation.Libelle} ({pourcentage:0.#} %)";
     }
 
     private static bool EstDebloque(GameAchievementV2 succes)

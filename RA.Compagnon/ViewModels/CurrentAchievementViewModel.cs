@@ -17,6 +17,7 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
     private bool _detailsPointsVisible;
     private string _detailsFaisabilite = string.Empty;
     private bool _detailsFaisabiliteVisible;
+    private string _toolTipDetailsFaisabilite = string.Empty;
     private bool _navigationVisible;
     private bool _precedentActif;
     private bool _suivantActif;
@@ -116,6 +117,12 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
     {
         get => _detailsFaisabiliteVisible;
         set => SetProperty(ref _detailsFaisabiliteVisible, value);
+    }
+
+    public string ToolTipDetailsFaisabilite
+    {
+        get => _toolTipDetailsFaisabilite;
+        set => SetProperty(ref _toolTipDetailsFaisabilite, value);
     }
 
     public bool NavigationVisible
