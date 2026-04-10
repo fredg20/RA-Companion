@@ -44,3 +44,6 @@ Desktop.ini
 .tmp*
 .zig-*/
 .zig-cache*/
+
+# PowerShell scripts
+*.ps1
