@@ -7,6 +7,7 @@
 >
   <Application.Resources>
     <ResourceDictionary>
+      <BooleanToVisibilityConverter x:Key="ConvertisseurBooleenVersVisibilite" />
       <CornerRadius x:Key="RayonCoinsPetit">8</CornerRadius>
       <CornerRadius x:Key="RayonCoinsStandard">12</CornerRadius>
       <CornerRadius x:Key="RayonCoinsGrand">16</CornerRadius>

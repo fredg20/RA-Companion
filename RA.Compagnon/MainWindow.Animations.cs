@@ -503,10 +503,11 @@ public partial class MainWindow
     private void DefinirTitreJeuEnCours(string titre)
     {
         bool titreInchange = string.Equals(
-            TexteTitreJeuEnCours.Text,
+            _vueModele.JeuCourant.Titre,
             titre,
             StringComparison.Ordinal
         );
+        _vueModele.JeuCourant.Titre = titre;
         ConteneurTitreJeuEnCours.ToolTip = titre;
 
         if (titreInchange)
@@ -520,7 +521,6 @@ public partial class MainWindow
             translation.BeginAnimation(TranslateTransform.XProperty, null);
             translation.X = 0;
         }
-        TexteTitreJeuEnCours.Text = titre;
         TexteTitreJeuEnCours.Width = double.NaN;
         TexteTitreJeuEnCours.FontSize = ObtenirTaillePoliceTitreJeuNormaleResponsive();
         PlanifierMiseAJourAnimationTitreJeuEnCours();

@@ -97,16 +97,6 @@
 - bouton `Details` déplacé sur la ligne d'en-tête de la carte principale
 - ajustements visuels de la carte `Rétrosuccès en cours` et de ses boutons de navigation
 
-### Version 1.0.7
-
-- préparation de la release versionnée `1.0.7`
-- manifeste de mise à jour aligné sur `v1.0.7`
-- archive de release attendue : `RA.Compagnon-win-x64-1.0.7.zip`
-- amélioration du français dans la documentation visible
-- `RALibretro` entièrement validé pour `Rejouer`
-- `Dolphin` ajouté aux émulateurs validés et testés
-- retrait du support `LunaProject64`
-
 ### Version 1.0.6
 
 - préparation de la release versionnée `1.0.6`
@@ -122,4 +112,14 @@
 - masquage du bouton `Rejouer` pendant l'état `En jeu`
 - conservation plus stable des informations affichées sur le jeu courant
 - ajout et validation des supports `BizHawk`, `Dolphin` et `RAP64`
+- retrait du support `LunaProject64`
+
+### Version 1.0.7
+
+- préparation de la release versionnée `1.0.7`
+- manifeste de mise à jour aligné sur `v1.0.7`
+- archive de release attendue : `RA.Compagnon-win-x64-1.0.7.zip`
+- amélioration du français dans la documentation visible
+- `RALibretro` entièrement validé pour `Rejouer`
+- `Dolphin` ajouté aux émulateurs validés et testés
 - retrait du support `LunaProject64`

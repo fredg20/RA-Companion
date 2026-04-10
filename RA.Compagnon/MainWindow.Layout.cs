@@ -434,7 +434,7 @@ public partial class MainWindow
     private void AjusterDisposition()
     {
         bool dispositionDouble = ActualWidth >= LargeurMinimaleDispositionDouble;
-        bool carteConnexionVisible = CarteConnexion?.Visibility == Visibility.Visible;
+        bool carteConnexionVisible = _vueModele.VisibiliteCarteConnexion == Visibility.Visible;
 
         GrilleCartes.RowDefinitions.Clear();
 
@@ -501,7 +501,158 @@ public partial class MainWindow
             SystemControls.Grid.SetRow(CarteJeuEnCours, carteConnexionVisible ? 2 : 0);
         }
 
+        AjusterDispositionSectionsJeuEnCours();
         AjusterHauteurCarteJeuEnCours();
+    }
+
+    /// <summary>
+    /// Répartit les sous-sections de la carte jeu selon l'espace réellement occupé par la fenêtre.
+    /// </summary>
+    private void AjusterDispositionSectionsJeuEnCours()
+    {
+        if (
+            GrilleCarteJeuEnCours is null
+            || EnTeteCarteJeuEnCours is null
+            || SectionResumeJeuEnCours is null
+            || SectionSuccesEnCours is null
+            || SectionListeSuccesJeuEnCours is null
+            || GrilleCarteJeuEnCours.ColumnDefinitions.Count < 5
+            || GrilleCarteJeuEnCours.RowDefinitions.Count < 7
+        )
+        {
+            return;
+        }
+
+        bool dispositionTriple = FenetreCouvreEcranPourDispositionTriple();
+        bool dispositionEtendue = !dispositionTriple && FenetreCouvreDeuxTiersEcran();
+
+        if (dispositionTriple)
+        {
+            GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
+            GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(1, GridUnitType.Star);
+
+            GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
+            GrilleCarteJeuEnCours.RowDefinitions[2].Height = new GridLength(1, GridUnitType.Star);
+            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(0);
+            GrilleCarteJeuEnCours.RowDefinitions[4].Height = new GridLength(0);
+            GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(0);
+            GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(0);
+
+            SystemControls.Grid.SetColumn(EnTeteCarteJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(EnTeteCarteJeuEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionResumeJeuEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionResumeJeuEnCours, 0);
+
+            SystemControls.Grid.SetRow(SectionSuccesEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionSuccesEnCours, 2);
+
+            SystemControls.Grid.SetRow(SectionListeSuccesJeuEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionListeSuccesJeuEnCours, 4);
+            SystemControls.Grid.SetColumnSpan(SectionListeSuccesJeuEnCours, 1);
+        }
+        else if (dispositionEtendue)
+        {
+            GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(
+                1,
+                GridUnitType.Star
+            );
+            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(
+                1,
+                GridUnitType.Star
+            );
+            GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(0);
+            GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(0);
+
+            GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
+            GrilleCarteJeuEnCours.RowDefinitions[2].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[4].Height = new GridLength(
+                1,
+                GridUnitType.Star
+            );
+            GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(0);
+            GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(0);
+
+            SystemControls.Grid.SetColumn(EnTeteCarteJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(EnTeteCarteJeuEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionResumeJeuEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionResumeJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(SectionResumeJeuEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionSuccesEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionSuccesEnCours, 2);
+            SystemControls.Grid.SetColumnSpan(SectionSuccesEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionListeSuccesJeuEnCours, 4);
+            SystemControls.Grid.SetColumn(SectionListeSuccesJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(SectionListeSuccesJeuEnCours, 3);
+        }
+        else
+        {
+            GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
+            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(0);
+            GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(0);
+            GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(0);
+            GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(0);
+
+            GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
+            GrilleCarteJeuEnCours.RowDefinitions[2].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[4].Height = GridLength.Auto;
+            GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(1, GridUnitType.Star);
+
+            SystemControls.Grid.SetColumn(EnTeteCarteJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(EnTeteCarteJeuEnCours, 5);
+
+            SystemControls.Grid.SetRow(SectionResumeJeuEnCours, 2);
+            SystemControls.Grid.SetColumn(SectionResumeJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(SectionResumeJeuEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionSuccesEnCours, 4);
+            SystemControls.Grid.SetColumn(SectionSuccesEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(SectionSuccesEnCours, 1);
+
+            SystemControls.Grid.SetRow(SectionListeSuccesJeuEnCours, 6);
+            SystemControls.Grid.SetColumn(SectionListeSuccesJeuEnCours, 0);
+            SystemControls.Grid.SetColumnSpan(SectionListeSuccesJeuEnCours, 1);
+        }
+    }
+
+    /// <summary>
+    /// Indique si la fenêtre occupe pratiquement tout l'écran et peut passer en trois colonnes.
+    /// </summary>
+    private bool FenetreCouvreEcranPourDispositionTriple()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            return true;
+        }
+
+        Rect zoneTravail = SystemParameters.WorkArea;
+        return ActualWidth >= LargeurMinimaleDispositionTriple
+            && ActualWidth >= zoneTravail.Width - 48
+            && ActualHeight >= zoneTravail.Height - 48;
+    }
+
+    /// <summary>
+    /// Indique si la fenêtre couvre environ les deux tiers de la largeur de l'écran.
+    /// </summary>
+    private bool FenetreCouvreDeuxTiersEcran()
+    {
+        Rect zoneTravail = SystemParameters.WorkArea;
+        double largeurCarteJeu = CarteJeuEnCours?.ActualWidth ?? 0;
+        return ActualWidth >= zoneTravail.Width * RatioLargeurDispositionEtendue
+            || largeurCarteJeu >= LargeurMinimaleCarteJeuDispositionEtendue;
     }
 
     /// <summary>
@@ -548,10 +699,7 @@ public partial class MainWindow
         }
 
         double hauteurTitre = 36;
-        double hauteurBandeauCompte =
-            Math.Max(BoutonCompteUtilisateur?.ActualHeight ?? 32, BoutonAide?.ActualHeight ?? 32)
-            + 8
-            + 6;
+        double hauteurBandeauCompte = (BoutonCompteUtilisateur?.ActualHeight ?? 32) + 8 + 6;
         double hauteurBarreEtat = BarreEtatApplication is null
             ? 0
             : CalculerHauteurOccupee(BarreEtatApplication);
@@ -737,7 +885,7 @@ public partial class MainWindow
     /// </summary>
     private void DefinirVisibiliteContenuPrincipal(bool afficher)
     {
-        ZonePrincipale.Visibility = afficher ? Visibility.Visible : Visibility.Hidden;
+        _vueModele.VisibiliteContenuPrincipal = afficher ? Visibility.Visible : Visibility.Hidden;
         AjusterHauteurCarteJeuEnCours();
     }
 

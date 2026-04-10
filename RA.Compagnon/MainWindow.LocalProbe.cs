@@ -29,34 +29,6 @@ public partial class MainWindow
     /// <summary>
     /// Active les rafraîchissements API généraux ainsi que la surveillance légère du Rich Presence.
     /// </summary>
-    private void DemarrerActualisationAutomatique()
-    {
-        if (!ConfigurationConnexionEstComplete())
-        {
-            return;
-        }
-
-        if (_profilUtilisateurAccessible && !_minuteurActualisationApi.IsEnabled)
-        {
-            _minuteurActualisationApi.Start();
-        }
-
-        if (_profilUtilisateurAccessible && !_minuteurActualisationRichPresence.IsEnabled)
-        {
-            _minuteurActualisationRichPresence.Start();
-        }
-
-        if (!_minuteurPresenceLocaleCompte.IsEnabled)
-        {
-            _minuteurPresenceLocaleCompte.Start();
-        }
-
-        if (!_minuteurSondeLocaleEmulateurs.IsEnabled)
-        {
-            _minuteurSondeLocaleEmulateurs.Start();
-        }
-    }
-
     /// <summary>
     /// Redémarre le minuteur API pour repousser le prochain tick après un rafraîchissement ciblé.
     /// </summary>
@@ -74,15 +46,6 @@ public partial class MainWindow
     /// <summary>
     /// Arrête les rafraîchissements périodiques.
     /// </summary>
-    private void ArreterActualisationAutomatique()
-    {
-        _minuteurActualisationApi.Stop();
-        _minuteurActualisationRichPresence.Stop();
-        _minuteurPresenceLocaleCompte.Stop();
-        _minuteurSondeLocaleEmulateurs.Stop();
-        _minuteurRotationVisuelsJeuEnCours.Stop();
-    }
-
     /// <summary>
     /// Aucun amorçage local : l'application reste entièrement autonome.
     /// </summary>

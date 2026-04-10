@@ -23,27 +23,21 @@ public partial class MainWindow
         }
 
         _identifiantJeuMetaConsoleAffichee = 0;
-        ImageConsoleJeuEnCours.Source = null;
-        ImageConsoleJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteConsoleJeuEnCours.Text = string.Empty;
-        TexteConsoleJeuEnCours.Visibility = Visibility.Collapsed;
-        ZoneConsoleJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteTypeJeuEnCours.Text = string.Empty;
-        TexteTypeJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteDeveloppeurJeuEnCours.Text = string.Empty;
-        TexteDeveloppeurJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteDateSortieJeuEnCours.Text = string.Empty;
-        TexteDateSortieJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteTempsJeuEnCours.Text = string.Empty;
-        TexteTempsJeuEnCours.Visibility = Visibility.Collapsed;
-        TexteDetailsJeuEnCours.Text = string.Empty;
-        TexteDetailsJeuEnCours.Visibility = Visibility.Collapsed;
-        EtiquetteConsoleJeuEnCours.Visibility = Visibility.Collapsed;
-        EtiquetteTypeJeuEnCours.Visibility = Visibility.Collapsed;
-        EtiquetteCreditsJeuEnCours.Visibility = Visibility.Collapsed;
-        EtiquetteDateSortieJeuEnCours.Visibility = Visibility.Collapsed;
-        EtiquetteTempsJeuEnCours.Visibility = Visibility.Collapsed;
-        GrilleInformationsJeuEnCours.Visibility = Visibility.Collapsed;
+        _vueModele.JeuCourant.ImageConsole = null;
+        _vueModele.JeuCourant.ImageConsoleVisible = false;
+        _vueModele.JeuCourant.Console = string.Empty;
+        _vueModele.JeuCourant.ConsoleVisible = false;
+        _vueModele.JeuCourant.Genre = string.Empty;
+        _vueModele.JeuCourant.GenreVisible = false;
+        _vueModele.JeuCourant.Credits = string.Empty;
+        _vueModele.JeuCourant.CreditsVisible = false;
+        _vueModele.JeuCourant.DateSortie = string.Empty;
+        _vueModele.JeuCourant.DateSortieVisible = false;
+        _vueModele.JeuCourant.TempsDeJeu = string.Empty;
+        _vueModele.JeuCourant.TempsDeJeuVisible = false;
+        _vueModele.JeuCourant.Details = string.Empty;
+        _vueModele.JeuCourant.DetailsVisible = false;
+        _vueModele.JeuCourant.InformationsVisibles = false;
         JournaliserDiagnosticAffichageJeu("meta_reinitialisee");
     }
 
@@ -80,46 +74,40 @@ public partial class MainWindow
 
         if (!string.IsNullOrWhiteSpace(jeu.ConsoleName))
         {
-            TexteConsoleJeuEnCours.Text = jeu.ConsoleName.Trim();
-            TexteConsoleJeuEnCours.Visibility = Visibility.Visible;
-            ZoneConsoleJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteConsoleJeuEnCours.Visibility = Visibility.Visible;
+            _vueModele.JeuCourant.Console = jeu.ConsoleName.Trim();
+            _vueModele.JeuCourant.ConsoleVisible = true;
         }
 
         if (!string.IsNullOrWhiteSpace(jeu.Genre))
         {
-            TexteTypeJeuEnCours.Text = jeu.Genre.Trim();
-            TexteTypeJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteTypeJeuEnCours.Visibility = Visibility.Visible;
+            _vueModele.JeuCourant.Genre = jeu.Genre.Trim();
+            _vueModele.JeuCourant.GenreVisible = true;
         }
 
         string creditsJeu = ConstruireCreditsJeu(jeu);
 
         if (!string.IsNullOrWhiteSpace(creditsJeu))
         {
-            TexteDeveloppeurJeuEnCours.Text = creditsJeu;
-            TexteDeveloppeurJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteCreditsJeuEnCours.Visibility = Visibility.Visible;
+            _vueModele.JeuCourant.Credits = creditsJeu;
+            _vueModele.JeuCourant.CreditsVisible = true;
         }
 
         if (!string.IsNullOrWhiteSpace(dateSortieComplete))
         {
-            TexteDateSortieJeuEnCours.Text = dateSortieComplete;
-            TexteDateSortieJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteDateSortieJeuEnCours.Visibility = Visibility.Visible;
+            _vueModele.JeuCourant.DateSortie = dateSortieComplete;
+            _vueModele.JeuCourant.DateSortieVisible = true;
         }
 
         if (jeu.UserTotalPlaytime > 0)
         {
-            TexteTempsJeuEnCours.Text = FormaterTempsJeuTotal(jeu.UserTotalPlaytime);
-            TexteTempsJeuEnCours.Visibility = Visibility.Visible;
-            EtiquetteTempsJeuEnCours.Visibility = Visibility.Visible;
+            _vueModele.JeuCourant.TempsDeJeu = FormaterTempsJeuTotal(jeu.UserTotalPlaytime);
+            _vueModele.JeuCourant.TempsDeJeuVisible = true;
         }
 
         MettreAJourVisibiliteInformationsJeuEnCours();
         JournaliserDiagnosticAffichageJeu(
             "meta_initiale",
-            $"jeu={jeu.Id};reinit={reinitialisationNecessaire};console={TexteConsoleJeuEnCours.Text};genre={TexteTypeJeuEnCours.Text};credits={TexteDeveloppeurJeuEnCours.Text};sortie={TexteDateSortieJeuEnCours.Text};temps={TexteTempsJeuEnCours.Text}"
+            $"jeu={jeu.Id};reinit={reinitialisationNecessaire};console={_vueModele.JeuCourant.Console};genre={_vueModele.JeuCourant.Genre};credits={_vueModele.JeuCourant.Credits};sortie={_vueModele.JeuCourant.DateSortie};temps={_vueModele.JeuCourant.TempsDeJeu}"
         );
     }
 
@@ -176,23 +164,19 @@ public partial class MainWindow
 
             if (!string.IsNullOrWhiteSpace(genreAffiche))
             {
-                TexteTypeJeuEnCours.Text = genreAffiche;
-                TexteTypeJeuEnCours.Visibility = Visibility.Visible;
-                EtiquetteTypeJeuEnCours.Visibility = Visibility.Visible;
+                _vueModele.JeuCourant.Genre = genreAffiche;
+                _vueModele.JeuCourant.GenreVisible = true;
             }
 
             if (imageConsole is not null)
             {
-                ImageConsoleJeuEnCours.Source = imageConsole;
-                ImageConsoleJeuEnCours.Visibility = Visibility.Visible;
+                _vueModele.JeuCourant.ImageConsole = imageConsole;
+                _vueModele.JeuCourant.ImageConsoleVisible = true;
             }
 
-            ZoneConsoleJeuEnCours.Visibility =
-                ImageConsoleJeuEnCours.Visibility == Visibility.Visible
-                || TexteConsoleJeuEnCours.Visibility == Visibility.Visible
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            EtiquetteConsoleJeuEnCours.Visibility = ZoneConsoleJeuEnCours.Visibility;
+            _vueModele.JeuCourant.ConsoleVisible =
+                _vueModele.JeuCourant.ImageConsoleVisible
+                || !string.IsNullOrWhiteSpace(_vueModele.JeuCourant.Console);
             MettreAJourVisibiliteInformationsJeuEnCours();
         }
         catch
@@ -206,13 +190,11 @@ public partial class MainWindow
     /// </summary>
     private void DefinirDetailsJeuEnCours(string details)
     {
-        TexteDetailsJeuEnCours.Text = details;
-        TexteDetailsJeuEnCours.Visibility = string.IsNullOrWhiteSpace(details)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        _vueModele.JeuCourant.Details = details;
+        _vueModele.JeuCourant.DetailsVisible = !string.IsNullOrWhiteSpace(details);
         JournaliserDiagnosticAffichageJeu(
             "details_jeu",
-            $"visible={TexteDetailsJeuEnCours.Visibility};details={details}"
+            $"visible={_vueModele.JeuCourant.DetailsVisible};details={details}"
         );
     }
 
@@ -221,11 +203,8 @@ public partial class MainWindow
     /// </summary>
     private void DefinirTempsJeuSousImage(string tempsJeu)
     {
-        TexteTempsJeuEnCours.Text = tempsJeu;
-        TexteTempsJeuEnCours.Visibility = string.IsNullOrWhiteSpace(tempsJeu)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        EtiquetteTempsJeuEnCours.Visibility = TexteTempsJeuEnCours.Visibility;
+        _vueModele.JeuCourant.TempsDeJeu = tempsJeu;
+        _vueModele.JeuCourant.TempsDeJeuVisible = !string.IsNullOrWhiteSpace(tempsJeu);
         MettreAJourVisibiliteInformationsJeuEnCours();
     }
 
@@ -234,14 +213,12 @@ public partial class MainWindow
     /// </summary>
     private void DefinirEtatJeuDansProgression(string etat)
     {
-        TexteEtatJeuDansProgression.Text = string.IsNullOrWhiteSpace(etat)
-            ? "Progression du jeu"
-            : etat;
+        _vueModele.JeuCourant.Etat = string.IsNullOrWhiteSpace(etat) ? "Progression du jeu" : etat;
     }
 
     private void DefinirTitreZoneJeu()
     {
-        TitreZoneJeuEnCours.Text = "Dernier jeu joué";
+        _vueModele.TitreCarteJeuEnCours = "Dernier jeu joué";
     }
 
     /// <summary>
@@ -264,7 +241,7 @@ public partial class MainWindow
     /// <summary>
     /// Affiche le visuel précédent du jeu courant.
     /// </summary>
-    private async void VisuelJeuPrecedent_Click(object sender, RoutedEventArgs e)
+    private async Task ExecuterActionVisuelJeuPrecedentAsync()
     {
         if (_visuelsJeuEnCours.Count <= 1)
         {
@@ -278,7 +255,7 @@ public partial class MainWindow
     /// <summary>
     /// Affiche le visuel suivant du jeu courant.
     /// </summary>
-    private async void VisuelJeuSuivant_Click(object sender, RoutedEventArgs e)
+    private async Task ExecuterActionVisuelJeuSuivantAsync()
     {
         if (_visuelsJeuEnCours.Count <= 1)
         {
@@ -532,19 +509,17 @@ public partial class MainWindow
     private void MettreAJourVisibiliteInformationsJeuEnCours()
     {
         bool auMoinsUneLigneVisible =
-            ZoneConsoleJeuEnCours.Visibility == Visibility.Visible
-            || TexteTypeJeuEnCours.Visibility == Visibility.Visible
-            || TexteDeveloppeurJeuEnCours.Visibility == Visibility.Visible
-            || TexteDateSortieJeuEnCours.Visibility == Visibility.Visible
-            || TexteTempsJeuEnCours.Visibility == Visibility.Visible
-            || TexteDetailsJeuEnCours.Visibility == Visibility.Visible;
+            _vueModele.JeuCourant.ConsoleVisible
+            || _vueModele.JeuCourant.GenreVisible
+            || _vueModele.JeuCourant.CreditsVisible
+            || _vueModele.JeuCourant.DateSortieVisible
+            || _vueModele.JeuCourant.TempsDeJeuVisible
+            || _vueModele.JeuCourant.DetailsVisible;
 
-        GrilleInformationsJeuEnCours.Visibility = auMoinsUneLigneVisible
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        _vueModele.JeuCourant.InformationsVisibles = auMoinsUneLigneVisible;
         JournaliserDiagnosticAffichageJeu(
             "visibilite_meta",
-            $"grille={GrilleInformationsJeuEnCours.Visibility};console={ZoneConsoleJeuEnCours.Visibility};genre={TexteTypeJeuEnCours.Visibility};credits={TexteDeveloppeurJeuEnCours.Visibility};sortie={TexteDateSortieJeuEnCours.Visibility};temps={TexteTempsJeuEnCours.Visibility};details={TexteDetailsJeuEnCours.Visibility}"
+            $"grille={_vueModele.JeuCourant.InformationsVisibles};console={_vueModele.JeuCourant.ConsoleVisible};genre={_vueModele.JeuCourant.GenreVisible};credits={_vueModele.JeuCourant.CreditsVisible};sortie={_vueModele.JeuCourant.DateSortieVisible};temps={_vueModele.JeuCourant.TempsDeJeuVisible};details={_vueModele.JeuCourant.DetailsVisible}"
         );
     }
 

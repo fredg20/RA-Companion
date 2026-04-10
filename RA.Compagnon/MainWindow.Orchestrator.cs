@@ -14,9 +14,9 @@ public partial class MainWindow
             return;
         }
 
-        TexteResumeProgressionJeuEnCours.Text = "-- / --";
-        TextePourcentageJeuEnCours.Text = _serviceOrchestrateurEtatJeu.ObtenirTexteEtatAffichable();
-        BarreProgressionJeuEnCours.Value = 0;
+        _vueModele.JeuCourant.Progression = "-- / --";
+        _vueModele.JeuCourant.Pourcentage = _serviceOrchestrateurEtatJeu.ObtenirTexteEtatAffichable();
+        _vueModele.JeuCourant.ProgressionValeur = 0;
     }
 
     /// <summary>

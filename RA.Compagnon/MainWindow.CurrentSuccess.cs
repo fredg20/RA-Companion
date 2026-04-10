@@ -19,19 +19,20 @@ public partial class MainWindow
     /// </summary>
     private void ReinitialiserPremierSuccesNonDebloque()
     {
-        ImagePremierSuccesNonDebloque.Source = null;
+        _vueModele.SuccesEnCours.Image = null;
         ImagePremierSuccesNonDebloque.Clip = null;
-        ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-        TexteImagePremierSuccesNonDebloque.Text = string.Empty;
-        TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-        TexteTitrePremierSuccesNonDebloque.Text = string.Empty;
-        TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-        TexteDescriptionPremierSuccesNonDebloque.Text = string.Empty;
-        TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-        TextePointsPremierSuccesNonDebloque.Text = string.Empty;
-        TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-        TexteFaisabilitePremierSuccesNonDebloque.Text = string.Empty;
-        TexteFaisabilitePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+        _vueModele.SuccesEnCours.ImageVisible = false;
+        _vueModele.SuccesEnCours.ImageOpacity = 0.58;
+        _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
+        _vueModele.SuccesEnCours.TexteVisuelVisible = false;
+        _vueModele.SuccesEnCours.Titre = string.Empty;
+        _vueModele.SuccesEnCours.TitreVisible = false;
+        _vueModele.SuccesEnCours.Description = string.Empty;
+        _vueModele.SuccesEnCours.DescriptionVisible = false;
+        _vueModele.SuccesEnCours.DetailsPoints = string.Empty;
+        _vueModele.SuccesEnCours.DetailsPointsVisible = false;
+        _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
+        _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
         MettreAJourNavigationSuccesEnCours(null);
     }
 
@@ -70,6 +71,7 @@ public partial class MainWindow
         _succesDebloqueDetecteEnAttente = null;
         _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
         _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
+        _etatListeSuccesUi.SuccesPasses.Clear();
         _minuteurAffichageTemporaireSuccesGrille.Stop();
         ReinitialiserPremierSuccesNonDebloque();
         ReinitialiserGrilleTousSucces();
@@ -122,9 +124,27 @@ public partial class MainWindow
 
         versionGrille = ++_etatListeSuccesUi.VersionChargementGrille;
         _identifiantJeuSuccesCourant = jeu.IdentifiantJeu;
+        ChargerSuccesPassesPersistes(jeu.IdentifiantJeu);
         FusionnerSuccesDebloquesLocauxTemporaires(jeu.IdentifiantJeu, succes);
         _succesJeuCourant = succes;
         return succes;
+    }
+
+    private void ChargerSuccesPassesPersistes(int identifiantJeu)
+    {
+        _etatListeSuccesUi.SuccesPasses.Clear();
+
+        if (
+            identifiantJeu <= 0
+            || _configurationConnexion.DerniereListeSuccesAffichee is not { } etat
+            || etat.Id != identifiantJeu
+            || etat.SuccesPasses.Count == 0
+        )
+        {
+            return;
+        }
+
+        _etatListeSuccesUi.SuccesPasses.AddRange(etat.SuccesPasses);
     }
 
     private void DemarrerMiseAJourSuccesJeuEnArrierePlan(GameInfoAndUserProgressV2 jeu)
@@ -252,30 +272,31 @@ public partial class MainWindow
     {
         if (succesSelectionne is null)
         {
-            ImagePremierSuccesNonDebloque.Source = null;
-            ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-            TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteImagePremierSuccesNonDebloque.Text = "Tous les succès sont débloqués";
-            TexteTitrePremierSuccesNonDebloque.Text = "Tous les succès sont obtenus";
-            TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteDescriptionPremierSuccesNonDebloque.Text =
+            _vueModele.SuccesEnCours.Image = null;
+            _vueModele.SuccesEnCours.ImageVisible = false;
+            _vueModele.SuccesEnCours.ImageOpacity = 0.58;
+            _vueModele.SuccesEnCours.TexteVisuel = "Tous les succès sont débloqués";
+            _vueModele.SuccesEnCours.TexteVisuelVisible = true;
+            _vueModele.SuccesEnCours.Titre = "Tous les succès sont obtenus";
+            _vueModele.SuccesEnCours.TitreVisible = true;
+            _vueModele.SuccesEnCours.Description =
                 "Ce jeu ne contient plus de succès • débloquer.";
-            TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TextePointsPremierSuccesNonDebloque.Text = string.Empty;
-            TextePointsPremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-            TexteFaisabilitePremierSuccesNonDebloque.Text = string.Empty;
-            TexteFaisabilitePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            _vueModele.SuccesEnCours.DescriptionVisible = true;
+            _vueModele.SuccesEnCours.DetailsPoints = string.Empty;
+            _vueModele.SuccesEnCours.DetailsPointsVisible = false;
+            _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
+            _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
             MettreAJourNavigationSuccesEnCours(null);
             SauvegarderDernierSuccesAffiche(
                 new EtatSuccesAfficheLocal
                 {
                     IdentifiantJeu = identifiantJeu,
                     IdentifiantSucces = 0,
-                    Titre = TexteTitrePremierSuccesNonDebloque.Text,
-                    Description = TexteDescriptionPremierSuccesNonDebloque.Text,
+                    Titre = _vueModele.SuccesEnCours.Titre,
+                    Description = _vueModele.SuccesEnCours.Description,
                     DetailsPoints = string.Empty,
                     DetailsFaisabilite = string.Empty,
-                    TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
+                    TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
             return;
@@ -290,43 +311,40 @@ public partial class MainWindow
 
         if (imageSucces is not null)
         {
-            ImagePremierSuccesNonDebloque.Source = succesAffiche.EstDebloque
+            _vueModele.SuccesEnCours.Image = succesAffiche.EstDebloque
                 ? imageSucces
                 : ConvertirImageEnNoirEtBlanc(imageSucces);
-            ImagePremierSuccesNonDebloque.Opacity = succesAffiche.EstDebloque ? 1 : 0.58;
-            ImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
+            _vueModele.SuccesEnCours.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
+            _vueModele.SuccesEnCours.ImageVisible = true;
+            _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
+            _vueModele.SuccesEnCours.TexteVisuelVisible = false;
             AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
         }
         else
         {
-            ImagePremierSuccesNonDebloque.Source = null;
+            _vueModele.SuccesEnCours.Image = null;
             ImagePremierSuccesNonDebloque.Clip = null;
-            ImagePremierSuccesNonDebloque.Opacity = 0.58;
-            ImagePremierSuccesNonDebloque.Visibility = Visibility.Collapsed;
-            TexteImagePremierSuccesNonDebloque.Visibility = Visibility.Visible;
-            TexteImagePremierSuccesNonDebloque.Text = "Visuel indisponible";
+            _vueModele.SuccesEnCours.ImageOpacity = 0.58;
+            _vueModele.SuccesEnCours.ImageVisible = false;
+            _vueModele.SuccesEnCours.TexteVisuel = "Visuel indisponible";
+            _vueModele.SuccesEnCours.TexteVisuelVisible = true;
         }
 
-        TexteTitrePremierSuccesNonDebloque.Text = succesAffiche.Titre;
-        TexteTitrePremierSuccesNonDebloque.Visibility = Visibility.Visible;
+        _vueModele.SuccesEnCours.Titre = succesAffiche.Titre;
+        _vueModele.SuccesEnCours.TitreVisible = true;
         string descriptionSucces = await _serviceTraductionTexte.TraduireVersFrancaisAsync(
             succesAffiche.Description
         );
-        TexteDescriptionPremierSuccesNonDebloque.Text = descriptionSucces.Trim();
-        TexteDescriptionPremierSuccesNonDebloque.Visibility = Visibility.Visible;
-        TextePointsPremierSuccesNonDebloque.Text = succesAffiche.DetailsPoints;
-        TextePointsPremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+        _vueModele.SuccesEnCours.Description = descriptionSucces.Trim();
+        _vueModele.SuccesEnCours.DescriptionVisible = true;
+        _vueModele.SuccesEnCours.DetailsPoints = succesAffiche.DetailsPoints;
+        _vueModele.SuccesEnCours.DetailsPointsVisible = !string.IsNullOrWhiteSpace(
             succesAffiche.DetailsPoints
-        )
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        TexteFaisabilitePremierSuccesNonDebloque.Text = succesAffiche.DetailsFaisabilite;
-        TexteFaisabilitePremierSuccesNonDebloque.Visibility = string.IsNullOrWhiteSpace(
+        );
+        _vueModele.SuccesEnCours.DetailsFaisabilite = succesAffiche.DetailsFaisabilite;
+        _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = !string.IsNullOrWhiteSpace(
             succesAffiche.DetailsFaisabilite
-        )
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        );
         MettreAJourNavigationSuccesEnCours(succesSelectionne);
         if (doitSauvegarder)
         {
@@ -335,13 +353,13 @@ public partial class MainWindow
                 {
                     IdentifiantJeu = identifiantJeu,
                     IdentifiantSucces = succesSelectionne.Id,
-                    Titre = TexteTitrePremierSuccesNonDebloque.Text,
-                    Description = TexteDescriptionPremierSuccesNonDebloque.Text,
-                    DetailsPoints = TextePointsPremierSuccesNonDebloque.Text,
-                    DetailsFaisabilite = TexteFaisabilitePremierSuccesNonDebloque.Text,
+                    Titre = _vueModele.SuccesEnCours.Titre,
+                    Description = _vueModele.SuccesEnCours.Description,
+                    DetailsPoints = _vueModele.SuccesEnCours.DetailsPoints,
+                    DetailsFaisabilite = _vueModele.SuccesEnCours.DetailsFaisabilite,
                     EstEpingleManuellement = estEpingleManuellement,
                     CheminImageBadge = succesAffiche.UrlBadge,
-                    TexteVisuel = TexteImagePremierSuccesNonDebloque.Text,
+                    TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
         }
@@ -522,23 +540,26 @@ public partial class MainWindow
         int nombreDebloques = _succesJeuCourant.Count(SuccesEstDebloquePourAffichage);
         double pourcentage = nombreSucces <= 0 ? 0 : (double)nombreDebloques * 100d / nombreSucces;
 
-        TexteResumeProgressionJeuEnCours.Text = string.Create(
+        _vueModele.JeuCourant.Progression = string.Create(
             CultureInfo.CurrentCulture,
             $"{nombreDebloques} / {nombreSucces}"
         );
-        TextePourcentageJeuEnCours.Text =
+        _vueModele.JeuCourant.Pourcentage =
             $"{Math.Round(pourcentage, MidpointRounding.AwayFromZero).ToString(CultureInfo.CurrentCulture)} % complété";
-        BarreProgressionJeuEnCours.Value = Math.Clamp(pourcentage, 0, 100);
+        _vueModele.JeuCourant.ProgressionValeur = Math.Clamp(pourcentage, 0, 100);
 
         if (_configurationConnexion.DernierJeuAffiche?.Id == _identifiantJeuSuccesCourant)
         {
-            _configurationConnexion.DernierJeuAffiche.ResumeProgression =
-                TexteResumeProgressionJeuEnCours.Text;
-            _configurationConnexion.DernierJeuAffiche.PourcentageProgression =
-                TextePourcentageJeuEnCours.Text;
-            _configurationConnexion.DernierJeuAffiche.ValeurProgression =
-                BarreProgressionJeuEnCours.Value;
-            _configurationConnexion.DernierJeuAffiche.Details = TexteDetailsJeuEnCours.Text;
+            _configurationConnexion.DernierJeuAffiche.ResumeProgression = _vueModele
+                .JeuCourant
+                .Progression;
+            _configurationConnexion.DernierJeuAffiche.PourcentageProgression = _vueModele
+                .JeuCourant
+                .Pourcentage;
+            _configurationConnexion.DernierJeuAffiche.ValeurProgression = _vueModele
+                .JeuCourant
+                .ProgressionValeur;
+            _configurationConnexion.DernierJeuAffiche.Details = _vueModele.JeuCourant.Details;
             _configurationConnexion.DernierJeuAffiche.EtatJeu =
                 nombreDebloques >= nombreSucces && nombreSucces > 0
                     ? "Jeu complété"
@@ -562,19 +583,7 @@ public partial class MainWindow
         );
     }
 
-    private async void BoutonSuccesEnCoursPrecedent_Click(object sender, RoutedEventArgs e)
-    {
-        e.Handled = true;
-        await NaviguerSuccesEnCoursAsync(-1);
-    }
-
-    private async void BoutonSuccesEnCoursSuivant_Click(object sender, RoutedEventArgs e)
-    {
-        e.Handled = true;
-        await NaviguerSuccesEnCoursAsync(1);
-    }
-
-    private async Task NaviguerSuccesEnCoursAsync(int direction)
+    private async Task ExecuterNavigationSuccesEnCoursAsync(int direction)
     {
         if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count <= 1)
         {
@@ -617,6 +626,46 @@ public partial class MainWindow
         await AppliquerSuccesEnCoursAsync(_identifiantJeuSuccesCourant, succesCible, true, true);
     }
 
+    private async Task ExecuterPassageSuccesEnCoursAsync()
+    {
+        if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
+        {
+            return;
+        }
+
+        List<GameAchievementV2> succesOrdonnes =
+        [
+            .. OrdonnerSuccesPourGrilleSelonMode(_identifiantJeuSuccesCourant, _succesJeuCourant),
+        ];
+
+        GameAchievementV2? succesCourant = ObtenirSuccesEnCoursSelectionne(succesOrdonnes);
+
+        if (succesCourant is null || SuccesEstDebloquePourAffichage(succesCourant))
+        {
+            return;
+        }
+
+        if (succesOrdonnes.Count(item => !SuccesEstDebloquePourAffichage(item)) <= 1)
+        {
+            return;
+        }
+
+        _etatListeSuccesUi.SuccesPasses.RemoveAll(id => id == succesCourant.Id);
+        _etatListeSuccesUi.SuccesPasses.Add(succesCourant.Id);
+        SauvegarderOrdreSuccesPasses(_identifiantJeuSuccesCourant, _etatListeSuccesUi.SuccesPasses);
+
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
+
+        RedessinerGrilleTousSuccesDepuisEtatLocal();
+        await MettreAJourPremierSuccesNonDebloqueAsync(
+            _identifiantJeuSuccesCourant,
+            _succesJeuCourant
+        );
+    }
+
     private GameAchievementV2? ObtenirSuccesEnCoursSelectionne(
         List<GameAchievementV2> succesOrdonnes
     )
@@ -650,23 +699,18 @@ public partial class MainWindow
 
     private void MettreAJourNavigationSuccesEnCours(GameAchievementV2? succesSelectionne)
     {
-        if (BoutonSuccesEnCoursPrecedent is null || BoutonSuccesEnCoursSuivant is null)
-        {
-            return;
-        }
-
         if (
             _identifiantJeuSuccesCourant <= 0
             || _succesJeuCourant.Count <= 1
             || succesSelectionne is null
         )
         {
-            BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Collapsed;
-            BoutonSuccesEnCoursSuivant.Visibility = Visibility.Collapsed;
-            BoutonSuccesEnCoursPrecedent.IsEnabled = false;
-            BoutonSuccesEnCoursSuivant.IsEnabled = false;
-            TexteChevronSuccesEnCoursPrecedent.Opacity = 1;
-            TexteChevronSuccesEnCoursSuivant.Opacity = 1;
+            _vueModele.SuccesEnCours.NavigationVisible = false;
+            _vueModele.SuccesEnCours.PrecedentActif = false;
+            _vueModele.SuccesEnCours.SuivantActif = false;
+            _vueModele.SuccesEnCours.PasserActif = false;
+            _vueModele.SuccesEnCours.PrecedentOpacity = 1;
+            _vueModele.SuccesEnCours.SuivantOpacity = 1;
             return;
         }
 
@@ -678,23 +722,27 @@ public partial class MainWindow
 
         if (indexCourant < 0)
         {
-            BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Collapsed;
-            BoutonSuccesEnCoursSuivant.Visibility = Visibility.Collapsed;
-            BoutonSuccesEnCoursPrecedent.IsEnabled = false;
-            BoutonSuccesEnCoursSuivant.IsEnabled = false;
-            TexteChevronSuccesEnCoursPrecedent.Opacity = 1;
-            TexteChevronSuccesEnCoursSuivant.Opacity = 1;
+            _vueModele.SuccesEnCours.NavigationVisible = false;
+            _vueModele.SuccesEnCours.PrecedentActif = false;
+            _vueModele.SuccesEnCours.SuivantActif = false;
+            _vueModele.SuccesEnCours.PasserActif = false;
+            _vueModele.SuccesEnCours.PrecedentOpacity = 1;
+            _vueModele.SuccesEnCours.SuivantOpacity = 1;
             return;
         }
 
-        BoutonSuccesEnCoursPrecedent.Visibility = Visibility.Visible;
-        BoutonSuccesEnCoursSuivant.Visibility = Visibility.Visible;
-        BoutonSuccesEnCoursPrecedent.IsEnabled = indexCourant > 0;
-        BoutonSuccesEnCoursSuivant.IsEnabled = indexCourant < succesOrdonnes.Count - 1;
-        TexteChevronSuccesEnCoursPrecedent.Opacity = BoutonSuccesEnCoursPrecedent.IsEnabled
+        _vueModele.SuccesEnCours.NavigationVisible = true;
+        _vueModele.SuccesEnCours.PrecedentActif = indexCourant > 0;
+        _vueModele.SuccesEnCours.SuivantActif = indexCourant < succesOrdonnes.Count - 1;
+        _vueModele.SuccesEnCours.PasserActif =
+            !SuccesEstDebloquePourAffichage(succesSelectionne)
+            && succesOrdonnes.Count(item => !SuccesEstDebloquePourAffichage(item)) > 1;
+        _vueModele.SuccesEnCours.PrecedentOpacity = _vueModele.SuccesEnCours.PrecedentActif
             ? 1
             : 0.38;
-        TexteChevronSuccesEnCoursSuivant.Opacity = BoutonSuccesEnCoursSuivant.IsEnabled ? 1 : 0.38;
+        _vueModele.SuccesEnCours.SuivantOpacity = _vueModele.SuccesEnCours.SuivantActif
+            ? 1
+            : 0.38;
     }
 
     /// <summary>

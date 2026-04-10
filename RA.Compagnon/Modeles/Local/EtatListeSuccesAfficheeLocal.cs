@@ -15,6 +15,8 @@ public sealed class EtatListeSuccesAfficheeLocal
     /// </summary>
     public List<ElementListeSuccesAfficheLocal> Succes { get; set; } = [];
 
+    public List<int> SuccesPasses { get; set; } = [];
+
     public int Id
     {
         get => IdentifiantJeu;

@@ -90,8 +90,8 @@ public partial class MainWindow
         ImageJeuEnCoursTransition.Clip = null;
         ImageJeuEnCoursTransition.Visibility = Visibility.Collapsed;
         _cheminImageJeuEnCoursAffiche = string.Empty;
-        TexteImageJeuEnCours.Text = string.Empty;
-        TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+        _vueModele.JeuCourant.TexteVisuelPrincipal = string.Empty;
+        _vueModele.JeuCourant.TexteVisuelPrincipalVisible = false;
     }
 
     /// <summary>
@@ -106,7 +106,7 @@ public partial class MainWindow
             ImageJeuEnCours.Opacity = 0;
             ImageJeuEnCours.Effect = null;
             AppliquerCoinsArrondisImageJeuEnCours();
-            TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+            _vueModele.JeuCourant.TexteVisuelPrincipalVisible = false;
 
             DoubleAnimation animationFonduEntreeInitiale = new()
             {
@@ -149,7 +149,7 @@ public partial class MainWindow
         ImageJeuEnCoursTransition.Opacity = 0;
         ImageJeuEnCoursTransition.Effect = null;
         AppliquerCoinsArrondisImageJeuEnCours();
-        TexteImageJeuEnCours.Visibility = Visibility.Collapsed;
+        _vueModele.JeuCourant.TexteVisuelPrincipalVisible = false;
 
         DoubleAnimation animationFonduSortie = new()
         {
@@ -212,10 +212,10 @@ public partial class MainWindow
         _minuteurRotationVisuelsJeuEnCours.Stop();
         _visuelsJeuEnCours.Clear();
         _indexVisuelJeuEnCours = 0;
-        TexteVisuelJeuEnCours.Text = string.Empty;
-        ZoneSousImageJeuEnCours.Visibility = Visibility.Collapsed;
-        BoutonVisuelJeuPrecedent.Visibility = Visibility.Collapsed;
-        BoutonVisuelJeuSuivant.Visibility = Visibility.Collapsed;
+        _vueModele.JeuCourant.LibelleVisuelCourant = string.Empty;
+        _vueModele.JeuCourant.VisuelsSecondairesVisible = false;
+        _vueModele.JeuCourant.ActionVisuelPrecedentActivee = false;
+        _vueModele.JeuCourant.ActionVisuelSuivantActivee = false;
     }
 
     /// <summary>
@@ -271,11 +271,12 @@ public partial class MainWindow
             _dernierIdentifiantJeuAvecInfos,
             _versionChargementContenuJeu
         );
-        TexteVisuelJeuEnCours.Text =
+        _vueModele.JeuCourant.LibelleVisuelCourant =
             $"{visuel.Libelle} {_indexVisuelJeuEnCours + 1}/{_visuelsJeuEnCours.Count}";
-        ZoneSousImageJeuEnCours.Visibility = Visibility.Collapsed;
-        BoutonVisuelJeuPrecedent.Visibility = Visibility.Collapsed;
-        BoutonVisuelJeuSuivant.Visibility = Visibility.Collapsed;
+        bool navigationDisponible = _visuelsJeuEnCours.Count > 1;
+        _vueModele.JeuCourant.VisuelsSecondairesVisible = navigationDisponible;
+        _vueModele.JeuCourant.ActionVisuelPrecedentActivee = navigationDisponible;
+        _vueModele.JeuCourant.ActionVisuelSuivantActivee = navigationDisponible;
     }
 
     /// <summary>

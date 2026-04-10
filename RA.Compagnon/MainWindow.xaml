@@ -70,7 +70,7 @@
             FontWeight="SemiBold"
             LineHeight="22"
             LineStackingStrategy="BlockLineHeight"
-            Text="RA-Compagnon - Suivi des rétrosuccès"
+            Text="{Binding TitreFenetre}"
             TextWrapping="NoWrap"
             TextAlignment="Center"
           />
@@ -79,38 +79,67 @@
     </Grid>
 
     <Grid Grid.Row="1" Margin="12,8,12,6">
-      <Grid HorizontalAlignment="Right" VerticalAlignment="Center">
+      <Grid VerticalAlignment="Center">
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="Auto" />
-          <ColumnDefinition Width="8" />
+          <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <ui:Button
-          x:Name="BoutonAide"
+        <StackPanel
+          x:Name="ZoneEtatCompteUtilisateur"
           Grid.Column="0"
-          MinWidth="40"
-          Height="32"
-          Padding="10,0"
-          HorizontalAlignment="Right"
+          MaxWidth="320"
+          Margin="8,0,0,0"
+          HorizontalAlignment="Left"
           VerticalAlignment="Center"
-          Appearance="Secondary"
-          Click="AfficherAide_Click"
-          Content="?"
-        />
+          ToolTip="{Binding Compte.ToolTipNotice}"
+          Visibility="{Binding Compte.NoticeVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+        >
+          <Border
+            x:Name="BadgeEtatCompteUtilisateur"
+            Padding="0"
+            HorizontalAlignment="Left"
+            CornerRadius="0"
+            Background="{Binding Compte.FondNotice}"
+            BorderBrush="{Binding Compte.BordureNotice}"
+            BorderThickness="0"
+          >
+            <TextBlock
+              x:Name="TexteEtatCompteUtilisateur"
+              FontSize="22"
+              FontWeight="SemiBold"
+              Opacity="0.92"
+              Text="{Binding Compte.EtatNotice}"
+              TextAlignment="Left"
+            />
+          </Border>
 
+          <TextBlock
+            x:Name="TexteSousEtatCompteUtilisateur"
+            Margin="2,3,0,0"
+            HorizontalAlignment="Left"
+            FontSize="11"
+            Opacity="0.45"
+            TextAlignment="Left"
+            Text="{Binding Compte.SousEtatNotice}"
+            TextTrimming="CharacterEllipsis"
+            Visibility="{Binding Compte.SousEtatVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+          />
+        </StackPanel>
+
+        <Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
         <ui:Button
           x:Name="BoutonCompteUtilisateur"
-          Grid.Column="2"
           MinWidth="120"
           Height="32"
           Padding="14,0"
           HorizontalAlignment="Right"
           VerticalAlignment="Center"
           Appearance="Secondary"
-          Click="AfficherCompte_Click"
-          Content="Connexion"
+          Command="{Binding CommandeAfficherCompte}"
+          Content="{Binding Compte.LibelleBouton}"
         />
+        </Grid>
       </Grid>
     </Grid>
 
@@ -122,7 +151,7 @@
     >
       <ScrollViewer
         x:Name="ZonePrincipale"
-        Visibility="Hidden"
+        Visibility="{Binding VisibiliteContenuPrincipal}"
         VerticalScrollBarVisibility="Hidden"
         HorizontalScrollBarVisibility="Disabled"
         SizeChanged="ZonePrincipale_TailleChangee"
@@ -147,7 +176,11 @@
               <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Column="0" Visibility="Collapsed" x:Name="CarteConnexion">
+            <Grid
+              x:Name="CarteConnexion"
+              Grid.Column="0"
+              Visibility="{Binding VisibiliteCarteConnexion}"
+            >
               <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="6" />
@@ -190,6 +223,7 @@
               Grid.Column="2"
               VerticalAlignment="Stretch"
               ClipToBounds="True"
+              Visibility="{Binding VisibiliteCarteJeuEnCours}"
               SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
             >
               <Grid.RowDefinitions>
@@ -206,6 +240,13 @@
                   x:Name="GrilleCarteJeuEnCours"
                   SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
                 >
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="0" />
+                    <ColumnDefinition Width="0" />
+                    <ColumnDefinition Width="0" />
+                    <ColumnDefinition Width="0" />
+                  </Grid.ColumnDefinitions>
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="6" />
@@ -216,98 +257,87 @@
                     <RowDefinition Height="*" />
                   </Grid.RowDefinitions>
 
-                  <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="Auto" />
-                      <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
+                  <Grid x:Name="EnTeteCarteJeuEnCours" Grid.Row="0" Grid.ColumnSpan="5">
                     <TextBlock
                       x:Name="TitreZoneJeuEnCours"
-                      Grid.Column="0"
                       Margin="8,0,0,0"
                       FontSize="28"
                       FontWeight="SemiBold"
-                      Text="Dernier jeu joué"
+                      Text="{Binding TitreCarteJeuEnCours}"
                       Visibility="Collapsed"
                     />
+                  </Grid>
+                  <Grid
+                    x:Name="SectionResumeJeuEnCours"
+                    Grid.Row="2"
+                    VerticalAlignment="Stretch"
+                  >
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="6" />
+                      <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-                    <StackPanel
-                      x:Name="ZoneEtatCompteUtilisateur"
-                      Grid.Column="0"
-                      MaxWidth="320"
-                      Margin="8,2,0,0"
-                      HorizontalAlignment="Left"
-                      VerticalAlignment="Center"
-                      Visibility="Collapsed"
-                    >
-                      <Border
-                        x:Name="BadgeEtatCompteUtilisateur"
-                        Padding="0"
-                        HorizontalAlignment="Left"
-                        CornerRadius="0"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        BorderThickness="0"
-                      >
-                        <TextBlock
-                          x:Name="TexteEtatCompteUtilisateur"
-                          FontSize="22"
-                          FontWeight="SemiBold"
-                          Opacity="0.92"
-                          TextAlignment="Left"
-                        />
-                      </Border>
+                    <Grid Grid.Row="0">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
 
                       <TextBlock
-                        x:Name="TexteSousEtatCompteUtilisateur"
-                        Margin="2,3,0,0"
-                        HorizontalAlignment="Left"
-                        FontSize="11"
-                        Opacity="0.45"
-                        TextAlignment="Left"
-                        TextTrimming="CharacterEllipsis"
-                        Visibility="Collapsed"
+                        Grid.Column="0"
+                        Margin="8,0,0,0"
+                        FontWeight="SemiBold"
+                        FontSize="18"
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        Text="Jeu en cours"
                       />
-                    </StackPanel>
 
-                    <StackPanel
-                      Grid.Column="1"
-                      Margin="12,0,8,0"
-                      HorizontalAlignment="Right"
-                      VerticalAlignment="Top"
-                      Orientation="Horizontal"
+                      <StackPanel
+                        Grid.Column="1"
+                        Margin="12,0,8,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Orientation="Horizontal"
+                      >
+                        <ui:Button
+                          x:Name="BoutonRejouerJeuEnCours"
+                          Margin="0,0,8,0"
+                          Height="28"
+                          Padding="10,2"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Top"
+                          Appearance="Secondary"
+                          Command="{Binding JeuCourant.CommandeActionRejouer}"
+                          Content="{Binding JeuCourant.LibelleActionRejouer}"
+                          IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
+                          ToolTip="{Binding JeuCourant.ToolTipActionRejouer}"
+                          Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                        />
+
+                        <ui:Button
+                          x:Name="BoutonVueDetailleeJeuEnCours"
+                          Height="28"
+                          Padding="10,2"
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Top"
+                          Appearance="Secondary"
+                          Command="{Binding JeuCourant.CommandeActionDetails}"
+                          Content="{Binding JeuCourant.LibelleActionDetails}"
+                          IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
+                          ToolTip="{Binding JeuCourant.ToolTipActionDetails}"
+                          Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                        />
+                      </StackPanel>
+                    </Grid>
+
+                    <Border
+                      Grid.Row="2"
+                      VerticalAlignment="Stretch"
+                      Style="{StaticResource StyleSousCarteJeu}"
                     >
-                      <ui:Button
-                        x:Name="BoutonRejouerJeuEnCours"
-                        Margin="0,0,8,0"
-                        Height="28"
-                        Padding="10,2"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Appearance="Secondary"
-                        Click="BoutonRejouerJeuEnCours_Click"
-                        Visibility="Collapsed"
-                      >
-                      Rejouer
-                    </ui:Button>
-
-                      <ui:Button
-                        x:Name="BoutonVueDetailleeJeuEnCours"
-                        Height="28"
-                        Padding="10,2"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Appearance="Secondary"
-                        Click="BoutonVueDetailleeJeuEnCours_Click"
-                        Visibility="Collapsed"
-                      >
-                      Détails
-                    </ui:Button>
-                    </StackPanel>
-                  </Grid>
-                  <Border Grid.Row="2" Style="{StaticResource StyleSousCarteJeu}">
-                    <Grid>
+                      <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
@@ -366,10 +396,10 @@
                               VerticalAlignment="Top"
                               Margin="0"
                               Opacity="0.62"
-                              Text=""
+                              Text="{Binding JeuCourant.TexteVisuelPrincipal}"
                               TextAlignment="Center"
                               TextWrapping="Wrap"
-                              Visibility="Collapsed"
+                              Visibility="{Binding JeuCourant.TexteVisuelPrincipalVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             />
                           </Grid>
                         </Border>
@@ -377,7 +407,7 @@
                         <Grid
                           x:Name="ZoneSousImageJeuEnCours"
                           Margin="{StaticResource MargeBlocCompacte}"
-                          Visibility="Collapsed"
+                          Visibility="{Binding JeuCourant.VisuelsSecondairesVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                         >
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -390,7 +420,8 @@
                             Width="28"
                             Height="28"
                             Appearance="Secondary"
-                            Click="VisuelJeuPrecedent_Click"
+                            Command="{Binding JeuCourant.CommandeActionVisuelPrecedent}"
+                            IsEnabled="{Binding JeuCourant.ActionVisuelPrecedentActivee}"
                             ToolTip="Visuel précédent"
                           >
                             <TextBlock
@@ -409,6 +440,7 @@
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Opacity="0.74"
+                            Text="{Binding JeuCourant.LibelleVisuelCourant}"
                             TextAlignment="Center"
                             TextWrapping="Wrap"
                           />
@@ -419,7 +451,8 @@
                             Width="28"
                             Height="28"
                             Appearance="Secondary"
-                            Click="VisuelJeuSuivant_Click"
+                            Command="{Binding JeuCourant.CommandeActionVisuelSuivant}"
+                            IsEnabled="{Binding JeuCourant.ActionVisuelSuivantActivee}"
                             ToolTip="Visuel suivant"
                           >
                             <TextBlock
@@ -459,7 +492,7 @@
                                 VerticalAlignment="Center"
                                 FontSize="24"
                                 FontWeight="SemiBold"
-                                Text=""
+                                Text="{Binding JeuCourant.Titre}"
                                 TextWrapping="NoWrap"
                               >
                                 <TextBlock.RenderTransform>
@@ -473,7 +506,7 @@
                           x:Name="GrilleInformationsJeuEnCours"
                           Grid.Row="1"
                           Margin="{StaticResource MargeBlocStandard}"
-                          Visibility="Collapsed"
+                          Visibility="{Binding JeuCourant.InformationsVisibles, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                         >
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -493,13 +526,13 @@
                             FontWeight="SemiBold"
                             Opacity="0.72"
                             Text="Console"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                           <Grid
                             x:Name="ZoneConsoleJeuEnCours"
                             Grid.Column="1"
                             Margin="0,0,0,6"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           >
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
@@ -513,7 +546,8 @@
                               Margin="0,0,8,0"
                               VerticalAlignment="Center"
                               Stretch="Uniform"
-                              Visibility="Collapsed"
+                              Source="{Binding JeuCourant.ImageConsole}"
+                              Visibility="{Binding JeuCourant.ImageConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             />
                             <TextBox
                               x:Name="TexteConsoleJeuEnCours"
@@ -523,8 +557,9 @@
                               FontSize="13"
                               FontWeight="SemiBold"
                               Opacity="0.86"
+                              Text="{Binding JeuCourant.Console, Mode=OneWay}"
                               TextWrapping="Wrap"
-                              Visibility="Collapsed"
+                              Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             />
                           </Grid>
 
@@ -535,7 +570,7 @@
                             FontWeight="SemiBold"
                             Opacity="0.72"
                             Text="Genre"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.GenreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                           <TextBox
                             x:Name="TexteTypeJeuEnCours"
@@ -544,8 +579,9 @@
                             Margin="0,0,0,6"
                             Style="{StaticResource StyleTexteCopiable}"
                             Opacity="0.84"
+                            Text="{Binding JeuCourant.Genre, Mode=OneWay}"
                             TextWrapping="Wrap"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.GenreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
 
                           <TextBlock
@@ -555,7 +591,7 @@
                             FontWeight="SemiBold"
                             Opacity="0.72"
                             Text="Sortie"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.DateSortieVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                           <TextBox
                             x:Name="TexteDateSortieJeuEnCours"
@@ -564,8 +600,9 @@
                             Margin="0,0,0,6"
                             Style="{StaticResource StyleTexteCopiable}"
                             Opacity="0.84"
+                            Text="{Binding JeuCourant.DateSortie, Mode=OneWay}"
                             TextWrapping="Wrap"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.DateSortieVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
 
                           <TextBlock
@@ -575,7 +612,7 @@
                             FontWeight="SemiBold"
                             Opacity="0.72"
                             Text="Crédits"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.CreditsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                           <TextBox
                             x:Name="TexteDeveloppeurJeuEnCours"
@@ -584,8 +621,9 @@
                             Margin="0,0,0,6"
                             Style="{StaticResource StyleTexteCopiable}"
                             Opacity="0.84"
+                            Text="{Binding JeuCourant.Credits, Mode=OneWay}"
                             TextWrapping="Wrap"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.CreditsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
 
                           <TextBlock
@@ -595,7 +633,7 @@
                             FontWeight="SemiBold"
                             Opacity="0.72"
                             Text="Temps de jeu"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.TempsDeJeuVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                           <TextBox
                             x:Name="TexteTempsJeuEnCours"
@@ -604,30 +642,54 @@
                             Margin="0,0,0,6"
                             Style="{StaticResource StyleTexteCopiable}"
                             Opacity="0.84"
+                            Text="{Binding JeuCourant.TempsDeJeu, Mode=OneWay}"
                             TextWrapping="Wrap"
-                            Visibility="Collapsed"
+                            Visibility="{Binding JeuCourant.TempsDeJeuVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           />
                         </Grid>
                       </Grid>
-                    </Grid>
-                  </Border>
+                      </Grid>
+                    </Border>
+                  </Grid>
 
-                  <Grid Grid.Row="4">
+                  <Grid x:Name="SectionSuccesEnCours" Grid.Row="4" VerticalAlignment="Stretch">
                     <Grid.RowDefinitions>
                       <RowDefinition Height="Auto" />
                       <RowDefinition Height="6" />
-                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock
-                      Grid.Row="0"
-                      Margin="8,0,0,0"
-                      FontWeight="SemiBold"
-                      FontSize="18"
-                      Text="Rétrosuccès en cours"
-                    />
+                    <Grid Grid.Row="0">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
 
-                    <Border Grid.Row="2" Style="{StaticResource StyleSousCarteJeu}">
+                      <TextBlock
+                        Grid.Column="0"
+                        Margin="8,0,0,0"
+                        FontWeight="SemiBold"
+                        FontSize="18"
+                        Text="Rétrosuccès en cours"
+                      />
+
+                      <ui:Button
+                        x:Name="BoutonPasserSuccesEnCours"
+                        Grid.Column="1"
+                        Margin="12,0,8,0"
+                        Height="28"
+                        Padding="10,2"
+                        VerticalAlignment="Top"
+                        Appearance="Secondary"
+                        Command="{Binding SuccesEnCours.CommandePasser}"
+                        Content="Passer"
+                        IsEnabled="{Binding SuccesEnCours.PasserActif}"
+                        ToolTip="Afficher le succès suivant"
+                        Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                      />
+                    </Grid>
+
+                    <Border Grid.Row="2" VerticalAlignment="Stretch" Style="{StaticResource StyleSousCarteJeu}">
                       <Grid>
                         <Grid.RowDefinitions>
                           <RowDefinition Height="Auto" />
@@ -653,25 +715,26 @@
                               <Grid>
                                 <Image
                                   x:Name="ImagePremierSuccesNonDebloque"
+                                  Source="{Binding SuccesEnCours.Image}"
                                   Margin="0"
                                   MaxWidth="84"
                                   MaxHeight="84"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
-                                  Opacity="0.58"
+                                  Opacity="{Binding SuccesEnCours.ImageOpacity}"
                                   Stretch="Uniform"
                                   SizeChanged="ImagePremierSuccesNonDebloque_TailleChangee"
-                                  Visibility="Collapsed"
+                                  Visibility="{Binding SuccesEnCours.ImageVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                 />
                                 <TextBlock
                                   x:Name="TexteImagePremierSuccesNonDebloque"
                                   HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   Opacity="0.62"
-                                  Text=""
+                                  Text="{Binding SuccesEnCours.TexteVisuel}"
                                   TextAlignment="Center"
                                   TextWrapping="Wrap"
-                                  Visibility="Collapsed"
+                                  Visibility="{Binding SuccesEnCours.TexteVisuelVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                 />
                               </Grid>
                             </Border>
@@ -682,33 +745,35 @@
                                 Style="{StaticResource StyleTexteCopiable}"
                                 FontSize="18"
                                 FontWeight="SemiBold"
-                                Text=""
-                                Visibility="Collapsed"
+                                Text="{Binding SuccesEnCours.Titre}"
+                                Visibility="{Binding SuccesEnCours.TitreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
                               <TextBox
                                 x:Name="TexteDescriptionPremierSuccesNonDebloque"
                                 Margin="0,4,0,0"
                                 Style="{StaticResource StyleTexteCopiable}"
                                 Opacity="0.78"
-                                Text=""
+                                Text="{Binding SuccesEnCours.Description}"
                                 TextWrapping="Wrap"
-                                Visibility="Collapsed"
+                                Visibility="{Binding SuccesEnCours.DescriptionVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
                               <TextBox
                                 x:Name="TextePointsPremierSuccesNonDebloque"
                                 Margin="0,4,0,0"
                                 Style="{StaticResource StyleTexteCopiable}"
                                 Opacity="0.72"
+                                Text="{Binding SuccesEnCours.DetailsPoints}"
                                 TextWrapping="Wrap"
-                                Visibility="Collapsed"
+                                Visibility="{Binding SuccesEnCours.DetailsPointsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
                               <TextBox
                                 x:Name="TexteFaisabilitePremierSuccesNonDebloque"
                                 Margin="0,4,0,0"
                                 Style="{StaticResource StyleTexteCopiable}"
                                 Opacity="0.72"
+                                Text="{Binding SuccesEnCours.DetailsFaisabilite}"
                                 TextWrapping="Wrap"
-                                Visibility="Collapsed"
+                                Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
                             </StackPanel>
                           </Grid>
@@ -731,14 +796,15 @@
                               Height="26"
                               Margin="0,0,8,0"
                               Appearance="Secondary"
-                              Click="BoutonSuccesEnCoursPrecedent_Click"
-                              Visibility="Collapsed"
+                              Command="{Binding SuccesEnCours.CommandePrecedent}"
+                              IsEnabled="{Binding SuccesEnCours.PrecedentActif}"
+                              Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             >
                               <TextBlock
                                 x:Name="TexteChevronSuccesEnCoursPrecedent"
                                 FontSize="20"
                                 FontWeight="ExtraBold"
-                                Opacity="1"
+                                Opacity="{Binding SuccesEnCours.PrecedentOpacity}"
                                 Text="‹"
                                 TextAlignment="Center"
                                 VerticalAlignment="Center"
@@ -751,14 +817,15 @@
                               Width="30"
                               Height="26"
                               Appearance="Secondary"
-                              Click="BoutonSuccesEnCoursSuivant_Click"
-                              Visibility="Collapsed"
+                              Command="{Binding SuccesEnCours.CommandeSuivant}"
+                              IsEnabled="{Binding SuccesEnCours.SuivantActif}"
+                              Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             >
                               <TextBlock
                                 x:Name="TexteChevronSuccesEnCoursSuivant"
                                 FontSize="20"
                                 FontWeight="ExtraBold"
-                                Opacity="1"
+                                Opacity="{Binding SuccesEnCours.SuivantOpacity}"
                                 Text="›"
                                 TextAlignment="Center"
                                 VerticalAlignment="Center"
@@ -772,7 +839,11 @@
                     </Border>
                   </Grid>
 
-                  <Grid Grid.Row="6" Margin="0,0,0,6">
+                  <Grid
+                    x:Name="SectionListeSuccesJeuEnCours"
+                    Grid.Row="6"
+                    Margin="0,0,0,6"
+                  >
                     <Grid.RowDefinitions>
                       <RowDefinition Height="Auto" />
                       <RowDefinition Height="6" />
@@ -801,18 +872,23 @@
                         VerticalAlignment="Top"
                         Appearance="Secondary"
                         Click="BoutonOrdreSuccesGrille_Click"
+                        Content="{Binding LibelleOrdreSuccesGrille}"
                       >
                         <ui:Button.ContextMenu>
-                          <ContextMenu x:Name="MenuOrdreSuccesGrille">
+                          <ContextMenu
+                            x:Name="MenuOrdreSuccesGrille"
+                            DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                          >
                             <MenuItem
                               x:Name="MenuItemOrdreSuccesNormal"
-                              Click="OrdreSuccesGrilleNormal_Click"
+                              Command="{Binding CommandeOrdreSuccesNormal}"
                             >
                               <MenuItem.Header>
                                 <StackPanel Orientation="Horizontal">
                                   <Grid Width="12" Height="12" Margin="0,0,6,0">
                                     <Ellipse
                                       x:Name="ContourOrdreSuccesNormal"
+                                      Stroke="{Binding ContourOrdreSuccesNormal}"
                                       StrokeThickness="1.2"
                                     />
                                     <Ellipse
@@ -821,6 +897,7 @@
                                       Height="6"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
+                                      Visibility="{Binding OrdreSuccesNormalActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                     />
                                   </Grid>
                                   <TextBlock VerticalAlignment="Center" Text="Normal" />
@@ -829,13 +906,14 @@
                             </MenuItem>
                             <MenuItem
                               x:Name="MenuItemOrdreSuccesFacile"
-                              Click="OrdreSuccesGrilleFacile_Click"
+                              Command="{Binding CommandeOrdreSuccesFacile}"
                             >
                               <MenuItem.Header>
                                 <StackPanel Orientation="Horizontal">
                                   <Grid Width="12" Height="12" Margin="0,0,6,0">
                                     <Ellipse
                                       x:Name="ContourOrdreSuccesFacile"
+                                      Stroke="{Binding ContourOrdreSuccesFacile}"
                                       StrokeThickness="1.2"
                                     />
                                     <Ellipse
@@ -844,7 +922,7 @@
                                       Height="6"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
-                                      Visibility="Collapsed"
+                                      Visibility="{Binding OrdreSuccesFacileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                     />
                                   </Grid>
                                   <TextBlock VerticalAlignment="Center" Text="Facile" />
@@ -853,13 +931,14 @@
                             </MenuItem>
                             <MenuItem
                               x:Name="MenuItemOrdreSuccesDifficile"
-                              Click="OrdreSuccesGrilleDifficile_Click"
+                              Command="{Binding CommandeOrdreSuccesDifficile}"
                             >
                               <MenuItem.Header>
                                 <StackPanel Orientation="Horizontal">
                                   <Grid Width="12" Height="12" Margin="0,0,6,0">
                                     <Ellipse
                                       x:Name="ContourOrdreSuccesDifficile"
+                                      Stroke="{Binding ContourOrdreSuccesDifficile}"
                                       StrokeThickness="1.2"
                                     />
                                     <Ellipse
@@ -868,7 +947,7 @@
                                       Height="6"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
-                                      Visibility="Collapsed"
+                                      Visibility="{Binding OrdreSuccesDifficileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                     />
                                   </Grid>
                                   <TextBlock VerticalAlignment="Center" Text="Difficile" />
@@ -877,13 +956,14 @@
                             </MenuItem>
                             <MenuItem
                               x:Name="MenuItemOrdreSuccesAleatoire"
-                              Click="OrdreSuccesGrilleAleatoire_Click"
+                              Command="{Binding CommandeOrdreSuccesAleatoire}"
                             >
                               <MenuItem.Header>
                                 <StackPanel Orientation="Horizontal">
                                   <Grid Width="12" Height="12" Margin="0,0,6,0">
                                     <Ellipse
                                       x:Name="ContourOrdreSuccesAleatoire"
+                                      Stroke="{Binding ContourOrdreSuccesAleatoire}"
                                       StrokeThickness="1.2"
                                     />
                                     <Ellipse
@@ -892,7 +972,7 @@
                                       Height="6"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
-                                      Visibility="Collapsed"
+                                      Visibility="{Binding OrdreSuccesAleatoireActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                     />
                                   </Grid>
                                   <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
@@ -931,7 +1011,7 @@
                                 Margin="0"
                                 Minimum="0"
                                 Maximum="100"
-                                Value="0"
+                                Value="{Binding JeuCourant.ProgressionValeur, Mode=OneWay}"
                               />
                               <Grid Margin="{StaticResource MargeBlocStandard}">
                                 <Grid.ColumnDefinitions>
@@ -948,7 +1028,7 @@
                                   HorizontalAlignment="Left"
                                   Opacity="0.72"
                                   TextWrapping="Wrap"
-                                  Text="Progression du jeu"
+                                  Text="{Binding JeuCourant.Etat}"
                                 />
                                 <TextBox
                                   x:Name="TextePourcentageJeuEnCours"
@@ -958,7 +1038,7 @@
                                   HorizontalAlignment="Left"
                                   HorizontalContentAlignment="Left"
                                   Opacity="0.72"
-                                  Text="0 % complété"
+                                  Text="{Binding JeuCourant.Pourcentage, Mode=OneWay}"
                                 />
                                 <TextBox
                                   x:Name="TexteDetailsJeuEnCours"
@@ -969,8 +1049,8 @@
                                   HorizontalContentAlignment="Left"
                                   Opacity="0.72"
                                   TextWrapping="Wrap"
-                                  Text=""
-                                  Visibility="Collapsed"
+                                  Text="{Binding JeuCourant.Details, Mode=OneWay}"
+                                  Visibility="{Binding JeuCourant.DetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                 />
                                 <TextBox
                                   x:Name="TexteResumeProgressionJeuEnCours"
@@ -979,7 +1059,7 @@
                                   HorizontalAlignment="Right"
                                   HorizontalContentAlignment="Right"
                                   Opacity="0.72"
-                                  Text="0 / 0"
+                                  Text="{Binding JeuCourant.Progression, Mode=OneWay}"
                                 />
                               </Grid>
                             </StackPanel>
@@ -1008,7 +1088,7 @@
                               <WrapPanel
                                 x:Name="GrilleTousSuccesJeuEnCours"
                                 VerticalAlignment="Top"
-                                HorizontalAlignment="Stretch"
+                                HorizontalAlignment="Center"
                               />
                             </ScrollViewer>
                           </Grid>
@@ -1157,10 +1237,31 @@
           Cursor="Hand"
           Click="BoutonDepotGitHub_Click"
         >
+          <Button.Style>
+            <Style TargetType="Button">
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="Button">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+              <Setter Property="Focusable" Value="False" />
+              <Setter Property="Opacity" Value="0.74" />
+              <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Opacity" Value="1" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter Property="Opacity" Value="0.86" />
+                </Trigger>
+              </Style.Triggers>
+            </Style>
+          </Button.Style>
           <Viewbox Stretch="Uniform">
             <Path
               Fill="#E6E6E6"
-              Opacity="0.74"
+              Opacity="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Opacity}"
               Data="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
                     0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
                     -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
@@ -1179,15 +1280,66 @@
           HorizontalAlignment="Right"
           VerticalAlignment="Center"
         >
+          <ui:Button
+            x:Name="BoutonAide"
+            Margin="0,0,10,0"
+            Height="24"
+            Width="24"
+            Padding="0"
+            VerticalAlignment="Center"
+            Appearance="Secondary"
+            Command="{Binding CommandeAfficherAide}"
+            Content="?"
+          >
+            <ui:Button.Style>
+              <Style TargetType="ui:Button">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="ui:Button">
+                      <Border
+                        Width="{TemplateBinding Width}"
+                        Height="{TemplateBinding Height}"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="12"
+                      >
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                          <Setter Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                          <Setter Property="Opacity" Value="0.6" />
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </ui:Button.Style>
+          </ui:Button>
+
           <Button
             x:Name="BoutonMiseAJourApplication"
             Margin="0,0,10,0"
             Padding="10,2,10,2"
             MinHeight="24"
             VerticalAlignment="Center"
-            Visibility="Collapsed"
-            Content="Mise à jour"
-            Click="BoutonMiseAJourApplication_Click"
+            Visibility="{Binding VisibiliteMiseAJourApplication}"
+            Content="{Binding LibelleMiseAJourApplication}"
+            Command="{Binding CommandeMiseAJourApplication}"
+            IsEnabled="{Binding MiseAJourApplicationActivee}"
+            ToolTip="{Binding ToolTipMiseAJourApplication}"
           >
             <Button.Style>
               <Style TargetType="Button">

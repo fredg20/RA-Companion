@@ -1842,6 +1842,16 @@ public partial class MainWindow
 
     private async void AfficherCompte_Click(object sender, RoutedEventArgs e)
     {
+        await ExecuterActionAfficherCompteAsync();
+    }
+
+    private async void AfficherAide_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuterActionAfficherAideAsync();
+    }
+
+    private async Task ExecuterActionAfficherCompteAsync()
+    {
         if (!ConfigurationConnexionEstComplete())
         {
             await AfficherModaleConnexionAsync();
@@ -1851,7 +1861,7 @@ public partial class MainWindow
         await AfficherModaleCompteAsync();
     }
 
-    private async void AfficherAide_Click(object sender, RoutedEventArgs e)
+    private async Task ExecuterActionAfficherAideAsync()
     {
         await AfficherModaleAideAsync();
     }
@@ -1861,11 +1871,11 @@ public partial class MainWindow
         if (string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo))
         {
             _etatConnexionCourant = "Non configuré";
-            BoutonCompteUtilisateur.Content = "Connexion";
+            _vueModele.Compte.LibelleBouton = "Connexion";
         }
         else
         {
-            BoutonCompteUtilisateur.Content = ObtenirLibelleBoutonCompte();
+            _vueModele.Compte.LibelleBouton = ObtenirLibelleBoutonCompte();
         }
 
         MettreAJourNoticeCompteEntete();
@@ -1892,11 +1902,13 @@ public partial class MainWindow
 
         if (!ConfigurationConnexionEstComplete())
         {
-            ZoneEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
-            TexteSousEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
-            TexteEtatCompteUtilisateur.Text = string.Empty;
-            TexteSousEtatCompteUtilisateur.Text = string.Empty;
-            ZoneEtatCompteUtilisateur.ToolTip = null;
+            _vueModele.Compte.NoticeVisible = false;
+            _vueModele.Compte.SousEtatVisible = false;
+            _vueModele.Compte.EtatNotice = string.Empty;
+            _vueModele.Compte.SousEtatNotice = string.Empty;
+            _vueModele.Compte.ToolTipNotice = string.Empty;
+            _vueModele.Compte.FondNotice = Brushes.Transparent;
+            _vueModele.Compte.BordureNotice = Brushes.Transparent;
             _signatureDerniereNoticeCompteJournalisee = string.Empty;
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
@@ -1911,18 +1923,18 @@ public partial class MainWindow
 
         if (EtatLocalEmulateurEstActifPourNotice())
         {
-            TexteEtatCompteUtilisateur.Text = "En jeu";
-            TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeuAffiche;
-            TexteSousEtatCompteUtilisateur.Visibility = string.IsNullOrWhiteSpace(
+            _vueModele.Compte.EtatNotice = "En jeu";
+            _vueModele.Compte.SousEtatNotice = texteIdentifiantJeuAffiche;
+            _vueModele.Compte.SousEtatVisible = !string.IsNullOrWhiteSpace(
                 texteIdentifiantJeuAffiche
-            )
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            );
+            (Brush fondNoticeLocal, Brush bordureNoticeLocale) =
+                ObtenirCouleursNoticeCompteEntete("En jeu");
+            _vueModele.Compte.FondNotice = fondNoticeLocal;
+            _vueModele.Compte.BordureNotice = bordureNoticeLocale;
 
-            BadgeEtatCompteUtilisateur.Background = Brushes.Transparent;
-            BadgeEtatCompteUtilisateur.BorderBrush = Brushes.Transparent;
-            ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
-            ZoneEtatCompteUtilisateur.ToolTip =
+            _vueModele.Compte.NoticeVisible = true;
+            _vueModele.Compte.ToolTipNotice =
                 identifiantJeuAffiche > 0
                     ? $"En jeu{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                     : "En jeu (détection locale)";
@@ -1942,27 +1954,30 @@ public partial class MainWindow
 
         if (string.IsNullOrWhiteSpace(compte.Statut))
         {
-            ZoneEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
-            TexteSousEtatCompteUtilisateur.Visibility = Visibility.Collapsed;
-            TexteEtatCompteUtilisateur.Text = string.Empty;
-            TexteSousEtatCompteUtilisateur.Text = string.Empty;
-            ZoneEtatCompteUtilisateur.ToolTip = null;
+            _vueModele.Compte.NoticeVisible = false;
+            _vueModele.Compte.SousEtatVisible = false;
+            _vueModele.Compte.EtatNotice = string.Empty;
+            _vueModele.Compte.SousEtatNotice = string.Empty;
+            _vueModele.Compte.ToolTipNotice = string.Empty;
+            _vueModele.Compte.FondNotice = Brushes.Transparent;
+            _vueModele.Compte.BordureNotice = Brushes.Transparent;
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
 
-        TexteEtatCompteUtilisateur.Text = compte.Statut.Trim();
+        _vueModele.Compte.EtatNotice = compte.Statut.Trim();
 
         bool afficherSousStatut = !string.IsNullOrWhiteSpace(texteIdentifiantJeuAffiche);
-        TexteSousEtatCompteUtilisateur.Text = texteIdentifiantJeuAffiche;
-        TexteSousEtatCompteUtilisateur.Visibility = afficherSousStatut
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        _vueModele.Compte.SousEtatNotice = texteIdentifiantJeuAffiche;
+        _vueModele.Compte.SousEtatVisible = afficherSousStatut;
+        (Brush fondNoticeCompte, Brush bordureNoticeCompte) = ObtenirCouleursNoticeCompteEntete(
+            compte.Statut
+        );
+        _vueModele.Compte.FondNotice = fondNoticeCompte;
+        _vueModele.Compte.BordureNotice = bordureNoticeCompte;
 
-        BadgeEtatCompteUtilisateur.Background = Brushes.Transparent;
-        BadgeEtatCompteUtilisateur.BorderBrush = Brushes.Transparent;
-        ZoneEtatCompteUtilisateur.Visibility = Visibility.Visible;
-        ZoneEtatCompteUtilisateur.ToolTip =
+        _vueModele.Compte.NoticeVisible = true;
+        _vueModele.Compte.ToolTipNotice =
             identifiantJeuAffiche > 0
                 ? $"{compte.Statut}{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                 : compte.Statut;
@@ -2000,7 +2015,7 @@ public partial class MainWindow
         if (statut.Contains("En jeu", StringComparison.OrdinalIgnoreCase))
         {
             return (
-                new SolidColorBrush(Color.FromArgb(36, 58, 188, 116)),
+                Brushes.Transparent,
                 new SolidColorBrush(Color.FromArgb(96, 58, 188, 116))
             );
         }
@@ -2008,7 +2023,7 @@ public partial class MainWindow
         if (statut.Contains("Actif", StringComparison.OrdinalIgnoreCase))
         {
             return (
-                new SolidColorBrush(Color.FromArgb(24, 120, 200, 255)),
+                Brushes.Transparent,
                 new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
             );
         }
@@ -2016,13 +2031,13 @@ public partial class MainWindow
         if (statut.Contains("Inactif", StringComparison.OrdinalIgnoreCase))
         {
             return (
-                new SolidColorBrush(Color.FromArgb(22, 160, 160, 160)),
+                Brushes.Transparent,
                 new SolidColorBrush(Color.FromArgb(56, 160, 160, 160))
             );
         }
 
         return (
-            new SolidColorBrush(Color.FromArgb(24, 120, 200, 255)),
+            Brushes.Transparent,
             new SolidColorBrush(Color.FromArgb(56, 120, 200, 255))
         );
     }
@@ -2052,6 +2067,7 @@ public partial class MainWindow
     private void DefinirEtatConnexion(string etatConnexion)
     {
         _etatConnexionCourant = etatConnexion;
+        _vueModele.EtatConnexion = etatConnexion;
         MettreAJourResumeConnexion();
     }
 

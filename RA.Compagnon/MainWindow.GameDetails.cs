@@ -23,21 +23,34 @@ public partial class MainWindow
 
     private void ReinitialiserVueDetailleeJeuEnCours()
     {
-        BoutonVueDetailleeJeuEnCours.Visibility = Visibility.Collapsed;
-        BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
+        _vueModele.JeuCourant.LibelleActionDetails = "Détails";
+        _vueModele.JeuCourant.ToolTipActionDetails = string.Empty;
+        _vueModele.JeuCourant.ActionDetailsActivee = false;
+        _vueModele.JeuCourant.ActionDetailsVisible = false;
+        _vueModele.JeuCourant.LibelleActionRejouer = "Rejouer";
+        _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
+        _vueModele.JeuCourant.ActionRejouerActivee = false;
+        _vueModele.JeuCourant.ActionRejouerVisible = false;
     }
 
     private void MettreAJourActionVueDetailleeJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
-        BoutonVueDetailleeJeuEnCours.Visibility =
-            jeu.Id > 0 ? Visibility.Visible : Visibility.Collapsed;
+        bool actionDisponible = jeu.Id > 0;
+        _vueModele.JeuCourant.LibelleActionDetails = "Détails";
+        _vueModele.JeuCourant.ActionDetailsActivee = actionDisponible;
+        _vueModele.JeuCourant.ActionDetailsVisible = actionDisponible;
+        _vueModele.JeuCourant.ToolTipActionDetails = actionDisponible
+            ? $"Afficher les détails de {jeu.Title?.Trim() ?? "ce jeu"}"
+            : string.Empty;
     }
 
     private void MettreAJourActionRejouerJeuEnCours(EtatJeuAfficheLocal? jeuSauvegarde)
     {
         if (DoitMasquerActionRejouerPendantJeu())
         {
-            BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
+            _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
+            _vueModele.JeuCourant.ActionRejouerActivee = false;
+            _vueModele.JeuCourant.ActionRejouerVisible = false;
             return;
         }
 
@@ -55,14 +68,20 @@ public partial class MainWindow
             || !File.Exists(jeuSauvegarde.CheminJeuLocal)
         )
         {
-            BoutonRejouerJeuEnCours.Visibility = Visibility.Collapsed;
+            _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
+            _vueModele.JeuCourant.ActionRejouerActivee = false;
+            _vueModele.JeuCourant.ActionRejouerVisible = false;
             return;
         }
 
         string cheminExecutable = DeterminerCheminExecutableRelance(jeuSauvegarde);
-        BoutonRejouerJeuEnCours.Visibility = string.IsNullOrWhiteSpace(cheminExecutable)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        _vueModele.JeuCourant.LibelleActionRejouer = "Rejouer";
+        bool actionDisponible = !string.IsNullOrWhiteSpace(cheminExecutable);
+        _vueModele.JeuCourant.ActionRejouerActivee = actionDisponible;
+        _vueModele.JeuCourant.ActionRejouerVisible = actionDisponible;
+        _vueModele.JeuCourant.ToolTipActionRejouer = actionDisponible
+            ? $"Relancer {Path.GetFileNameWithoutExtension(jeuSauvegarde.CheminJeuLocal)}"
+            : string.Empty;
     }
 
     private EtatJeuAfficheLocal? ObtenirEtatRejouableCourant(EtatJeuAfficheLocal? jeuSauvegarde)
@@ -189,8 +208,7 @@ public partial class MainWindow
 
             if (!string.IsNullOrWhiteSpace(nomCore) && systeme > 0)
             {
-                return
-                    $"--core \"{nomCore}\" --system {systeme.ToString(CultureInfo.InvariantCulture)} --game \"{jeuSauvegarde.CheminJeuLocal}\"";
+                return $"--core \"{nomCore}\" --system {systeme.ToString(CultureInfo.InvariantCulture)} --game \"{jeuSauvegarde.CheminJeuLocal}\"";
             }
         }
 
@@ -360,7 +378,7 @@ public partial class MainWindow
         return (string.Empty, 0);
     }
 
-    private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)
+    private void ExecuterActionRejouerJeuEnCours()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = ObtenirEtatRejouableCourant(
             _configurationConnexion.DernierJeuAffiche
@@ -460,6 +478,11 @@ public partial class MainWindow
         }
     }
 
+    private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)
+    {
+        ExecuterActionRejouerJeuEnCours();
+    }
+
     private static void JournaliserRejouer(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -468,7 +491,7 @@ public partial class MainWindow
         );
     }
 
-    private async void BoutonVueDetailleeJeuEnCours_Click(object sender, RoutedEventArgs e)
+    private async Task ExecuterActionVueDetailleeJeuEnCoursAsync()
     {
         if (_dernieresDonneesJeuAffichees?.Jeu is not GameInfoAndUserProgressV2 jeu || jeu.Id <= 0)
         {
@@ -477,6 +500,11 @@ public partial class MainWindow
 
         JeuAffiche jeuAffiche = ServicePresentationJeu.Construire(_dernieresDonneesJeuAffichees);
         await AfficherModaleVueDetailleeJeuAsync(jeu, jeuAffiche);
+    }
+
+    private async void BoutonVueDetailleeJeuEnCours_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuterActionVueDetailleeJeuEnCoursAsync();
     }
 
     private async Task AfficherModaleVueDetailleeJeuAsync(

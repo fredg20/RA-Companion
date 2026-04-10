@@ -31,29 +31,6 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Applique l'ordre normal correspondant à la page web du jeu.
-    /// </summary>
-    private async void OrdreSuccesGrilleNormal_Click(object sender, RoutedEventArgs e)
-    {
-        await ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Normal);
-    }
-
-    private async void OrdreSuccesGrilleAleatoire_Click(object sender, RoutedEventArgs e)
-    {
-        await ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Aleatoire);
-    }
-
-    private async void OrdreSuccesGrilleFacile_Click(object sender, RoutedEventArgs e)
-    {
-        await ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Facile);
-    }
-
-    private async void OrdreSuccesGrilleDifficile_Click(object sender, RoutedEventArgs e)
-    {
-        await ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Difficile);
-    }
-
-    /// <summary>
     /// Met à jour l'ordre d'affichage des badges et recharge la grille si nécessaire.
     /// </summary>
     private async Task ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille nouvelOrdre)
@@ -113,10 +90,7 @@ public partial class MainWindow
             _ => "Normal",
         };
 
-        if (BoutonOrdreSuccesGrille is not null)
-        {
-            BoutonOrdreSuccesGrille.Content = libelle;
-        }
+        _vueModele.LibelleOrdreSuccesGrille = libelle;
 
         Brush contourActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
         Brush contourInactif = new SolidColorBrush(Color.FromArgb(140, 255, 255, 255));
@@ -126,41 +100,35 @@ public partial class MainWindow
         bool modeAleatoire = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Aleatoire;
         bool modeFacile = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Facile;
         bool modeDifficile = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Difficile;
+        _vueModele.OrdreSuccesNormalActif = modeNormal;
+        _vueModele.OrdreSuccesAleatoireActif = modeAleatoire;
+        _vueModele.OrdreSuccesFacileActif = modeFacile;
+        _vueModele.OrdreSuccesDifficileActif = modeDifficile;
+        _vueModele.ContourOrdreSuccesNormal = modeNormal ? contourActif : contourInactif;
+        _vueModele.ContourOrdreSuccesAleatoire = modeAleatoire ? contourActif : contourInactif;
+        _vueModele.ContourOrdreSuccesFacile = modeFacile ? contourActif : contourInactif;
+        _vueModele.ContourOrdreSuccesDifficile = modeDifficile
+            ? contourActif
+            : contourInactif;
 
         if (ContourOrdreSuccesNormal is not null)
         {
-            ContourOrdreSuccesNormal.Stroke = modeNormal ? contourActif : contourInactif;
             CentreOrdreSuccesNormal.Fill = centreActif;
-            CentreOrdreSuccesNormal.Visibility = modeNormal
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         }
 
         if (ContourOrdreSuccesAleatoire is not null)
         {
-            ContourOrdreSuccesAleatoire.Stroke = modeAleatoire ? contourActif : contourInactif;
             CentreOrdreSuccesAleatoire.Fill = centreActif;
-            CentreOrdreSuccesAleatoire.Visibility = modeAleatoire
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         }
 
         if (ContourOrdreSuccesFacile is not null)
         {
-            ContourOrdreSuccesFacile.Stroke = modeFacile ? contourActif : contourInactif;
             CentreOrdreSuccesFacile.Fill = centreActif;
-            CentreOrdreSuccesFacile.Visibility = modeFacile
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         }
 
         if (ContourOrdreSuccesDifficile is not null)
         {
-            ContourOrdreSuccesDifficile.Stroke = modeDifficile ? contourActif : contourInactif;
             CentreOrdreSuccesDifficile.Fill = centreActif;
-            CentreOrdreSuccesDifficile.Visibility = modeDifficile
-                ? Visibility.Visible
-                : Visibility.Collapsed;
         }
     }
 
@@ -169,7 +137,7 @@ public partial class MainWindow
         IEnumerable<GameAchievementV2> succes
     )
     {
-        return _etatListeSuccesUi.OrdreCourant switch
+        List<GameAchievementV2> succesOrdonnes = _etatListeSuccesUi.OrdreCourant switch
         {
             OrdreSuccesGrille.Aleatoire => OrdonnerSuccesPourGrilleAleatoire(
                 identifiantJeu,
@@ -191,6 +159,42 @@ public partial class MainWindow
                     .ThenBy(item => item.Id),
             ],
         };
+
+        return AppliquerOrdreSuccesPasses(succesOrdonnes);
+    }
+
+    private List<GameAchievementV2> AppliquerOrdreSuccesPasses(List<GameAchievementV2> succesOrdonnes)
+    {
+        if (_etatListeSuccesUi.SuccesPasses.Count == 0)
+        {
+            return succesOrdonnes;
+        }
+
+        Dictionary<int, int> positionsPassage = _etatListeSuccesUi
+            .SuccesPasses
+            .Select((id, index) => new { id, index })
+            .ToDictionary(item => item.id, item => item.index);
+
+        List<GameAchievementV2> succesNonDebloquesNormaux =
+        [
+            .. succesOrdonnes.Where(item =>
+                !SuccesEstDebloquePourAffichage(item) && !positionsPassage.ContainsKey(item.Id)
+            ),
+        ];
+        List<GameAchievementV2> succesNonDebloquesPasses =
+        [
+            .. succesOrdonnes
+                .Where(item =>
+                    !SuccesEstDebloquePourAffichage(item) && positionsPassage.ContainsKey(item.Id)
+                )
+                .OrderBy(item => positionsPassage[item.Id]),
+        ];
+        List<GameAchievementV2> succesDebloques =
+        [
+            .. succesOrdonnes.Where(SuccesEstDebloquePourAffichage),
+        ];
+
+        return [.. succesNonDebloquesNormaux, .. succesNonDebloquesPasses, .. succesDebloques];
     }
 
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleParTrueRatio(
@@ -865,8 +869,6 @@ public partial class MainWindow
             return;
         }
 
-        GrilleTousSuccesJeuEnCours.Width = largeurDisponible;
-
         int nombreBadges = GrilleTousSuccesJeuEnCours.Children.Count;
         int colonnes = Math.Max(
             1,
@@ -879,6 +881,14 @@ public partial class MainWindow
         colonnes = Math.Min(colonnes, nombreBadges);
         int nombreRangees = (int)Math.Ceiling((double)nombreBadges / colonnes);
         double gapHorizontal = EspaceMinimalGrilleSucces;
+        double largeurGrille = colonnes * TailleBadgeGrilleSucces;
+
+        if (colonnes > 1)
+        {
+            largeurGrille += (colonnes - 1) * gapHorizontal;
+        }
+
+        GrilleTousSuccesJeuEnCours.Width = Math.Min(largeurDisponible, largeurGrille);
 
         for (int index = 0; index < nombreBadges; index++)
         {

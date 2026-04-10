@@ -76,19 +76,13 @@ public partial class MainWindow
 
     private void AppliquerEtatMiseAJourApplicationInterface()
     {
-        if (BoutonMiseAJourApplication is null)
-        {
-            return;
-        }
-
         if (_telechargementMiseAJourApplicationEnCours)
         {
-            BoutonMiseAJourApplication.Visibility = Visibility.Visible;
-            BoutonMiseAJourApplication.IsEnabled = false;
-            BoutonMiseAJourApplication.Content = "T\u00E9l\u00E9chargement...";
-            BoutonMiseAJourApplication.ToolTip =
-                "T\u00E9l\u00E9chargement de la mise \u00E0 jour en cours.";
-            BoutonMiseAJourApplication.Tag = null;
+            _vueModele.VisibiliteMiseAJourApplication = Visibility.Visible;
+            _vueModele.MiseAJourApplicationActivee = false;
+            _vueModele.LibelleMiseAJourApplication = "Téléchargement...";
+            _vueModele.ToolTipMiseAJourApplication =
+                "Téléchargement de la mise à jour en cours.";
             return;
         }
 
@@ -100,32 +94,29 @@ public partial class MainWindow
                 ? "disponible"
                 : _etatMiseAJourApplication.VersionDistante;
 
-            BoutonMiseAJourApplication.Visibility = Visibility.Visible;
-            BoutonMiseAJourApplication.IsEnabled = true;
+            _vueModele.VisibiliteMiseAJourApplication = Visibility.Visible;
+            _vueModele.MiseAJourApplicationActivee = true;
 
             if (PaquetMiseAJourTelechargeDisponible())
             {
-                BoutonMiseAJourApplication.Content = "Installer";
-                BoutonMiseAJourApplication.ToolTip =
-                    $"La version {versionDistante} est pr\u00EAte \u00E0 \u00EAtre install\u00E9e.";
-                BoutonMiseAJourApplication.Tag = _cheminFichierMiseAJourTelechargee;
+                _vueModele.LibelleMiseAJourApplication = "Installer";
+                _vueModele.ToolTipMiseAJourApplication =
+                    $"La version {versionDistante} est prête à être installée.";
                 return;
             }
 
-            BoutonMiseAJourApplication.Content = "Mise \u00E0 jour";
-            BoutonMiseAJourApplication.ToolTip =
-                $"T\u00E9l\u00E9charger la version {versionDistante}";
-            BoutonMiseAJourApplication.Tag = _etatMiseAJourApplication.UrlTelechargement;
+            _vueModele.LibelleMiseAJourApplication = "Mise à jour";
+            _vueModele.ToolTipMiseAJourApplication =
+                $"Télécharger la version {versionDistante}";
             return;
         }
 
-        BoutonMiseAJourApplication.Visibility = Visibility.Collapsed;
-        BoutonMiseAJourApplication.IsEnabled = false;
-        BoutonMiseAJourApplication.ToolTip = null;
-        BoutonMiseAJourApplication.Tag = null;
+        _vueModele.VisibiliteMiseAJourApplication = Visibility.Collapsed;
+        _vueModele.MiseAJourApplicationActivee = false;
+        _vueModele.ToolTipMiseAJourApplication = string.Empty;
     }
 
-    private async void BoutonMiseAJourApplication_Click(object sender, RoutedEventArgs e)
+    private async Task ExecuterActionMiseAJourApplicationAsync()
     {
         if (PaquetMiseAJourTelechargeDisponible())
         {

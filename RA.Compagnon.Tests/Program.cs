@@ -53,7 +53,6 @@ static class TestRunner
             "Comparaison de versions traite 1.0.2 et 1.0.2.0 comme equivalentes",
             ComparaisonVersionsTraiteFormatsEquivalents
         );
-
         Console.WriteLine();
         Console.WriteLine(
             _echecs == 0 ? "Tous les tests sont passes." : $"{_echecs} test(s) en echec."

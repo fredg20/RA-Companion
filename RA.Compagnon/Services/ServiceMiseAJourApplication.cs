@@ -33,7 +33,25 @@ public sealed class ServiceMiseAJourApplication
 
     public static string ObtenirVersionLocale()
     {
-        return FormaterVersion(Assembly.GetExecutingAssembly().GetName().Version);
+        Assembly assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+
+        string? versionInformationnelle = assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+
+        if (!string.IsNullOrWhiteSpace(versionInformationnelle))
+        {
+            return NormaliserVersionPourAffichage(versionInformationnelle);
+        }
+
+        Version? versionAssembly = assembly.GetName().Version;
+
+        if (versionAssembly is not null)
+        {
+            return FormaterVersion(versionAssembly);
+        }
+
+        return "0.0.0";
     }
 
     public static async Task<EtatMiseAJourApplication> VerifierAsync(
@@ -92,7 +110,28 @@ public sealed class ServiceMiseAJourApplication
                 );
             }
 
-            return ConstruireEtatDepuisManifeste(versionLocale, manifeste);
+            EtatMiseAJourApplication etat = ConstruireEtatDepuisManifeste(versionLocale, manifeste);
+
+            if (
+                etat.PeutTelecharger
+                && !await UrlTelechargementEstDisponibleAsync(
+                    etat.UrlTelechargement!,
+                    jetonAnnulation
+                )
+            )
+            {
+                return new EtatMiseAJourApplication(
+                    versionLocale,
+                    etat.VersionDistante,
+                    null,
+                    etat.Notes,
+                    etat.DatePublication,
+                    StatutMiseAJourApplication.VerificationImpossible,
+                    "La nouvelle version n'est pas encore disponible au téléchargement."
+                );
+            }
+
+            return etat;
         }
         catch (OperationCanceledException)
         {
@@ -319,47 +358,48 @@ public sealed class ServiceMiseAJourApplication
             Directory.CreateDirectory(dossierInstalleur);
 
             string cheminScript = Path.Combine(dossierInstalleur, "installer-mise-a-jour.ps1");
-            string cheminLanceur = Path.Combine(
-                dossierInstalleur,
-                "lancer-installer-mise-a-jour.cmd"
-            );
             string cheminJournal = Path.Combine(dossierInstalleur, "installer-mise-a-jour.log");
-            string cheminJournalLanceur = Path.Combine(
-                dossierInstalleur,
-                "lancer-installer-mise-a-jour.log"
-            );
 
             File.WriteAllText(
                 cheminScript,
                 ConstruireScriptInstallation(),
-                new UTF8Encoding(false)
+                new UTF8Encoding(true)
             );
 
             string versionCible = string.IsNullOrWhiteSpace(versionDistante)
                 ? "disponible"
                 : versionDistante;
-            File.WriteAllText(
-                cheminLanceur,
-                ConstruireScriptLanceur(
-                    cheminScript,
-                    cheminPackageZip,
-                    dossierInstallationNormalise,
-                    cheminExecutableFinal,
-                    identifiantProcessusParent,
-                    versionCible,
-                    cheminJournal,
-                    cheminJournalLanceur
-                ),
-                Encoding.ASCII
-            );
+            string cheminPowerShell = ObtenirCheminPowerShell();
 
             ProcessStartInfo informationsDemarrage = new()
             {
-                FileName = cheminLanceur,
-                UseShellExecute = true,
+                FileName = cheminPowerShell,
+                UseShellExecute = false,
+                CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = dossierInstallation,
             };
+            informationsDemarrage.ArgumentList.Add("-NoProfile");
+            informationsDemarrage.ArgumentList.Add("-ExecutionPolicy");
+            informationsDemarrage.ArgumentList.Add("Bypass");
+            informationsDemarrage.ArgumentList.Add("-WindowStyle");
+            informationsDemarrage.ArgumentList.Add("Hidden");
+            informationsDemarrage.ArgumentList.Add("-File");
+            informationsDemarrage.ArgumentList.Add(cheminScript);
+            informationsDemarrage.ArgumentList.Add("-ZipPath");
+            informationsDemarrage.ArgumentList.Add(cheminPackageZip);
+            informationsDemarrage.ArgumentList.Add("-InstallDir");
+            informationsDemarrage.ArgumentList.Add(dossierInstallationNormalise);
+            informationsDemarrage.ArgumentList.Add("-ExecutablePath");
+            informationsDemarrage.ArgumentList.Add(cheminExecutableFinal);
+            informationsDemarrage.ArgumentList.Add("-ParentProcessId");
+            informationsDemarrage.ArgumentList.Add(
+                identifiantProcessusParent.ToString(CultureInfo.InvariantCulture)
+            );
+            informationsDemarrage.ArgumentList.Add("-Version");
+            informationsDemarrage.ArgumentList.Add(versionCible);
+            informationsDemarrage.ArgumentList.Add("-LogPath");
+            informationsDemarrage.ArgumentList.Add(cheminJournal);
 
             Process? processus = Process.Start(informationsDemarrage);
 
@@ -422,6 +462,64 @@ public sealed class ServiceMiseAJourApplication
         Version gauche = ConvertirEnVersionComparable(versionGauche);
         Version droite = ConvertirEnVersionComparable(versionDroite);
         return gauche.CompareTo(droite);
+    }
+
+    private static async Task<bool> UrlTelechargementEstDisponibleAsync(
+        string url,
+        CancellationToken jetonAnnulation
+    )
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return false;
+        }
+
+        try
+        {
+            using HttpRequestMessage requete = new(HttpMethod.Head, url);
+            using HttpResponseMessage reponse = await HttpClient.SendAsync(
+                requete,
+                HttpCompletionOption.ResponseHeadersRead,
+                jetonAnnulation
+            );
+
+            if (reponse.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            if (reponse.StatusCode != System.Net.HttpStatusCode.MethodNotAllowed)
+            {
+                return false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
+
+        try
+        {
+            using HttpRequestMessage requete = new(HttpMethod.Get, url);
+            using HttpResponseMessage reponse = await HttpClient.SendAsync(
+                requete,
+                HttpCompletionOption.ResponseHeadersRead,
+                jetonAnnulation
+            );
+            return reponse.IsSuccessStatusCode;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string NormaliserVersionPourAffichage(string version)
@@ -536,6 +634,28 @@ public sealed class ServiceMiseAJourApplication
             ? "inconnue"
             : etat.VersionDistante;
         return $"RA.Compagnon-win-x64-{versionDistante}.zip";
+    }
+
+    private static string ObtenirCheminPowerShell()
+    {
+        string cheminSysteme = Environment.SystemDirectory;
+
+        if (!string.IsNullOrWhiteSpace(cheminSysteme))
+        {
+            string cheminComplet = Path.Combine(
+                cheminSysteme,
+                "WindowsPowerShell",
+                "v1.0",
+                "powershell.exe"
+            );
+
+            if (File.Exists(cheminComplet))
+            {
+                return cheminComplet;
+            }
+        }
+
+        return "powershell.exe";
     }
 
     private static string ConstruireScriptInstallation()

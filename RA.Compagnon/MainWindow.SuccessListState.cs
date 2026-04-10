@@ -62,6 +62,8 @@ public partial class MainWindow
 
         public Dictionary<int, int> PositionsAleatoires { get; } = [];
 
+        public List<int> SuccesPasses { get; } = [];
+
         public OrdreSuccesGrille OrdreCourant { get; set; } = OrdreSuccesGrille.Normal;
     }
 }

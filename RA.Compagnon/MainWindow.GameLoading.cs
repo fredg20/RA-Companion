@@ -677,9 +677,9 @@ public partial class MainWindow
         DefinirTempsJeuSousImage(jeuAffiche.TempsJeu);
         DefinirEtatJeuDansProgression(jeuAffiche.Statut);
         DefinirDetailsJeuEnCours(jeuAffiche.Details);
-        TexteResumeProgressionJeuEnCours.Text = jeuAffiche.ResumeProgression;
-        TextePourcentageJeuEnCours.Text = jeuAffiche.PourcentageTexte;
-        BarreProgressionJeuEnCours.Value = jeuAffiche.PourcentageValeur;
+        _vueModele.JeuCourant.Progression = jeuAffiche.ResumeProgression;
+        _vueModele.JeuCourant.Pourcentage = jeuAffiche.PourcentageTexte;
+        _vueModele.JeuCourant.ProgressionValeur = jeuAffiche.PourcentageValeur;
         MettreAJourActionVueDetailleeJeuEnCours(jeu);
         _ = InitialiserContexteSuccesJeu(jeu, out _);
 
