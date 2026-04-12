@@ -334,8 +334,7 @@ public static class ServiceSourcesLocalesEmulateurs
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig => TrouverCheminJournalFlycast(),
             StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
                 TrouverCheminJournalJeuBizHawk(),
-            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
-                TrouverCheminJournalDolphin(),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => TrouverCheminJournalDolphin(),
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => Path.Combine(
                 TrouverRepertoireRACacheRALibretro(),
                 "RALog.txt"

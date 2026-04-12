@@ -43,22 +43,14 @@ public partial class MainWindow
         _vueModele.JeuCourant.ToolTipActionDetails = actionDisponible
             ? "Afficher les détails de ce jeu"
             : string.Empty;
-        MettreAJourActionRechargerJeuEnCours(jeu.Id, jeu.Title);
+        MettreAJourActionRechargerJeuEnCours(jeu.Id);
     }
 
-    private void MettreAJourActionRechargerJeuEnCours(
-        int identifiantJeu = 0,
-        string? titreJeu = null
-    )
+    private void MettreAJourActionRechargerJeuEnCours(int identifiantJeu = 0)
     {
         if (identifiantJeu <= 0)
         {
             identifiantJeu = _dernieresDonneesJeuAffichees?.Jeu.Id ?? _dernierIdentifiantJeuApi;
-        }
-
-        if (string.IsNullOrWhiteSpace(titreJeu))
-        {
-            titreJeu = _dernieresDonneesJeuAffichees?.Jeu.Title ?? _dernierTitreJeuApi;
         }
 
         bool actionDisponible =

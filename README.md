@@ -48,8 +48,9 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - estimation simple de faisabilité d'un rétrosuccès à partir du ratio `déblocages / joueurs distincts`
 - succès récents du compte
 - détection locale du jeu en cours via certains émulateurs pris en charge
-- ordre de grille `Normal`, `Aléatoire`, `Facile`, `Difficile`
+- ordre de grille `Normal`, `Aléatoire`, `Facile`, `Difficile`, avec mémorisation du mode choisi
 - restauration locale au démarrage
+- retour automatique sur le premier rétrosuccès non débloqué au redémarrage
 - indicateur discret de synchronisation quand l'état local restauré est en cours de rafraîchissement
 
 ## Validation émulateurs

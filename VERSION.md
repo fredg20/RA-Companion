@@ -27,9 +27,15 @@
 - interface WPF réorganisée avec boutons d'action déplacés à l'intérieur des cartes
 - restauration locale au démarrage avec indicateur discret de synchronisation
 - libellé `Dernier jeu` utilisé à la place de `Actif récemment`
-- en-tête réorganisé avec `Recharger` près de `Profil` et `Rejouer` près de l'état du jeu
-- bouton `Détails` replacé sous les informations du jeu
-- alignement et resserrement visuel du carrousel d'image et des actions de carte
+- en-tête réorganisé avec `Recharger` près de `Profil`
+- bouton `Rejouer` ancré en bas à gauche de la section `Jeu en cours`
+- bouton `Détails` ancré en bas à droite de la section `Jeu en cours`
+- suppression des boutons manuels du carrousel d'image tout en conservant sa rotation
+- mode d'affichage des rétrosuccès mémorisé d'une session à l'autre
+- désélection automatique d'un rétrosuccès lors d'un changement de mode d'affichage
+- au démarrage, retour automatique sur le premier rétrosuccès non débloqué de la liste
+- sections plein écran corrigées pour éviter les coupures sous la barre d'état
+- alignement visuel renforcé des zones de progression et des actions de carte
 
 ## Émulateurs validés dans cette version
 
@@ -51,7 +57,7 @@
 - le dossier publié `RA.Compagnon-win-x64` ne doit pas être restructuré manuellement
 - le build `dist` est généré via `build.ps1`
 - la préparation de release peut être figée via `Prepare-Release.ps1`
-- une seule archive est conservée : l'archive versionnée de release
+- une archive versionnée de release est générée dans `dist`
 - `update.json` doit pointer vers une archive versionnée exacte, et non vers `releases/latest`
 - `publishedAt` est synchronisé avec la date réelle de publication GitHub lors d'une release
 
@@ -138,4 +144,12 @@
 - ajustements de layout sur les cartes `Jeu en cours`, `Rétrosuccès en cours` et `Rétrosuccès du jeu`
 - remplacement du libellé `Actif récemment` par `Dernier jeu`
 - réorganisation de l'en-tête supérieur et des actions `Recharger`, `Rejouer` et `Détails`
+- mémorisation du mode d'affichage `Normal`, `Aléatoire`, `Facile` ou `Difficile`
+- désélection d'un rétrosuccès épinglé lors d'un changement de mode
+- au démarrage, retour sur le premier rétrosuccès encore non débloqué
+- progression textuelle harmonisée avec le libellé `succès`
+- alignement corrigé des informations sous la barre de progression
+- sections principales ajustées pour ne plus être coupées en plein écran
+- actions de la carte `Jeu en cours` repositionnées avec `Rejouer` en bas à gauche et `Détails` en bas à droite
+- suppression des boutons manuels du carrousel d'image tout en conservant la rotation automatique
 - recentrage du carrousel d'image et suppression d'espaces superflus dans la carte `Jeu en cours`

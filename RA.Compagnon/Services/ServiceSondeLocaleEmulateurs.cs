@@ -139,8 +139,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuRetroArchDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
                 LireCheminJeuBizHawkDepuisConfiguration(),
-            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
-                LireCheminJeuDolphin(titreJeu),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => LireCheminJeuDolphin(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
@@ -642,8 +641,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuRetroArchDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
                 LireCheminJeuBizHawkDepuisConfiguration(),
-            StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
-                LireCheminJeuDolphin(titreJeuProbable),
+            StrategieRenseignementJeuEmulateurLocal.DolphinConfig => LireCheminJeuDolphin(
+                titreJeuProbable
+            ),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
@@ -1895,12 +1895,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return string.Empty;
         }
 
-        return ExtraireTitreAvecSeparateurs(
-            titreFenetre,
-            "Project64",
-            "RAP64",
-            "RAProject64"
-        );
+        return ExtraireTitreAvecSeparateurs(titreFenetre, "Project64", "RAP64", "RAProject64");
     }
 
     private static bool EstBlocVersionProject64(string valeur)
@@ -2667,7 +2662,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
 
-            string cheminDolphinIni = ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationDolphin();
+            string cheminDolphinIni =
+                ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationDolphin();
 
             if (File.Exists(cheminDolphinIni))
             {
@@ -2719,7 +2715,19 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         string titreJeuProbable
     )
     {
-        string[] extensions = [".iso", ".gcm", ".wbfs", ".ciso", ".gcz", ".rvz", ".wia", ".wad", ".elf", ".dol"];
+        string[] extensions =
+        [
+            ".iso",
+            ".gcm",
+            ".wbfs",
+            ".ciso",
+            ".gcz",
+            ".rvz",
+            ".wia",
+            ".wad",
+            ".elf",
+            ".dol",
+        ];
         List<string> cheminsCandidats = [];
 
         foreach (string repertoire in repertoires)
