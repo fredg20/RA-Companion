@@ -85,7 +85,12 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Margin="8,0,0,0" Orientation="Horizontal">
+        <StackPanel
+          Grid.Column="0"
+          Margin="8,0,0,0"
+          Orientation="Horizontal"
+          VerticalAlignment="Center"
+        >
           <StackPanel
             x:Name="ZoneEtatCompteUtilisateur"
             MaxWidth="320"
@@ -132,7 +137,7 @@
             Height="28"
             Padding="10,2"
             HorizontalAlignment="Left"
-            VerticalAlignment="Top"
+            VerticalAlignment="Center"
             Appearance="Secondary"
             Command="{Binding JeuCourant.CommandeActionRejouer}"
             Content="{Binding JeuCourant.LibelleActionRejouer}"
@@ -282,7 +287,7 @@
                   </Grid.ColumnDefinitions>
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="6" />
+                    <RowDefinition Height="0" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="16" />
                     <RowDefinition Height="Auto" />
@@ -302,24 +307,11 @@
                   </Grid>
                   <Grid x:Name="SectionResumeJeuEnCours" Grid.Row="2" VerticalAlignment="Stretch">
                     <Grid.RowDefinitions>
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition Height="6" />
                       <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0">
-                      <TextBlock
-                        Margin="8,0,0,0"
-                        FontWeight="SemiBold"
-                        FontSize="18"
-                        Opacity="0"
-                        IsHitTestVisible="False"
-                        Text="Jeu en cours"
-                      />
-                    </Grid>
-
                     <Border
-                      Grid.Row="2"
+                      Grid.Row="0"
                       VerticalAlignment="Stretch"
                       Style="{StaticResource StyleSousCarteJeu}"
                     >
@@ -399,52 +391,47 @@
                             x:Name="ZoneSousImageJeuEnCours"
                             Width="180"
                             Margin="{StaticResource MargeBlocCompacte}"
-                            HorizontalAlignment="Stretch"
+                            HorizontalAlignment="Center"
                             Visibility="{Binding JeuCourant.VisuelsSecondairesVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                           >
-                            <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
+                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                              <ui:Button
+                                x:Name="BoutonVisuelJeuPrecedent"
+                                Width="28"
+                                Height="28"
+                                Margin="0,0,8,0"
+                                Appearance="Secondary"
+                                Command="{Binding JeuCourant.CommandeActionVisuelPrecedent}"
+                                IsEnabled="{Binding JeuCourant.ActionVisuelPrecedentActivee}"
+                                ToolTip="Visuel précédent"
+                              >
+                                <TextBlock
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  FontSize="14"
+                                  FontWeight="SemiBold"
+                                  Text="‹"
+                                />
+                              </ui:Button>
 
-                            <ui:Button
-                              x:Name="BoutonVisuelJeuPrecedent"
-                              Width="28"
-                              Height="28"
-                              Margin="0,0,8,0"
-                              Appearance="Secondary"
-                              Command="{Binding JeuCourant.CommandeActionVisuelPrecedent}"
-                              IsEnabled="{Binding JeuCourant.ActionVisuelPrecedentActivee}"
-                              ToolTip="Visuel précédent"
-                            >
-                              <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="14"
-                                FontWeight="SemiBold"
-                                Text="‹"
-                              />
-                            </ui:Button>
-
-                            <ui:Button
-                              x:Name="BoutonVisuelJeuSuivant"
-                              Grid.Column="1"
-                              Width="28"
-                              Height="28"
-                              Appearance="Secondary"
-                              Command="{Binding JeuCourant.CommandeActionVisuelSuivant}"
-                              IsEnabled="{Binding JeuCourant.ActionVisuelSuivantActivee}"
-                              ToolTip="Visuel suivant"
-                            >
-                              <TextBlock
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                FontSize="14"
-                                FontWeight="SemiBold"
-                                Text="›"
-                              />
-                            </ui:Button>
-
+                              <ui:Button
+                                x:Name="BoutonVisuelJeuSuivant"
+                                Width="28"
+                                Height="28"
+                                Appearance="Secondary"
+                                Command="{Binding JeuCourant.CommandeActionVisuelSuivant}"
+                                IsEnabled="{Binding JeuCourant.ActionVisuelSuivantActivee}"
+                                ToolTip="Visuel suivant"
+                              >
+                                <TextBlock
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  FontSize="14"
+                                  FontWeight="SemiBold"
+                                  Text="›"
+                                />
+                              </ui:Button>
+                            </StackPanel>
                           </Grid>
                           </StackPanel>
 

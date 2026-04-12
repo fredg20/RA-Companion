@@ -26,6 +26,10 @@
 - faisabilité des rétrosuccès basée sur le ratio `déblocages / joueurs distincts`
 - interface WPF réorganisée avec boutons d'action déplacés à l'intérieur des cartes
 - restauration locale au démarrage avec indicateur discret de synchronisation
+- libellé `Dernier jeu` utilisé à la place de `Actif récemment`
+- en-tête réorganisé avec `Recharger` près de `Profil` et `Rejouer` près de l'état du jeu
+- bouton `Détails` replacé sous les informations du jeu
+- alignement et resserrement visuel du carrousel d'image et des actions de carte
 
 ## Émulateurs validés dans cette version
 
@@ -132,3 +136,6 @@
 - ajout de `Recharger`, `Passer` et de l'indicateur `Synchronisation...`
 - estimation simplifiée de faisabilité des rétrosuccès
 - ajustements de layout sur les cartes `Jeu en cours`, `Rétrosuccès en cours` et `Rétrosuccès du jeu`
+- remplacement du libellé `Actif récemment` par `Dernier jeu`
+- réorganisation de l'en-tête supérieur et des actions `Recharger`, `Rejouer` et `Détails`
+- recentrage du carrousel d'image et suppression d'espaces superflus dans la carte `Jeu en cours`
