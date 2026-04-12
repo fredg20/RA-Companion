@@ -98,7 +98,7 @@
 - barre de défilement de la modale Aide visible uniquement au survol
 - détection plus stricte des titres locaux pour éviter l'affichage d'un titre provenant d'une fenêtre non liée à un émulateur validé
 - détection locale `RetroArch` rendue plus réactive au démarrage de la surveillance
-- en mode `Actif récemment`, affichage forcé sur le dernier jeu mémorisé par `GameID`
+- en mode `Dernier jeu`, affichage forcé sur le dernier jeu mémorisé par `GameID`
 - bouton `Details` déplacé sur la ligne d'en-tête de la carte principale
 - ajustements visuels de la carte `Rétrosuccès en cours` et de ses boutons de navigation
 

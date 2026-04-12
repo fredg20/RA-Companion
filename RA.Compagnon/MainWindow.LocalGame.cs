@@ -64,7 +64,7 @@ public partial class MainWindow
 
         return string.Equals(
             etatRichPresence.StatutAffiche,
-            "Actif récemment",
+            "Dernier jeu",
             StringComparison.OrdinalIgnoreCase
         );
     }

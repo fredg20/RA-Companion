@@ -265,7 +265,7 @@ public partial class MainWindow
             !EtatLocalJeuEstActif()
             && string.Equals(
                 etatRichPresence.StatutAffiche,
-                "Actif récemment",
+                "Dernier jeu",
                 StringComparison.OrdinalIgnoreCase
             )
             && _configurationConnexion.DernierJeuAffiche?.Id > 0

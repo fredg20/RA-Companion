@@ -57,7 +57,7 @@ public sealed class ServiceSondeRichPresence
         }
         else if (identifiantDernierJeu > 0)
         {
-            statutAffiche = "Actif récemment";
+            statutAffiche = "Dernier jeu";
             sousStatutAffiche = string.Empty;
         }
         else
