@@ -40,6 +40,11 @@ public sealed class ConfigurationConnexion
     public double HauteurFenetre { get; set; } = 700;
 
     /// <summary>
+    /// Mode d'affichage des rétrosuccès choisi par l'utilisateur.
+    /// </summary>
+    public string ModeAffichageSucces { get; set; } = "Normal";
+
+    /// <summary>
     /// Dernier jeu affiché avec ses informations principales.
     /// </summary>
     [JsonIgnore]

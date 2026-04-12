@@ -71,6 +71,7 @@ public partial class MainWindow
         );
         AppliquerGeometrieFenetre();
         _geometrieFenetrePretePourPersistance = true;
+        AppliquerModeAffichageSuccesDepuisConfiguration();
         AjusterTypographieResponsive(true);
         MettreAJourResumeConnexion();
         AjusterDisposition();

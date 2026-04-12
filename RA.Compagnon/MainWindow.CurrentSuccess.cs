@@ -67,13 +67,9 @@ public partial class MainWindow
     {
         _identifiantJeuSuccesCourant = 0;
         _succesJeuCourant = [];
-        _succesDebloquesLocauxTemporaires.Clear();
-        _succesDetectesRecemment.Clear();
-        _succesDebloqueDetecteEnAttente = null;
-        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        ReinitialiserEtatSuccesTemporairesSession();
         _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
         _etatListeSuccesUi.SuccesPasses.Clear();
-        _minuteurAffichageTemporaireSuccesGrille.Stop();
         ReinitialiserPremierSuccesNonDebloque();
         ReinitialiserGrilleTousSucces();
 
@@ -88,6 +84,16 @@ public partial class MainWindow
             _configurationConnexion.DerniereListeSuccesAffichee = null;
             _derniereListeSuccesAfficheeModifiee = true;
         }
+    }
+
+    private void ReinitialiserEtatSuccesTemporairesSession()
+    {
+        _succesDebloquesLocauxTemporaires.Clear();
+        _succesDetectesRecemment.Clear();
+        _succesDebloqueDetecteEnAttente = null;
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
     }
 
     /// <summary>
@@ -264,7 +270,7 @@ public partial class MainWindow
     /// <summary>
     /// Applique le succès choisi à la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
     /// </summary>
-    private async Task AppliquerSuccesEnCoursAsync(
+    private Task AppliquerSuccesEnCoursAsync(
         int identifiantJeu,
         GameAchievementV2? succesSelectionne,
         bool doitSauvegarder,
@@ -273,6 +279,7 @@ public partial class MainWindow
     {
         if (succesSelectionne is null)
         {
+            _versionAffichageSuccesEnCours++;
             _vueModele.SuccesEnCours.Image = null;
             _vueModele.SuccesEnCours.ImageVisible = false;
             _vueModele.SuccesEnCours.ImageOpacity = 0.58;
@@ -301,7 +308,7 @@ public partial class MainWindow
                     TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
-            return;
+            return Task.CompletedTask;
         }
 
         SuccesAffiche succesAffiche = Services.ServicePresentationSucces.Construire(
@@ -309,35 +316,18 @@ public partial class MainWindow
             identifiantJeu,
             _dernieresDonneesJeuAffichees?.Jeu.NumDistinctPlayers ?? 0
         );
-        ImageSource? imageSucces = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
+        int versionAffichage = ++_versionAffichageSuccesEnCours;
 
-        if (imageSucces is not null)
-        {
-            _vueModele.SuccesEnCours.Image = succesAffiche.EstDebloque
-                ? imageSucces
-                : ConvertirImageEnNoirEtBlanc(imageSucces);
-            _vueModele.SuccesEnCours.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
-            _vueModele.SuccesEnCours.ImageVisible = true;
-            _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
-            _vueModele.SuccesEnCours.TexteVisuelVisible = false;
-            AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
-        }
-        else
-        {
-            _vueModele.SuccesEnCours.Image = null;
-            ImagePremierSuccesNonDebloque.Clip = null;
-            _vueModele.SuccesEnCours.ImageOpacity = 0.58;
-            _vueModele.SuccesEnCours.ImageVisible = false;
-            _vueModele.SuccesEnCours.TexteVisuel = "Visuel indisponible";
-            _vueModele.SuccesEnCours.TexteVisuelVisible = true;
-        }
+        _vueModele.SuccesEnCours.Image = null;
+        ImagePremierSuccesNonDebloque.Clip = null;
+        _vueModele.SuccesEnCours.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
+        _vueModele.SuccesEnCours.ImageVisible = false;
+        _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
+        _vueModele.SuccesEnCours.TexteVisuelVisible = false;
 
         _vueModele.SuccesEnCours.Titre = succesAffiche.Titre;
         _vueModele.SuccesEnCours.TitreVisible = true;
-        string descriptionSucces = await _serviceTraductionTexte.TraduireVersFrancaisAsync(
-            succesAffiche.Description
-        );
-        _vueModele.SuccesEnCours.Description = descriptionSucces.Trim();
+        _vueModele.SuccesEnCours.Description = succesAffiche.Description.Trim();
         _vueModele.SuccesEnCours.DescriptionVisible = true;
         _vueModele.SuccesEnCours.DetailsPoints = succesAffiche.DetailsPoints;
         _vueModele.SuccesEnCours.DetailsPointsVisible = !string.IsNullOrWhiteSpace(
@@ -349,6 +339,7 @@ public partial class MainWindow
         );
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = succesAffiche.ExplicationFaisabilite;
         MettreAJourNavigationSuccesEnCours(succesSelectionne);
+
         if (doitSauvegarder)
         {
             SauvegarderDernierSuccesAffiche(
@@ -366,6 +357,98 @@ public partial class MainWindow
                     TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
+        }
+
+        _ = EnrichirSuccesEnCoursAffichageAsync(
+            identifiantJeu,
+            succesSelectionne.Id,
+            succesAffiche,
+            versionAffichage,
+            doitSauvegarder,
+            estEpingleManuellement
+        );
+        return Task.CompletedTask;
+    }
+
+    private async Task EnrichirSuccesEnCoursAffichageAsync(
+        int identifiantJeu,
+        int identifiantSucces,
+        SuccesAffiche succesAffiche,
+        int versionAffichage,
+        bool doitSauvegarder,
+        bool estEpingleManuellement
+    )
+    {
+        try
+        {
+            ImageSource? imageSucces = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
+
+            if (
+                _versionAffichageSuccesEnCours != versionAffichage
+                || _identifiantJeuSuccesCourant != identifiantJeu
+            )
+            {
+                return;
+            }
+
+            if (imageSucces is not null)
+            {
+                _vueModele.SuccesEnCours.Image = succesAffiche.EstDebloque
+                    ? imageSucces
+                    : ConvertirImageEnNoirEtBlanc(imageSucces);
+                _vueModele.SuccesEnCours.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
+                _vueModele.SuccesEnCours.ImageVisible = true;
+                _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
+                _vueModele.SuccesEnCours.TexteVisuelVisible = false;
+                AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
+            }
+            else
+            {
+                _vueModele.SuccesEnCours.Image = null;
+                ImagePremierSuccesNonDebloque.Clip = null;
+                _vueModele.SuccesEnCours.ImageVisible = false;
+                _vueModele.SuccesEnCours.TexteVisuel = "Visuel indisponible";
+                _vueModele.SuccesEnCours.TexteVisuelVisible = true;
+            }
+
+            string descriptionSucces = await _serviceTraductionTexte.TraduireVersFrancaisAsync(
+                succesAffiche.Description
+            );
+
+            if (
+                _versionAffichageSuccesEnCours != versionAffichage
+                || _identifiantJeuSuccesCourant != identifiantJeu
+            )
+            {
+                return;
+            }
+
+            _vueModele.SuccesEnCours.Description = string.IsNullOrWhiteSpace(descriptionSucces)
+                ? succesAffiche.Description.Trim()
+                : descriptionSucces.Trim();
+
+            if (doitSauvegarder)
+            {
+                SauvegarderDernierSuccesAffiche(
+                    new EtatSuccesAfficheLocal
+                    {
+                        IdentifiantJeu = identifiantJeu,
+                        IdentifiantSucces = identifiantSucces,
+                        Titre = _vueModele.SuccesEnCours.Titre,
+                        Description = _vueModele.SuccesEnCours.Description,
+                        DetailsPoints = _vueModele.SuccesEnCours.DetailsPoints,
+                        DetailsFaisabilite = _vueModele.SuccesEnCours.DetailsFaisabilite,
+                        ExplicationFaisabilite = _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite,
+                        EstEpingleManuellement = estEpingleManuellement,
+                        CheminImageBadge = succesAffiche.UrlBadge,
+                        TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
+                    }
+                );
+            }
+        }
+        catch
+        {
+            // Le contenu principal du succès doit rester instantané même si l'image ou la traduction tardent.
         }
     }
 

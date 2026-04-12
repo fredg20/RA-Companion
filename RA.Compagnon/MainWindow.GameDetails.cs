@@ -41,7 +41,7 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionDetailsActivee = actionDisponible;
         _vueModele.JeuCourant.ActionDetailsVisible = actionDisponible;
         _vueModele.JeuCourant.ToolTipActionDetails = actionDisponible
-            ? $"Afficher les détails de {jeu.Title?.Trim() ?? "ce jeu"}"
+            ? "Afficher les détails de ce jeu"
             : string.Empty;
         MettreAJourActionRechargerJeuEnCours(jeu.Id, jeu.Title);
     }
@@ -68,7 +68,7 @@ public partial class MainWindow
         _vueModele.LibelleRechargerJeu = "Recharger";
         _vueModele.RechargerJeuActif = actionDisponible;
         _vueModele.ToolTipRechargerJeu = actionDisponible
-            ? $"Recharger {titreJeu?.Trim() ?? "ce jeu"} depuis l'API"
+            ? "Recharger ce jeu depuis l'API"
             : string.Empty;
     }
 
@@ -108,7 +108,7 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionRejouerActivee = actionDisponible;
         _vueModele.JeuCourant.ActionRejouerVisible = actionDisponible;
         _vueModele.JeuCourant.ToolTipActionRejouer = actionDisponible
-            ? $"Relancer {Path.GetFileNameWithoutExtension(jeuSauvegarde.CheminJeuLocal)}"
+            ? "Relancer ce jeu"
             : string.Empty;
     }
 
@@ -551,10 +551,9 @@ public partial class MainWindow
         try
         {
             _dernieresDonneesJeuAffichees = null;
-            _dernierIdentifiantJeuAvecInfos = 0;
-            _dernierIdentifiantJeuAvecProgression = 0;
             _identifiantJeuSuccesCourant = 0;
             _succesJeuCourant = [];
+            ReinitialiserEtatSuccesTemporairesSession();
             _identifiantJeuSuccesObserve = 0;
             _etatSuccesObserves = [];
             await ChargerJeuEnCoursAsync(false, true, true);

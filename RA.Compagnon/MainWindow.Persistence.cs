@@ -36,11 +36,9 @@ public partial class MainWindow
         DefinirDetailsJeuEnCours(jeuSauvegarde.Details);
         DefinirTempsJeuSousImage(jeuSauvegarde.TempsJeuSousImage);
         DefinirEtatJeuDansProgression(jeuSauvegarde.EtatJeu);
-        _vueModele.JeuCourant.Progression = string.IsNullOrWhiteSpace(
+        _vueModele.JeuCourant.Progression = NormaliserResumeProgressionSauvegarde(
             jeuSauvegarde.ResumeProgression
-        )
-            ? "-- / --"
-            : jeuSauvegarde.ResumeProgression;
+        );
         _vueModele.JeuCourant.Pourcentage = string.IsNullOrWhiteSpace(
             jeuSauvegarde.PourcentageProgression
         )
@@ -69,6 +67,20 @@ public partial class MainWindow
         DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.Id);
     }
 
+    private static string NormaliserResumeProgressionSauvegarde(string? resumeProgression)
+    {
+        if (string.IsNullOrWhiteSpace(resumeProgression))
+        {
+            return "-- / -- succès";
+        }
+
+        string resumeNettoye = resumeProgression.Trim();
+
+        return resumeNettoye.Contains("succès", StringComparison.CurrentCultureIgnoreCase)
+            ? resumeNettoye
+            : $"{resumeNettoye} succès";
+    }
+
     private void DemarrerRestaurationSuccesSauvegardesEnArrierePlan(int identifiantJeu)
     {
         _ = RestaurerSuccesSauvegardesEnArrierePlanAsync(identifiantJeu);
@@ -78,13 +90,18 @@ public partial class MainWindow
     {
         try
         {
-            await AppliquerDernierSuccesSauvegardeAsync(identifiantJeu);
+            bool succesRestaure = await AppliquerDernierSuccesSauvegardeAsync(identifiantJeu);
             await AppliquerDerniereListeSuccesSauvegardeeAsync(identifiantJeu);
+
+            if (!succesRestaure)
+            {
+                await AppliquerPremierSuccesNonDebloqueSauvegardeAsync(identifiantJeu);
+            }
         }
         catch { }
     }
 
-    private async Task AppliquerDernierSuccesSauvegardeAsync(int identifiantJeu)
+    private async Task<bool> AppliquerDernierSuccesSauvegardeAsync(int identifiantJeu)
     {
         EtatSuccesAfficheLocal? succesSauvegarde = _configurationConnexion.DernierSuccesAffiche;
 
@@ -94,12 +111,18 @@ public partial class MainWindow
             || string.IsNullOrWhiteSpace(succesSauvegarde.Title)
         )
         {
-            return;
+            return false;
         }
 
-        _etatListeSuccesUi.IdentifiantSuccesEpingle = succesSauvegarde.EstEpingleManuellement
-            ? succesSauvegarde.AchievementId
-            : null;
+        if (succesSauvegarde.EstEpingleManuellement)
+        {
+            ReinitialiserSelectionSuccesGrille();
+            _configurationConnexion.DernierSuccesAffiche = null;
+            _dernierSuccesAfficheModifie = true;
+            return false;
+        }
+
+        ReinitialiserSelectionSuccesGrille();
         _vueModele.SuccesEnCours.Titre = succesSauvegarde.Title;
         _vueModele.SuccesEnCours.TitreVisible = true;
         _vueModele.SuccesEnCours.Description = succesSauvegarde.Description;
@@ -131,7 +154,7 @@ public partial class MainWindow
                 _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
                 _vueModele.SuccesEnCours.TexteVisuelVisible = false;
                 AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
-                return;
+                return true;
             }
         }
 
@@ -143,6 +166,7 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.TexteVisuelVisible = !string.IsNullOrWhiteSpace(
             succesSauvegarde.TexteVisuel
         );
+        return true;
     }
 
     private static string NormaliserToolTipFaisabilite(string valeur)
@@ -217,6 +241,73 @@ public partial class MainWindow
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
         return Task.CompletedTask;
+    }
+
+    private async Task AppliquerPremierSuccesNonDebloqueSauvegardeAsync(int identifiantJeu)
+    {
+        EtatListeSuccesAfficheeLocal? listeSauvegardee =
+            _configurationConnexion.DerniereListeSuccesAffichee;
+
+        if (listeSauvegardee is null || listeSauvegardee.Id != identifiantJeu)
+        {
+            return;
+        }
+
+        ReinitialiserSelectionSuccesGrille();
+
+        ElementListeSuccesAfficheLocal? premierSuccesNonDebloque = null;
+
+        foreach (ElementListeSuccesAfficheLocal succes in listeSauvegardee.Achievements)
+        {
+            if (succes.CheminImageBadge.Contains("_lock", StringComparison.OrdinalIgnoreCase))
+            {
+                premierSuccesNonDebloque = succes;
+                break;
+            }
+        }
+
+        if (premierSuccesNonDebloque is null)
+        {
+            await AppliquerSuccesEnCoursAsync(identifiantJeu, null, false, false);
+            return;
+        }
+
+        _versionAffichageSuccesEnCours++;
+        _vueModele.SuccesEnCours.Titre = premierSuccesNonDebloque.Title;
+        _vueModele.SuccesEnCours.TitreVisible = true;
+        _vueModele.SuccesEnCours.Description = string.Empty;
+        _vueModele.SuccesEnCours.DescriptionVisible = false;
+        _vueModele.SuccesEnCours.DetailsPoints = string.Empty;
+        _vueModele.SuccesEnCours.DetailsPointsVisible = false;
+        _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
+        _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
+        _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
+        MettreAJourNavigationSuccesEnCours(null);
+
+        if (!string.IsNullOrWhiteSpace(premierSuccesNonDebloque.CheminImageBadge))
+        {
+            ImageSource? imageSucces = await ChargerImageDistanteAsync(
+                premierSuccesNonDebloque.CheminImageBadge
+            );
+
+            if (imageSucces is not null)
+            {
+                _vueModele.SuccesEnCours.Image = ConvertirImageEnNoirEtBlanc(imageSucces);
+                _vueModele.SuccesEnCours.ImageOpacity = 0.58;
+                _vueModele.SuccesEnCours.ImageVisible = true;
+                _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
+                _vueModele.SuccesEnCours.TexteVisuelVisible = false;
+                AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
+                return;
+            }
+        }
+
+        _vueModele.SuccesEnCours.Image = null;
+        ImagePremierSuccesNonDebloque.Clip = null;
+        _vueModele.SuccesEnCours.ImageOpacity = 0.58;
+        _vueModele.SuccesEnCours.ImageVisible = false;
+        _vueModele.SuccesEnCours.TexteVisuel = premierSuccesNonDebloque.Title;
+        _vueModele.SuccesEnCours.TexteVisuelVisible = true;
     }
 
     private Task SauvegarderDernierJeuAfficheAsync(
@@ -451,6 +542,7 @@ public partial class MainWindow
             !_dernierJeuAfficheModifie
             && !_dernierSuccesAfficheModifie
             && !_derniereListeSuccesAfficheeModifiee
+            && !_modeAffichageSuccesModifie
         )
         {
             return;
@@ -459,6 +551,7 @@ public partial class MainWindow
         _dernierJeuAfficheModifie = false;
         _dernierSuccesAfficheModifie = false;
         _derniereListeSuccesAfficheeModifiee = false;
+        _modeAffichageSuccesModifie = false;
 
         try
         {
@@ -471,6 +564,7 @@ public partial class MainWindow
             _dernierJeuAfficheModifie = true;
             _dernierSuccesAfficheModifie = true;
             _derniereListeSuccesAfficheeModifiee = true;
+            _modeAffichageSuccesModifie = true;
         }
     }
 }

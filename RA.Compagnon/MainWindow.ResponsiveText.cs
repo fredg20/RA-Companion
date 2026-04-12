@@ -71,13 +71,18 @@ public partial class MainWindow
 
         double facteurReductionTitre =
             ActualWidth < 760 ? Math.Max(0.8, 1 - ((760 - ActualWidth) / 900)) : 1;
-        double taillePoliceTitre = CalculerTaillePoliceResponsive(18) * facteurReductionTitre;
-        double hauteurLigne = CalculerTaillePoliceResponsive(22) * facteurReductionTitre;
+        double taillePoliceTitre = CalculerTaillePoliceResponsive(16) * facteurReductionTitre;
+        double hauteurLigne = CalculerTaillePoliceResponsive(20) * facteurReductionTitre;
         double hauteurConteneur = Math.Clamp(hauteurLigne, 20, 28);
 
         TexteTitreFenetre.FontSize = taillePoliceTitre;
         TexteTitreFenetre.LineHeight = hauteurLigne;
         ConteneurTitreFenetre.Height = hauteurConteneur;
+        Grid.SetColumn(ConteneurTitreFenetre, 0);
+        Grid.SetColumnSpan(ConteneurTitreFenetre, 2);
+        ConteneurTitreFenetre.HorizontalAlignment = HorizontalAlignment.Left;
+        ConteneurTitreFenetre.Margin = new Thickness(44, 0, 8, 0);
+        TexteTitreFenetre.TextAlignment = TextAlignment.Left;
     }
 
     private void AppliquerTypographieResponsiveSurObjet(DependencyObject? racine)

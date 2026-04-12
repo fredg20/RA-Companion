@@ -689,17 +689,8 @@ public partial class MainWindow
             return;
         }
 
-        double hauteurTitre = 36;
-        double hauteurBandeauCompte = (BoutonCompteUtilisateur?.ActualHeight ?? 32) + 8 + 6;
-        double hauteurBarreEtat = BarreEtatApplication is null
-            ? 0
-            : CalculerHauteurOccupee(BarreEtatApplication);
-
         double hauteurVisible =
-            ActualHeight
-            - hauteurTitre
-            - hauteurBandeauCompte
-            - hauteurBarreEtat
+            (CadreZonePrincipale?.ActualHeight ?? 0)
             - (CadreZonePrincipale?.Padding.Top ?? 0)
             - (CadreZonePrincipale?.Padding.Bottom ?? 0);
 

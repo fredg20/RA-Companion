@@ -53,6 +53,7 @@ public partial class MainWindow
     private bool _dernierJeuAfficheModifie;
     private bool _dernierSuccesAfficheModifie;
     private bool _derniereListeSuccesAfficheeModifiee;
+    private bool _modeAffichageSuccesModifie;
     private bool _miseAJourAnimationTitreJeuPlanifiee;
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
@@ -74,6 +75,7 @@ public partial class MainWindow
     private ConfigurationConnexion _configurationConnexion = new();
     private int _indexVisuelJeuEnCours;
     private int _identifiantJeuSuccesCourant;
+    private int _versionAffichageSuccesEnCours;
     private double _largeurMaxVisuelJeuEnCours;
     private double _hauteurMaxVisuelJeuEnCours;
     private Dictionary<int, HashSet<int>> _succesDebloquesLocauxTemporaires = [];

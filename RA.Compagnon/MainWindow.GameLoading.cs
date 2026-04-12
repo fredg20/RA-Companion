@@ -18,7 +18,7 @@ public partial class MainWindow
     {
         _vueModele.EtatSynchronisationJeu = texte;
         _vueModele.VisibiliteSynchronisationJeu = string.IsNullOrWhiteSpace(texte)
-            ? Visibility.Collapsed
+            ? Visibility.Hidden
             : Visibility.Visible;
     }
 
@@ -552,7 +552,7 @@ public partial class MainWindow
                     "progression_succes_enrichis_recharge",
                     $"jeu={identifiantJeuEffectif};avant={nombreSuccesAvant};apres={nombreSuccesApres};badges={GrilleTousSuccesJeuEnCours.Children.Count}"
                 );
-                DemarrerMiseAJourSuccesJeuEnArrierePlan(jeu);
+                await MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
             }
         }
         catch
@@ -716,7 +716,6 @@ public partial class MainWindow
         _dernierIdentifiantJeuAvecInfos = jeu.Id;
         _dernierIdentifiantJeuAvecProgression = jeu.Id;
         _dernieresDonneesJeuAffichees = donneesJeu;
-        ReinitialiserEtatSynchronisationJeu();
         MarquerEtapePipelineChargementJeu(
             EtapePipelineChargementJeu.DonneesMinimales,
             jeu.Id,
@@ -740,12 +739,8 @@ public partial class MainWindow
         await SauvegarderDernierJeuAfficheAsync(jeu, jeuAffiche.TempsJeu, jeuAffiche.Statut);
         await DetecterNouveauxSuccesJeuAsync(jeu);
         DemarrerMiseAJourCachesJeuLocaux(jeu);
-        DemarrerMiseAJourSuccesJeuEnArrierePlan(jeu);
-        MarquerEtapePipelineChargementJeu(
-            EtapePipelineChargementJeu.SuccesCharges,
-            jeu.Id,
-            _versionChargementContenuJeu
-        );
+        await MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
+        ReinitialiserEtatSynchronisationJeu();
         JournaliserDiagnosticChangementJeu("progression_succes_ok");
         JournaliserDiagnosticChangementJeu("progression_fin");
     }

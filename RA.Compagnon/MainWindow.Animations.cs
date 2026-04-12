@@ -508,7 +508,7 @@ public partial class MainWindow
             StringComparison.Ordinal
         );
         _vueModele.JeuCourant.Titre = titre;
-        ConteneurTitreJeuEnCours.ToolTip = titre;
+        ConteneurTitreJeuEnCours.ToolTip = null;
 
         if (titreInchange)
         {

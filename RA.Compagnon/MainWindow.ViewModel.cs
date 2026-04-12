@@ -11,14 +11,14 @@ public partial class MainWindow
     private void InitialiserVueModele()
     {
         DataContext = _vueModele;
-        _vueModele.TitreFenetre = "RA-Compagnon - Suivi des rétrosuccès";
+        _vueModele.TitreFenetre = "Compagnon RA";
         _vueModele.TitreCarteJeuEnCours = "Dernier jeu joué";
         _vueModele.EtatConnexion = _etatConnexionCourant;
         _vueModele.VisibiliteContenuPrincipal = Visibility.Hidden;
         _vueModele.VisibiliteCarteConnexion = Visibility.Collapsed;
         _vueModele.VisibiliteCarteJeuEnCours = Visibility.Visible;
         _vueModele.VisibiliteMiseAJourApplication = Visibility.Collapsed;
-        _vueModele.VisibiliteSynchronisationJeu = Visibility.Collapsed;
+        _vueModele.VisibiliteSynchronisationJeu = Visibility.Hidden;
         _vueModele.MiseAJourApplicationActivee = false;
         _vueModele.LibelleMiseAJourApplication = "Mise à jour";
         _vueModele.ToolTipMiseAJourApplication = string.Empty;

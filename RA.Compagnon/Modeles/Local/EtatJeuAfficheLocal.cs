@@ -33,7 +33,7 @@ public sealed class EtatJeuAfficheLocal
     /// <summary>
     /// Résumé de progression affiché.
     /// </summary>
-    public string ResumeProgression { get; set; } = "-- / --";
+    public string ResumeProgression { get; set; } = "-- / -- succès";
 
     /// <summary>
     /// Pourcentage de progression affiché.

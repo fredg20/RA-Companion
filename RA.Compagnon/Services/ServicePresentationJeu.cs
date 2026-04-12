@@ -22,10 +22,18 @@ public sealed class ServicePresentationJeu
                     : string.Empty,
             Statut = DeterminerStatutJeu(jeu),
             Details = ConstruireDetailsJeu(donneesJeu),
-            ResumeProgression = $"{jeu.NumAwardedToUser} / {jeu.NumAchievements}",
+            ResumeProgression = FormaterResumeProgression(
+                jeu.NumAwardedToUser,
+                jeu.NumAchievements
+            ),
             PourcentageTexte = NormaliserPourcentage(jeu.UserCompletion),
             PourcentageValeur = ExtrairePourcentage(jeu.UserCompletion),
         };
+    }
+
+    private static string FormaterResumeProgression(int nbSuccesDebloques, int nbSuccesTotal)
+    {
+        return $"{nbSuccesDebloques} / {nbSuccesTotal} succès";
     }
 
     private static int CalculerTotalPointsJeu(GameInfoAndUserProgressV2 jeu)

@@ -16,6 +16,52 @@ namespace RA.Compagnon;
 /// </summary>
 public partial class MainWindow
 {
+    private void AppliquerModeAffichageSuccesDepuisConfiguration()
+    {
+        _etatListeSuccesUi.OrdreCourant = ConvertirModeAffichageSuccesDepuisConfiguration(
+            _configurationConnexion.ModeAffichageSucces
+        );
+        MettreAJourLibelleOrdreSuccesGrilleEtModes();
+    }
+
+    private static OrdreSuccesGrille ConvertirModeAffichageSuccesDepuisConfiguration(
+        string? modeAffichageSucces
+    )
+    {
+        return modeAffichageSucces switch
+        {
+            "Aléatoire" => OrdreSuccesGrille.Aleatoire,
+            "Facile" => OrdreSuccesGrille.Facile,
+            "Difficile" => OrdreSuccesGrille.Difficile,
+            _ => OrdreSuccesGrille.Normal,
+        };
+    }
+
+    private void MemoriserModeAffichageSucces()
+    {
+        string modeAffichage = _etatListeSuccesUi.OrdreCourant switch
+        {
+            OrdreSuccesGrille.Aleatoire => "Aléatoire",
+            OrdreSuccesGrille.Facile => "Facile",
+            OrdreSuccesGrille.Difficile => "Difficile",
+            _ => "Normal",
+        };
+
+        if (
+            string.Equals(
+                _configurationConnexion.ModeAffichageSucces,
+                modeAffichage,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            return;
+        }
+
+        _configurationConnexion.ModeAffichageSucces = modeAffichage;
+        _modeAffichageSuccesModifie = true;
+    }
+
     /// <summary>
     /// Ouvre le menu de choix de l'ordre d'affichage de la grille.
     /// </summary>
@@ -48,6 +94,8 @@ public partial class MainWindow
             InvaliderOrdreAleatoireSuccesGrille();
         }
 
+        ReinitialiserSelectionSuccesGrille();
+        MemoriserModeAffichageSucces();
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
 
         if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
@@ -71,6 +119,14 @@ public partial class MainWindow
                 _succesJeuCourant
             );
         }
+    }
+
+    private void ReinitialiserSelectionSuccesGrille()
+    {
+        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+        _etatListeSuccesUi.IdentifiantSuccesEpingle = null;
+        _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
+        _minuteurAffichageTemporaireSuccesGrille.Stop();
     }
 
     private void InvaliderOrdreAleatoireSuccesGrille()

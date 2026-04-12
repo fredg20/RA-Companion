@@ -421,6 +421,33 @@ public sealed class ServiceConfigurationLocale
             modifie = true;
         }
 
+        string modeAffichageNormalise = string.IsNullOrWhiteSpace(configuration.ModeAffichageSucces)
+            ? "Normal"
+            : configuration.ModeAffichageSucces.Trim();
+
+        if (
+            !string.Equals(
+                configuration.ModeAffichageSucces,
+                modeAffichageNormalise,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            configuration.ModeAffichageSucces = modeAffichageNormalise;
+            modifie = true;
+        }
+
+        if (
+            !string.Equals(modeAffichageNormalise, "Normal", StringComparison.Ordinal)
+            && !string.Equals(modeAffichageNormalise, "Aléatoire", StringComparison.Ordinal)
+            && !string.Equals(modeAffichageNormalise, "Facile", StringComparison.Ordinal)
+            && !string.Equals(modeAffichageNormalise, "Difficile", StringComparison.Ordinal)
+        )
+        {
+            configuration.ModeAffichageSucces = "Normal";
+            modifie = true;
+        }
+
         EtatJeuAfficheLocal? jeu = configuration.DernierJeuAffiche;
 
         if (jeu is null)
