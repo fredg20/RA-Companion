@@ -484,23 +484,16 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// Construit une ligne courte pour le développeur et l'éditeur du jeu.
+    /// Construit une ligne courte pour le développeur du jeu.
     /// </summary>
     private static string ConstruireCreditsJeu(GameInfoAndUserProgressV2 jeu)
     {
-        List<string> segments = [];
-
         if (!string.IsNullOrWhiteSpace(jeu.Developer))
         {
-            segments.Add(jeu.Developer.Trim());
+            return jeu.Developer.Trim();
         }
 
-        if (!string.IsNullOrWhiteSpace(jeu.Publisher))
-        {
-            segments.Add(jeu.Publisher.Trim());
-        }
-
-        return string.Join(Environment.NewLine, segments);
+        return string.Empty;
     }
 
     /// <summary>

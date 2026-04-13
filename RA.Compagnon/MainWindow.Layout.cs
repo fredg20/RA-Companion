@@ -513,6 +513,12 @@ public partial class MainWindow
         if (
             GrilleCarteJeuEnCours is null
             || EnTeteCarteJeuEnCours is null
+            || EnTeteSectionSuccesEnCours is null
+            || EnTeteSectionListeSuccesJeuEnCours is null
+            || EnTeteInterneSectionSuccesEnCours is null
+            || EnTeteInterneSectionListeSuccesJeuEnCours is null
+            || LigneEspacementSectionSuccesEnCours is null
+            || LigneEspacementSectionListeSuccesJeuEnCours is null
             || SectionResumeJeuEnCours is null
             || SectionSuccesEnCours is null
             || SectionListeSuccesJeuEnCours is null
@@ -525,6 +531,26 @@ public partial class MainWindow
 
         bool dispositionTriple = FenetreCouvreEcranPourDispositionTriple();
         bool dispositionEtendue = !dispositionTriple && FenetreCouvreDeuxTiersEcran();
+        bool afficherEntetesExternes = dispositionTriple;
+
+        EnTeteSectionSuccesEnCours.Visibility = afficherEntetesExternes
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        EnTeteSectionListeSuccesJeuEnCours.Visibility = afficherEntetesExternes
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        EnTeteInterneSectionSuccesEnCours.Visibility = afficherEntetesExternes
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        EnTeteInterneSectionListeSuccesJeuEnCours.Visibility = afficherEntetesExternes
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        LigneEspacementSectionSuccesEnCours.Height = afficherEntetesExternes
+            ? new GridLength(0)
+            : new GridLength(6);
+        LigneEspacementSectionListeSuccesJeuEnCours.Height = afficherEntetesExternes
+            ? new GridLength(0)
+            : new GridLength(6);
 
         if (dispositionTriple)
         {
@@ -544,6 +570,10 @@ public partial class MainWindow
 
             SystemControls.Grid.SetColumn(EnTeteCarteJeuEnCours, 0);
             SystemControls.Grid.SetColumnSpan(EnTeteCarteJeuEnCours, 1);
+            SystemControls.Grid.SetColumn(EnTeteSectionSuccesEnCours, 2);
+            SystemControls.Grid.SetColumnSpan(EnTeteSectionSuccesEnCours, 1);
+            SystemControls.Grid.SetColumn(EnTeteSectionListeSuccesJeuEnCours, 4);
+            SystemControls.Grid.SetColumnSpan(EnTeteSectionListeSuccesJeuEnCours, 1);
 
             SystemControls.Grid.SetRow(SectionResumeJeuEnCours, 2);
             SystemControls.Grid.SetColumn(SectionResumeJeuEnCours, 0);

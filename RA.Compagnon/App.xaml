@@ -26,9 +26,9 @@
       <Style x:Key="StyleSectionArrondie" TargetType="{x:Type Border}">
         <Setter Property="Padding" Value="12" />
         <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsStandard}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="#1FFFFFFF" />
-        <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Background" Value="#363636" />
       </Style>
 
       <Style x:Key="StylePastilleArrondie" TargetType="{x:Type Border}">
@@ -43,9 +43,9 @@
         <Setter Property="Margin" Value="2" />
         <Setter Property="Padding" Value="12" />
         <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsPetit}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="#18FFFFFF" />
-        <Setter Property="Background" Value="#12000000" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Background" Value="#2C2C2C" />
       </Style>
 
       <Style x:Key="StyleLibelleJeu" TargetType="{x:Type TextBlock}">

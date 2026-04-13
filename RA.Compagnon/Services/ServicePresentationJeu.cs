@@ -36,20 +36,45 @@ public sealed class ServicePresentationJeu
         return $"{nbSuccesDebloques} / {nbSuccesTotal} succès";
     }
 
-    private static int CalculerTotalPointsJeu(GameInfoAndUserProgressV2 jeu)
+    public static string ConstruireResumePoints(IReadOnlyCollection<GameAchievementV2> succes)
     {
-        return jeu.Achievements.Values.Sum(succes => Math.Max(0, succes.Points));
+        if (succes.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        int totalPoints = succes.Sum(item => Math.Max(0, item.Points));
+
+        if (totalPoints <= 0)
+        {
+            return string.Empty;
+        }
+
+        int pointsHardcore = succes
+            .Where(item => !string.IsNullOrWhiteSpace(item.DateEarnedHardcore))
+            .Sum(item => Math.Max(0, item.Points));
+        int pointsSoftcore = succes
+            .Where(item =>
+                string.IsNullOrWhiteSpace(item.DateEarnedHardcore)
+                && !string.IsNullOrWhiteSpace(item.DateEarned)
+            )
+            .Sum(item => Math.Max(0, item.Points));
+
+        return string.Create(
+            CultureInfo.CurrentCulture,
+            $"{pointsSoftcore} / {totalPoints} en softcore - {pointsHardcore} / {totalPoints} en hardcore"
+        );
     }
 
     private static string ConstruireDetailsJeu(DonneesJeuAffiche donneesJeu)
     {
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
         List<string> segments = [];
-        int totalPoints = CalculerTotalPointsJeu(jeu);
+        string resumePoints = ConstruireResumePoints(jeu.Achievements.Values);
 
-        if (totalPoints > 0)
+        if (!string.IsNullOrWhiteSpace(resumePoints))
         {
-            segments.Add($"{totalPoints.ToString(CultureInfo.CurrentCulture)} points totaux");
+            segments.Add(resumePoints);
         }
 
         if (

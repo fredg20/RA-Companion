@@ -708,6 +708,9 @@ public partial class MainWindow
             CultureInfo.CurrentCulture,
             $"{nombreDebloques} / {nombreSucces}"
         );
+        _vueModele.JeuCourant.Details = ServicePresentationJeu.ConstruireResumePoints(
+            _succesJeuCourant
+        );
         _vueModele.JeuCourant.Pourcentage =
             $"{Math.Round(pourcentage, MidpointRounding.AwayFromZero).ToString(CultureInfo.CurrentCulture)} % complété";
         _vueModele.JeuCourant.ProgressionValeur = Math.Clamp(pourcentage, 0, 100);

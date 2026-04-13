@@ -329,11 +329,7 @@ public partial class MainWindow
         _configurationConnexion.DernierJeuAffiche = new EtatJeuAfficheLocal
         {
             IdentifiantJeu = jeu.Id,
-            EstJeuEnCours = string.Equals(
-                TitreZoneJeuEnCours.Text,
-                "Jeu en cours",
-                StringComparison.Ordinal
-            ),
+            EstJeuEnCours = EtatLocalJeuEstActif(),
             Titre = jeu.Title,
             Details = _vueModele.JeuCourant.Details,
             ResumeProgression = _vueModele.JeuCourant.Progression,
