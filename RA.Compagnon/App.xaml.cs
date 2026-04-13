@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -9,9 +9,6 @@ using Wpf.Ui.Controls;
 
 namespace RA.Compagnon;
 
-/// <summary>
-/// Initialise l'application et applique le theme WPF-UI au demarrage.
-/// </summary>
 public partial class App : Application
 {
     private const string NomMutexInstanceUnique = @"Local\RA.Compagnon.InstanceUnique";
@@ -31,9 +28,6 @@ public partial class App : Application
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
 
-    /// <summary>
-    /// Applique le theme global avant l'affichage de la premiere fenetre.
-    /// </summary>
     protected override void OnStartup(StartupEventArgs e)
     {
         JournaliserDemarrage("OnStartup debut");
@@ -80,19 +74,13 @@ public partial class App : Application
         JournaliserDemarrage("OnStartup fin");
     }
 
-    /// <summary>
-    /// Libere le verrou d'instance unique a la fermeture de l'application.
-    /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
         try
         {
             _mutexInstanceUnique?.ReleaseMutex();
         }
-        catch
-        {
-            // Le mutex a pu etre abandonne ou deja libere.
-        }
+        catch { }
         finally
         {
             _mutexInstanceUnique?.Dispose();
@@ -102,9 +90,6 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    /// <summary>
-    /// Tente de remettre au premier plan l'instance deja ouverte de Compagnon.
-    /// </summary>
     private static bool ActiverInstanceExistanteSiPossible()
     {
         try
@@ -131,9 +116,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Ferme les anciennes instances sans fenetre qui bloquent le mutex sans proposer d'interface utilisable.
-    /// </summary>
     private static void NettoyerInstancesFantomes()
     {
         try
@@ -158,16 +140,10 @@ public partial class App : Application
                     processus.Kill();
                     processus.WaitForExit(2000);
                 }
-                catch
-                {
-                    // Ignore une ancienne instance recalcitrante.
-                }
+                catch { }
             }
         }
-        catch
-        {
-            // Ne jamais empecher le demarrage pour un nettoyage opportuniste.
-        }
+        catch { }
     }
 
     internal static void JournaliserDemarrage(string message)
@@ -191,9 +167,6 @@ public partial class App : Application
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}"
             );
         }
-        catch
-        {
-            // Ne jamais bloquer le demarrage pour un simple journal.
-        }
+        catch { }
     }
 }

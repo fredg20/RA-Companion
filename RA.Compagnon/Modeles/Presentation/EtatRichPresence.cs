@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Représente le résultat de la sonde Rich Presence pour un compte utilisateur.
-/// </summary>
 public sealed class EtatRichPresence
 {
     public string SourceRichPresence { get; init; } = string.Empty;

@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Représente le contenu prêt à afficher de la modale Compte.
-/// </summary>
 public sealed class CompteAffiche
 {
     public string NomUtilisateur { get; init; } = string.Empty;

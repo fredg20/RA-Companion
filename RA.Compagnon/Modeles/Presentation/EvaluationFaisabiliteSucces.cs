@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Représente l'évaluation calculée de la faisabilité d'un succès.
-/// </summary>
 public sealed class EvaluationFaisabiliteSucces
 {
     public int Score { get; init; }

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -11,9 +11,6 @@ using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Encapsule les appels minimaux à l'API RetroAchievements pour le MVP.
-/// </summary>
 public sealed class ClientRetroAchievements
 {
     private sealed record JeuUtilisateurCache(
@@ -39,9 +36,6 @@ public sealed class ClientRetroAchievements
     private static readonly Dictionary<int, JeuxSystemeCachees> _cacheJeuxSysteme = [];
     private static readonly Dictionary<string, JeuUtilisateurCache> _cacheJeuxUtilisateur = [];
 
-    /// <summary>
-    /// Récupère le profil utilisateur minimal nécessaire à l'affichage du jeu en cours.
-    /// </summary>
     public static async Task<UserProfileV2> ObtenirProfilUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -99,9 +93,6 @@ public sealed class ClientRetroAchievements
         return profil;
     }
 
-    /// <summary>
-    /// Récupère le résumé utilisateur utile à l'en-tête de la modale compte.
-    /// </summary>
     public static async Task<UserSummaryV2> ObtenirResumeUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -157,9 +148,6 @@ public sealed class ClientRetroAchievements
         return resume;
     }
 
-    /// <summary>
-    /// Récupère les points hardcore et softcore d'un utilisateur.
-    /// </summary>
     public static async Task<UserPointsV2> ObtenirPointsUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -187,9 +175,6 @@ public sealed class ClientRetroAchievements
         return points ?? new UserPointsV2();
     }
 
-    /// <summary>
-    /// Récupère les récompenses visibles d'un utilisateur.
-    /// </summary>
     public static async Task<UserAwardsResponseV2> ObtenirRecompensesUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -218,9 +203,6 @@ public sealed class ClientRetroAchievements
         return recompenses ?? new UserAwardsResponseV2();
     }
 
-    /// <summary>
-    /// Récupère la progression d'un utilisateur sur une liste précise de jeux.
-    /// </summary>
     public static async Task<UserProgressResponseV2> ObtenirProgressionUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -261,9 +243,6 @@ public sealed class ClientRetroAchievements
         return progression ?? [];
     }
 
-    /// <summary>
-    /// Récupère les claims d'un utilisateur.
-    /// </summary>
     public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -291,9 +270,6 @@ public sealed class ClientRetroAchievements
         return claims ?? [];
     }
 
-    /// <summary>
-    /// Récupère les demandes de sets d'un utilisateur.
-    /// </summary>
     public static async Task<UserSetRequestsResponseV2> ObtenirDemandesSetsUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -322,9 +298,6 @@ public sealed class ClientRetroAchievements
         return demandes ?? new UserSetRequestsResponseV2();
     }
 
-    /// <summary>
-    /// Récupère les données du jeu ciblé ainsi que la progression de l'utilisateur.
-    /// </summary>
     public static async Task<GameInfoAndUserProgressV2> ObtenirJeuEtProgressionUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -458,9 +431,6 @@ public sealed class ClientRetroAchievements
         return jeu;
     }
 
-    /// <summary>
-    /// Récupère le résumé simple d'un jeu.
-    /// </summary>
     public static async Task<GameSummaryV2> ObtenirResumeJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
@@ -489,9 +459,6 @@ public sealed class ClientRetroAchievements
         return jeu ?? new GameSummaryV2();
     }
 
-    /// <summary>
-    /// Récupère les détails étendus d'un jeu.
-    /// </summary>
     public static async Task<GameExtendedDetailsV2> ObtenirDetailsEtendusJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
@@ -520,9 +487,6 @@ public sealed class ClientRetroAchievements
         return jeu ?? new GameExtendedDetailsV2();
     }
 
-    /// <summary>
-    /// Récupère les statistiques de progression d'un jeu.
-    /// </summary>
     public static async Task<GameProgressionV2> ObtenirProgressionJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
@@ -553,9 +517,6 @@ public sealed class ClientRetroAchievements
         return progression ?? new GameProgressionV2();
     }
 
-    /// <summary>
-    /// Récupère la distribution des déblocages d'un jeu.
-    /// </summary>
     public static async Task<GameUnlockDistributionV2> ObtenirDistributionSuccesJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
@@ -587,9 +548,6 @@ public sealed class ClientRetroAchievements
         return distribution ?? [];
     }
 
-    /// <summary>
-    /// Récupère le rang et le score d'un utilisateur sur un jeu.
-    /// </summary>
     public static async Task<IReadOnlyList<GameRankAndScoreEntryV2>> ObtenirRangEtScoreJeuAsync(
         string pseudo,
         string cleApiWeb,
@@ -617,9 +575,6 @@ public sealed class ClientRetroAchievements
         return resultats ?? [];
     }
 
-    /// <summary>
-    /// Récupère les récompenses de jeu récemment attribuées sur le site.
-    /// </summary>
     public static async Task<RecentGameAwardsResponseV2> ObtenirRecompensesJeuxRecentesAsync(
         string cleApiWeb,
         DateOnly? dateDepart = null,
@@ -661,9 +616,6 @@ public sealed class ClientRetroAchievements
         return recompenses ?? new RecentGameAwardsResponseV2();
     }
 
-    /// <summary>
-    /// Récupère l'ensemble des claims actives du site.
-    /// </summary>
     public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsActivesAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -689,9 +641,6 @@ public sealed class ClientRetroAchievements
         return claims ?? [];
     }
 
-    /// <summary>
-    /// Récupère l'ensemble des claims inactives du site pour un type donné.
-    /// </summary>
     public static async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsInactivesAsync(
         string cleApiWeb,
         int natureClaim = 1,
@@ -724,9 +673,6 @@ public sealed class ClientRetroAchievements
         return claims ?? [];
     }
 
-    /// <summary>
-    /// Récupère le top 10 des utilisateurs classés par points hardcore.
-    /// </summary>
     public static async Task<IReadOnlyList<TopRankedUserV2>> ObtenirTopDixUtilisateursAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -750,9 +696,6 @@ public sealed class ClientRetroAchievements
         return utilisateurs ?? [];
     }
 
-    /// <summary>
-    /// Récupère les empreintes officielles connues par RetroAchievements pour un jeu donné.
-    /// </summary>
     public static async Task<IReadOnlyList<GameHashV2>> ObtenirHashesJeuAsync(
         string cleApiWeb,
         int identifiantJeu,
@@ -794,9 +737,6 @@ public sealed class ClientRetroAchievements
         return hashes?.Results ?? [];
     }
 
-    /// <summary>
-    /// Récupère la liste complète des jeux d'un système avec leurs hashes officiels.
-    /// </summary>
     public static async Task<IReadOnlyList<GameListEntryV2>> ObtenirJeuxSystemeAvecHashesAsync(
         string cleApiWeb,
         int identifiantConsole,
@@ -848,9 +788,6 @@ public sealed class ClientRetroAchievements
         return resultat;
     }
 
-    /// <summary>
-    /// Récupère la liste des consoles et leur icône officielle, avec cache mémoire local.
-    /// </summary>
     public static async Task<IReadOnlyList<ConsoleV2>> ObtenirConsolesAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -892,9 +829,6 @@ public sealed class ClientRetroAchievements
         return _cacheConsoles;
     }
 
-    /// <summary>
-    /// Récupère la liste complète des systèmes RetroAchievements.
-    /// </summary>
     public static async Task<IReadOnlyList<SystemEntryV2>> ObtenirSystemesAsync(
         string cleApiWeb,
         bool seulementActifs = false,
@@ -932,9 +866,6 @@ public sealed class ClientRetroAchievements
         return systemes ?? [];
     }
 
-    /// <summary>
-    /// Récupère la liste complète des jeux d'un système, avec ou sans hashes.
-    /// </summary>
     public static async Task<IReadOnlyList<SystemGameEntryV2>> ObtenirJeuxSystemeAsync(
         string cleApiWeb,
         int identifiantConsole,
@@ -982,10 +913,6 @@ public sealed class ClientRetroAchievements
         return jeux ?? [];
     }
 
-    /// <summary>
-    /// Récupère la liste des jeux récemment joués pour retrouver un dernier jeu
-    /// lorsqu'aucun jeu actif n'est remonté.
-    /// </summary>
     public static async Task<IReadOnlyList<RecentlyPlayedGameV2>> ObtenirJeuxRecemmentJouesAsync(
         string pseudo,
         string cleApiWeb,
@@ -1022,9 +949,6 @@ public sealed class ClientRetroAchievements
         return jeux ?? [];
     }
 
-    /// <summary>
-    /// Récupère les succès débloqués par un utilisateur sur une plage de temps.
-    /// </summary>
     public static async Task<IReadOnlyList<AchievementUnlockV2>> ObtenirSuccesDebloquesEntreAsync(
         string pseudo,
         string cleApiWeb,
@@ -1066,10 +990,6 @@ public sealed class ClientRetroAchievements
         return succes ?? [];
     }
 
-    /// <summary>
-    /// Détecte quelques formulations courantes indiquant que l'utilisateur n'existe pas
-    /// ou n'est pas accessible.
-    /// </summary>
     private static bool ContientIndicationUtilisateurInaccessible(string contenuErreur)
     {
         if (string.IsNullOrWhiteSpace(contenuErreur))
@@ -1119,9 +1039,6 @@ public sealed class ClientRetroAchievements
         }
     }
 
-    /// <summary>
-    /// Représente une liste de jeux système gardée en mémoire pendant une durée étendue.
-    /// </summary>
     private sealed class JeuxSystemeCachees(IReadOnlyList<GameListEntryV2> jeux)
     {
         public IReadOnlyList<GameListEntryV2> Jeux { get; } = jeux;

@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Etat;
 
-/// <summary>
-/// Décrit l'état courant du flux de jeu côté compagnon.
-/// </summary>
 public sealed record EtatOrchestrateurJeu(
     PhaseOrchestrateurJeu Phase,
     int IdentifiantJeu,

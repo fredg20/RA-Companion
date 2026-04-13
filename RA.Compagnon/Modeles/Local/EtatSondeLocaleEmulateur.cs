@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Local;
 
-/// <summary>
-/// Représente l'état courant détecté par la sonde locale d'émulateurs.
-/// </summary>
 public sealed class EtatSondeLocaleEmulateur
 {
     public bool EmulateurDetecte { get; init; }

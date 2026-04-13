@@ -6,18 +6,12 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Applique les éléments de chrome de la fenêtre principale.
-    /// </summary>
     private void InitialiserHabillageFenetre()
     {
         AppliquerIconeApplication();
         AppliquerVersionApplication();
     }
 
-    /// <summary>
-    /// Charge l'icône applicative depuis le fichier ICO embarqué et l'applique à la fenêtre.
-    /// </summary>
     private void AppliquerIconeApplication()
     {
         Uri uriIcone = new("pack://application:,,,/rac.ico", UriKind.Absolute);
@@ -37,9 +31,6 @@ public partial class MainWindow
         ImageIconeTitre.Source = imageIcone;
     }
 
-    /// <summary>
-    /// Affiche la version courante de l'application dans l'interface.
-    /// </summary>
     private void AppliquerVersionApplication()
     {
         if (TexteVersionApplication is null)

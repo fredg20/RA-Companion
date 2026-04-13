@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -51,9 +51,6 @@ public partial class MainWindow
         scrollViewer.ScrollToVerticalOffset(offsetBorne);
     }
 
-    /// <summary>
-    /// Planifie le recalcul de la hauteur visible de la grille des succès.
-    /// </summary>
     private void PlanifierMiseAJourAnimationGrilleTousSucces()
     {
         if (_etatListeSuccesUi.MiseAJourAnimationPlanifiee)
@@ -72,9 +69,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Réactive l'autodéfilement quand la liste déborde réellement de la zone visible.
-    /// </summary>
     private void MettreAJourAnimationGrilleTousSucces()
     {
         if (
@@ -186,9 +180,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Coupe tout autodéfilement quand la liste tient entièrement dans la zone visible.
-    /// </summary>
     private void DesactiverAutodefilementListeSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -205,9 +196,6 @@ public partial class MainWindow
         DefinirVisibiliteBarreDefilementListeSucces(visible: false);
     }
 
-    /// <summary>
-    /// Arrête l'animation verticale de la grille et réinitialise sa position.
-    /// </summary>
     private void ArreterAnimationGrilleSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -222,17 +210,11 @@ public partial class MainWindow
         _etatListeSuccesUi.HorlogeAnimation?.Controller?.Stop();
         _etatListeSuccesUi.HorlogeAnimation = null;
 
-        // Conserve la position courante quand on coupe l'autodéfilement,
-        // sinon la propriété animée retombe à sa valeur par défaut et la liste
-        // saute visuellement tout en haut au survol.
         SetOffsetVerticalAnime(ConteneurGrilleTousSuccesJeuEnCours, offsetCourant);
         ConteneurGrilleTousSuccesJeuEnCours.ApplyAnimationClock(OffsetVerticalAnimeProperty, null);
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetCourant);
     }
 
-    /// <summary>
-    /// Replace la grille des succès à sa position d'origine après un changement de jeu.
-    /// </summary>
     private void ReinitialiserPositionGrilleTousSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -245,9 +227,6 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
     }
 
-    /// <summary>
-    /// Replace la liste en haut avant un recalcul complet après redimensionnement de la fenêtre.
-    /// </summary>
     private void ReinitialiserListeSuccesPourRedimensionnement()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -264,9 +243,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Démarre l'animation verticale de la grille depuis un offset donné.
-    /// </summary>
     private void DemarrerAnimationGrilleSuccesDepuisPosition(
         double offsetInitial,
         double amplitude,
@@ -350,9 +326,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Démarre un cycle de rebond complet entre le haut et le bas de la grille.
-    /// </summary>
     private void DemarrerAnimationGrilleSuccesCyclique(double amplitude, bool departEnHaut)
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -433,9 +406,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Met en pause l'animation des succès lors du survol d'un badge.
-    /// </summary>
     private void BadgeGrilleSucces_EntreeSouris(object sender, MouseEventArgs e)
     {
         _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.PauseSurvol;
@@ -444,9 +414,6 @@ public partial class MainWindow
         ArreterAnimationGrilleSucces();
     }
 
-    /// <summary>
-    /// Reprend l'animation des succès lorsque le survol d'un badge se termine.
-    /// </summary>
     private void BadgeGrilleSucces_SortieSouris(object sender, MouseEventArgs e)
     {
         if (_etatListeSuccesUi.EtatInteraction == EtatInteractionListeSucces.PauseSurvol)
@@ -458,9 +425,6 @@ public partial class MainWindow
         _minuteurRepriseAnimationGrilleSucces.Start();
     }
 
-    /// <summary>
-    /// Relance l'animation des succès après un défilement manuel.
-    /// </summary>
     private void MinuteurRepriseAnimationGrilleSucces_Tick(object? sender, EventArgs e)
     {
         _minuteurRepriseAnimationGrilleSucces.Stop();
@@ -468,9 +432,6 @@ public partial class MainWindow
         ReprendreAnimationGrilleSuccesSiPossible();
     }
 
-    /// <summary>
-    /// Reprend ou recrée l'animation de la grille des succès si les conditions le permettent.
-    /// </summary>
     private void ReprendreAnimationGrilleSuccesSiPossible()
     {
         if (
@@ -497,9 +458,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Met à jour le titre du jeu puis relance son éventuel défilement.
-    /// </summary>
     private void DefinirTitreJeuEnCours(string titre)
     {
         bool titreInchange = string.Equals(
@@ -526,9 +484,6 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationTitreJeuEnCours();
     }
 
-    /// <summary>
-    /// Anime horizontalement le titre quand il dépasse de son conteneur.
-    /// </summary>
     private void MettreAJourAnimationTitreJeuEnCours()
     {
         if (
@@ -607,9 +562,6 @@ public partial class MainWindow
         translation.BeginAnimation(TranslateTransform.XProperty, animation);
     }
 
-    /// <summary>
-    /// Planifie le recalcul de l'animation du titre à la fin du cycle de mise en page courant.
-    /// </summary>
     private void PlanifierMiseAJourAnimationTitreJeuEnCours()
     {
         if (_miseAJourAnimationTitreJeuPlanifiee)
@@ -628,9 +580,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Mesure la largeur réelle du titre indépendamment du layout WPF courant.
-    /// </summary>
     private double MesurerLargeurTitreJeuEnCours(double taillePolice)
     {
         string texte = TexteTitreJeuEnCours.Text ?? string.Empty;

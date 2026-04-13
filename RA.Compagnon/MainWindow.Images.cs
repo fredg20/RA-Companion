@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Windows.Media;
@@ -8,9 +8,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Télécharge une image distante puis la garde en cache mémoire pour les prochains affichages.
-    /// </summary>
     private async Task<ImageSource?> ChargerImageDistanteAsync(string urlImage)
     {
         if (string.IsNullOrWhiteSpace(urlImage))
@@ -64,9 +61,6 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Télécharge réellement une image distante.
-    /// </summary>
     private static async Task<ImageSource?> TelechargerEtMettreEnCacheImageDistanteAsync(
         string urlImage,
         string cheminCache
@@ -85,9 +79,6 @@ public partial class MainWindow
         return await Task.Run(() => ChargerImageDepuisOctets(contenu));
     }
 
-    /// <summary>
-    /// Charge une image depuis un fichier de cache local.
-    /// </summary>
     private static async Task<ImageSource?> ChargerImageDepuisFichierAsync(string cheminCache)
     {
         try
@@ -101,9 +92,6 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Construit une image WPF figée à partir d'octets.
-    /// </summary>
     private static BitmapImage? ChargerImageDepuisOctets(byte[] contenu)
     {
         if (contenu.Length == 0)
@@ -121,9 +109,6 @@ public partial class MainWindow
         return image;
     }
 
-    /// <summary>
-    /// Détermine le chemin de cache disque d'une image distante.
-    /// </summary>
     private static string ObtenirCheminCacheImageDistante(string urlImage)
     {
         byte[] empreinte = SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(urlImage));

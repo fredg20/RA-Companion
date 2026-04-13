@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Transforme les données d'un jeu en contenu prêt à afficher.
-/// </summary>
 public sealed class ServicePresentationJeu
 {
     public static JeuAffiche Construire(DonneesJeuAffiche donneesJeu)

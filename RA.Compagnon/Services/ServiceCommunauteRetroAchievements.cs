@@ -3,9 +3,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Compose les données communautaires RetroAchievements d'un jeu.
-/// </summary>
 public sealed class ServiceCommunauteRetroAchievements
 {
     private static readonly TimeSpan DureeCacheClaims = TimeSpan.FromSeconds(30);

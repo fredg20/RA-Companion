@@ -3,9 +3,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Compose les données utilisateur RetroAchievements utiles à l'interface.
-/// </summary>
 public sealed class ServiceUtilisateurRetroAchievements
 {
     public static async Task<UserProfileV2> ObtenirProfilAsync(

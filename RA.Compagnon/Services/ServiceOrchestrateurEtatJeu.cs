@@ -2,10 +2,6 @@ using RA.Compagnon.Modeles.Etat;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Centralise les transitions principales du flux de changement de jeu afin
-/// d'eviter les regressions visuelles entre detection locale, chargement et affichage.
-/// </summary>
 public sealed class ServiceOrchestrateurEtatJeu
 {
     private static readonly TimeSpan DelaiGraceDetectionFaible = TimeSpan.FromSeconds(3);

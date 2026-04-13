@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
@@ -12,9 +12,6 @@ using SystemControls = System.Windows.Controls;
 
 namespace RA.Compagnon;
 
-/// <summary>
-/// Regroupe la logique de la grille des rétrosuccès affichée dans la carte du jeu courant.
-/// </summary>
 public partial class MainWindow
 {
     private void AppliquerModeAffichageSuccesDepuisConfiguration()
@@ -63,9 +60,6 @@ public partial class MainWindow
         _modeAffichageSuccesModifie = true;
     }
 
-    /// <summary>
-    /// Ouvre le menu de choix de l'ordre d'affichage de la grille.
-    /// </summary>
     private void BoutonOrdreSuccesGrille_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { ContextMenu: { } menu })
@@ -77,9 +71,6 @@ public partial class MainWindow
         menu.IsOpen = !menu.IsOpen;
     }
 
-    /// <summary>
-    /// Met à jour l'ordre d'affichage des badges et recharge la grille si nécessaire.
-    /// </summary>
     private async Task ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille nouvelOrdre)
     {
         if (_etatListeSuccesUi.OrdreCourant == nouvelOrdre)
@@ -347,9 +338,6 @@ public partial class MainWindow
         ];
     }
 
-    /// <summary>
-    /// Remplit la grille de tous les succès avec leurs badges.
-    /// </summary>
     private async Task MettreAJourGrilleTousSuccesAsync(
         int identifiantJeu,
         List<GameAchievementV2> succes,
@@ -484,9 +472,6 @@ public partial class MainWindow
         TerminerDiagnosticChangementJeu("grille_fin", $"badges={etatsBadges.Count}");
     }
 
-    /// <summary>
-    /// Construit un badge de la grille des rétrosuccès à partir de son titre et de son visuel.
-    /// </summary>
     private SystemControls.Border ConstruireBadgeGrilleSucces(
         int identifiantJeu,
         SuccesGrilleAffiche succesAffiche
@@ -570,15 +555,9 @@ public partial class MainWindow
             imageSucces.Opacity = succesAffiche.EstDebloque ? 1 : 0.58;
             texteSecours.Visibility = Visibility.Collapsed;
         }
-        catch
-        {
-            // Le badge texte de secours reste affiché.
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Applique un style visuel discret au badge épinglé ou sélectionné temporairement.
-    /// </summary>
     private void AppliquerStyleBadgeEpingle(SystemControls.Border badge)
     {
         if (badge.Tag is not BadgeSuccesGrilleContexte contexte)
@@ -648,9 +627,6 @@ public partial class MainWindow
         };
     }
 
-    /// <summary>
-    /// Réapplique l'indice visuel d'épingle sur tous les badges visibles.
-    /// </summary>
     private void RafraichirStyleBadgesGrilleSucces()
     {
         foreach (object enfant in GrilleTousSuccesJeuEnCours.Children)
@@ -662,27 +638,18 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Épingle durablement un succès de la grille dans la carte principale.
-    /// </summary>
     private async void BadgeGrilleSucces_ClicGauche(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         await AfficherSuccesGrilleSelectionneAsync(sender, permanent: true);
     }
 
-    /// <summary>
-    /// Affiche temporairement un succès de la grille dans la carte principale.
-    /// </summary>
     private async void BadgeGrilleSucces_ClicDroit(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         await AfficherSuccesGrilleSelectionneAsync(sender, permanent: false);
     }
 
-    /// <summary>
-    /// Affiche un succès de la grille dans la carte principale en mode temporaire ou épinglé.
-    /// </summary>
     private async Task AfficherSuccesGrilleSelectionneAsync(object sender, bool permanent)
     {
         if (
@@ -738,9 +705,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Termine l'affichage temporaire d'un succès sélectionné dans la grille.
-    /// </summary>
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)
     {
         _minuteurAffichageTemporaireSuccesGrille.Stop();
@@ -792,12 +756,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Indique si un succès du jeu a déjà été obtenu par l'utilisateur.
-    /// </summary>
-    /// <summary>
-    /// Recalcule le gap de la grille des succès selon la largeur disponible.
-    /// </summary>
     private void ConteneurGrilleTousSuccesJeuEnCours_TailleChangee(
         object sender,
         SizeChangedEventArgs e
@@ -819,9 +777,6 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
-    /// <summary>
-    /// Recalcule la largeur et les gaps de la grille une fois la largeur finale stabilisée.
-    /// </summary>
     private void PlanifierMiseAJourDispositionGrilleTousSucces()
     {
         if (_etatListeSuccesUi.MiseAJourDispositionPlanifiee)
@@ -842,9 +797,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Retourne la largeur réellement visible de la liste, hors zone non affichable.
-    /// </summary>
     private double ObtenirLargeurVisibleListeSucces()
     {
         if (ZoneVisibleListeSuccesJeuEnCours is not null)
@@ -884,9 +836,6 @@ public partial class MainWindow
         return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualWidth);
     }
 
-    /// <summary>
-    /// Retourne la hauteur réellement visible de la liste.
-    /// </summary>
     private double ObtenirHauteurVisibleListeSucces()
     {
         if (ZoneVisibleListeSuccesJeuEnCours is not null)
@@ -909,9 +858,6 @@ public partial class MainWindow
         return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualHeight);
     }
 
-    /// <summary>
-    /// Applique un masque d'écrêtage arrondi à la zone visible de la liste des succès.
-    /// </summary>
     private void AppliquerEcretageArrondiZoneSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null || ZoneVisibleListeSuccesJeuEnCours is null)
@@ -943,9 +889,6 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.Clip = null;
     }
 
-    /// <summary>
-    /// Répartit les badges sur la largeur disponible avec un espacement adaptatif.
-    /// </summary>
     private void MettreAJourDispositionGrilleTousSucces()
     {
         if (

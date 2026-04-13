@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Transforme l'activité récente en contenu prêt à afficher.
-/// </summary>
 public sealed class ServicePresentationActivite
 {
     public static ActiviteRecenteAffichee ConstruireEtatNeutre()

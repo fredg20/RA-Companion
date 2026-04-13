@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace RA.Compagnon.Modeles.Api.V2.Feed;
 
-/// <summary>
-/// Représente une récompense de jeu récemment attribuée sur le site.
-/// </summary>
 public sealed class RecentGameAwardV2
 {
     [JsonPropertyName("User")]

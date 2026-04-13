@@ -6,9 +6,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Exporte un journal lisible pour calibrer la faisabilité des succès sur des cas réels.
-/// </summary>
 public sealed class ServiceDiagnosticFaisabiliteSucces
 {
     private static readonly string CheminJournalFaisabilite = Path.Combine(

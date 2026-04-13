@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Représente le contenu textuel prêt à afficher de la carte Jeu.
-/// </summary>
 public sealed class JeuAffiche
 {
     public string Titre { get; init; } = string.Empty;

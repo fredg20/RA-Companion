@@ -3,9 +3,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Calcule une estimation de faisabilite pour un succes.
-/// </summary>
 public sealed class ServiceEvaluationFaisabiliteSucces
 {
     public static EvaluationFaisabiliteSucces Evaluer(

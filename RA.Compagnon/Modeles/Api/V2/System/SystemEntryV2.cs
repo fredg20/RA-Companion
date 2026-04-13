@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace RA.Compagnon.Modeles.Api.V2.System;
 
-/// <summary>
-/// Représente un système RetroAchievements.
-/// </summary>
 public sealed class SystemEntryV2
 {
     [JsonPropertyName("ID")]

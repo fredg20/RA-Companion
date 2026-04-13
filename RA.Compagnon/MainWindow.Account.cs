@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -1218,10 +1218,7 @@ public partial class MainWindow
                 dialogue.InitialDirectory = cheminInitial;
             }
         }
-        catch
-        {
-            // Le sélecteur reste optionnel et ne doit pas casser l'aide.
-        }
+        catch { }
 
         bool? resultat = dialogue.ShowDialog(this);
 
@@ -1603,10 +1600,7 @@ public partial class MainWindow
                 }
             );
         }
-        catch
-        {
-            // L'ouverture du navigateur reste facultative.
-        }
+        catch { }
     }
 
     private static void OuvrirDepotGitHub()
@@ -1621,10 +1615,7 @@ public partial class MainWindow
                 }
             );
         }
-        catch
-        {
-            // L'ouverture du navigateur reste facultative.
-        }
+        catch { }
     }
 
     private void BoutonDepotGitHub_Click(object sender, RoutedEventArgs e)
@@ -2063,10 +2054,7 @@ public partial class MainWindow
             await ChargerJeuEnCoursAsync(false, true);
             RedemarrerMinuteurActualisationApi();
         }
-        catch
-        {
-            // Une synchronisation opportuniste ne doit jamais casser le suivi en cours.
-        }
+        catch { }
     }
 
     private int DeterminerIdentifiantJeuNoticeCompte()

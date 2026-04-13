@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
@@ -9,9 +9,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Réapplique le dernier jeu sauvegardé pour éviter une fenêtre vide au démarrage.
-    /// </summary>
     private Task AppliquerDernierJeuSauvegardeAsync()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;

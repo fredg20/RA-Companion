@@ -5,9 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Traduit des libelles courts vers le francais en s'appuyant sur Google Translate.
-/// </summary>
 public sealed partial class ServiceTraductionTexte
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
@@ -16,9 +13,6 @@ public sealed partial class ServiceTraductionTexte
         StringComparer.OrdinalIgnoreCase
     );
 
-    /// <summary>
-    /// Traduit un texte court vers le francais avec repli sur le texte d'origine.
-    /// </summary>
     public async Task<string> TraduireVersFrancaisAsync(
         string texte,
         CancellationToken jetonAnnulation = default

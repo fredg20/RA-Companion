@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -19,9 +19,6 @@ public partial class MainWindow
         "journal-visuels-jeu.log"
     );
 
-    /// <summary>
-    /// Met ï¿½ jour le visuel du jeu courant ï¿½ partir du box art retournï¿½ par l'API.
-    /// </summary>
     private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
         JournaliserDiagnosticChangementJeu("image_debut", cheminImage ?? string.Empty);
@@ -59,9 +56,6 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Rï¿½initialise le visuel du jeu courant sur un ï¿½tat neutre.
-    /// </summary>
     private void ReinitialiserImageJeuEnCours()
     {
         _largeurMaxVisuelJeuEnCours = 0;
@@ -94,9 +88,6 @@ public partial class MainWindow
         _vueModele.JeuCourant.TexteVisuelPrincipalVisible = false;
     }
 
-    /// <summary>
-    /// Applique la jaquette avec une transition douce par flou entre deux visuels.
-    /// </summary>
     private void AppliquerImageJeuEnCoursAvecFondu(ImageSource imageJeu, string urlImage)
     {
         if (ImageJeuEnCours.Source is null || ImageJeuEnCours.Visibility != Visibility.Visible)
@@ -204,9 +195,6 @@ public partial class MainWindow
         ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
     }
 
-    /// <summary>
-    /// Rï¿½initialise le carrousel des visuels du jeu courant.
-    /// </summary>
     private void ReinitialiserCarrouselVisuelsJeuEnCours()
     {
         _minuteurRotationVisuelsJeuEnCours.Stop();
@@ -218,9 +206,6 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionVisuelSuivantActivee = false;
     }
 
-    /// <summary>
-    /// Applique les visuels disponibles du jeu courant au carrousel situï¿½ sous l'image.
-    /// </summary>
     private void DefinirVisuelsJeuEnCours(IReadOnlyList<VisuelJeuEnCours> visuels)
     {
         string? cheminActuel =
@@ -249,9 +234,6 @@ public partial class MainWindow
         _ = MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
-    /// <summary>
-    /// Met ï¿½ jour le grand visuel et l'ï¿½tat du carrousel sous l'image.
-    /// </summary>
     private async Task MettreAJourAffichageVisuelJeuEnCoursAsync()
     {
         if (_visuelsJeuEnCours.Count == 0)
@@ -279,9 +261,6 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionVisuelSuivantActivee = navigationDisponible;
     }
 
-    /// <summary>
-    /// Active ou coupe la rotation automatique des visuels selon le nombre d'images disponibles.
-    /// </summary>
     private void MettreAJourRotationVisuelsJeuEnCours()
     {
         if (_visuelsJeuEnCours.Count > 1)
@@ -294,9 +273,6 @@ public partial class MainWindow
         _minuteurRotationVisuelsJeuEnCours.Stop();
     }
 
-    /// <summary>
-    /// Fait dï¿½filer automatiquement les autres visuels du jeu avec un fondu doux.
-    /// </summary>
     private async void MinuteurRotationVisuelsJeuEnCours_Tick(object? sender, EventArgs e)
     {
         if (_visuelsJeuEnCours.Count <= 1)
@@ -309,9 +285,6 @@ public partial class MainWindow
         await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
-    /// <summary>
-    /// Affiche immï¿½diatement les visuels essentiels du jeu courant.
-    /// </summary>
     private void AppliquerVisuelsJeuEnCoursInitiaux(GameInfoAndUserProgressV2 jeu)
     {
         List<VisuelJeuEnCours> visuels = [];
@@ -319,17 +292,11 @@ public partial class MainWindow
         DefinirVisuelsJeuEnCours(visuels);
     }
 
-    /// <summary>
-    /// Enrichit ensuite les visuels du jeu avec des ï¿½lï¿½ments secondaires comme le badge.
-    /// </summary>
     private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         _ = EnrichirVisuelsJeuEnCoursAsync(jeu);
     }
 
-    /// <summary>
-    /// Charge le badge du jeu sans bloquer l'affichage initial.
-    /// </summary>
     private async Task EnrichirVisuelsJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
@@ -349,15 +316,9 @@ public partial class MainWindow
             JournaliserVisuelsJeu(jeu, resume, cheminBadge, visuels);
             DefinirVisuelsJeuEnCours(visuels);
         }
-        catch
-        {
-            // Le badge reste un enrichissement facultatif.
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Ajoute un visuel de jeu s'il est exploitable et non dï¿½jï¿½ prï¿½sent.
-    /// </summary>
     private static void AjouterVisuelJeu(
         List<VisuelJeuEnCours> visuels,
         string libelle,
@@ -409,9 +370,6 @@ public partial class MainWindow
         AjouterVisuelJeu(visuels, "En jeu", jeuRecent.CheminImageEnJeu);
     }
 
-    /// <summary>
-    /// Rï¿½cupï¿½re le badge du jeu via le catalogue systï¿½me si disponible.
-    /// </summary>
     private static void AjouterVisuelJeu(List<VisuelJeuEnCours> visuels, VisuelJeuEnCours? visuel)
     {
         if (visuel is null)

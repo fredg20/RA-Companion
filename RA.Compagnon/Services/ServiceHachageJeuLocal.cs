@@ -1,21 +1,15 @@
-﻿using System.IO;
+using System.IO;
 using System.Security.Cryptography;
 using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Calcule et mémorise localement l'empreinte d'un fichier de jeu détecté.
-/// </summary>
 public sealed class ServiceHachageJeuLocal
 {
     private readonly Dictionary<string, EmpreinteJeuLocalCachee> _cacheEmpreintes = new(
         StringComparer.OrdinalIgnoreCase
     );
 
-    /// <summary>
-    /// Calcule les empreintes utiles du fichier si le chemin existe réellement sur disque.
-    /// </summary>
     public async Task<EmpreinteJeuLocal?> CalculerEmpreinteAsync(
         string cheminFichier,
         CancellationToken jetonAnnulation = default
@@ -74,9 +68,6 @@ public sealed class ServiceHachageJeuLocal
         return resultat;
     }
 
-    /// <summary>
-    /// Mémorise une empreinte calculée pour éviter un recalcul inutile.
-    /// </summary>
     private sealed class EmpreinteJeuLocalCachee(EmpreinteJeuLocal empreinte)
     {
         public EmpreinteJeuLocal Empreinte { get; } = empreinte;

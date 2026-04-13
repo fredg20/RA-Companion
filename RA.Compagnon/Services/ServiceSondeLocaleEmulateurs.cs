@@ -11,9 +11,6 @@ using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Detecte localement les principaux emulateurs connus a partir des processus et titres de fenetre.
-/// </summary>
 public sealed partial class ServiceSondeLocaleEmulateurs
 {
     private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
@@ -196,10 +193,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Une erreur ponctuelle de lecture des processus ne doit pas casser l'application.
-        }
+        catch { }
 
         EtatSondeLocaleEmulateur etatAucun = new()
         {
@@ -745,8 +739,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             return true;
         }
 
-        // RetroArch, DuckStation et PCSX2 ont des variantes de fenetres/outils qui rendent
-        // le fallback par titre trop bruyant (explorer, navigateurs, installateur, dialogues internes, etc.).
         if (!definition.AutoriserDetectionParTitreFenetre)
         {
             return false;
@@ -1089,7 +1081,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         string titreNettoye = titre.Trim();
 
-        // PPSSPP affiche souvent le serial PSP devant le vrai titre.
         titreNettoye = PrefixeSerialPpssppRegex().Replace(titreNettoye, string.Empty).Trim();
 
         titreNettoye = titreNettoye.Replace("\u00AE", string.Empty, StringComparison.Ordinal);
@@ -1189,10 +1180,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le JSON local reste un fallback opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1224,10 +1212,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 return NormaliserCheminJeuProbable(path.GetString()?.Trim() ?? string.Empty);
             }
         }
-        catch
-        {
-            // Le JSON local reste un fallback opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1267,10 +1252,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le fichier local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1394,10 +1376,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 ? meilleurChemin
                 : cheminsCandidats[0];
         }
-        catch
-        {
-            // Le fichier local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1444,10 +1423,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le fichier local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1485,10 +1461,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le fichier local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1528,10 +1501,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -1785,8 +1755,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             || titre.StartsWith("RALibRetro", StringComparison.OrdinalIgnoreCase)
         )
         {
-            // Les fenetres RALibretro exposent surtout version/core/system/profil.
-            // Le nom du jeu fiable vient du RACache ou du JSON recent.
             return string.Empty;
         }
 
@@ -1864,7 +1832,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             {
                 if (morceaux.Length == 3)
                 {
-                    // Format "RAP64 / RAProject64 - 3.6 - Profil" : aucun jeu exploitable n'est encore visible.
                     return string.Empty;
                 }
 
@@ -2629,10 +2596,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // La relance Dolphin reste opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -2978,10 +2942,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le journal Flycast reste une aide locale facultative.
-        }
+        catch { }
 
         return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
     }
@@ -3099,10 +3060,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -3142,10 +3100,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -3296,10 +3251,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
             JournaliserEvenement("retroarch_log_aucune_correspondance", $"chemin={cheminJournal}");
         }
-        catch
-        {
-            // Le log RetroArch reste une aide locale facultative.
-        }
+        catch { }
 
         return LireRenseignementJeuRetroArchDepuisCache();
     }
@@ -3367,10 +3319,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log DuckStation reste une aide locale facultative.
-        }
+        catch { }
 
         return null;
     }
@@ -3437,10 +3386,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log PCSX2 reste une aide locale facultative.
-        }
+        catch { }
 
         return null;
     }
@@ -3659,10 +3605,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 ? null
                 : MemoriserRenseignementPPSSPP(renseignementSecours);
         }
-        catch
-        {
-            // Le log PPSSPP reste une aide locale facultative.
-        }
+        catch { }
 
         return null;
     }
@@ -3721,10 +3664,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log local reste un secours opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -3962,8 +3902,6 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 return renseignementConfiguration ?? LireRenseignementJeuRALibretroDepuisCache();
             }
 
-            // Pour RALibretro, le fichier Data/<GameId>.json le plus recent est le signal
-            // le plus fiable du jeu courant pendant les transitions de session.
             RenseignementJeuRA? dernierRenseignement =
                 LireDernierRenseignementJeuProject64DepuisData(repertoireRACache);
 
@@ -4236,10 +4174,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le fichier BizHawk reste un secours local opportuniste.
-        }
+        catch { }
 
         return string.Empty;
     }
@@ -4573,10 +4508,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le journal RA reste une aide locale facultative.
-        }
+        catch { }
 
         return 0;
     }
@@ -4663,10 +4595,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le journal RA reste une aide locale facultative.
-        }
+        catch { }
 
         return null;
     }
@@ -4940,10 +4869,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Le log DuckStation reste une aide locale facultative.
-        }
+        catch { }
 
         return TrouverCheminJeuDuckStationDepuisMemcardRecente();
     }

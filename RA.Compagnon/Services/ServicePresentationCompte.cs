@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Transforme les données de compte en contenu prêt à afficher dans l'interface.
-/// </summary>
 public sealed class ServicePresentationCompte
 {
     public static CompteAffiche Construire(DonneesCompteUtilisateur donnees, string pseudoParDefaut)

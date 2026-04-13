@@ -7,9 +7,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Compose les données de jeu RetroAchievements utiles à l'affichage principal.
-/// </summary>
 public sealed class ServiceJeuRetroAchievements
 {
     private static readonly TimeSpan DureeCacheDonneesRapides = TimeSpan.FromMinutes(2);

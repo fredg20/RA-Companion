@@ -864,9 +864,6 @@ public partial class MainWindow
                 }
             );
         }
-        catch
-        {
-            // L'ouverture du navigateur reste optionnelle.
-        }
+        catch { }
     }
 }

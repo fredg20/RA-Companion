@@ -1029,10 +1029,7 @@ public static class ServiceSourcesLocalesEmulateurs
                 }
             }
         }
-        catch
-        {
-            // Une lecture ponctuelle des processus ne doit pas casser l'aide.
-        }
+        catch { }
 
         return string.Empty;
     }

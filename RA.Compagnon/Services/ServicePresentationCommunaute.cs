@@ -3,9 +3,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Transforme les données communautaires d'un jeu en contenu prêt à afficher.
-/// </summary>
 public sealed class ServicePresentationCommunaute
 {
     public static CommunauteJeuAffichee Construire(DonneesCommunauteJeu communaute)

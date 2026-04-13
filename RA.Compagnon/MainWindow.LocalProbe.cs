@@ -26,12 +26,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Active les rafraîchissements API généraux ainsi que la surveillance légère du Rich Presence.
-    /// </summary>
-    /// <summary>
-    /// Redémarre le minuteur API pour repousser le prochain tick après un rafraîchissement ciblé.
-    /// </summary>
     private void RedemarrerMinuteurActualisationApi()
     {
         if (!_profilUtilisateurAccessible)
@@ -43,15 +37,6 @@ public partial class MainWindow
         _minuteurActualisationApi.Start();
     }
 
-    /// <summary>
-    /// Arrête les rafraîchissements périodiques.
-    /// </summary>
-    /// <summary>
-    /// Aucun amorçage local : l'application reste entièrement autonome.
-    /// </summary>
-    /// <summary>
-    /// Réinitialise les derniers marqueurs utilisés pour éviter les rechargements API inutiles.
-    /// </summary>
     private void ReinitialiserContexteSurveillance()
     {
         _actualisationApiCibleeEnAttente = false;
@@ -83,9 +68,6 @@ public partial class MainWindow
         _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
     }
 
-    /// <summary>
-    /// Surveille en continu l'état Rich Presence sans recharger tout le contenu principal.
-    /// </summary>
     private async void ActualisationRichPresence_Tick(object? sender, EventArgs e)
     {
         if (
@@ -146,10 +128,7 @@ public partial class MainWindow
                 await ChargerJeuEnCoursAsync(false, true);
             }
         }
-        catch
-        {
-            // Une erreur ponctuelle de sonde ne doit pas interrompre la surveillance continue.
-        }
+        catch { }
         finally
         {
             _surveillanceRichPresenceEnCours = false;
@@ -182,19 +161,13 @@ public partial class MainWindow
                 );
             }
         }
-        catch
-        {
-            // La notice doit rester robuste même si cette sonde légère échoue ponctuellement.
-        }
+        catch { }
         finally
         {
             _surveillancePresenceLocaleCompteEnCours = false;
         }
     }
 
-    /// <summary>
-    /// Surveille localement les émulateurs connus pour déclencher un rafraîchissement ciblé plus tôt.
-    /// </summary>
     private async void ActualisationSondeLocaleEmulateurs_Tick(object? sender, EventArgs e)
     {
         if (_surveillanceLocaleEmulateursEnCours)
@@ -322,9 +295,6 @@ public partial class MainWindow
 
             if (string.Equals(etat.NomEmulateur, "RALibretro", StringComparison.Ordinal))
             {
-                // Pour RALibretro, le titre fenetre/JSON recent peut rester sur l'ancien jeu
-                // pendant une transition. On attend donc le prochain Game ID RA au lieu
-                // de lancer un matching par titre potentiellement faux.
                 return;
             }
 
@@ -434,10 +404,7 @@ public partial class MainWindow
 
             _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
         }
-        catch
-        {
-            // Une erreur locale ponctuelle ne doit pas casser la surveillance continue.
-        }
+        catch { }
         finally
         {
             _surveillanceLocaleEmulateursEnCours = false;
@@ -735,7 +702,6 @@ public partial class MainWindow
                 "memoire_emplacement_echec_persistance",
                 $"emulateur={etat.NomEmulateur};chemin={etat.CheminExecutable}"
             );
-            // La détection locale ne doit pas casser l'application si la persistance échoue ponctuellement.
         }
     }
 

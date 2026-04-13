@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api.V2.Achievement;
@@ -11,9 +11,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Réinitialise l'affichage des métadonnées sous le titre du jeu courant.
-    /// </summary>
     private void ReinitialiserMetaConsoleJeuEnCours()
     {
         if (DoitVerrouillerAffichageSurDernierJeuActifRecemment())
@@ -60,12 +57,6 @@ public partial class MainWindow
         return reinitialisationNecessaire;
     }
 
-    /// <summary>
-    /// Met à jour l'année du jeu, sa console, son type, ses crédits et l'icône officielle.
-    /// </summary>
-    /// <summary>
-    /// Affiche immédiatement les métadonnées déjà connues du jeu sans attendre les enrichissements lents.
-    /// </summary>
     private void AppliquerMetaConsoleJeuEnCoursInitiale(GameInfoAndUserProgressV2 jeu)
     {
         bool reinitialisationNecessaire = PreparerAffichageMetaConsoleJeuEnCours(jeu);
@@ -111,17 +102,11 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Lance les enrichissements secondaires des métadonnées sans bloquer le rendu initial.
-    /// </summary>
     private void DemarrerEnrichissementMetaConsoleJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         _ = EnrichirMetaConsoleJeuEnCoursAsync(jeu);
     }
 
-    /// <summary>
-    /// Traduit le genre et charge l'icône de console après l'affichage initial.
-    /// </summary>
     private async Task EnrichirMetaConsoleJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
@@ -152,10 +137,7 @@ public partial class MainWindow
                     imageConsole = await ChargerImageDistanteAsync(console.IconUrl);
                 }
             }
-            catch
-            {
-                // L'icône de console reste facultative.
-            }
+            catch { }
 
             if (_dernierIdentifiantJeuAvecInfos != jeu.Id)
             {
@@ -179,15 +161,9 @@ public partial class MainWindow
                 || !string.IsNullOrWhiteSpace(_vueModele.JeuCourant.Console);
             MettreAJourVisibiliteInformationsJeuEnCours();
         }
-        catch
-        {
-            // Les enrichissements restent facultatifs.
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Met à jour la ligne de détails sous le type et le développeur du jeu.
-    /// </summary>
     private void DefinirDetailsJeuEnCours(string details)
     {
         _vueModele.JeuCourant.Details = details;
@@ -198,9 +174,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Met à jour le temps de jeu affiché sous l'image du jeu.
-    /// </summary>
     private void DefinirTempsJeuSousImage(string tempsJeu)
     {
         _vueModele.JeuCourant.TempsDeJeu = tempsJeu;
@@ -208,9 +181,6 @@ public partial class MainWindow
         MettreAJourVisibiliteInformationsJeuEnCours();
     }
 
-    /// <summary>
-    /// Met à jour l'état du jeu dans l'en-tête de la carte de progression.
-    /// </summary>
     private void DefinirEtatJeuDansProgression(string etat)
     {
         _vueModele.JeuCourant.Etat = string.IsNullOrWhiteSpace(etat) ? string.Empty : etat;
@@ -221,26 +191,17 @@ public partial class MainWindow
         _vueModele.TitreCarteJeuEnCours = "Dernier jeu joué";
     }
 
-    /// <summary>
-    /// Recalcule la découpe arrondie de l'image du jeu quand sa taille change.
-    /// </summary>
     private void ImageJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         MettreAJourDimensionsZoneJeuSelonVisuel();
         AppliquerCoinsArrondisImageJeuEnCours();
     }
 
-    /// <summary>
-    /// Recalcule la découpe arrondie du badge du premier succès quand sa taille change.
-    /// </summary>
     private void ImagePremierSuccesNonDebloque_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         AppliquerCoinsArrondisImagePremierSuccesNonDebloque();
     }
 
-    /// <summary>
-    /// Affiche le visuel précédent du jeu courant.
-    /// </summary>
     private async Task ExecuterActionVisuelJeuPrecedentAsync()
     {
         if (_visuelsJeuEnCours.Count <= 1)
@@ -252,9 +213,6 @@ public partial class MainWindow
         await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
-    /// <summary>
-    /// Affiche le visuel suivant du jeu courant.
-    /// </summary>
     private async Task ExecuterActionVisuelJeuSuivantAsync()
     {
         if (_visuelsJeuEnCours.Count <= 1)
@@ -266,9 +224,6 @@ public partial class MainWindow
         await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
-    /// <summary>
-    /// Recalcule le défilement du titre quand sa taille ou celle de son conteneur change.
-    /// </summary>
     private void TitreJeuEnCours_MiseEnPageChangee(object sender, SizeChangedEventArgs e)
     {
         if (!ReferenceEquals(sender, ConteneurTitreJeuEnCours))
@@ -284,18 +239,12 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationTitreJeuEnCours();
     }
 
-    /// <summary>
-    /// Applique les coins arrondis à l'image du jeu courant selon sa taille réelle.
-    /// </summary>
     private void AppliquerCoinsArrondisImageJeuEnCours()
     {
         AppliquerCoinsArrondisImage(ImageJeuEnCours);
         AppliquerCoinsArrondisImage(ImageJeuEnCoursTransition);
     }
 
-    /// <summary>
-    /// Conserve la plus grande taille de visuel rencontrée pour stabiliser la zone du jeu.
-    /// </summary>
     private void MettreAJourDimensionsZoneJeuSelonVisuel()
     {
         if (ConteneurImageJeuEnCours is null || ColonneImageJeuEnCours is null)
@@ -325,17 +274,11 @@ public partial class MainWindow
         ColonneImageJeuEnCours.MinWidth = _largeurMaxVisuelJeuEnCours;
     }
 
-    /// <summary>
-    /// Applique les coins arrondis au badge du premier succès selon sa taille réelle.
-    /// </summary>
     private void AppliquerCoinsArrondisImagePremierSuccesNonDebloque()
     {
         AppliquerCoinsArrondisImage(ImagePremierSuccesNonDebloque);
     }
 
-    /// <summary>
-    /// Applique une découpe arrondie à une image selon sa taille réelle.
-    /// </summary>
     private void AppliquerCoinsArrondisImage(SystemControls.Image image)
     {
         if (image.ActualWidth <= 0 || image.ActualHeight <= 0)
@@ -351,9 +294,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Déclenche un cycle périodique d'actualisation API.
-    /// </summary>
     private async void ActualisationApi_Tick(object? sender, EventArgs e)
     {
         if (!ConfigurationConnexionEstComplete())
@@ -370,17 +310,11 @@ public partial class MainWindow
         await ChargerJeuEnCoursAsync(false, false);
     }
 
-    /// <summary>
-    /// Réinitialise la section des succès récents sur un état neutre.
-    /// </summary>
     private void ReinitialiserSuccesRecents()
     {
         AppliquerSuccesRecents(ServicePresentationActivite.ConstruireEtatNeutre());
     }
 
-    /// <summary>
-    /// Remplit les lignes de la section des succès récents.
-    /// </summary>
     private void AppliquerSuccesRecents(ActiviteRecenteAffichee activiteRecente)
     {
         string[] lignes =
@@ -401,9 +335,6 @@ public partial class MainWindow
         TexteSuccesRecent3.Text = lignes[2];
     }
 
-    /// <summary>
-    /// Réinitialise la section "Jeu en cours" sur un état neutre.
-    /// </summary>
     private void ReinitialiserJeuEnCours()
     {
         _serviceOrchestrateurEtatJeu.Reinitialiser();
@@ -427,28 +358,16 @@ public partial class MainWindow
         ReinitialiserSuccesRecents();
     }
 
-    /// <summary>
-    /// Indique si la progression affichée peut être conservée pour le même jeu.
-    /// </summary>
     private bool PeutConserverProgressionAffichee(int identifiantJeu)
     {
         return identifiantJeu > 0 && _dernierIdentifiantJeuAvecProgression == identifiantJeu;
     }
 
-    /// <summary>
-    /// Indique si les informations visibles du jeu peuvent être conservées pour le même jeu.
-    /// </summary>
     private bool PeutConserverInfosJeuAffichees(int identifiantJeu)
     {
         return identifiantJeu > 0 && _dernierIdentifiantJeuAvecInfos == identifiantJeu;
     }
 
-    /// <summary>
-    /// Extrait l'année de sortie d'un jeu à partir du champ API de date.
-    /// </summary>
-    /// <summary>
-    /// Formate la date de sortie la plus complète possible pour l'affichage.
-    /// </summary>
     private static string FormaterDateSortieJeu(string dateSortie)
     {
         if (string.IsNullOrWhiteSpace(dateSortie))
@@ -483,9 +402,6 @@ public partial class MainWindow
         return dateSortie.Trim();
     }
 
-    /// <summary>
-    /// Construit une ligne courte pour le développeur du jeu.
-    /// </summary>
     private static string ConstruireCreditsJeu(GameInfoAndUserProgressV2 jeu)
     {
         if (!string.IsNullOrWhiteSpace(jeu.Developer))
@@ -496,9 +412,6 @@ public partial class MainWindow
         return string.Empty;
     }
 
-    /// <summary>
-    /// Affiche la grille d'informations du jeu uniquement si au moins une ligne est utile.
-    /// </summary>
     private void MettreAJourVisibiliteInformationsJeuEnCours()
     {
         bool auMoinsUneLigneVisible =
@@ -516,9 +429,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Formate une durée exprimée en secondes en texte français lisible.
-    /// </summary>
     private static string FormaterTempsJeuTotal(int totalSecondes)
     {
         if (totalSecondes <= 0)

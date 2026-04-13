@@ -2,9 +2,6 @@ using RA.Compagnon.Modeles.Api.V2.User;
 
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Regroupe les données utilisateur utiles à l'affichage de la modale Compte.
-/// </summary>
 public sealed class DonneesCompteUtilisateur
 {
     public UserProfileV2? Profil { get; init; }

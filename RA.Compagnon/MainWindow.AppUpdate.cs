@@ -499,10 +499,7 @@ public partial class MainWindow
                     );
                 }
             }
-            catch
-            {
-                // L'ouverture externe reste optionnelle.
-            }
+            catch { }
         }
     }
 

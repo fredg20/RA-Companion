@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Transforme un succès en contenu prêt à afficher.
-/// </summary>
 public sealed class ServicePresentationSucces
 {
     public static SuccesGrilleAffiche ConstruirePourGrille(GameAchievementV2 succes)

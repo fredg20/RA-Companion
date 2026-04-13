@@ -21,9 +21,6 @@ public partial class MainWindow
     private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
     private readonly DispatcherTimer _minuteurSauvegardeGeometrieFenetre = new();
 
-    /// <summary>
-    /// Prépare les minuteurs qui pilotent l'actualisation API et l'UI locale.
-    /// </summary>
     private void ConfigurerActualisationAutomatique()
     {
         _minuteurActualisationApi.Interval = IntervalleActualisationApi;
@@ -58,9 +55,6 @@ public partial class MainWindow
         _minuteurSauvegardeGeometrieFenetre.Tick += MinuteurSauvegardeGeometrieFenetre_Tick;
     }
 
-    /// <summary>
-    /// Active les rafraîchissements API généraux ainsi que la surveillance légère du Rich Presence.
-    /// </summary>
     private void DemarrerActualisationAutomatique()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -89,9 +83,6 @@ public partial class MainWindow
         }
     }
 
-    /// <summary>
-    /// Arrête les rafraîchissements périodiques.
-    /// </summary>
     private void ArreterActualisationAutomatique()
     {
         _minuteurActualisationApi.Stop();

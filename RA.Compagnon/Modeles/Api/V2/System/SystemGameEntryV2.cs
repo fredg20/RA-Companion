@@ -3,9 +3,6 @@ using RA.Compagnon.Modeles.Api.V2.Common;
 
 namespace RA.Compagnon.Modeles.Api.V2.System;
 
-/// <summary>
-/// Représente une entrée de jeu issue de la liste complète d'un système.
-/// </summary>
 public sealed class SystemGameEntryV2 : ApiDtoV2Base
 {
     [JsonPropertyName("ID")]

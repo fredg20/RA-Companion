@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Local;
 
-/// <summary>
-/// Représente l'état observé d'un succès pour détecter un nouveau déblocage.
-/// </summary>
 public sealed class EtatObservationSuccesLocal
 {
     public int IdentifiantSucces { get; init; }

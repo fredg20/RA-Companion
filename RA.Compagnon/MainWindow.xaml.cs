@@ -3,9 +3,6 @@ using Wpf.Ui.Controls;
 
 namespace RA.Compagnon;
 
-/// <summary>
-/// Fenêtre principale du compagnon RetroAchievements.
-/// </summary>
 public partial class MainWindow : FluentWindow
 {
     private sealed record VisuelJeuEnCours(string Libelle, string CheminImage);
@@ -75,9 +72,6 @@ public partial class MainWindow : FluentWindow
     private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
     private const double RayonFlouTransitionImageJeuEnCours = 14;
 
-    /// <summary>
-    /// Initialise la fenêtre principale.
-    /// </summary>
     public MainWindow()
     {
         App.JournaliserDemarrage("MainWindow ctor début");

@@ -5,10 +5,6 @@ using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Surveille les fichiers locaux RetroAchievements de certains émulateurs pour déclencher
-/// des rafraîchissements plus réactifs que le simple tick API.
-/// </summary>
 public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
 {
     private static readonly string CheminJournalSurveillanceSucces = Path.Combine(
@@ -417,10 +413,7 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
                     $"emulateur=RetroArch;source=logs_initial;chemin={fichierLog.FullName}"
                 );
             }
-            catch
-            {
-                // Surveillance auxiliaire.
-            }
+            catch { }
         });
     }
 
@@ -458,9 +451,6 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
                 "RALog.txt",
                 StringComparison.OrdinalIgnoreCase
             ),
-            // Les journaux "logs" sont deja filtres par le FileSystemWatcher
-            // (retroarch.log, emulog.txt, duckstation.log, etc.).
-            // Ici, on accepte donc tout nom de fichier reel plutot que seulement ".log".
             "logs" => !string.IsNullOrWhiteSpace(nomFichier),
             _ => true,
         };

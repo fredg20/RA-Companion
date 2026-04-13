@@ -300,10 +300,7 @@ public sealed class ServiceMiseAJourApplication
             {
                 FinaliserPackageTelecharge(cheminTemporaire, cheminFichier);
             }
-            catch
-            {
-                // On laisse alors l'état appelant considérer que le package n'est pas encore prêt.
-            }
+            catch { }
         }
 
         if (!File.Exists(cheminFichier) || new FileInfo(cheminFichier).Length <= 0)
@@ -620,10 +617,7 @@ public sealed class ServiceMiseAJourApplication
                     return nomFichier;
                 }
             }
-            catch
-            {
-                // On retombe alors sur un nom de secours.
-            }
+            catch { }
         }
 
         string versionDistante = string.IsNullOrWhiteSpace(etat.VersionDistante)

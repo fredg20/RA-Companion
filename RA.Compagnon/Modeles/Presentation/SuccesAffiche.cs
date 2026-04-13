@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Presentation;
 
-/// <summary>
-/// Représente le contenu prêt à afficher d'un succès.
-/// </summary>
 public sealed class SuccesAffiche
 {
     public string Titre { get; init; } = string.Empty;

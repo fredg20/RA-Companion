@@ -4,9 +4,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Applique l'état transitoire centralisé de la carte jeu lorsqu'il est pertinent.
-    /// </summary>
     private void AfficherEtatTransitoireOrchestrateur()
     {
         if (!_serviceOrchestrateurEtatJeu.EtatTransitoireEstAffichable())
@@ -20,9 +17,6 @@ public partial class MainWindow
         _vueModele.JeuCourant.ProgressionValeur = 0;
     }
 
-    /// <summary>
-    /// Enregistre une nouvelle phase puis synchronise immédiatement l'état transitoire affiché.
-    /// </summary>
     private bool EnregistrerPhaseDetectionLocaleOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -44,9 +38,6 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
-    /// <summary>
-    /// Enregistre une phase de chargement API puis applique le message cohérent associé.
-    /// </summary>
     private bool EnregistrerPhaseChargementApiOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -68,9 +59,6 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
-    /// <summary>
-    /// Enregistre le jeu désormais affiché pour fermer les états transitoires.
-    /// </summary>
     private bool EnregistrerPhaseJeuAfficheOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -80,9 +68,6 @@ public partial class MainWindow
         return _serviceOrchestrateurEtatJeu.EnregistrerJeuAffiche(identifiantJeu, titreJeu, source);
     }
 
-    /// <summary>
-    /// Enregistre un état neutre sans jeu et applique le message associé.
-    /// </summary>
     private bool EnregistrerPhaseAucunJeuOrchestrateur(string source)
     {
         bool transitionAppliquee = _serviceOrchestrateurEtatJeu.EnregistrerAucunJeu(source);
@@ -95,9 +80,6 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
-    /// <summary>
-    /// Enregistre un état d'erreur de chargement et applique le message associé.
-    /// </summary>
     private bool EnregistrerPhaseErreurChargementOrchestrateur(
         int identifiantJeu,
         string titreJeu,

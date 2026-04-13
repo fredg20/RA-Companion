@@ -1,11 +1,8 @@
-﻿using System.IO;
+using System.IO;
 using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
 
-/// <summary>
-/// Regroupe le diagnostic temporel du changement de jeu.
-/// </summary>
 public partial class MainWindow
 {
     private string _signatureDiagnosticChangementJeu = string.Empty;

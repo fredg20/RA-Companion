@@ -1,8 +1,5 @@
 namespace RA.Compagnon.Modeles.Local;
 
-/// <summary>
-/// Représente un succès détecté comme nouvellement débloqué.
-/// </summary>
 public sealed class SuccesDebloqueDetecte
 {
     public int IdentifiantJeu { get; init; }

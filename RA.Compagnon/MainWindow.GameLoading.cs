@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -555,10 +555,7 @@ public partial class MainWindow
                 await MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
             }
         }
-        catch
-        {
-            // Les enrichissements secondaires ne doivent pas ralentir ni casser le rendu principal.
-        }
+        catch { }
     }
 
     private async Task EnrichirCommunauteJeuEnArrierePlanAsync(
@@ -594,10 +591,7 @@ public partial class MainWindow
             );
             DefinirDetailsJeuEnCours(jeuAffiche.Details);
         }
-        catch
-        {
-            // Les données communautaires restent secondaires et ne doivent pas casser l'affichage principal.
-        }
+        catch { }
     }
 
     private bool ChargementContenuJeuEstToujoursActuel(
@@ -880,10 +874,7 @@ public partial class MainWindow
             await _serviceCatalogueJeuxLocal.EnregistrerJeuAsync(jeu, titreObserveLocal);
             _ = await _serviceEtatUtilisateurJeuxLocal.EnregistrerEtatJeuAsync(jeu);
         }
-        catch
-        {
-            // Le cache local reste purement opportuniste.
-        }
+        catch { }
     }
 
     private async Task DetecterNouveauxSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)

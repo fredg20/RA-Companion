@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Compose les données d'activité récente RetroAchievements utiles à l'interface.
-/// </summary>
 public sealed class ServiceActiviteRetroAchievements
 {
     public static async Task<DonneesActiviteRecente> ObtenirActiviteRecenteAsync(

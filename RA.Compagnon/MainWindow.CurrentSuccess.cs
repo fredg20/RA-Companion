@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,9 +15,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Réinitialise la zone du premier succès non débloqué.
-    /// </summary>
     private void ReinitialiserPremierSuccesNonDebloque()
     {
         _vueModele.SuccesEnCours.Image = null;
@@ -109,9 +106,6 @@ public partial class MainWindow
         return detailsPoints.Contains("Hardcore", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Réinitialise la grille de tous les rétrosuccès.
-    /// </summary>
     private void ReinitialiserGrilleTousSucces()
     {
         _etatListeSuccesUi.VersionChargementGrille++;
@@ -132,9 +126,6 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
-    /// <summary>
-    /// Efface les zones de rétrosuccès et leur état persisté pour éviter de garder ceux d'un ancien jeu.
-    /// </summary>
     private void ReinitialiserSuccesAffichesEtPersistes()
     {
         _identifiantJeuSuccesCourant = 0;
@@ -168,9 +159,6 @@ public partial class MainWindow
         _minuteurAffichageTemporaireSuccesGrille.Stop();
     }
 
-    /// <summary>
-    /// Met • jour l'affichage des succès du jeu courant.
-    /// </summary>
     private async Task MettreAJourSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
         List<GameAchievementV2> succes = InitialiserContexteSuccesJeu(jeu, out int versionGrille);
@@ -237,15 +225,9 @@ public partial class MainWindow
         {
             await MettreAJourSuccesJeuAsync(jeu);
         }
-        catch
-        {
-            // Les succès enrichissent l'affichage, mais ne doivent pas bloquer la carte principale.
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Charge la grille complète des succès sans bloquer l'affichage du succès principal.
-    /// </summary>
     private void DemarrerMiseAJourGrilleTousSuccesEnArrierePlan(
         int identifiantJeu,
         List<GameAchievementV2> succes,
@@ -255,9 +237,6 @@ public partial class MainWindow
         _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes, versionGrille);
     }
 
-    /// <summary>
-    /// Exécute le remplissage complet de la grille en arrière-plan et ignore les erreurs non critiques.
-    /// </summary>
     private async Task MettreAJourGrilleTousSuccesEnArrierePlanAsync(
         int identifiantJeu,
         List<GameAchievementV2> succes,
@@ -268,15 +247,9 @@ public partial class MainWindow
         {
             await MettreAJourGrilleTousSuccesAsync(identifiantJeu, succes, versionGrille);
         }
-        catch
-        {
-            // La grille complète enrichit l'interface, mais ne doit pas bloquer le rendu principal.
-        }
+        catch { }
     }
 
-    /// <summary>
-    /// Choisit le rétrosuccès en cours en suivant l'ordre réel de la grille quand aucun badge n'est sélectionné.
-    /// </summary>
     private (
         GameAchievementV2? Succes,
         bool DoitSauvegarder,
@@ -320,9 +293,6 @@ public partial class MainWindow
         return (premierSuccesNonDebloque, true, false);
     }
 
-    /// <summary>
-    /// Met • jour la carte du premier succès restant • débloquer.
-    /// </summary>
     private async Task MettreAJourPremierSuccesNonDebloqueAsync(
         int identifiantJeu,
         List<GameAchievementV2> succes
@@ -339,9 +309,6 @@ public partial class MainWindow
         );
     }
 
-    /// <summary>
-    /// Applique le succès choisi à la carte principale, qu'il provienne du mode automatique ou d'un clic sur la grille.
-    /// </summary>
     private Task AppliquerSuccesEnCoursAsync(
         int identifiantJeu,
         GameAchievementV2? succesSelectionne,
@@ -523,10 +490,7 @@ public partial class MainWindow
                 );
             }
         }
-        catch
-        {
-            // Le contenu principal du succès doit rester instantané même si l'image ou la traduction tardent.
-        }
+        catch { }
     }
 
     private async Task<bool> AfficherSuccesDebloqueDetecteAsync(SuccesDebloqueDetecte succesDetecte)
@@ -908,9 +872,6 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.SuivantOpacity = _vueModele.SuccesEnCours.SuivantActif ? 1 : 0.38;
     }
 
-    /// <summary>
-    /// Convertit une image en niveaux de gris pour l'affichage des succès verrouillés.
-    /// </summary>
     private static ImageSource ConvertirImageEnNoirEtBlanc(ImageSource image)
     {
         if (image is not BitmapSource bitmapSource)

@@ -4,9 +4,6 @@ using RA.Compagnon.Modeles.Presentation;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Détecte l'état d'activité d'un compte à partir des signaux Rich Presence de RetroAchievements.
-/// </summary>
 public sealed class ServiceSondeRichPresence
 {
     private static readonly TimeSpan DelaiPresenceActive = TimeSpan.FromMinutes(10);

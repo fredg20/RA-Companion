@@ -172,8 +172,6 @@ public partial class MainWindow
             return;
         }
 
-        // Quand le bon jeu est deja charge avec sa progression et ses succes,
-        // on evite de reecraser l'UI avec un etat transitoire.
         if (
             etat.IdentifiantJeuProbable > 0
             && (
@@ -321,9 +319,6 @@ public partial class MainWindow
 
             await AppliquerProgressionJeuAsync(donneesJeu);
         }
-        catch
-        {
-            // Le prechargement local reste opportuniste.
-        }
+        catch { }
     }
 }

@@ -5,9 +5,6 @@ using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Détecte les nouveaux succès obtenus en comparant deux états successifs d'un même jeu.
-/// </summary>
 public sealed class ServiceDetectionSuccesJeu
 {
     private static readonly string CheminJournalDetectionSucces = Path.Combine(

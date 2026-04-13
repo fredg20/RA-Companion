@@ -4,9 +4,6 @@ namespace RA.Compagnon;
 
 public partial class MainWindow
 {
-    /// <summary>
-    /// Réagit au changement de taille de la fenêtre principale.
-    /// </summary>
     private void FenetrePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         TraiterChangementTaille(e.PreviousSize, e.NewSize);
@@ -14,17 +11,11 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
-    /// <summary>
-    /// Réagit au changement de taille de la zone de contenu visible.
-    /// </summary>
     private void ZonePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         TraiterChangementTaille(e.PreviousSize, e.NewSize);
     }
 
-    /// <summary>
-    /// Applique les ajustements communs nécessaires lors d'un redimensionnement.
-    /// </summary>
     private void TraiterChangementTaille(Size taillePrecedente, Size nouvelleTaille)
     {
         if (
@@ -44,9 +35,6 @@ public partial class MainWindow
         PlanifierRelayoutListeSuccesApresRedimensionnement();
     }
 
-    /// <summary>
-    /// Planifie une sauvegarde locale de la géométrie après déplacement ou redimensionnement.
-    /// </summary>
     private void PlanifierSauvegardeGeometrieFenetre()
     {
         if (!_geometrieFenetrePretePourPersistance || !IsLoaded)
@@ -58,25 +46,16 @@ public partial class MainWindow
         _minuteurSauvegardeGeometrieFenetre.Start();
     }
 
-    /// <summary>
-    /// Mémorise la nouvelle position de la fenêtre après un déplacement.
-    /// </summary>
     private void FenetrePrincipale_PositionChangee(object? sender, EventArgs e)
     {
         PlanifierSauvegardeGeometrieFenetre();
     }
 
-    /// <summary>
-    /// Mémorise aussi la géométrie de restauration quand l'état de la fenêtre change.
-    /// </summary>
     private void FenetrePrincipale_EtatChange(object? sender, EventArgs e)
     {
         PlanifierSauvegardeGeometrieFenetre();
     }
 
-    /// <summary>
-    /// Sauvegarde la géométrie sur disque une fois que le déplacement ou le redimensionnement est stabilisé.
-    /// </summary>
     private async void MinuteurSauvegardeGeometrieFenetre_Tick(object? sender, EventArgs e)
     {
         _minuteurSauvegardeGeometrieFenetre.Stop();
@@ -94,9 +73,6 @@ public partial class MainWindow
                 _configurationConnexion
             );
         }
-        catch
-        {
-            // évite de gêner l'UI si la persistance locale échoue pendant un déplacement.
-        }
+        catch { }
     }
 }

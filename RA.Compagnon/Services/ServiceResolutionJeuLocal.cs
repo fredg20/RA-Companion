@@ -9,9 +9,6 @@ using RA.Compagnon.Modeles.Local;
 
 namespace RA.Compagnon.Services;
 
-/// <summary>
-/// Résout un titre local détecté vers un identifiant de jeu RetroAchievements avec prudence.
-/// </summary>
 public sealed partial class ServiceResolutionJeuLocal
 {
     private const double SeuilConfianceJeuxRecents = 0.84;

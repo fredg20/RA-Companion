@@ -2,9 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace RA.Compagnon.Modeles.Api.V2.Feed;
 
-/// <summary>
-/// Représente une page de récompenses de jeu récentes.
-/// </summary>
 public sealed class RecentGameAwardsResponseV2
 {
     [JsonPropertyName("Count")]
