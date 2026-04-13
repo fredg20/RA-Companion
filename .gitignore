@@ -47,3 +47,9 @@ Desktop.ini
 
 # PowerShell scripts
 *.ps1
+
+# Local project notes and docs
+/VERSION.md
+/TODO-Fonctionnalites.md
+/RULES.md
+/API_RETROACHIEVEMENTS.md
