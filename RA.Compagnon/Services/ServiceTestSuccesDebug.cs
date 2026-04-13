@@ -31,7 +31,8 @@ public sealed class ServiceTestSuccesDebug
         string titreJeu,
         IReadOnlyList<GameAchievementV2> succesJeuCourant,
         Func<GameAchievementV2, bool> succesEstDebloque,
-        ModeDeclenchementTestSuccesDebug modeDeclenchement
+        ModeDeclenchementTestSuccesDebug modeDeclenchement,
+        bool hardcore
     )
     {
         if (identifiantJeu <= 0)
@@ -76,7 +77,7 @@ public sealed class ServiceTestSuccesDebug
             IdentifiantSucces = succesCible.Id,
             TitreSucces = succesCible.Title?.Trim() ?? string.Empty,
             Points = succesCible.Points,
-            Hardcore = true,
+            Hardcore = hardcore,
             DateObtention = DateTime.Now.ToString(
                 "yyyy-MM-dd HH:mm:ss",
                 CultureInfo.InvariantCulture

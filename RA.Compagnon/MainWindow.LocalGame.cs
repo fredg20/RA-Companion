@@ -233,6 +233,7 @@ public partial class MainWindow
                 titreAffichage,
                 StringComparison.OrdinalIgnoreCase
             )
+            && !_rejeuDemarreEnAttenteChargement
             && (_chargementJeuEnCoursActif || infosJeuDejaAfficheesPourCeJeu);
 
         memeJeuLocalDejaApplique |= _serviceOrchestrateurEtatJeu.MemeJeuAfficheOuEnChargement(
@@ -275,6 +276,7 @@ public partial class MainWindow
         _identifiantJeuLocalActif = identifiantJeu;
         _titreJeuLocalActif = titreAffichage;
         _dernierIdentifiantJeuApi = identifiantJeu;
+        _rejeuDemarreEnAttenteChargement = false;
         MettreAJourNoticeCompteEntete();
         int versionChargement = ++_versionChargementContenuJeu;
         DemarrerPipelineChargementJeu(identifiantJeu, titreAffichage, versionChargement);

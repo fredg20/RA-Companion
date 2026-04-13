@@ -1910,6 +1910,7 @@ public partial class MainWindow
             _vueModele.Compte.FondNotice = Brushes.Transparent;
             _vueModele.Compte.BordureNotice = Brushes.Transparent;
             _signatureDerniereNoticeCompteJournalisee = string.Empty;
+            ReinitialiserSuiviEtatJeuVisible();
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
@@ -1940,6 +1941,7 @@ public partial class MainWindow
                     ? $"En jeu{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                     : "En jeu (détection locale)";
             JournaliserNoticeCompteEntete("En jeu", texteIdentifiantJeu, "local");
+            EnregistrerEtatJeuVisibleEtSynchroniserSiNecessaire("En jeu");
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
@@ -1962,6 +1964,7 @@ public partial class MainWindow
             _vueModele.Compte.ToolTipNotice = string.Empty;
             _vueModele.Compte.FondNotice = Brushes.Transparent;
             _vueModele.Compte.BordureNotice = Brushes.Transparent;
+            ReinitialiserSuiviEtatJeuVisible();
             MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
             return;
         }
@@ -1983,7 +1986,87 @@ public partial class MainWindow
                 ? $"{compte.Statut}{Environment.NewLine}Game ID {identifiantJeuAffiche.ToString(CultureInfo.CurrentCulture)}"
                 : compte.Statut;
         JournaliserNoticeCompteEntete(compte.Statut, texteIdentifiantJeu, "api");
+        EnregistrerEtatJeuVisibleEtSynchroniserSiNecessaire(compte.Statut);
         MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
+    }
+
+    private void ReinitialiserSuiviEtatJeuVisible()
+    {
+        _suiviEtatJeuVisibleInitialise = false;
+        _signatureDernierEtatJeuVisible = string.Empty;
+        _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
+    }
+
+    private void EnregistrerEtatJeuVisibleEtSynchroniserSiNecessaire(string etatVisible)
+    {
+        string signatureEtat = string.IsNullOrWhiteSpace(etatVisible)
+            ? string.Empty
+            : etatVisible.Trim();
+
+        if (!_suiviEtatJeuVisibleInitialise)
+        {
+            _suiviEtatJeuVisibleInitialise = true;
+            _signatureDernierEtatJeuVisible = signatureEtat;
+            return;
+        }
+
+        if (
+            string.Equals(
+                _signatureDernierEtatJeuVisible,
+                signatureEtat,
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return;
+        }
+
+        _signatureDernierEtatJeuVisible = signatureEtat;
+        DemanderSynchronisationCibleeEtatJeu($"etat_visible={signatureEtat}");
+    }
+
+    private void DemanderSynchronisationCibleeEtatJeu(string raison)
+    {
+        if (!ConfigurationConnexionEstComplete())
+        {
+            return;
+        }
+
+        DateTimeOffset maintenant = DateTimeOffset.UtcNow;
+        if (
+            _horodatageDerniereSynchronisationEtatJeuUtc != DateTimeOffset.MinValue
+            && maintenant - _horodatageDerniereSynchronisationEtatJeuUtc
+                < IntervalleDebounceSynchronisationEtatJeu
+        )
+        {
+            JournaliserDiagnosticAffichageJeu("synchronisation_etat_jeu_ignoree", raison);
+            return;
+        }
+
+        _horodatageDerniereSynchronisationEtatJeuUtc = maintenant;
+
+        if (_chargementJeuEnCoursActif)
+        {
+            _actualisationApiCibleeEnAttente = true;
+            JournaliserDiagnosticAffichageJeu("synchronisation_etat_jeu_differee", raison);
+            return;
+        }
+
+        JournaliserDiagnosticAffichageJeu("synchronisation_etat_jeu", raison);
+        _ = SynchroniserEtatJeuApresChangementAsync();
+    }
+
+    private async Task SynchroniserEtatJeuApresChangementAsync()
+    {
+        try
+        {
+            await ChargerJeuEnCoursAsync(false, true);
+            RedemarrerMinuteurActualisationApi();
+        }
+        catch
+        {
+            // Une synchronisation opportuniste ne doit jamais casser le suivi en cours.
+        }
     }
 
     private int DeterminerIdentifiantJeuNoticeCompte()

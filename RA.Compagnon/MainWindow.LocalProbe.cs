@@ -55,6 +55,7 @@ public partial class MainWindow
     private void ReinitialiserContexteSurveillance()
     {
         _actualisationApiCibleeEnAttente = false;
+        _suiviEtatJeuVisibleInitialise = false;
         _dernierIdentifiantJeuApi = 0;
         _dernierIdentifiantJeuAvecInfos = 0;
         _dernierIdentifiantJeuAvecProgression = 0;
@@ -67,6 +68,8 @@ public partial class MainWindow
         _dernierEtatSondeLocaleEmulateurs = null;
         _presenceLocaleCompteActive = false;
         _signatureDernierSuccesLocalDirectAffiche = string.Empty;
+        _signatureSuccesLocalDirectIgnoreeAuRejeu = string.Empty;
+        _signatureDernierEtatJeuVisible = string.Empty;
         _identifiantJeuSuccesObserve = 0;
         _etatSuccesObserves = [];
         _identifiantJeuLocalResolutEnAttente = 0;
@@ -77,6 +80,7 @@ public partial class MainWindow
         _serviceOrchestrateurEtatJeu.Reinitialiser();
         _consolesResolutionLocale = [];
         _serviceSurveillanceSuccesLocaux.ArreterSurveillance();
+        _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
     }
 
     /// <summary>
@@ -173,6 +177,9 @@ public partial class MainWindow
             {
                 _presenceLocaleCompteActive = presenceActive;
                 MettreAJourNoticeCompteEntete();
+                DemanderSynchronisationCibleeEtatJeu(
+                    presenceActive ? "presence_locale_active" : "presence_locale_inactive"
+                );
             }
         }
         catch
@@ -873,8 +880,23 @@ public partial class MainWindow
             return false;
         }
 
-        string signatureSucces =
-            $"{succesDirect.IdentifiantJeu}|{succesDirect.IdentifiantSucces}|{succesDirect.TitreSucces}";
+        string signatureSucces = ConstruireSignatureSuccesLocalDirect(succesDirect);
+
+        if (
+            !string.IsNullOrWhiteSpace(_signatureSuccesLocalDirectIgnoreeAuRejeu)
+            && string.Equals(
+                _signatureSuccesLocalDirectIgnoreeAuRejeu,
+                signatureSucces,
+                StringComparison.Ordinal
+            )
+        )
+        {
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "signal_succes_direct_ignore",
+                $"raison=baseline_rejeu;emulateur={signal.NomEmulateur};succes={succesDirect.IdentifiantSucces}"
+            );
+            return false;
+        }
 
         if (
             string.Equals(
@@ -916,11 +938,17 @@ public partial class MainWindow
         }
 
         _signatureDernierSuccesLocalDirectAffiche = signatureSucces;
+        _signatureSuccesLocalDirectIgnoreeAuRejeu = string.Empty;
         ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
             "signal_succes_direct_affiche",
             $"emulateur={signal.NomEmulateur};source={signal.TypeSource};jeu={succesDirect.IdentifiantJeu};succes={succesDirect.IdentifiantSucces}"
         );
         return true;
+    }
+
+    private static string ConstruireSignatureSuccesLocalDirect(SuccesDebloqueDetecte succes)
+    {
+        return $"{succes.IdentifiantJeu}|{succes.IdentifiantSucces}|{succes.TitreSucces}";
     }
 
     private async Task<bool> TenterAfficherSuccesApiSansCacheAsync(

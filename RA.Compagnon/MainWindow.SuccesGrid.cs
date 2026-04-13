@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using RA.Compagnon.Modeles.Api.V2.Game;
@@ -501,11 +502,12 @@ public partial class MainWindow
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(0),
             Cursor = Cursors.Hand,
-            ToolTip = succesAffiche.Titre,
+            ToolTip = succesAffiche.ToolTip,
             Tag = new BadgeSuccesGrilleContexte(
                 identifiantJeu,
                 succesAffiche.IdentifiantSucces,
-                succesAffiche.UrlBadge
+                succesAffiche.UrlBadge,
+                succesAffiche.EstHardcore
             ),
         };
         conteneur.MouseEnter += BadgeGrilleSucces_EntreeSouris;
@@ -584,6 +586,8 @@ public partial class MainWindow
             return;
         }
 
+        badge.Effect = null;
+
         bool estEpingle =
             _etatListeSuccesUi.IdentifiantSuccesEpingle.HasValue
             && contexte.IdentifiantJeu == _identifiantJeuSuccesCourant
@@ -598,6 +602,7 @@ public partial class MainWindow
             badge.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 196, 64));
             badge.BorderThickness = new Thickness(2);
             badge.Background = new SolidColorBrush(Color.FromArgb(34, 255, 196, 64));
+            AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
         }
 
@@ -606,12 +611,41 @@ public partial class MainWindow
             badge.BorderBrush = new SolidColorBrush(Color.FromRgb(120, 200, 255));
             badge.BorderThickness = new Thickness(2);
             badge.Background = new SolidColorBrush(Color.FromArgb(32, 120, 200, 255));
+            AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
         }
 
-        badge.BorderBrush = Brushes.Transparent;
-        badge.BorderThickness = new Thickness(0);
-        badge.Background = Brushes.Transparent;
+        AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: false);
+    }
+
+    private static void AppliquerStyleBadgeHardcore(
+        SystemControls.Border badge,
+        BadgeSuccesGrilleContexte contexte,
+        bool prioritaire
+    )
+    {
+        if (!contexte.EstHardcore)
+        {
+            badge.BorderBrush = Brushes.Transparent;
+            badge.BorderThickness = new Thickness(0);
+            badge.Background = Brushes.Transparent;
+            return;
+        }
+
+        if (!prioritaire)
+        {
+            badge.BorderBrush = new SolidColorBrush(Color.FromRgb(245, 200, 76));
+            badge.BorderThickness = new Thickness(2);
+            badge.Background = new SolidColorBrush(Color.FromArgb(28, 245, 200, 76));
+        }
+
+        badge.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(245, 200, 76),
+            BlurRadius = prioritaire ? 12 : 18,
+            ShadowDepth = 0,
+            Opacity = prioritaire ? 0.55 : 0.82,
+        };
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 {
-  "version": "1.0.7",
-  "url": "https://github.com/fredg20/RA-Companion/releases/download/v1.0.7/RA.Compagnon-win-x64-1.0.7.zip",
+  "version": "1.0.8",
+  "url": "https://github.com/fredg20/RA-Companion/releases/download/v1.0.8/RA.Compagnon-win-x64-1.0.8.zip",
   "notes": "- memorisation du mode d'affichage des retrosucces\r\n- deselection automatique d'un retrosucces lors d'un changement de mode\r\n- au demarrage, retour sur le premier retrosucces non debloque\r\n- ajout du libelle `succes` dans le resume de progression\r\n- alignement corrige des informations sous la barre de progression\r\n- sections principales corrigees pour le plein ecran\r\n- actions de la carte `Jeu en cours` repositionnees avec `Rejouer` en bas a gauche et `Details` en bas a droite\r\n- suppression des boutons manuels du carrousel d'image avec conservation de la rotation automatique\r\n\r\nCe package vient avec 2 emulateurs modifies pour le bon fonctionnement de Compagnon, car les emulateurs originaux produisaient mal leurs caches",
   "publishedAt": "2026-04-12"
 }

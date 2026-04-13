@@ -50,6 +50,8 @@ public partial class MainWindow
     private bool _surveillancePresenceLocaleCompteEnCours;
     private bool _surveillanceLocaleEmulateursEnCours;
     private bool _profilUtilisateurAccessible = true;
+    private bool _rejeuDemarreEnAttenteChargement;
+    private bool _suiviEtatJeuVisibleInitialise;
     private bool _dernierJeuAfficheModifie;
     private bool _dernierSuccesAfficheModifie;
     private bool _derniereListeSuccesAfficheeModifiee;
@@ -72,6 +74,7 @@ public partial class MainWindow
     private string _etatConnexionCourant = "Non configuré";
     private string _cheminImageJeuEnCoursDemande = string.Empty;
     private string _cheminImageJeuEnCoursAffiche = string.Empty;
+    private string _signatureDernierEtatJeuVisible = string.Empty;
     private ConfigurationConnexion _configurationConnexion = new();
     private int _indexVisuelJeuEnCours;
     private int _identifiantJeuSuccesCourant;
@@ -88,6 +91,7 @@ public partial class MainWindow
     private bool _emulateurValideDetecteEnDirect;
     private bool _presenceLocaleCompteActive;
     private string _signatureDernierSuccesLocalDirectAffiche = string.Empty;
+    private string _signatureSuccesLocalDirectIgnoreeAuRejeu = string.Empty;
     private int _identifiantJeuSuccesObserve;
     private int _identifiantJeuDernierSignalSuccesLocal;
     private string _nomEmulateurDernierSignalSuccesLocal = string.Empty;
@@ -111,4 +115,5 @@ public partial class MainWindow
     private string? _cheminFichierMiseAJourTelechargee;
     private double _facteurTypographieResponsive = 1;
     private bool _geometrieFenetrePretePourPersistance;
+    private DateTimeOffset _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
 }

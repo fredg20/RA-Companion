@@ -13,7 +13,8 @@ public partial class MainWindow : FluentWindow
     private sealed record BadgeSuccesGrilleContexte(
         int IdentifiantJeu,
         int IdentifiantSucces,
-        string UrlBadge
+        string UrlBadge,
+        bool EstHardcore = false
     )
     {
         public int Id => IdentifiantSucces;
@@ -45,6 +46,8 @@ public partial class MainWindow : FluentWindow
     private static readonly TimeSpan IntervalleRotationVisuelsJeuEnCours = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan IntervalleSauvegardeGeometrieFenetre =
         TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan IntervalleDebounceSynchronisationEtatJeu =
+        TimeSpan.FromSeconds(2);
     private static readonly TimeSpan IntervalleRafraichissementMiseAJourApplication =
         TimeSpan.FromHours(6);
     private static readonly HttpClient HttpClientImages = new();

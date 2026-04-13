@@ -3,11 +3,11 @@
 ## Version courante
 
 - Nom : `RA-Compagnon`
-- Version : `1.0.7`
+- Version : `1.0.8`
 - Statut : base stable en cours d'évolution
 - Cible : `Windows x64`
 - Livrable principal : `dist/RA.Compagnon-win-x64`
-- Archive de release : `dist/RA.Compagnon-win-x64-1.0.7.zip`
+- Archive de release : `dist/RA.Compagnon-win-x64-1.0.8.zip`
 
 ## Contenu de cette version
 
@@ -36,6 +36,11 @@
 - au démarrage, retour automatique sur le premier rétrosuccès non débloqué de la liste
 - sections plein écran corrigées pour éviter les coupures sous la barre d'état
 - alignement visuel renforcé des zones de progression et des actions de carte
+- distinction visuelle `Softcore` / `Hardcore` ajoutée pour les rétrosuccès débloqués
+- infobulles de la grille enrichies avec le mode `Softcore` ou `Hardcore`
+- badges `Hardcore` mis en valeur par un contour doré et un halo léger dans la grille
+- même mise en valeur dorée appliquée au badge de la section `Rétrosuccès en cours`
+- ajout du manuel utilisateur `INSTRUCTION.md`
 
 ## Émulateurs validés dans cette version
 
@@ -153,3 +158,15 @@
 - actions de la carte `Jeu en cours` repositionnées avec `Rejouer` en bas à gauche et `Détails` en bas à droite
 - suppression des boutons manuels du carrousel d'image tout en conservant la rotation automatique
 - recentrage du carrousel d'image et suppression d'espaces superflus dans la carte `Jeu en cours`
+
+### Version 1.0.8
+
+- préparation de la release versionnée `1.0.8`
+- manifeste de mise à jour aligné sur `v1.0.8`
+- archive de release attendue : `RA.Compagnon-win-x64-1.0.8.zip`
+- synchronisation ciblée ajoutée à chaque changement d'état du jeu
+- distinction `Softcore` / `Hardcore` ajoutée dans l'affichage du rétrosuccès courant
+- infobulles de la grille mises à jour pour afficher le mode d'obtention d'un succès débloqué
+- style visuel `Hardcore` ajouté avec contour doré et halo léger dans la grille des badges
+- style visuel `Hardcore` également appliqué au badge de la section `Rétrosuccès en cours`
+- ajout d'un manuel d'utilisation dans `INSTRUCTION.md`

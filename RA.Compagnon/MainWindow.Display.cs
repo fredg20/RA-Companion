@@ -213,7 +213,7 @@ public partial class MainWindow
     /// </summary>
     private void DefinirEtatJeuDansProgression(string etat)
     {
-        _vueModele.JeuCourant.Etat = string.IsNullOrWhiteSpace(etat) ? "Progression du jeu" : etat;
+        _vueModele.JeuCourant.Etat = string.IsNullOrWhiteSpace(etat) ? string.Empty : etat;
     }
 
     private void DefinirTitreZoneJeu()

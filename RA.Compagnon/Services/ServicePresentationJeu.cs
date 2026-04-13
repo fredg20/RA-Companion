@@ -96,7 +96,7 @@ public sealed class ServicePresentationJeu
             return "Jeu complété";
         }
 
-        return "Progression en cours";
+        return string.Empty;
     }
 
     private static string FormaterTempsJeuTotal(int totalSecondes)

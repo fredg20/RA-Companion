@@ -831,39 +831,29 @@
                             <RowDefinition Height="*" />
                           </Grid.RowDefinitions>
                           <Border Grid.Row="0" Style="{StaticResource StyleSousCarteJeu}">
-                            <StackPanel>
+                            <Grid>
+                              <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                              </Grid.RowDefinitions>
                               <ProgressBar
                                 x:Name="BarreProgressionJeuEnCours"
+                                Grid.Row="0"
                                 Height="8"
                                 Margin="0"
                                 Minimum="0"
                                 Maximum="100"
                                 Value="{Binding JeuCourant.ProgressionValeur, Mode=OneWay}"
                               />
-                              <Grid Margin="{StaticResource MargeBlocStandard}">
+                              <Grid Grid.Row="1" Margin="{StaticResource MargeBlocStandard}">
                                 <Grid.ColumnDefinitions>
-                                  <ColumnDefinition Width="Auto" />
                                   <ColumnDefinition Width="Auto" />
                                   <ColumnDefinition Width="*" />
                                   <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock
-                                  x:Name="TexteEtatJeuDansProgression"
-                                  Grid.Column="0"
-                                  Margin="0,0,12,0"
-                                  HorizontalAlignment="Left"
-                                  MinHeight="22"
-                                  Opacity="0.72"
-                                  FontSize="13"
-                                  LineHeight="18"
-                                  LineStackingStrategy="BlockLineHeight"
-                                  TextWrapping="Wrap"
-                                  Text="{Binding JeuCourant.Etat}"
-                                  VerticalAlignment="Center"
-                                />
-                                <TextBlock
                                   x:Name="TextePourcentageJeuEnCours"
-                                  Grid.Column="1"
+                                  Grid.Column="0"
                                   Margin="0,0,12,0"
                                   HorizontalAlignment="Left"
                                   MinHeight="22"
@@ -878,9 +868,9 @@
                                 />
                                 <TextBlock
                                   x:Name="TexteDetailsJeuEnCours"
-                                  Grid.Column="2"
+                                  Grid.Column="1"
                                   Margin="0,0,12,0"
-                                  HorizontalAlignment="Stretch"
+                                  HorizontalAlignment="Center"
                                   MinHeight="22"
                                   Opacity="0.72"
                                   FontSize="13"
@@ -888,13 +878,13 @@
                                   LineStackingStrategy="BlockLineHeight"
                                   TextWrapping="Wrap"
                                   Text="{Binding JeuCourant.Details, Mode=OneWay}"
-                                  TextAlignment="Left"
+                                  TextAlignment="Center"
                                   VerticalAlignment="Center"
                                   Visibility="{Binding JeuCourant.DetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                 />
                                 <TextBlock
                                   x:Name="TexteResumeProgressionJeuEnCours"
-                                  Grid.Column="3"
+                                  Grid.Column="2"
                                   HorizontalAlignment="Right"
                                   MinHeight="22"
                                   Opacity="0.72"
@@ -907,7 +897,7 @@
                                   VerticalAlignment="Center"
                                 />
                               </Grid>
-                            </StackPanel>
+                            </Grid>
                           </Border>
 
                           <Grid

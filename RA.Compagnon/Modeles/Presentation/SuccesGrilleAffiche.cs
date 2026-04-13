@@ -9,7 +9,11 @@ public sealed class SuccesGrilleAffiche
 
     public string Titre { get; init; } = string.Empty;
 
+    public string ToolTip { get; init; } = string.Empty;
+
     public string UrlBadge { get; init; } = string.Empty;
 
     public bool EstDebloque { get; init; }
+
+    public bool EstHardcore { get; init; }
 }

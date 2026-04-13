@@ -17,8 +17,10 @@ public sealed class ServicePresentationSucces
         {
             IdentifiantSucces = succes.Id,
             Titre = succes.Title,
+            ToolTip = ConstruireToolTipGrilleSucces(succes),
             UrlBadge = ConstruireUrlBadgeDepuisNom(succes.BadgeName, !estDebloque),
             EstDebloque = estDebloque,
+            EstHardcore = !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore),
         };
     }
 
@@ -106,6 +108,34 @@ public sealed class ServicePresentationSucces
     {
         return !string.IsNullOrWhiteSpace(succes.DateEarned)
             || !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore);
+    }
+
+    private static string ConstruireToolTipGrilleSucces(GameAchievementV2 succes)
+    {
+        string titre = succes.Title?.Trim() ?? string.Empty;
+        string mode = DeterminerModeObtentionSucces(succes);
+
+        if (string.IsNullOrWhiteSpace(mode))
+        {
+            return titre;
+        }
+
+        return string.IsNullOrWhiteSpace(titre) ? mode : $"{titre}{Environment.NewLine}{mode}";
+    }
+
+    private static string DeterminerModeObtentionSucces(GameAchievementV2 succes)
+    {
+        if (!string.IsNullOrWhiteSpace(succes.DateEarnedHardcore))
+        {
+            return "Hardcore";
+        }
+
+        if (!string.IsNullOrWhiteSpace(succes.DateEarned))
+        {
+            return "Softcore";
+        }
+
+        return string.Empty;
     }
 
     private static string ConstruireUrlBadgeDepuisNom(string nomBadge, bool versionVerrouillee)

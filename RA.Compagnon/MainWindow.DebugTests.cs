@@ -29,17 +29,19 @@ public partial class MainWindow
             "test_succes_raccourci_recu",
             $"touche={touche};jeu={_identifiantJeuLocalActif};jeuSucces={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
         );
+        bool hardcore = touche != Key.F10;
         ModeDeclenchementTestSuccesDebug modeDeclenchement = touche switch
         {
             Key.F9 => ModeDeclenchementTestSuccesDebug.SourceLocale,
             Key.F7 => ModeDeclenchementTestSuccesDebug.Session,
             _ => ModeDeclenchementTestSuccesDebug.InterneUi,
         };
-        await DeclencherTestSuccesDebugAsync(modeDeclenchement);
+        await DeclencherTestSuccesDebugAsync(modeDeclenchement, hardcore);
     }
 
     private async Task DeclencherTestSuccesDebugAsync(
-        ModeDeclenchementTestSuccesDebug modeDeclenchement
+        ModeDeclenchementTestSuccesDebug modeDeclenchement,
+        bool hardcore
     )
     {
         string nomEmulateur =
@@ -59,7 +61,8 @@ public partial class MainWindow
                 titreJeu,
                 _succesJeuCourant,
                 SuccesEstDebloquePourAffichage,
-                modeDeclenchement
+                modeDeclenchement,
+                hardcore
             );
 
         if (!resultat.EstValide || resultat.Scenario is null)
@@ -82,7 +85,7 @@ public partial class MainWindow
 
         ServiceTestSuccesDebug.JournaliserEvenement(
             "test_succes_declenche",
-            $"mode={scenario.ModeDeclenchement};source={scenario.SourceSimulee};emulateur={scenario.NomEmulateur};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
+            $"mode={scenario.ModeDeclenchement};hardcore={scenario.Hardcore};source={scenario.SourceSimulee};emulateur={scenario.NomEmulateur};jeu={scenario.IdentifiantJeu};succes={scenario.IdentifiantSucces}"
         );
 
         if (scenario.ModeDeclenchement == ModeDeclenchementTestSuccesDebug.SourceLocale)

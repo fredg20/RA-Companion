@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Etat;
@@ -21,6 +22,7 @@ public partial class MainWindow
     {
         _vueModele.SuccesEnCours.Image = null;
         ImagePremierSuccesNonDebloque.Clip = null;
+        AppliquerStyleBadgeSuccesEnCours(false);
         _vueModele.SuccesEnCours.ImageVisible = false;
         _vueModele.SuccesEnCours.ImageOpacity = 0.58;
         _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
@@ -35,6 +37,76 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
         MettreAJourNavigationSuccesEnCours(null);
+    }
+
+    private void AppliquerStyleBadgeSuccesEnCours(bool estHardcore)
+    {
+        if (!estHardcore)
+        {
+            CartePremierSuccesNonDebloqueVisuel.BorderBrush = Brushes.Transparent;
+            CartePremierSuccesNonDebloqueVisuel.BorderThickness = new Thickness(0);
+            CartePremierSuccesNonDebloqueVisuel.Background = Brushes.Transparent;
+            CartePremierSuccesNonDebloqueVisuel.Effect = null;
+            return;
+        }
+
+        CartePremierSuccesNonDebloqueVisuel.BorderBrush = new SolidColorBrush(
+            Color.FromRgb(245, 200, 76)
+        );
+        CartePremierSuccesNonDebloqueVisuel.BorderThickness = new Thickness(2);
+        CartePremierSuccesNonDebloqueVisuel.Background = new SolidColorBrush(
+            Color.FromArgb(28, 245, 200, 76)
+        );
+        CartePremierSuccesNonDebloqueVisuel.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(245, 200, 76),
+            BlurRadius = 18,
+            ShadowDepth = 0,
+            Opacity = 0.82,
+        };
+    }
+
+    private static string ConstruireDetailsPointsSuccesCourant(
+        GameAchievementV2 succesSelectionne,
+        SuccesAffiche succesAffiche
+    )
+    {
+        string detailsPoints = succesAffiche.DetailsPoints;
+        string modeObtention = DeterminerModeObtentionSucces(succesSelectionne);
+
+        if (string.IsNullOrWhiteSpace(modeObtention))
+        {
+            return detailsPoints;
+        }
+
+        return string.IsNullOrWhiteSpace(detailsPoints)
+            ? modeObtention
+            : $"{detailsPoints} • {modeObtention}";
+    }
+
+    private static string DeterminerModeObtentionSucces(GameAchievementV2 succes)
+    {
+        if (!string.IsNullOrWhiteSpace(succes.DateEarnedHardcore))
+        {
+            return "Hardcore";
+        }
+
+        if (!string.IsNullOrWhiteSpace(succes.DateEarned))
+        {
+            return "Softcore";
+        }
+
+        return string.Empty;
+    }
+
+    private static bool SuccesEstHardcore(GameAchievementV2 succesSelectionne)
+    {
+        return !string.IsNullOrWhiteSpace(succesSelectionne.DateEarnedHardcore);
+    }
+
+    private static bool DetailsPointsIndiquentHardcore(string detailsPoints)
+    {
+        return detailsPoints.Contains("Hardcore", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
@@ -282,6 +354,7 @@ public partial class MainWindow
             _versionAffichageSuccesEnCours++;
             _vueModele.SuccesEnCours.Image = null;
             _vueModele.SuccesEnCours.ImageVisible = false;
+            AppliquerStyleBadgeSuccesEnCours(false);
             _vueModele.SuccesEnCours.ImageOpacity = 0.58;
             _vueModele.SuccesEnCours.TexteVisuel = "Tous les succès sont débloqués";
             _vueModele.SuccesEnCours.TexteVisuelVisible = true;
@@ -320,6 +393,7 @@ public partial class MainWindow
 
         _vueModele.SuccesEnCours.Image = null;
         ImagePremierSuccesNonDebloque.Clip = null;
+        AppliquerStyleBadgeSuccesEnCours(SuccesEstHardcore(succesSelectionne));
         _vueModele.SuccesEnCours.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
         _vueModele.SuccesEnCours.ImageVisible = false;
         _vueModele.SuccesEnCours.TexteVisuel = string.Empty;
@@ -329,9 +403,12 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.TitreVisible = true;
         _vueModele.SuccesEnCours.Description = succesAffiche.Description.Trim();
         _vueModele.SuccesEnCours.DescriptionVisible = true;
-        _vueModele.SuccesEnCours.DetailsPoints = succesAffiche.DetailsPoints;
+        _vueModele.SuccesEnCours.DetailsPoints = ConstruireDetailsPointsSuccesCourant(
+            succesSelectionne,
+            succesAffiche
+        );
         _vueModele.SuccesEnCours.DetailsPointsVisible = !string.IsNullOrWhiteSpace(
-            succesAffiche.DetailsPoints
+            _vueModele.SuccesEnCours.DetailsPoints
         );
         _vueModele.SuccesEnCours.DetailsFaisabilite = succesAffiche.DetailsFaisabilite;
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = !string.IsNullOrWhiteSpace(
@@ -648,9 +725,7 @@ public partial class MainWindow
                 .ProgressionValeur;
             _configurationConnexion.DernierJeuAffiche.Details = _vueModele.JeuCourant.Details;
             _configurationConnexion.DernierJeuAffiche.EtatJeu =
-                nombreDebloques >= nombreSucces && nombreSucces > 0
-                    ? "Jeu complété"
-                    : "Progression en cours";
+                nombreDebloques >= nombreSucces && nombreSucces > 0 ? "Jeu complété" : string.Empty;
             _dernierJeuAfficheModifie = true;
         }
     }

@@ -66,14 +66,6 @@ public partial class MainWindow
 
     private void MettreAJourActionRejouerJeuEnCours(EtatJeuAfficheLocal? jeuSauvegarde)
     {
-        if (DoitMasquerActionRejouerPendantJeu())
-        {
-            _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
-            _vueModele.JeuCourant.ActionRejouerActivee = false;
-            _vueModele.JeuCourant.ActionRejouerVisible = false;
-            return;
-        }
-
         if (jeuSauvegarde is not null)
         {
             HydraterActionRejouerDepuisSourcesLocalesActifRecemment(jeuSauvegarde);
@@ -97,6 +89,17 @@ public partial class MainWindow
         string cheminExecutable = DeterminerCheminExecutableRelance(jeuSauvegarde);
         _vueModele.JeuCourant.LibelleActionRejouer = "Rejouer";
         bool actionDisponible = !string.IsNullOrWhiteSpace(cheminExecutable);
+
+        if (DoitMasquerActionRejouerPendantJeu())
+        {
+            _vueModele.JeuCourant.ActionRejouerActivee = false;
+            _vueModele.JeuCourant.ActionRejouerVisible = actionDisponible;
+            _vueModele.JeuCourant.ToolTipActionRejouer = actionDisponible
+                ? "Disponible quand Dernier jeu reapparait"
+                : string.Empty;
+            return;
+        }
+
         _vueModele.JeuCourant.ActionRejouerActivee = actionDisponible;
         _vueModele.JeuCourant.ActionRejouerVisible = actionDisponible;
         _vueModele.JeuCourant.ToolTipActionRejouer = actionDisponible
@@ -451,9 +454,20 @@ public partial class MainWindow
         try
         {
             string arguments = ConstruireArgumentsRelance(jeuSauvegarde, cheminExecutable);
+            SuccesDebloqueDetecte? succesDirectExistant =
+                ServiceSondeLocaleEmulateurs.LireDernierSuccesDebloqueDepuisSourceLocale(
+                    jeuSauvegarde.NomEmulateurRelance,
+                    jeuSauvegarde.Id,
+                    jeuSauvegarde.Title,
+                    _succesJeuCourant
+                );
+
+            _signatureSuccesLocalDirectIgnoreeAuRejeu = succesDirectExistant is null
+                ? string.Empty
+                : ConstruireSignatureSuccesLocalDirect(succesDirectExistant);
             JournaliserRejouer(
                 "tentative",
-                $"emulateur={jeuSauvegarde.NomEmulateurRelance};executable={cheminExecutable};arguments={arguments};shell=false"
+                $"emulateur={jeuSauvegarde.NomEmulateurRelance};executable={cheminExecutable};arguments={arguments};shell=false;baselineSucces={_signatureSuccesLocalDirectIgnoreeAuRejeu}"
             );
 
             Process? processus = Process.Start(
@@ -482,6 +496,8 @@ public partial class MainWindow
                 "demarre",
                 $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName}"
             );
+            _rejeuDemarreEnAttenteChargement = true;
+            ChargerJeuResolutLocal(jeuSauvegarde.Id, jeuSauvegarde.Title);
         }
         catch (Exception exception)
         {

@@ -130,6 +130,9 @@ public partial class MainWindow
             succesSauvegarde.Description
         );
         _vueModele.SuccesEnCours.DetailsPoints = succesSauvegarde.DetailsPoints;
+        AppliquerStyleBadgeSuccesEnCours(
+            DetailsPointsIndiquentHardcore(succesSauvegarde.DetailsPoints)
+        );
         _vueModele.SuccesEnCours.DetailsPointsVisible = !string.IsNullOrWhiteSpace(
             succesSauvegarde.DetailsPoints
         );
@@ -227,6 +230,7 @@ public partial class MainWindow
                     {
                         IdentifiantSucces = succesSauvegarde.AchievementId,
                         Titre = succesSauvegarde.Title,
+                        ToolTip = succesSauvegarde.Title,
                         UrlBadge = succesSauvegarde.CheminImageBadge,
                         EstDebloque = !succesSauvegarde.CheminImageBadge.Contains(
                             "_lock",
