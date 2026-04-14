@@ -16,6 +16,7 @@ public sealed class ServiceConfigurationLocale
 {
     private static readonly JsonSerializerOptions OptionsJson = new() { WriteIndented = true };
     private const string ExtensionTemporaire = ".tmp";
+    private const string ExtensionSauvegarde = ".bak";
     private readonly SemaphoreSlim _verrouSauvegarde = new(1, 1);
     private readonly SemaphoreSlim _verrouUtilisateur = new(1, 1);
 
@@ -55,6 +56,7 @@ public sealed class ServiceConfigurationLocale
                 ?? new ConfigurationConnexion();
         }
 
+        bool fichierUtilisateurExiste = File.Exists(CheminFichierUtilisateur);
         EtatUtilisateurLocal? utilisateur = await ChargerEtatUtilisateurAsync();
         configuration.Pseudo = utilisateur?.Pseudo ?? string.Empty;
         configuration.CleApiWeb = utilisateur?.CleApiWeb ?? string.Empty;
@@ -62,10 +64,23 @@ public sealed class ServiceConfigurationLocale
         configuration.DernierSuccesAffiche = await ChargerEtatSuccesAsync();
         configuration.DerniereListeSuccesAffichee = await ChargerEtatListeSuccesAsync();
         bool etatNormalise = NormaliserEtatApplication(configuration);
+        bool utilisateurLegacyRecupere =
+            !fichierUtilisateurExiste
+            && !string.IsNullOrWhiteSpace(configuration.Pseudo)
+            && !string.IsNullOrWhiteSpace(configuration.CleApiWeb);
 
         if (etatNormalise)
         {
             await SauvegarderEtatApplicationAsync(configuration);
+        }
+
+        if (utilisateurLegacyRecupere)
+        {
+            try
+            {
+                await SauvegarderUtilisateurAsync(configuration);
+            }
+            catch { }
         }
 
         return configuration;
@@ -129,14 +144,48 @@ public sealed class ServiceConfigurationLocale
         try
         {
             Directory.CreateDirectory(ObtenirDossierConfiguration());
-            await SauvegarderJsonAsync(
-                CheminFichierUtilisateur,
-                new EtatUtilisateurLocal
+            EtatUtilisateurLocal etatUtilisateur = new()
+            {
+                Pseudo = configuration.Pseudo,
+                CleApiWeb = configuration.CleApiWeb,
+            };
+            string cheminSauvegarde = CheminFichierUtilisateur + ExtensionSauvegarde;
+            bool sauvegardePrecedenteDisponible = false;
+
+            if (File.Exists(CheminFichierUtilisateur))
+            {
+                File.Copy(CheminFichierUtilisateur, cheminSauvegarde, overwrite: true);
+                sauvegardePrecedenteDisponible = true;
+            }
+
+            try
+            {
+                await SauvegarderJsonAsync(CheminFichierUtilisateur, etatUtilisateur);
+
+                EtatUtilisateurLocal? verification = await ChargerJsonAsync<EtatUtilisateurLocal>(
+                    CheminFichierUtilisateur
+                );
+
+                if (!EtatUtilisateurCorrespond(verification, etatUtilisateur))
                 {
-                    Pseudo = configuration.Pseudo,
-                    CleApiWeb = configuration.CleApiWeb,
+                    if (sauvegardePrecedenteDisponible)
+                    {
+                        RestaurerSauvegardeUtilisateur(cheminSauvegarde);
+                    }
+
+                    throw new IOException(
+                        "La vérification du fichier utilisateur a échoué après l'écriture."
+                    );
                 }
-            );
+            }
+            catch (Exception exception)
+            {
+                JournaliserIncidentPersistance(
+                    "sauvegarde_utilisateur_echec",
+                    $"{exception.GetType().Name}: {exception.Message}"
+                );
+                throw;
+            }
         }
         finally
         {
@@ -180,7 +229,14 @@ public sealed class ServiceConfigurationLocale
     {
         if (File.Exists(CheminFichierUtilisateur))
         {
-            return await ChargerJsonAsync<EtatUtilisateurLocal>(CheminFichierUtilisateur);
+            EtatUtilisateurLocal? utilisateur = await ChargerJsonAsync<EtatUtilisateurLocal>(
+                CheminFichierUtilisateur
+            );
+
+            if (utilisateur is not null)
+            {
+                return utilisateur;
+            }
         }
 
         if (!File.Exists(CheminFichierConfiguration))
@@ -389,6 +445,60 @@ public sealed class ServiceConfigurationLocale
     private static string DeterminerCheminLecture(string cheminFichier)
     {
         return File.Exists(cheminFichier) ? cheminFichier : cheminFichier + ExtensionTemporaire;
+    }
+
+    /*
+     * Compare deux états utilisateur pour confirmer qu'une sauvegarde relue
+     * correspond exactement aux valeurs qui viennent d'être écrites.
+     */
+    private static bool EtatUtilisateurCorrespond(
+        EtatUtilisateurLocal? gauche,
+        EtatUtilisateurLocal droite
+    )
+    {
+        return gauche is not null
+            && string.Equals(gauche.Pseudo, droite.Pseudo, StringComparison.Ordinal)
+            && string.Equals(gauche.CleApiWeb, droite.CleApiWeb, StringComparison.Ordinal);
+    }
+
+    /*
+     * Restaure la dernière sauvegarde utilisateur connue lorsqu'une écriture
+     * plus récente ne peut pas être vérifiée correctement.
+     */
+    private static void RestaurerSauvegardeUtilisateur(string cheminSauvegarde)
+    {
+        if (!File.Exists(cheminSauvegarde))
+        {
+            return;
+        }
+
+        if (File.Exists(CheminFichierUtilisateur))
+        {
+            File.Delete(CheminFichierUtilisateur);
+        }
+
+        File.Copy(cheminSauvegarde, CheminFichierUtilisateur, overwrite: true);
+    }
+
+    /*
+     * Inscrit un incident de persistance dans un journal local dédié sans
+     * dépendre du mode diagnostic global.
+     */
+    private static void JournaliserIncidentPersistance(string evenement, string details)
+    {
+        try
+        {
+            string cheminJournal = Path.Combine(
+                ObtenirDossierConfiguration(),
+                "journal-configuration-locale.log"
+            );
+            Directory.CreateDirectory(ObtenirDossierConfiguration());
+            File.AppendAllText(
+                cheminJournal,
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};details={details}{Environment.NewLine}"
+            );
+        }
+        catch { }
     }
 
     /*

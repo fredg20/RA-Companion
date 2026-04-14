@@ -409,8 +409,12 @@ public partial class MainWindow
 
         _configurationConnexion.Pseudo = pseudoApi;
         MettreAJourResumeConnexion();
-        await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
-        await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+
+        try
+        {
+            await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
+        }
+        catch { }
     }
 
     /*

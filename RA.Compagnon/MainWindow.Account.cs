@@ -373,9 +373,22 @@ public partial class MainWindow
         _configurationConnexion.Pseudo = pseudoValide;
         _configurationConnexion.CleApiWeb = cleApiValide;
 
-        MemoriserGeometrieFenetre();
-        await _serviceConfigurationLocale.SauvegarderUtilisateurAsync(_configurationConnexion);
-        await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
+        try
+        {
+            MemoriserGeometrieFenetre();
+            await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(
+                string.IsNullOrWhiteSpace(exception.Message)
+                    ? "Le compte a été validé, mais son enregistrement local a échoué. La session courante peut fonctionner, mais la reconnexion automatique au prochain démarrage n'est pas garantie."
+                    : $"Le compte a été validé, mais son enregistrement local a échoué. {exception.Message}",
+                "Enregistrement du compte impossible",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning
+            );
+        }
 
         MettreAJourResumeConnexion();
         await ChargerJeuEnCoursAsync();
