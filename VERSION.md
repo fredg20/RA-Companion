@@ -3,11 +3,11 @@
 ## État courant
 
 - Application : `RA-Compagnon`
-- Version applicative : `1.0.8`
+- Version applicative : `1.0.9`
 - Plateforme cible : `Windows x64`
 - Interface active : `WPF`
 - Livrable généré : `dist/RA.Compagnon-win-x64`
-- Archive de release générée : `dist/RA.Compagnon-win-x64-1.0.8.zip`
+- Dernière archive de release publiée : `dist/RA.Compagnon-win-x64-1.0.8.zip`
 
 ## Contenu fonctionnel livré
 
@@ -34,6 +34,12 @@
 - simplification visuelle de la zone `Progression`
 
 ## Historique par version
+
+### 1.0.9
+
+- cycle de développement ouvert pour la prochaine version
+- version applicative du projet passée à `1.0.9`
+- manifeste `update.json` conservé sur `1.0.8` tant que la nouvelle release n'est pas publiée
 
 ### 1.0.8
 

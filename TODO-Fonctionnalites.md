@@ -2,9 +2,10 @@
 
 ## État de référence
 
-- version actuelle : `1.0.8`
+- version actuelle : `1.0.9`
 - interface active : `WPF`
-- release `1.0.8` considérée prête
+- dernière release publiée : `1.0.8`
+- cycle courant : `1.0.9`
 
 ## Déjà livré
 
