@@ -67,16 +67,18 @@ public partial class MainWindow
         CartePremierSuccesNonDebloqueVisuel.BorderBrush = new SolidColorBrush(
             Color.FromRgb(245, 200, 76)
         );
-        CartePremierSuccesNonDebloqueVisuel.BorderThickness = new Thickness(2);
+        CartePremierSuccesNonDebloqueVisuel.BorderThickness = new Thickness(
+            ConstantesDesign.EpaisseurContourAccent
+        );
         CartePremierSuccesNonDebloqueVisuel.Background = new SolidColorBrush(
             Color.FromArgb(28, 245, 200, 76)
         );
         CartePremierSuccesNonDebloqueVisuel.Effect = new DropShadowEffect
         {
             Color = Color.FromRgb(245, 200, 76),
-            BlurRadius = 18,
+            BlurRadius = ConstantesDesign.FlouHaloHardcore,
             ShadowDepth = 0,
-            Opacity = 0.82,
+            Opacity = ConstantesDesign.OpaciteHaloHardcore,
         };
     }
 

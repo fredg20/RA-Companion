@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using SystemControls = System.Windows.Controls;
 
@@ -16,12 +18,120 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
+    private const uint MonitorDefaultToNearest = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RectangleEcran
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InformationsMoniteur
+    {
+        public uint cbSize;
+        public RectangleEcran rcMonitor;
+        public RectangleEcran rcWork;
+        public uint dwFlags;
+    }
+
+    [LibraryImport("user32.dll")]
+    private static partial nint MonitorFromWindow(nint hwnd, uint dwFlags);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetMonitorInfoW", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetMonitorInfo(nint hMonitor, ref InformationsMoniteur lpmi);
+
     /*
      * Calcule la hauteur réellement occupée par un élément, marges comprises.
      */
     private static double CalculerHauteurOccupee(FrameworkElement element)
     {
         return element.ActualHeight + element.Margin.Top + element.Margin.Bottom;
+    }
+
+    /*
+     * Retourne la zone de travail du moniteur qui contient réellement la
+     * fenêtre courante, convertie dans les unités WPF.
+     */
+    private Rect ObtenirZoneTravailFenetreCourante()
+    {
+        nint handle = new WindowInteropHelper(this).Handle;
+
+        if (handle == nint.Zero)
+        {
+            return SystemParameters.WorkArea;
+        }
+
+        nint moniteur = MonitorFromWindow(handle, MonitorDefaultToNearest);
+
+        if (moniteur == nint.Zero)
+        {
+            return SystemParameters.WorkArea;
+        }
+
+        InformationsMoniteur informationsMoniteur = new()
+        {
+            cbSize = (uint)Marshal.SizeOf<InformationsMoniteur>(),
+        };
+
+        if (!GetMonitorInfo(moniteur, ref informationsMoniteur))
+        {
+            return SystemParameters.WorkArea;
+        }
+
+        PresentationSource? sourcePresentation = PresentationSource.FromVisual(this);
+
+        if (sourcePresentation?.CompositionTarget is null)
+        {
+            return SystemParameters.WorkArea;
+        }
+
+        Point coinSuperieurGauche =
+            sourcePresentation.CompositionTarget.TransformFromDevice.Transform(
+                new Point(informationsMoniteur.rcWork.Left, informationsMoniteur.rcWork.Top)
+            );
+        Point coinInferieurDroit =
+            sourcePresentation.CompositionTarget.TransformFromDevice.Transform(
+                new Point(informationsMoniteur.rcWork.Right, informationsMoniteur.rcWork.Bottom)
+            );
+
+        return new Rect(coinSuperieurGauche, coinInferieurDroit);
+    }
+
+    /*
+     * Calcule le ratio de largeur occupé par la fenêtre sur la zone utile
+     * de son écran courant.
+     */
+    private double ObtenirRatioLargeurFenetre(Rect zoneTravail)
+    {
+        return zoneTravail.Width <= 0 ? 1 : ActualWidth / zoneTravail.Width;
+    }
+
+    /*
+     * Met à jour la largeur minimale de la fenêtre pour empêcher un rendu
+     * plus étroit qu'un quart d'écran.
+     */
+    private void MettreAJourLargeurMinimaleFenetre(Rect zoneTravail)
+    {
+        if (zoneTravail.Width <= 0)
+        {
+            return;
+        }
+
+        double largeurMinimale = Math.Round(
+            zoneTravail.Width * ConstantesDesign.RatioLargeurMinimaleFenetre,
+            2,
+            MidpointRounding.AwayFromZero
+        );
+
+        if (Math.Abs(MinWidth - largeurMinimale) > 0.01)
+        {
+            MinWidth = largeurMinimale;
+        }
     }
 
     /*
@@ -466,8 +576,12 @@ public partial class MainWindow
      */
     private void AjusterDisposition()
     {
-        bool dispositionDouble = ActualWidth >= LargeurMinimaleDispositionDouble;
+        Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
+        double ratioLargeur = ObtenirRatioLargeurFenetre(zoneTravail);
+        bool dispositionDouble = ratioLargeur >= ConstantesDesign.RatioDispositionIntermediaire;
         bool carteConnexionVisible = _vueModele.VisibiliteCarteConnexion == Visibility.Visible;
+
+        MettreAJourLargeurMinimaleFenetre(zoneTravail);
 
         GrilleCartes.RowDefinitions.Clear();
 
@@ -477,7 +591,7 @@ public partial class MainWindow
                 ? new GridLength(280)
                 : new GridLength(1, GridUnitType.Star);
             GrilleCartes.ColumnDefinitions[1].Width = carteConnexionVisible
-                ? new GridLength(20)
+                ? new GridLength(ConstantesDesign.EspaceEtendu)
                 : new GridLength(0);
             GrilleCartes.ColumnDefinitions[2].Width = carteConnexionVisible
                 ? new GridLength(1, GridUnitType.Star)
@@ -508,7 +622,10 @@ public partial class MainWindow
                     new SystemControls.RowDefinition { Height = GridLength.Auto }
                 );
                 GrilleCartes.RowDefinitions.Add(
-                    new SystemControls.RowDefinition { Height = new GridLength(20) }
+                    new SystemControls.RowDefinition
+                    {
+                        Height = new GridLength(ConstantesDesign.EspaceEtendu),
+                    }
                 );
                 GrilleCartes.RowDefinitions.Add(
                     new SystemControls.RowDefinition { Height = GridLength.Auto }
@@ -535,6 +652,7 @@ public partial class MainWindow
         }
 
         AjusterDispositionSectionsJeuEnCours();
+        AjusterDispositionCapsulesJeuEnCours();
         AjusterHauteurCarteJeuEnCours();
     }
 
@@ -563,8 +681,10 @@ public partial class MainWindow
             return;
         }
 
-        bool dispositionTriple = FenetreCouvreEcranPourDispositionTriple();
-        bool dispositionEtendue = !dispositionTriple && FenetreCouvreDeuxTiersEcran();
+        Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
+        double ratioLargeur = ObtenirRatioLargeurFenetre(zoneTravail);
+        bool dispositionTriple = FenetreCouvreEcranPourDispositionTriple(ratioLargeur);
+        bool dispositionEtendue = !dispositionTriple && FenetreCouvreDeuxTiersEcran(ratioLargeur);
         bool afficherEntetesExternes = dispositionTriple;
 
         EnTeteSectionSuccesEnCours.Visibility = afficherEntetesExternes
@@ -589,9 +709,13 @@ public partial class MainWindow
         if (dispositionTriple)
         {
             GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(
+                ConstantesDesign.EspaceEtendu
+            );
             GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
-            GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(
+                ConstantesDesign.EspaceEtendu
+            );
             GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(1, GridUnitType.Star);
 
             GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
@@ -622,7 +746,9 @@ public partial class MainWindow
         else if (dispositionEtendue)
         {
             GrilleCarteJeuEnCours.ColumnDefinitions[0].Width = new GridLength(1, GridUnitType.Star);
-            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(16);
+            GrilleCarteJeuEnCours.ColumnDefinitions[1].Width = new GridLength(
+                ConstantesDesign.EspaceEtendu
+            );
             GrilleCarteJeuEnCours.ColumnDefinitions[2].Width = new GridLength(1, GridUnitType.Star);
             GrilleCarteJeuEnCours.ColumnDefinitions[3].Width = new GridLength(0);
             GrilleCarteJeuEnCours.ColumnDefinitions[4].Width = new GridLength(0);
@@ -630,7 +756,9 @@ public partial class MainWindow
             GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
             GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
             GrilleCarteJeuEnCours.RowDefinitions[2].Height = GridLength.Auto;
-            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(
+                ConstantesDesign.EspaceStandard
+            );
             GrilleCarteJeuEnCours.RowDefinitions[4].Height = new GridLength(1, GridUnitType.Star);
             GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(0);
             GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(0);
@@ -661,9 +789,13 @@ public partial class MainWindow
             GrilleCarteJeuEnCours.RowDefinitions[0].Height = GridLength.Auto;
             GrilleCarteJeuEnCours.RowDefinitions[1].Height = new GridLength(6);
             GrilleCarteJeuEnCours.RowDefinitions[2].Height = GridLength.Auto;
-            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[3].Height = new GridLength(
+                ConstantesDesign.EspaceStandard
+            );
             GrilleCarteJeuEnCours.RowDefinitions[4].Height = GridLength.Auto;
-            GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(16);
+            GrilleCarteJeuEnCours.RowDefinitions[5].Height = new GridLength(
+                ConstantesDesign.EspaceStandard
+            );
             GrilleCarteJeuEnCours.RowDefinitions[6].Height = new GridLength(1, GridUnitType.Star);
 
             SystemControls.Grid.SetColumn(EnTeteCarteJeuEnCours, 0);
@@ -684,32 +816,123 @@ public partial class MainWindow
     }
 
     /*
-     * Détermine si la fenêtre est suffisamment large et haute pour activer la
-     * disposition triple proche du plein écran.
+     * Réagit au changement de taille du bloc des capsules d'information du
+     * jeu pour recalculer leur nombre de colonnes.
      */
-    private bool FenetreCouvreEcranPourDispositionTriple()
+    private void GrilleInformationsJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
+    {
+        AjusterDispositionCapsulesJeuEnCours();
+    }
+
+    /*
+     * Réorganise les capsules d'information du jeu en 1, 2 ou 3 colonnes
+     * selon la largeur réellement disponible dans la carte.
+     */
+    private void AjusterDispositionCapsulesJeuEnCours()
+    {
+        if (
+            GrilleInformationsJeuEnCours is null
+            || ZoneConsoleJeuEnCours is null
+            || EtiquetteTypeJeuEnCours is null
+            || EtiquetteDateSortieJeuEnCours is null
+            || EtiquetteCreditsJeuEnCours is null
+        )
+        {
+            return;
+        }
+
+        FrameworkElement[] capsulesVisibles =
+        [
+            ZoneConsoleJeuEnCours,
+            EtiquetteTypeJeuEnCours,
+            EtiquetteDateSortieJeuEnCours,
+            EtiquetteCreditsJeuEnCours,
+        ];
+
+        capsulesVisibles = capsulesVisibles
+            .Where(capsule => capsule.Visibility == Visibility.Visible)
+            .ToArray();
+
+        GrilleInformationsJeuEnCours.ColumnDefinitions.Clear();
+        GrilleInformationsJeuEnCours.RowDefinitions.Clear();
+
+        if (capsulesVisibles.Length == 0)
+        {
+            return;
+        }
+
+        double largeurDisponible = Math.Max(0, GrilleInformationsJeuEnCours.ActualWidth);
+        double largeurMinimaleCapsule = ConstantesDesign.LargeurMinimaleCapsuleInformation;
+        double espacement = ConstantesDesign.EspaceCompact;
+
+        int nombreColonnes = 1;
+
+        if (largeurDisponible >= (largeurMinimaleCapsule * 3) + (espacement * 2))
+        {
+            nombreColonnes = 3;
+        }
+        else if (largeurDisponible >= (largeurMinimaleCapsule * 2) + espacement)
+        {
+            nombreColonnes = 2;
+        }
+
+        for (int indexColonne = 0; indexColonne < nombreColonnes; indexColonne++)
+        {
+            GrilleInformationsJeuEnCours.ColumnDefinitions.Add(
+                new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+            );
+        }
+
+        int nombreRangees = (int)Math.Ceiling(capsulesVisibles.Length / (double)nombreColonnes);
+
+        for (int indexRangee = 0; indexRangee < nombreRangees; indexRangee++)
+        {
+            GrilleInformationsJeuEnCours.RowDefinitions.Add(
+                new SystemControls.RowDefinition { Height = GridLength.Auto }
+            );
+        }
+
+        for (int indexCapsule = 0; indexCapsule < capsulesVisibles.Length; indexCapsule++)
+        {
+            FrameworkElement capsule = capsulesVisibles[indexCapsule];
+            int colonne = indexCapsule % nombreColonnes;
+            int rangee = indexCapsule / nombreColonnes;
+            bool derniereColonne = colonne == nombreColonnes - 1;
+            bool derniereRangee = rangee == nombreRangees - 1;
+
+            SystemControls.Grid.SetColumn(capsule, colonne);
+            SystemControls.Grid.SetRow(capsule, rangee);
+            capsule.HorizontalAlignment = HorizontalAlignment.Stretch;
+            capsule.Margin = new Thickness(
+                0,
+                0,
+                derniereColonne ? 0 : espacement,
+                derniereRangee ? 0 : espacement
+            );
+        }
+    }
+
+    /*
+     * Détermine si la fenêtre atteint le seuil de trois colonnes, fixé à
+     * partir de trois quarts de la largeur de l'écran courant.
+     */
+    private bool FenetreCouvreEcranPourDispositionTriple(double ratioLargeur)
     {
         if (WindowState == WindowState.Maximized)
         {
             return true;
         }
 
-        Rect zoneTravail = SystemParameters.WorkArea;
-        return ActualWidth >= LargeurMinimaleDispositionTriple
-            && ActualWidth >= zoneTravail.Width - 48
-            && ActualHeight >= zoneTravail.Height - 48;
+        return ratioLargeur >= ConstantesDesign.RatioDispositionTriple;
     }
 
     /*
-     * Détermine si la fenêtre atteint le seuil intermédiaire permettant une
-     * disposition étendue à deux colonnes larges.
+     * Détermine si la fenêtre atteint le seuil intermédiaire permettant la
+     * disposition en deux temps à partir de la moitié de l'écran.
      */
-    private bool FenetreCouvreDeuxTiersEcran()
+    private bool FenetreCouvreDeuxTiersEcran(double ratioLargeur)
     {
-        Rect zoneTravail = SystemParameters.WorkArea;
-        double largeurCarteJeu = CarteJeuEnCours?.ActualWidth ?? 0;
-        return ActualWidth >= zoneTravail.Width * RatioLargeurDispositionEtendue
-            || largeurCarteJeu >= LargeurMinimaleCarteJeuDispositionEtendue;
+        return ratioLargeur >= ConstantesDesign.RatioDispositionIntermediaire;
     }
 
     /*
@@ -947,6 +1170,7 @@ public partial class MainWindow
      */
     private void AppliquerGeometrieFenetre()
     {
+        MettreAJourLargeurMinimaleFenetre(ObtenirZoneTravailFenetreCourante());
         Width = Math.Max(MinWidth, _configurationConnexion.LargeurFenetre);
         Height = Math.Max(MinHeight, _configurationConnexion.HauteurFenetre);
 

@@ -567,7 +567,7 @@ public partial class MainWindow
         {
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            Opacity = 0.62,
+            Opacity = ConstantesDesign.OpaciteSecondaire,
             FontSize = 10,
             FontWeight = FontWeights.SemiBold,
             Text = string.IsNullOrWhiteSpace(succesAffiche.Titre)
@@ -578,8 +578,8 @@ public partial class MainWindow
         };
         SystemControls.Image imageSucces = new()
         {
-            Width = 34,
-            Height = 34,
+            Width = TailleBadgeGrilleSucces,
+            Height = TailleBadgeGrilleSucces,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Opacity = 0,
@@ -649,7 +649,7 @@ public partial class MainWindow
         if (estEpingle)
         {
             badge.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 196, 64));
-            badge.BorderThickness = new Thickness(2);
+            badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
             badge.Background = new SolidColorBrush(Color.FromArgb(34, 255, 196, 64));
             AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
@@ -658,7 +658,7 @@ public partial class MainWindow
         if (estTemporaire)
         {
             badge.BorderBrush = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-            badge.BorderThickness = new Thickness(2);
+            badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
             badge.Background = new SolidColorBrush(Color.FromArgb(32, 120, 200, 255));
             AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
@@ -688,16 +688,20 @@ public partial class MainWindow
         if (!prioritaire)
         {
             badge.BorderBrush = new SolidColorBrush(Color.FromRgb(245, 200, 76));
-            badge.BorderThickness = new Thickness(2);
+            badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
             badge.Background = new SolidColorBrush(Color.FromArgb(28, 245, 200, 76));
         }
 
         badge.Effect = new DropShadowEffect
         {
             Color = Color.FromRgb(245, 200, 76),
-            BlurRadius = prioritaire ? 12 : 18,
+            BlurRadius = prioritaire
+                ? ConstantesDesign.FlouHaloHardcorePrioritaire
+                : ConstantesDesign.FlouHaloHardcore,
             ShadowDepth = 0,
-            Opacity = prioritaire ? 0.55 : 0.82,
+            Opacity = prioritaire
+                ? ConstantesDesign.OpaciteHaloHardcorePrioritaire
+                : ConstantesDesign.OpaciteHaloHardcore,
         };
     }
 

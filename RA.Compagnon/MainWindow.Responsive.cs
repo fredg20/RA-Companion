@@ -71,6 +71,7 @@ public partial class MainWindow
      */
     private void FenetrePrincipale_PositionChangee(object? sender, EventArgs e)
     {
+        MettreAJourLargeurMinimaleFenetre(ObtenirZoneTravailFenetreCourante());
         PlanifierSauvegardeGeometrieFenetre();
     }
 
@@ -79,6 +80,8 @@ public partial class MainWindow
      */
     private void FenetrePrincipale_EtatChange(object? sender, EventArgs e)
     {
+        MettreAJourLargeurMinimaleFenetre(ObtenirZoneTravailFenetreCourante());
+        AjusterDisposition();
         PlanifierSauvegardeGeometrieFenetre();
     }
 

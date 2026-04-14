@@ -72,6 +72,45 @@ public sealed class ServiceConfigurationLocale
     }
 
     /*
+     * Recharge de manière synchrone la configuration minimale utile avant
+     * le premier affichage, notamment la géométrie de fenêtre.
+     */
+    public static ConfigurationConnexion ChargerConfigurationInitialeFenetre()
+    {
+        FinaliserFichierTemporaireSiNecessaire(CheminFichierConfiguration);
+
+        if (!File.Exists(CheminFichierConfiguration))
+        {
+            return new ConfigurationConnexion();
+        }
+
+        try
+        {
+            using FileStream fluxLecture = File.OpenRead(CheminFichierConfiguration);
+
+            if (fluxLecture.Length == 0)
+            {
+                return new ConfigurationConnexion();
+            }
+
+            return JsonSerializer.Deserialize<ConfigurationConnexion>(fluxLecture, OptionsJson)
+                ?? new ConfigurationConnexion();
+        }
+        catch (JsonException)
+        {
+            return new ConfigurationConnexion();
+        }
+        catch (IOException)
+        {
+            return new ConfigurationConnexion();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return new ConfigurationConnexion();
+        }
+    }
+
+    /*
      * Sauvegarde à la fois l'identité utilisateur et l'état applicatif.
      */
     public async Task SauvegarderAsync(ConfigurationConnexion configuration)

@@ -583,9 +583,9 @@ public partial class MainWindow
             return;
         }
 
-        const double seuilDeclenchement = 6;
-        const double vitessePixelsParSeconde = 30;
-        TimeSpan pause = TimeSpan.FromSeconds(1.4);
+        double seuilDeclenchement = ConstantesDesign.SeuilDeclenchementAnimationTitre;
+        double vitessePixelsParSeconde = ConstantesDesign.VitesseAnimationTitrePixelsParSeconde;
+        TimeSpan pause = ConstantesDesign.PauseAnimationTitre;
         double debordement = Math.Max(0, largeurTitreSouhaitee - largeurDisponible);
         string signatureAnimation =
             $"{TexteTitreJeuEnCours.Text}|{Math.Round(largeurTitreSouhaitee, 1, MidpointRounding.AwayFromZero)}|{Math.Round(largeurDisponible, 1, MidpointRounding.AwayFromZero)}|{Math.Round(debordement, 1, MidpointRounding.AwayFromZero)}";

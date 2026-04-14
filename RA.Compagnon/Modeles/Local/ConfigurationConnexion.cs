@@ -28,6 +28,8 @@ public sealed class ConfigurationConnexion
 
     public string ModeAffichageSucces { get; set; } = "Normal";
 
+    public bool HaloBoutonAidePremiereUtilisationDejaAffiche { get; set; }
+
     [JsonIgnore]
     public EtatJeuAfficheLocal? DernierJeuAffiche { get; set; }
 

@@ -9,6 +9,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -105,7 +106,10 @@ public partial class MainWindow
             "SystemAccentColorBrush",
             Color.FromRgb(28, 100, 242)
         );
-        CornerRadius rayonCoins = ObtenirRayonCoins("RayonCoinsStandard", 12);
+        CornerRadius rayonCoins = ObtenirRayonCoins(
+            "RayonCoinsStandard",
+            ConstantesDesign.EspaceStandard
+        );
 
         SystemControls.TextBox champPseudo = new()
         {
@@ -185,7 +189,7 @@ public partial class MainWindow
             MinWidth = LargeurContenuModaleConnexion + (MargeInterieureModaleConnexion * 2) + 36,
             Content = new SystemControls.Border
             {
-                Padding = new Thickness(MargeInterieureModaleConnexion),
+                Padding = ConstantesDesign.PaddingCarteSecondaire,
                 Background = fondCarte,
                 BorderBrush = bordure,
                 BorderThickness = new Thickness(1),
@@ -199,7 +203,7 @@ public partial class MainWindow
                     {
                         new SystemControls.TextBlock
                         {
-                            FontSize = 20,
+                            FontSize = ConstantesDesign.TaillePoliceTitreSection,
                             FontWeight = FontWeights.SemiBold,
                             Foreground = textePrincipal,
                             Text = "Connexion",
@@ -391,16 +395,16 @@ public partial class MainWindow
         );
         SystemControls.StackPanel contenu = new()
         {
-            Width = 460,
+            Width = ConstantesDesign.LargeurCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(0),
+            Margin = ConstantesDesign.AucuneMarge,
         };
         contenu.Children.Add(ConstruireEnTeteAvatarCompte(compte));
         contenu.Children.Add(
             new SystemControls.TextBlock
             {
                 Margin = new Thickness(0, 12, 0, 0),
-                FontSize = 22,
+                FontSize = ConstantesDesign.TaillePoliceTitreSection,
                 FontWeight = FontWeights.SemiBold,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
@@ -415,7 +419,7 @@ public partial class MainWindow
                 {
                     Margin = new Thickness(0, 6, 0, 0),
                     Opacity = 0.72,
-                    FontSize = 14,
+                    FontSize = ConstantesDesign.TaillePoliceInterfaceBase,
                     FontStyle = FontStyles.Italic,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     TextAlignment = TextAlignment.Center,
@@ -441,7 +445,7 @@ public partial class MainWindow
                 Content = "Ouvrir le profil RetroAchievements",
                 Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                Padding = new Thickness(14, 6, 14, 6),
+                Padding = ConstantesDesign.PaddingBoutonAction,
                 Margin = new Thickness(0, 0, 0, 12),
             };
             boutonProfilRetroAchievements.Click += (_, _) =>
@@ -465,9 +469,9 @@ public partial class MainWindow
         }
         SystemControls.Border conteneurContenu = new()
         {
-            Padding = new Thickness(MargeInterieureModaleConnexion),
+            Padding = ConstantesDesign.PaddingCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", 12),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
             Child = contenu,
         };
 
@@ -475,7 +479,8 @@ public partial class MainWindow
         {
             Title = string.Empty,
             Content = conteneurContenu,
-            MinWidth = 460 + (MargeInterieureModaleConnexion * 2),
+            MinWidth =
+                ConstantesDesign.LargeurCarteSecondaire + (MargeInterieureModaleConnexion * 2),
             PrimaryButtonText = "Déconnexion",
             DefaultButton = UiControls.ContentDialogButton.Primary,
         };
@@ -518,14 +523,14 @@ public partial class MainWindow
 
         SystemControls.StackPanel contenu = new()
         {
-            Width = 460,
+            Width = ConstantesDesign.LargeurCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(0),
+            Margin = ConstantesDesign.AucuneMarge,
             Children =
             {
                 new SystemControls.TextBlock
                 {
-                    FontSize = 20,
+                    FontSize = ConstantesDesign.TaillePoliceTitreSection,
                     FontWeight = FontWeights.SemiBold,
                     Text = "Aide rapide",
                     Margin = new Thickness(0, 0, 0, 8),
@@ -575,7 +580,7 @@ public partial class MainWindow
         {
             VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Hidden,
             HorizontalScrollBarVisibility = SystemControls.ScrollBarVisibility.Disabled,
-            MaxHeight = 620,
+            MaxHeight = ConstantesDesign.HauteurMaximaleModale,
             Content = contenu,
         };
         defileurAide.MouseEnter += (_, _) =>
@@ -585,9 +590,9 @@ public partial class MainWindow
 
         SystemControls.Border conteneurContenu = new()
         {
-            Padding = new Thickness(MargeInterieureModaleConnexion),
+            Padding = ConstantesDesign.PaddingCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", 12),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
             Child = defileurAide,
         };
 
@@ -595,7 +600,8 @@ public partial class MainWindow
         {
             Title = "Aide",
             Content = conteneurContenu,
-            MinWidth = 460 + (MargeInterieureModaleConnexion * 2),
+            MinWidth =
+                ConstantesDesign.LargeurCarteSecondaire + (MargeInterieureModaleConnexion * 2),
             CloseButtonText = "Fermer",
             DefaultButton = UiControls.ContentDialogButton.Close,
         };
@@ -2018,7 +2024,63 @@ public partial class MainWindow
      */
     private async Task ExecuterActionAfficherAideAsync()
     {
+        DefinirMiseEnAvantBoutonAide(active: false);
         await AfficherModaleAideAsync();
+    }
+
+    /*
+     * Active une seule fois la mise en avant du bouton Aide au premier lancement
+     * visible de Compagnon, puis mémorise immédiatement cet état.
+     */
+    private async Task InitialiserMiseEnAvantBoutonAidePremiereUtilisationAsync()
+    {
+        bool afficherHalo = !_configurationConnexion.HaloBoutonAidePremiereUtilisationDejaAffiche;
+        DefinirMiseEnAvantBoutonAide(afficherHalo);
+
+        if (!afficherHalo)
+        {
+            return;
+        }
+
+        _configurationConnexion.HaloBoutonAidePremiereUtilisationDejaAffiche = true;
+
+        try
+        {
+            await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
+                _configurationConnexion
+            );
+        }
+        catch { }
+    }
+
+    /*
+     * Applique ou retire le halo doré du bouton Aide afin de guider la
+     * première découverte de l'application.
+     */
+    private void DefinirMiseEnAvantBoutonAide(bool active)
+    {
+        if (BoutonAide is null)
+        {
+            return;
+        }
+
+        if (!active)
+        {
+            BoutonAide.Effect = null;
+            BoutonAide.ClearValue(SystemControls.Control.BorderBrushProperty);
+            BoutonAide.ClearValue(SystemControls.Control.BorderThicknessProperty);
+            return;
+        }
+
+        BoutonAide.BorderBrush = new SolidColorBrush(Color.FromRgb(245, 200, 76));
+        BoutonAide.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
+        BoutonAide.Effect = new DropShadowEffect
+        {
+            Color = Color.FromRgb(245, 200, 76),
+            BlurRadius = ConstantesDesign.FlouHaloHardcore,
+            ShadowDepth = 0,
+            Opacity = ConstantesDesign.OpaciteHaloHardcore,
+        };
     }
 
     /*

@@ -93,10 +93,27 @@ public partial class MainWindow
         }
 
         double facteurReductionTitre =
-            ActualWidth < 760 ? Math.Max(0.8, 1 - ((760 - ActualWidth) / 900)) : 1;
-        double taillePoliceTitre = CalculerTaillePoliceResponsive(16) * facteurReductionTitre;
-        double hauteurLigne = CalculerTaillePoliceResponsive(20) * facteurReductionTitre;
-        double hauteurConteneur = Math.Clamp(hauteurLigne, 20, 28);
+            ActualWidth < ConstantesDesign.SeuilReductionTitreFenetre
+                ? Math.Max(
+                    ConstantesDesign.FacteurTypographieMinimal,
+                    1
+                        - (
+                            (ConstantesDesign.SeuilReductionTitreFenetre - ActualWidth)
+                            / ConstantesDesign.PlageReductionTitreFenetre
+                        )
+                )
+                : 1;
+        double taillePoliceTitre =
+            CalculerTaillePoliceResponsive(ConstantesDesign.TaillePoliceTitreFenetre)
+            * facteurReductionTitre;
+        double hauteurLigne =
+            CalculerTaillePoliceResponsive(ConstantesDesign.TaillePoliceTitreSection)
+            * facteurReductionTitre;
+        double hauteurConteneur = Math.Clamp(
+            hauteurLigne,
+            ConstantesDesign.TailleIconeStandard,
+            ConstantesDesign.HauteurBoutonAction
+        );
 
         TexteTitreFenetre.FontSize = taillePoliceTitre;
         TexteTitreFenetre.LineHeight = hauteurLigne;
@@ -104,7 +121,7 @@ public partial class MainWindow
         Grid.SetColumn(ConteneurTitreFenetre, 0);
         Grid.SetColumnSpan(ConteneurTitreFenetre, 2);
         ConteneurTitreFenetre.HorizontalAlignment = HorizontalAlignment.Left;
-        ConteneurTitreFenetre.Margin = new Thickness(44, 0, 8, 0);
+        ConteneurTitreFenetre.Margin = ConstantesDesign.MargeTitreFenetre;
         TexteTitreFenetre.TextAlignment = TextAlignment.Left;
     }
 

@@ -30,6 +30,13 @@ public partial class MainWindow
 
         Key touche = e.Key == Key.System ? e.SystemKey : e.Key;
 
+        if (touche == Key.F6)
+        {
+            e.Handled = true;
+            SimulerMiseEnAvantBoutonAideDebug();
+            return;
+        }
+
         if (touche != Key.F7 && touche != Key.F8 && touche != Key.F9 && touche != Key.F10)
         {
             return;
@@ -48,6 +55,17 @@ public partial class MainWindow
             _ => ModeDeclenchementTestSuccesDebug.InterneUi,
         };
         await DeclencherTestSuccesDebugAsync(modeDeclenchement, hardcore);
+    }
+
+    /*
+     * Force temporairement l'affichage du halo du bouton Aide sans modifier
+     * l'état persistant de première utilisation.
+     */
+    private void SimulerMiseEnAvantBoutonAideDebug()
+    {
+        bool activer = BoutonAide?.Effect is null;
+        DefinirMiseEnAvantBoutonAide(activer);
+        ServiceTestSuccesDebug.JournaliserEvenement("test_aide_mise_en_avant", $"active={activer}");
     }
 
     /*

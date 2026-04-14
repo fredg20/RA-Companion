@@ -44,6 +44,7 @@ public partial class MainWindow
 
         await ChargerConfigurationInitialeAsync();
         AppliquerConfigurationInitiale();
+        await InitialiserMiseEnAvantBoutonAidePremiereUtilisationAsync();
 
         if (!await VerifierOuObtenirConfigurationConnexionAsync())
         {

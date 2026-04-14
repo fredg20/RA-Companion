@@ -123,7 +123,7 @@ public partial class MainWindow
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromMilliseconds(320),
+                Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut },
             };
             ImageJeuEnCours.BeginAnimation(UIElement.OpacityProperty, animationFonduEntreeInitiale);
@@ -166,7 +166,7 @@ public partial class MainWindow
         {
             From = 1,
             To = 0,
-            Duration = TimeSpan.FromMilliseconds(320),
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
         };
 
@@ -174,7 +174,7 @@ public partial class MainWindow
         {
             From = 0,
             To = 1,
-            Duration = TimeSpan.FromMilliseconds(320),
+            Duration = TimeSpan.FromMilliseconds(DureeFonduImageJeuEnCoursMillisecondes),
             EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut },
         };
 

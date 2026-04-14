@@ -1,4 +1,5 @@
 using System.Net.Http;
+using RA.Compagnon.Services;
 using Wpf.Ui.Controls;
 
 /*
@@ -68,28 +69,40 @@ public partial class MainWindow : FluentWindow
         TimeSpan.FromHours(6);
     private static readonly HttpClient HttpClientImages = new();
 
-    private const double LargeurMinimaleDispositionDouble = 920;
-    private const double RatioLargeurDispositionEtendue = 0.60;
-    private const double LargeurMinimaleDispositionTriple = 1680;
-    private const double LargeurMinimaleCarteJeuDispositionEtendue = 940;
-    private const double LargeurContenuModaleConnexion = 360;
-    private const double MargeInterieureModaleConnexion = 16;
-    private const double LargeurZoneDetectionBarreDefilement = 18;
-    private const double TaillePoliceInterfaceBase = 14.5;
-    private const double LargeurMinimaleTypographieResponsive = 360;
-    private const double LargeurReferenceTypographieResponsive = 1100;
-    private const double LargeurMaximaleTypographieResponsive = 1800;
-    private const double FacteurTypographieResponsiveMinimal = 0.88;
-    private const double FacteurTypographieResponsiveMaximal = 1.18;
-    private const double TaillePoliceTitreJeuNormale = 26;
-    private const double TaillePoliceTitreJeuMinimale = 18;
-    private const double TailleBadgeGrilleSucces = 34;
-    private const double EspaceMinimalGrilleSucces = 6;
+    private const double LargeurContenuModaleConnexion =
+        ConstantesDesign.LargeurContenuModaleConnexion;
+    private const double MargeInterieureModaleConnexion =
+        ConstantesDesign.MargeInterieureModaleConnexion;
+    private const double LargeurZoneDetectionBarreDefilement =
+        ConstantesDesign.LargeurZoneDetectionBarreDefilement;
+    private static readonly double TaillePoliceInterfaceBase =
+        ConstantesDesign.TaillePoliceInterfaceBase;
+    private static readonly double LargeurMinimaleTypographieResponsive =
+        ConstantesDesign.LargeurTypographieMinimale;
+    private static readonly double LargeurReferenceTypographieResponsive =
+        ConstantesDesign.LargeurTypographieReference;
+    private static readonly double LargeurMaximaleTypographieResponsive =
+        ConstantesDesign.LargeurTypographieMaximale;
+    private static readonly double FacteurTypographieResponsiveMinimal =
+        ConstantesDesign.FacteurTypographieMinimal;
+    private static readonly double FacteurTypographieResponsiveMaximal =
+        ConstantesDesign.FacteurTypographieMaximal;
+    private static readonly double TaillePoliceTitreJeuNormale =
+        ConstantesDesign.TaillePoliceTitreJeuNormale;
+    private static readonly double TaillePoliceTitreJeuMinimale =
+        ConstantesDesign.TaillePoliceTitreJeuMinimale;
+    private const double TailleBadgeGrilleSucces = ConstantesDesign.TailleBadgeStandard;
+    private const double EspaceMinimalGrilleSucces = ConstantesDesign.EspaceMinimalGrilleSucces;
     private const double HauteurMinimaleGrilleSucces = 0;
-    private const double VitesseDefilementGrilleSuccesPixelsParSeconde = 22;
-    private const double SeuilDeclenchementDefilementGrilleSucces = 4;
-    private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
-    private const double RayonFlouTransitionImageJeuEnCours = 14;
+    private const double VitesseDefilementGrilleSuccesPixelsParSeconde =
+        ConstantesDesign.VitesseDefilementGrilleSuccesPixelsParSeconde;
+    private const double SeuilDeclenchementDefilementGrilleSucces =
+        ConstantesDesign.SeuilDeclenchementDefilementGrilleSucces;
+    private static readonly double DureeFonduImageJeuEnCoursMillisecondes = ConstantesDesign
+        .DureeFonduVisuel
+        .TotalMilliseconds;
+    private const double RayonFlouTransitionImageJeuEnCours =
+        ConstantesDesign.RayonFlouTransitionImageJeuEnCours;
 
     /*
      * Initialise la fenêtre principale, le ViewModel, les minuteurs et les
@@ -99,6 +112,8 @@ public partial class MainWindow : FluentWindow
     {
         App.JournaliserDemarrage("MainWindow ctor début");
         InitializeComponent();
+        _configurationConnexion = ServiceConfigurationLocale.ChargerConfigurationInitialeFenetre();
+        AppliquerGeometrieFenetre();
         App.JournaliserDemarrage("MainWindow ctor fin");
         InitialiserVueModele();
         RA.Compagnon.Services.ServiceSurveillanceSuccesLocaux.ReinitialiserJournalSession();

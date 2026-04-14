@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using Microsoft.Win32;
 using RA.Compagnon.Modeles.Local;
 
 /*
@@ -270,9 +271,8 @@ public static class ServiceSourcesLocalesEmulateurs
 
         return definition.StrategieRenseignementJeu switch
         {
-            StrategieRenseignementJeuEmulateurLocal.RetroArchLog => TrouverParentSiPossible(
-                TrouverRepertoireLogsRetroArch()
-            ),
+            StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
+                TrouverCheminExecutableRetroArch(),
             StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => TrouverRepertoireFichier(
                 TrouverCheminConfigurationBizHawk()
             ),
@@ -414,7 +414,7 @@ public static class ServiceSourcesLocalesEmulateurs
         string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         string emplacementManuel = ObtenirEmplacementEmulateurManuel("RetroArch");
         string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("RetroArch");
-        string emplacementProcessus = TrouverCheminExecutableRetroArchDepuisProcessus();
+        string emplacementProcessus = TrouverCheminExecutableRetroArch();
 
         string[] candidats =
         [
@@ -447,9 +447,7 @@ public static class ServiceSourcesLocalesEmulateurs
                 .. ConstruireCandidatsFichiersJournalRetroArch(
                     ObtenirEmplacementEmulateurDetecte("RetroArch")
                 ),
-                .. ConstruireCandidatsFichiersJournalRetroArch(
-                    TrouverCheminExecutableRetroArchDepuisProcessus()
-                ),
+                .. ConstruireCandidatsFichiersJournalRetroArch(TrouverCheminExecutableRetroArch()),
             ];
 
             string cheminDirect =
@@ -488,6 +486,61 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             return string.Empty;
         }
+    }
+
+    /*
+     * Retourne le chemin de l'exécutable RetroArch connu localement,
+     * y compris pour une installation Windows classique.
+     */
+    public static string TrouverCheminExecutableRetroArch()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("RetroArch");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("RetroArch");
+        string emplacementProcessus = TrouverCheminExecutableRetroArchDepuisProcessus();
+        string emplacementRegistre = TrouverCheminExecutableRetroArchDepuisRegistre();
+        string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        string programFilesX86 = Environment.GetFolderPath(
+            Environment.SpecialFolder.ProgramFilesX86
+        );
+
+        string[] candidats =
+        [
+            TrouverFichierRetroArchDepuisEmplacement(emplacementManuel),
+            TrouverFichierRetroArchDepuisEmplacement(emplacementDetecte),
+            TrouverFichierRetroArchDepuisEmplacement(emplacementProcessus),
+            TrouverFichierRetroArchDepuisEmplacement(emplacementRegistre),
+            Path.Combine(documents, "emulation", "RetroArch", "retroarch.exe"),
+            Path.Combine(documents, "RetroArch", "retroarch.exe"),
+            Path.Combine(localAppData, "Programs", "RetroArch", "retroarch.exe"),
+            Path.Combine(programFiles, "RetroArch", "retroarch.exe"),
+            Path.Combine(programFiles, "RetroArch-Win64", "retroarch.exe"),
+            Path.Combine(programFilesX86, "RetroArch", "retroarch.exe"),
+            Path.Combine(programFilesX86, "RetroArch-Win32", "retroarch.exe"),
+            Path.Combine(
+                Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\",
+                "RetroArch",
+                "retroarch.exe"
+            ),
+            Path.Combine(
+                Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\",
+                "RetroArch-Win64",
+                "retroarch.exe"
+            ),
+            Path.Combine(
+                Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\",
+                "RetroArch-Win32",
+                "retroarch.exe"
+            ),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
     }
 
     /*
@@ -1181,6 +1234,78 @@ public static class ServiceSourcesLocalesEmulateurs
     }
 
     /*
+     * Tente de retrouver RetroArch depuis les clés standard du registre Windows.
+     */
+    private static string TrouverCheminExecutableRetroArchDepuisRegistre()
+    {
+        string[] sousClesAppPaths =
+        [
+            @"Software\Microsoft\Windows\CurrentVersion\App Paths\retroarch.exe",
+        ];
+        string[] sousClesDesinstallation =
+        [
+            @"Software\Microsoft\Windows\CurrentVersion\Uninstall\RetroArch",
+            @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\RetroArch",
+        ];
+
+        foreach (string sousCle in sousClesAppPaths)
+        {
+            string chemin = LireCheminRetroArchDepuisSousCleRegistre(
+                Registry.CurrentUser,
+                sousCle,
+                valeurParDefaut: true
+            );
+
+            if (!string.IsNullOrWhiteSpace(chemin))
+            {
+                return chemin;
+            }
+
+            chemin = LireCheminRetroArchDepuisSousCleRegistre(
+                Registry.LocalMachine,
+                sousCle,
+                valeurParDefaut: true
+            );
+
+            if (!string.IsNullOrWhiteSpace(chemin))
+            {
+                return chemin;
+            }
+        }
+
+        foreach (string sousCle in sousClesDesinstallation)
+        {
+            string chemin = LireCheminRetroArchDepuisSousCleRegistre(
+                Registry.CurrentUser,
+                sousCle,
+                valeurParDefaut: false,
+                "DisplayIcon",
+                "InstallLocation"
+            );
+
+            if (!string.IsNullOrWhiteSpace(chemin))
+            {
+                return chemin;
+            }
+
+            chemin = LireCheminRetroArchDepuisSousCleRegistre(
+                Registry.LocalMachine,
+                sousCle,
+                valeurParDefaut: false,
+                "DisplayIcon",
+                "InstallLocation"
+            );
+
+            if (!string.IsNullOrWhiteSpace(chemin))
+            {
+                return chemin;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    /*
      * Tente de retrouver l'exécutable Dolphin à partir des processus actifs.
      */
     private static string TrouverCheminExecutableDolphinDepuisProcessus()
@@ -1222,6 +1347,119 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             return string.Empty;
         }
+    }
+
+    /*
+     * Résout un emplacement RetroArch en chemin d'exécutable si possible.
+     */
+    private static string TrouverFichierRetroArchDepuisEmplacement(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (File.Exists(emplacement))
+            {
+                return string.Equals(
+                    Path.GetFileName(emplacement),
+                    "retroarch.exe",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                    ? emplacement
+                    : string.Empty;
+            }
+
+            if (!Directory.Exists(emplacement))
+            {
+                return string.Empty;
+            }
+
+            string cheminExecutable = Path.Combine(emplacement, "retroarch.exe");
+            return File.Exists(cheminExecutable) ? cheminExecutable : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /*
+     * Lit un ou plusieurs emplacements RetroArch depuis une sous-clé du registre
+     * et les convertit en chemin d'exécutable exploitable.
+     */
+    private static string LireCheminRetroArchDepuisSousCleRegistre(
+        RegistryKey racine,
+        string sousCle,
+        bool valeurParDefaut,
+        params string[] nomsValeurs
+    )
+    {
+        try
+        {
+            using RegistryKey? cle = racine.OpenSubKey(sousCle);
+
+            if (cle is null)
+            {
+                return string.Empty;
+            }
+
+            IEnumerable<string?> valeurs = valeurParDefaut
+                ? [cle.GetValue(null) as string]
+                : nomsValeurs.Select(nom => cle.GetValue(nom) as string);
+
+            foreach (string? valeurBrute in valeurs)
+            {
+                string chemin = ExtraireCheminRetroArchDepuisValeurRegistre(valeurBrute);
+
+                if (!string.IsNullOrWhiteSpace(chemin))
+                {
+                    return chemin;
+                }
+            }
+        }
+        catch { }
+
+        return string.Empty;
+    }
+
+    /*
+     * Nettoie une valeur du registre et en extrait le chemin RetroArch.
+     */
+    private static string ExtraireCheminRetroArchDepuisValeurRegistre(string? valeurBrute)
+    {
+        if (string.IsNullOrWhiteSpace(valeurBrute))
+        {
+            return string.Empty;
+        }
+
+        string valeur = valeurBrute.Trim().Trim('"');
+        int indexArguments = valeur.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+
+        if (indexArguments >= 0)
+        {
+            valeur = valeur[..(indexArguments + 4)];
+        }
+
+        string cheminFichier = TrouverFichierRetroArchDepuisEmplacement(valeur);
+
+        if (!string.IsNullOrWhiteSpace(cheminFichier))
+        {
+            return cheminFichier;
+        }
+
+        try
+        {
+            if (Directory.Exists(valeur))
+            {
+                return TrouverFichierRetroArchDepuisEmplacement(valeur);
+            }
+        }
+        catch { }
+
+        return string.Empty;
     }
 
     /*

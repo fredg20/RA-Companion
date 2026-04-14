@@ -704,16 +704,16 @@ public partial class MainWindow
             Appearance = UiControls.ControlAppearance.Secondary,
             HorizontalAlignment = HorizontalAlignment.Left,
             Margin = new Thickness(0, 14, 0, 0),
-            Padding = new Thickness(14, 6, 14, 6),
+            Padding = ConstantesDesign.PaddingBoutonAction,
         };
         boutonPageJeu.Click += (_, _) => OuvrirPageJeuRetroAchievements(jeu.Id);
         contenu.Children.Add(boutonPageJeu);
 
         SystemControls.Border conteneurContenu = new()
         {
-            Padding = new Thickness(MargeInterieureModaleConnexion),
+            Padding = ConstantesDesign.PaddingCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", 12),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
             Child = contenu,
         };
 
@@ -721,7 +721,8 @@ public partial class MainWindow
         {
             Title = "Détails du jeu",
             Content = conteneurContenu,
-            MinWidth = 460 + (MargeInterieureModaleConnexion * 2),
+            MinWidth =
+                ConstantesDesign.LargeurCarteSecondaire + (MargeInterieureModaleConnexion * 2),
             CloseButtonText = "Fermer",
             DefaultButton = UiControls.ContentDialogButton.Close,
         };
