@@ -29,13 +29,6 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /*
-     * Mémorise si la modale d'aide courante est affichée dans une largeur
-     * compacte afin d'harmoniser ses sous-sections, même lorsqu'elles sont
-     * construites depuis d'autres fichiers partiels.
-     */
-    private bool _modaleAideCompacteCourante;
-
-    /*
      * Retourne un pinceau issu du thème courant ou une couleur de repli
      * lorsque la ressource demandée n'est pas disponible.
      */
@@ -141,25 +134,6 @@ public partial class MainWindow
     private static bool EstModaleCompacte(double largeurContenu, double seuilCompact)
     {
         return largeurContenu < seuilCompact;
-    }
-
-    /*
-     * Calcule une largeur souple pour la colonne des libellés dans la modale
-     * de compte afin de conserver une lecture stable sans imposer une valeur
-     * fixe quand la fenêtre rétrécit.
-     */
-    private static double CalculerLargeurColonneLibellesCompte(double largeurContenuDisponible)
-    {
-        double largeurProportionnelle = Math.Round(
-            largeurContenuDisponible / (ConstantesDesign.NombreOr + 1d),
-            0
-        );
-
-        return Math.Clamp(
-            largeurProportionnelle,
-            ConstantesDesign.EspaceHeroique,
-            ConstantesDesign.EspaceVisuelLarge
-        );
     }
 
     /*
@@ -504,21 +478,65 @@ public partial class MainWindow
             ConstantesDesign.EspaceFenetreStandard
         );
         double hauteurMaximaleCompte = CalculerHauteurMaximaleContenuModale();
-        bool modaleCompteCompacte = EstModaleCompacte(
-            largeurContenuCompte,
-            ConstantesDesign.LargeurCarteSecondaire - ConstantesDesign.EspaceVisuelLarge
-        );
-        double largeurColonneLibellesCompte = CalculerLargeurColonneLibellesCompte(
-            largeurContenuCompte
-        );
         SystemControls.StackPanel contenu = new()
         {
             Width = largeurContenuCompte,
             HorizontalAlignment = HorizontalAlignment.Center,
             Margin = ConstantesDesign.AucuneMarge,
         };
-        contenu.Children.Add(ConstruireEnTeteAvatarCompte(compte, modaleCompteCompacte));
-        contenu.Children.Add(ConstruireCartePresentationCompte(compte, modaleCompteCompacte));
+        contenu.Children.Add(ConstruireEnTeteAvatarCompte(compte));
+        contenu.Children.Add(
+            new SystemControls.TextBlock
+            {
+                Margin = new Thickness(0, 12, 0, 0),
+                FontSize = ConstantesDesign.TaillePoliceTitreSection,
+                FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextAlignment = TextAlignment.Center,
+                Text = compte.Titre,
+                TextWrapping = TextWrapping.Wrap,
+            }
+        );
+        if (!string.IsNullOrWhiteSpace(compte.Devise))
+        {
+            contenu.Children.Add(
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 6, 0, 0),
+                    Opacity = 0.72,
+                    FontSize = ConstantesDesign.TaillePoliceInterfaceBase,
+                    FontStyle = FontStyles.Italic,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextAlignment = TextAlignment.Center,
+                    Text = compte.Devise,
+                    TextWrapping = TextWrapping.Wrap,
+                }
+            );
+        }
+        contenu.Children.Add(
+            new SystemControls.TextBlock
+            {
+                Margin = new Thickness(0, 12, 0, 12),
+                Opacity = 0.82,
+                Text = compte.Introduction,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+            }
+        );
+        if (!string.IsNullOrWhiteSpace(compte.NomUtilisateur))
+        {
+            UiControls.Button boutonProfilRetroAchievements = new()
+            {
+                Content = "Ouvrir le profil RetroAchievements",
+                Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Padding = ConstantesDesign.PaddingBoutonAction,
+                Margin = new Thickness(0, 0, 0, 12),
+            };
+            boutonProfilRetroAchievements.Click += (_, _) =>
+                OuvrirProfilRetroAchievements(compte.NomUtilisateur);
+            contenu.Children.Add(boutonProfilRetroAchievements);
+        }
         for (int indexSection = 0; indexSection < compte.Sections.Count; indexSection++)
         {
             if (indexSection > 0)
@@ -526,21 +544,13 @@ public partial class MainWindow
                 contenu.Children.Add(ConstruireSeparateurBlocCompte());
             }
 
-            contenu.Children.Add(
-                ConstruireBlocCompte(
-                    compte.Sections[indexSection],
-                    modaleCompteCompacte,
-                    largeurColonneLibellesCompte
-                )
-            );
+            contenu.Children.Add(ConstruireBlocCompte(compte.Sections[indexSection]));
         }
 
         if (compte.JeuxRecemmentJoues.Count > 0)
         {
             contenu.Children.Add(ConstruireSeparateurBlocCompte());
-            contenu.Children.Add(
-                ConstruireBlocJeuxRecemmentJoues(compte.JeuxRecemmentJoues, modaleCompteCompacte)
-            );
+            contenu.Children.Add(ConstruireBlocJeuxRecemmentJoues(compte.JeuxRecemmentJoues));
         }
         SystemControls.Border conteneurContenu = new()
         {
@@ -601,12 +611,13 @@ public partial class MainWindow
     {
         _ = VerifierMiseAJourApplicationSiNecessaireAsync();
         double largeurContenuAide = CalculerLargeurContenuModale(
-            ConstantesDesign.LargeurCarteSecondaire,
+            ConstantesDesign.LargeurCarteSecondaire + ConstantesDesign.EspaceHeroique,
             ConstantesDesign.EspaceFenetreStandard
         );
+        double hauteurMaximaleAide = CalculerHauteurMaximaleContenuModale();
         bool modaleAideCompacte = EstModaleCompacte(
             largeurContenuAide,
-            ConstantesDesign.LargeurCarteSecondaire + ConstantesDesign.EspaceHeroique
+            ConstantesDesign.LargeurCarteSecondaire + ConstantesDesign.EspaceCompact
         );
         _modaleAideCompacteCourante = modaleAideCompacte;
         List<SystemControls.Expander> sectionsAide = [];
@@ -618,6 +629,8 @@ public partial class MainWindow
             Margin = ConstantesDesign.AucuneMarge,
             Children =
             {
+                ConstruireBandeauIntroductionAide(largeurContenuAide, modaleAideCompacte),
+                ConstruireBarreActionsAide(sectionsAide),
                 ConstruireBlocAide(
                     "Démarrage rapide",
                     [
@@ -627,8 +640,7 @@ public partial class MainWindow
                     ],
                     "Les trois premières étapes à suivre.",
                     true,
-                    sectionsAide,
-                    modaleAideCompacte
+                    sectionsAide
                 ),
                 ConstruireBlocAide(
                     "Comprendre l'écran",
@@ -639,8 +651,7 @@ public partial class MainWindow
                     ],
                     "Les repères essentiels de l'interface.",
                     false,
-                    sectionsAide,
-                    modaleAideCompacte
+                    sectionsAide
                 ),
                 ConstruireBlocAide(
                     "Si un élément manque",
@@ -652,23 +663,31 @@ public partial class MainWindow
                     ],
                     "La procédure la plus courte pour diagnostiquer un manque.",
                     false,
-                    sectionsAide,
-                    modaleAideCompacte
+                    sectionsAide
                 ),
-                ConstruireBlocAideMiseAJourApplication(sectionsAide),
-                ConstruireBlocAideLogsEmulateurs(sectionsAide, modaleAideCompacte),
+                ConstruireBlocAideMiseAJourApplication(),
+                ConstruireBlocAideLogsEmulateurs(),
             },
         };
 
+        SystemControls.ScrollViewer defileurAide = new()
+        {
+            VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Hidden,
+            HorizontalScrollBarVisibility = SystemControls.ScrollBarVisibility.Disabled,
+            MaxHeight = hauteurMaximaleAide,
+            Content = contenu,
+        };
+        defileurAide.MouseEnter += (_, _) =>
+            defileurAide.VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Auto;
+        defileurAide.MouseLeave += (_, _) =>
+            defileurAide.VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Hidden;
+
         SystemControls.Border conteneurContenu = new()
         {
-            Padding = modaleAideCompacte
-                ? new Thickness(10, 10, 10, 10)
-                : ConstantesDesign.PaddingCarteSecondaire,
+            Padding = ConstantesDesign.PaddingCarteSecondaire,
             HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Top,
             CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
-            Child = contenu,
+            Child = defileurAide,
         };
 
         UiControls.ContentDialog dialogueAide = new(RacineModales)
@@ -680,7 +699,6 @@ public partial class MainWindow
             DefaultButton = UiControls.ContentDialogButton.Close,
         };
         AppliquerTypographieResponsiveSurObjet(dialogueAide);
-        dialogueAide.Loaded += DialogueAide_Chargement;
 
         try
         {
@@ -690,8 +708,335 @@ public partial class MainWindow
         finally
         {
             DefinirEtatModalesActif(false);
-            dialogueAide.Loaded -= DialogueAide_Chargement;
         }
+    }
+
+    /*
+     * Construit le bandeau d'introduction affiché en haut de la modale d'aide
+     * afin de mieux résumer son rôle et l'état courant de la connexion.
+     */
+    private SystemControls.Border ConstruireBandeauIntroductionAide(
+        double largeurContenuAide,
+        bool modaleAideCompacte
+    )
+    {
+        string texteCompte =
+            ConfigurationConnexionEstComplete()
+            && !string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)
+                ? $"Compte connecté : {_configurationConnexion.Pseudo}"
+                : "Compte non connecté : ouvre Profil pour commencer";
+
+        SystemControls.WrapPanel capsules = new()
+        {
+            Margin = new Thickness(0, 10, 0, 0),
+            ItemHeight = double.NaN,
+            Orientation = SystemControls.Orientation.Horizontal,
+        };
+        capsules.Children.Add(ConstruireCapsuleAide("Démarrage"));
+        capsules.Children.Add(ConstruireCapsuleAide("Diagnostic"));
+        capsules.Children.Add(ConstruireCapsuleAide("Mise à jour"));
+        capsules.Children.Add(ConstruireCapsuleAide("Émulateurs"));
+
+        return new SystemControls.Border
+        {
+            Margin = new Thickness(0, 0, 0, 13),
+            Padding = new Thickness(13, 13, 13, 13),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
+            Background = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(48, 255, 255, 255)),
+            BorderThickness = ConstantesDesign.EpaisseurContourFin,
+            Child = new SystemControls.StackPanel
+            {
+                Children =
+                {
+                    new SystemControls.TextBlock
+                    {
+                        FontSize = ConstantesDesign.TaillePoliceTitreSection,
+                        FontWeight = FontWeights.SemiBold,
+                        Text = "Aide rapide et diagnostic",
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new SystemControls.TextBlock
+                    {
+                        Margin = new Thickness(0, 6, 0, 0),
+                        Opacity = 0.84,
+                        Text =
+                            "Cette fenêtre t'aide à démarrer, comprendre l'écran, vérifier les mises à jour et diagnostiquer les chemins lus par Compagnon.",
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new SystemControls.TextBlock
+                    {
+                        Margin = new Thickness(0, 8, 0, 0),
+                        FontWeight = FontWeights.SemiBold,
+                        Opacity = 0.78,
+                        Text = texteCompte,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    capsules,
+                    ConstruireGrilleSyntheseAide(largeurContenuAide, modaleAideCompacte),
+                },
+            },
+        };
+    }
+
+    /*
+     * Construit la barre d'actions placée au-dessus des sections de la modale
+     * d'aide pour accélérer la navigation et l'accès aux diagnostics.
+     */
+    private SystemControls.Border ConstruireBarreActionsAide(
+        IReadOnlyList<SystemControls.Expander> sectionsAide
+    )
+    {
+        UiControls.Button boutonDeplier = new()
+        {
+            Content = "Déplier tout",
+            Padding = new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
+        };
+        UiControls.Button boutonReduire = new()
+        {
+            Content = "Réduire tout",
+            Padding = new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
+        };
+        UiControls.Button boutonJournal = new()
+        {
+            Content = "Ouvrir le journal local",
+            Padding = new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
+        };
+        UiControls.Button boutonNotice = new()
+        {
+            Content = "Ouvrir le manuel",
+            Padding = new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 0, 8),
+        };
+
+        boutonDeplier.Click += (_, _) => DefinirEtatSectionsAide(sectionsAide, true);
+        boutonReduire.Click += (_, _) => DefinirEtatSectionsAide(sectionsAide, false);
+        boutonJournal.Click += (_, _) =>
+        {
+            string cheminJournal = ServiceSondeLocaleEmulateurs.ObtenirCheminJournal();
+
+            if (File.Exists(cheminJournal))
+            {
+                OuvrirFichierExterne(cheminJournal);
+                return;
+            }
+
+            OuvrirDossierContenant(cheminJournal);
+        };
+        boutonNotice.Click += (_, _) =>
+        {
+            string cheminNotice = TrouverCheminNoticeAide();
+
+            if (File.Exists(cheminNotice))
+            {
+                OuvrirFichierExterne(cheminNotice);
+            }
+        };
+        boutonNotice.IsEnabled = File.Exists(TrouverCheminNoticeAide());
+
+        return new SystemControls.Border
+        {
+            Margin = new Thickness(0, 0, 0, 13),
+            Padding = new Thickness(13, 8, 13, 5),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+            Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
+            Child = new SystemControls.WrapPanel
+            {
+                Orientation = SystemControls.Orientation.Horizontal,
+                Children = { boutonDeplier, boutonReduire, boutonJournal, boutonNotice },
+            },
+        };
+    }
+
+    /*
+     * Construit une petite capsule visuelle pour résumer les thèmes abordés
+     * dans la modale d'aide.
+     */
+    private static SystemControls.Border ConstruireCapsuleAide(string texte)
+    {
+        return new SystemControls.Border
+        {
+            Margin = new Thickness(0, 0, 8, 8),
+            Padding = new Thickness(10, 4, 10, 4),
+            CornerRadius = new CornerRadius(ConstantesDesign.EspaceTresCompact),
+            Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(38, 255, 255, 255)),
+            BorderThickness = ConstantesDesign.EpaisseurContourFin,
+            Child = new SystemControls.TextBlock
+            {
+                FontWeight = FontWeights.SemiBold,
+                Opacity = 0.82,
+                Text = texte,
+            },
+        };
+    }
+
+    /*
+     * Applique rapidement un état commun à toutes les sections principales
+     * de la modale d'aide.
+     */
+    private static void DefinirEtatSectionsAide(
+        IEnumerable<SystemControls.Expander> sectionsAide,
+        bool developpees
+    )
+    {
+        foreach (SystemControls.Expander section in sectionsAide)
+        {
+            section.IsExpanded = developpees;
+        }
+    }
+
+    /*
+     * Construit une petite grille de synthèse au sommet de la modale d'aide
+     * afin de résumer immédiatement l'état courant de Compagnon.
+     */
+    private SystemControls.Grid ConstruireGrilleSyntheseAide(
+        double largeurContenuAide,
+        bool modaleAideCompacte
+    )
+    {
+        SystemControls.Grid grille = new() { Margin = new Thickness(0, 13, 0, 0) };
+        int nombreColonnes =
+            modaleAideCompacte ? 1
+            : largeurContenuAide
+            < (ConstantesDesign.LargeurCarteSecondaire + ConstantesDesign.EspaceTresEtendu)
+                ? 2
+            : 3;
+
+        for (int indexColonne = 0; indexColonne < nombreColonnes; indexColonne++)
+        {
+            grille.ColumnDefinitions.Add(
+                new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+            );
+        }
+
+        SystemControls.Border carteCompte = ConstruireCarteSyntheseAide(
+            "Compte",
+            _etatConnexionCourant,
+            ConfigurationConnexionEstComplete()
+                ? "Le compte local est prêt pour les appels à l'API."
+                : "La connexion doit être configurée avant toute synchronisation."
+        );
+        SystemControls.Border carteJeu = ConstruireCarteSyntheseAide(
+            "Jeu visible",
+            ObtenirTexteSyntheseJeuAide(),
+            "Ce résumé indique ce que Compagnon voit maintenant ou garde encore en mémoire."
+        );
+        SystemControls.Border carteInterface = ConstruireCarteSyntheseAide(
+            "Interface",
+            string.IsNullOrWhiteSpace(_vueModele.EtatSynchronisationJeu)
+                ? $"Mode succès : {_vueModele.LibelleOrdreSuccesGrille}"
+                : _vueModele.EtatSynchronisationJeu,
+            string.IsNullOrWhiteSpace(_vueModele.EtatSynchronisationJeu)
+                ? "Aucun rafraîchissement visible n'est en cours."
+                : "Un rafraîchissement du jeu est en cours."
+        );
+
+        SystemControls.Border[] cartes = [carteCompte, carteJeu, carteInterface];
+
+        for (int indexCarte = 0; indexCarte < cartes.Length; indexCarte++)
+        {
+            int ligne = indexCarte / nombreColonnes;
+            int colonne = indexCarte % nombreColonnes;
+
+            while (grille.RowDefinitions.Count <= ligne)
+            {
+                grille.RowDefinitions.Add(
+                    new SystemControls.RowDefinition { Height = GridLength.Auto }
+                );
+            }
+
+            cartes[indexCarte].Margin = new Thickness(
+                0,
+                0,
+                colonne < nombreColonnes - 1 ? 10 : 0,
+                ligne < ((cartes.Length - 1) / nombreColonnes) ? 10 : 0
+            );
+            SystemControls.Grid.SetRow(cartes[indexCarte], ligne);
+            SystemControls.Grid.SetColumn(cartes[indexCarte], colonne);
+            grille.Children.Add(cartes[indexCarte]);
+        }
+
+        return grille;
+    }
+
+    /*
+     * Construit une carte compacte de synthèse réutilisable pour la modale
+     * d'aide.
+     */
+    private SystemControls.Border ConstruireCarteSyntheseAide(
+        string titre,
+        string valeur,
+        string sousTexte
+    )
+    {
+        return new SystemControls.Border
+        {
+            Margin = new Thickness(0, 0, 10, 0),
+            Padding = new Thickness(10, 9, 10, 9),
+            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
+            BorderThickness = ConstantesDesign.EpaisseurContourFin,
+            Child = new SystemControls.StackPanel
+            {
+                Children =
+                {
+                    new SystemControls.TextBlock
+                    {
+                        FontWeight = FontWeights.SemiBold,
+                        Opacity = 0.78,
+                        Text = titre,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new SystemControls.TextBlock
+                    {
+                        Margin = new Thickness(0, 5, 0, 0),
+                        FontSize = 15,
+                        FontWeight = FontWeights.SemiBold,
+                        Text = valeur,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                    new SystemControls.TextBlock
+                    {
+                        Margin = new Thickness(0, 5, 0, 0),
+                        Opacity = 0.66,
+                        Text = sousTexte,
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                },
+            },
+        };
+    }
+
+    /*
+     * Retourne un résumé court du jeu actuellement visible ou retenu par
+     * Compagnon pour le haut de la modale d'aide.
+     */
+    private string ObtenirTexteSyntheseJeuAide()
+    {
+        if (!string.IsNullOrWhiteSpace(_titreJeuLocalActif))
+        {
+            return $"En jeu : {_titreJeuLocalActif}";
+        }
+
+        if (
+            _dernieresDonneesJeuAffichees is not null
+            && !string.IsNullOrWhiteSpace(_dernieresDonneesJeuAffichees.Jeu.Title)
+        )
+        {
+            return $"Dernier affiché : {_dernieresDonneesJeuAffichees.Jeu.Title}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_configurationConnexion.DernierJeuAffiche?.Titre))
+        {
+            return $"Mémoire locale : {_configurationConnexion.DernierJeuAffiche.Titre}";
+        }
+
+        return "Aucun jeu visible";
     }
 
     /*
@@ -823,11 +1168,7 @@ public partial class MainWindow
      * Construit le bloc visuel correspondant à une section de la modale
      * de compte.
      */
-    private SystemControls.Border ConstruireBlocCompte(
-        SectionInformationsAffichee section,
-        bool dispositionCompacte = false,
-        double largeurColonneLibelle = 0
-    )
+    private SystemControls.Border ConstruireBlocCompte(SectionInformationsAffichee section)
     {
         SystemControls.StackPanel pile = new()
         {
@@ -837,71 +1178,16 @@ public partial class MainWindow
                 new SystemControls.TextBlock
                 {
                     Margin = new Thickness(0, 0, 0, 8),
-                    FontSize = dispositionCompacte
-                        ? ConstantesDesign.TaillePoliceInterfaceBase
-                        : 16,
+                    FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
                     Text = section.Titre,
                 },
             },
         };
 
-        if (dispositionCompacte)
-        {
-            SystemControls.StackPanel lignesCompactes = new()
-            {
-                Margin = new Thickness(0, 2, 0, 0),
-            };
-
-            for (int index = 0; index < section.Lignes.Count; index++)
-            {
-                lignesCompactes.Children.Add(
-                    new SystemControls.Border
-                    {
-                        Margin = new Thickness(0, 0, 0, 8),
-                        Padding = new Thickness(10, 8, 10, 8),
-                        CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-                        Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
-                        Child = new SystemControls.StackPanel
-                        {
-                            Children =
-                            {
-                                new SystemControls.TextBlock
-                                {
-                                    FontWeight = FontWeights.SemiBold,
-                                    Text = section.Lignes[index].Libelle,
-                                    TextWrapping = TextWrapping.Wrap,
-                                },
-                                new SystemControls.TextBlock
-                                {
-                                    Margin = new Thickness(0, 4, 0, 0),
-                                    Opacity = 0.84,
-                                    Text = section.Lignes[index].Valeur,
-                                    TextWrapping = TextWrapping.Wrap,
-                                },
-                            },
-                        },
-                    }
-                );
-            }
-
-            pile.Children.Add(lignesCompactes);
-            return new SystemControls.Border
-            {
-                Padding = new Thickness(10, 9, 10, 9),
-                CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-                Background = new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)),
-                BorderBrush = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-                BorderThickness = ConstantesDesign.EpaisseurContourFin,
-                Child = pile,
-            };
-        }
-
         SystemControls.Grid grille = new();
-        double largeurLibelle =
-            largeurColonneLibelle > 0 ? largeurColonneLibelle : ConstantesDesign.EspaceVisuelLarge;
         grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = new GridLength(largeurLibelle) }
+            new SystemControls.ColumnDefinition { Width = new GridLength(180) }
         );
         grille.ColumnDefinitions.Add(
             new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
@@ -950,36 +1236,21 @@ public partial class MainWindow
 
         pile.Children.Add(grille);
 
-        return new SystemControls.Border
-        {
-            Padding = new Thickness(12, 10, 12, 10),
-            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-            Background = new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderThickness = ConstantesDesign.EpaisseurContourFin,
-            Child = pile,
-        };
+        return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
     /*
      * Construit l'en-tête du compte avec avatar, pseudo et statut.
      */
-    private static SystemControls.Border ConstruireEnTeteAvatarCompte(
-        CompteAffiche compte,
-        bool dispositionCompacte = false
-    )
+    private static SystemControls.Border ConstruireEnTeteAvatarCompte(CompteAffiche compte)
     {
-        double tailleConteneur = dispositionCompacte ? ConstantesDesign.EspaceHeroique : 96;
-        double tailleImage = dispositionCompacte ? ConstantesDesign.EspaceMajeur : 80;
-        CornerRadius rayon = new(tailleConteneur / 2);
-
         SystemControls.Border conteneur = new()
         {
-            Width = tailleConteneur,
-            Height = tailleConteneur,
+            Width = 96,
+            Height = 96,
             Padding = new Thickness(8),
             HorizontalAlignment = HorizontalAlignment.Center,
-            CornerRadius = rayon,
+            CornerRadius = new CornerRadius(48),
             Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(42, 255, 255, 255)),
             BorderThickness = new Thickness(1),
@@ -987,8 +1258,8 @@ public partial class MainWindow
 
         SystemControls.Image? imageAvatar = ConstruireImageAvatarCompte(
             compte.UrlAvatar,
-            tailleImage,
-            tailleImage,
+            80,
+            80,
             new Thickness(0)
         );
 
@@ -1000,10 +1271,10 @@ public partial class MainWindow
 
         return new SystemControls.Border
         {
-            Width = tailleConteneur,
-            Height = tailleConteneur,
+            Width = 96,
+            Height = 96,
             HorizontalAlignment = HorizontalAlignment.Center,
-            CornerRadius = rayon,
+            CornerRadius = new CornerRadius(48),
             Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(42, 255, 255, 255)),
             BorderThickness = new Thickness(1),
@@ -1022,179 +1293,11 @@ public partial class MainWindow
     }
 
     /*
-     * Construit la carte de présentation affichée sous l'avatar dans la
-     * modale de compte afin de mieux regrouper le titre, l'introduction et
-     * l'accès direct au profil public.
-     */
-    private SystemControls.Border ConstruireCartePresentationCompte(
-        CompteAffiche compte,
-        bool dispositionCompacte
-    )
-    {
-        SystemControls.StackPanel pile = new() { Margin = new Thickness(0, 12, 0, 12) };
-
-        if (!string.IsNullOrWhiteSpace(compte.NomUtilisateur))
-        {
-            pile.Children.Add(
-                new SystemControls.Border
-                {
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Padding = new Thickness(9, 4, 9, 4),
-                    CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-                    Background = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255)),
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
-                    BorderThickness = ConstantesDesign.EpaisseurContourFin,
-                    Child = new SystemControls.TextBlock
-                    {
-                        Opacity = 0.84,
-                        FontWeight = FontWeights.SemiBold,
-                        Text = $"@{compte.NomUtilisateur}",
-                    },
-                }
-            );
-        }
-
-        pile.Children.Add(
-            new SystemControls.TextBlock
-            {
-                Margin = new Thickness(0, 10, 0, 0),
-                FontSize = ConstantesDesign.TaillePoliceTitreSection,
-                FontWeight = FontWeights.SemiBold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                TextAlignment = TextAlignment.Center,
-                Text = compte.Titre,
-                TextWrapping = TextWrapping.Wrap,
-            }
-        );
-
-        if (!string.IsNullOrWhiteSpace(compte.Devise))
-        {
-            pile.Children.Add(
-                new SystemControls.TextBlock
-                {
-                    Margin = new Thickness(0, 6, 0, 0),
-                    Opacity = 0.72,
-                    FontSize = ConstantesDesign.TaillePoliceInterfaceBase,
-                    FontStyle = FontStyles.Italic,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    TextAlignment = TextAlignment.Center,
-                    Text = compte.Devise,
-                    TextWrapping = TextWrapping.Wrap,
-                }
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(compte.Introduction))
-        {
-            pile.Children.Add(
-                new SystemControls.TextBlock
-                {
-                    Margin = new Thickness(0, 12, 0, 0),
-                    Opacity = 0.82,
-                    Text = compte.Introduction,
-                    TextAlignment = TextAlignment.Center,
-                    TextWrapping = TextWrapping.Wrap,
-                }
-            );
-        }
-
-        if (!string.IsNullOrWhiteSpace(compte.NomUtilisateur))
-        {
-            UiControls.Button boutonProfilRetroAchievements = new()
-            {
-                Content = "Ouvrir le profil RetroAchievements",
-                Appearance = Wpf.Ui.Controls.ControlAppearance.Secondary,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                Padding = dispositionCompacte
-                    ? ConstantesDesign.PaddingBoutonActionCompact
-                    : ConstantesDesign.PaddingBoutonAction,
-                Margin = new Thickness(0, 12, 0, 0),
-            };
-            boutonProfilRetroAchievements.Click += (_, _) =>
-                OuvrirProfilRetroAchievements(compte.NomUtilisateur);
-            pile.Children.Add(boutonProfilRetroAchievements);
-        }
-
-        return new SystemControls.Border
-        {
-            Padding = dispositionCompacte
-                ? new Thickness(10, 10, 10, 10)
-                : new Thickness(13, 13, 13, 13),
-            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
-            Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
-            BorderThickness = ConstantesDesign.EpaisseurContourFin,
-            Child = pile,
-        };
-    }
-
-    /*
      * Crée un séparateur visuel homogène pour les blocs de la modale de compte.
      */
     private static SystemControls.Separator ConstruireSeparateurBlocCompte()
     {
         return new SystemControls.Separator { Margin = new Thickness(0, 2, 0, 12), Opacity = 0.45 };
-    }
-
-    /*
-     * Construit une ligne d'étape homogène pour les sections d'aide afin de
-     * mieux guider la lecture sur format large comme sur format compact.
-     */
-    private static SystemControls.Border ConstruireLigneEtapeAide(
-        string texte,
-        int index,
-        bool dispositionCompacte
-    )
-    {
-        double taillePastille = dispositionCompacte ? 18 : 22;
-        SystemControls.Grid grille = new();
-        grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = new GridLength(taillePastille) }
-        );
-        grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = new GridLength(8) }
-        );
-        grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
-        );
-
-        SystemControls.Border pastille = new()
-        {
-            Width = taillePastille,
-            Height = taillePastille,
-            CornerRadius = new CornerRadius(taillePastille / 2),
-            Background = new SolidColorBrush(Color.FromArgb(36, 255, 255, 255)),
-            Child = new SystemControls.TextBlock
-            {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                FontWeight = FontWeights.SemiBold,
-                FontSize = dispositionCompacte
-                    ? ConstantesDesign.TaillePoliceMicro
-                    : ConstantesDesign.TaillePoliceSecondaire,
-                Text = (index + 1).ToString(CultureInfo.InvariantCulture),
-            },
-        };
-        SystemControls.Grid.SetColumn(pastille, 0);
-        grille.Children.Add(pastille);
-
-        SystemControls.TextBlock texteLigne = new()
-        {
-            Opacity = 0.86,
-            Text = texte,
-            TextWrapping = TextWrapping.Wrap,
-        };
-        SystemControls.Grid.SetColumn(texteLigne, 2);
-        grille.Children.Add(texteLigne);
-
-        return new SystemControls.Border
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = dispositionCompacte ? new Thickness(7, 6, 7, 6) : new Thickness(10, 8, 10, 8),
-            CornerRadius = ConstantesDesign.RayonCoinsPetit,
-            Background = new SolidColorBrush(Color.FromArgb(20, 255, 255, 255)),
-            Child = grille,
-        };
     }
 
     /*
@@ -1206,15 +1309,22 @@ public partial class MainWindow
         IReadOnlyList<string> lignes,
         string? resume = null,
         bool estOuvertParDefaut = false,
-        IList<SystemControls.Expander>? sectionsAide = null,
-        bool dispositionCompacte = false
+        IList<SystemControls.Expander>? sectionsAide = null
     )
     {
         SystemControls.StackPanel pile = new() { Margin = new Thickness(0) };
 
-        for (int index = 0; index < lignes.Count; index++)
+        foreach (string ligne in lignes)
         {
-            pile.Children.Add(ConstruireLigneEtapeAide(lignes[index], index, dispositionCompacte));
+            pile.Children.Add(
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Opacity = 0.84,
+                    Text = $"- {ligne}",
+                    TextWrapping = TextWrapping.Wrap,
+                }
+            );
         }
 
         return ConstruireSectionAideRabattable(
@@ -1223,8 +1333,7 @@ public partial class MainWindow
             resume,
             estOuvertParDefaut,
             null,
-            sectionsAide,
-            dispositionCompacte
+            sectionsAide
         );
     }
 
@@ -1249,7 +1358,7 @@ public partial class MainWindow
             {
                 new SystemControls.TextBlock
                 {
-                    FontSize = dispositionCompacte ? 16 : 17,
+                    FontSize = 17,
                     FontWeight = FontWeights.SemiBold,
                     Text = titre,
                     TextWrapping = TextWrapping.Wrap,
@@ -1289,41 +1398,11 @@ public partial class MainWindow
             IsExpanded = estOuvertParDefaut,
             Content = new SystemControls.Border
             {
-                Padding = dispositionCompacte
-                    ? new Thickness(0, 6, 0, 0)
-                    : new Thickness(0, 10, 0, 2),
+                Padding = new Thickness(0, 10, 0, 2),
                 Child = contenu,
             },
         };
-
-        if (contenu is FrameworkElement elementMesurable)
-        {
-            elementMesurable.SizeChanged += (_, e) =>
-            {
-                if (!expander.IsExpanded)
-                {
-                    return;
-                }
-
-                if (
-                    Math.Abs(e.NewSize.Height - e.PreviousSize.Height) < 0.5
-                    && Math.Abs(e.NewSize.Width - e.PreviousSize.Width) < 0.5
-                )
-                {
-                    return;
-                }
-
-                PlanifierActualisationDispositionSectionAide(expander);
-            };
-        }
-
-        expander.Expanded += (_, _) =>
-        {
-            AssurerContenuInitialise();
-            RefermerAutresSectionsAide(expander, sectionsAide);
-            PlanifierActualisationDispositionSectionAide(expander);
-        };
-        expander.Collapsed += (_, _) => PlanifierActualisationDispositionSectionAide(expander);
+        expander.Expanded += (_, _) => AssurerContenuInitialise();
         sectionsAide?.Add(expander);
 
         if (estOuvertParDefaut)
@@ -1333,9 +1412,7 @@ public partial class MainWindow
 
         return new SystemControls.Border
         {
-            Padding = dispositionCompacte
-                ? new Thickness(8, 8, 8, 8)
-                : new Thickness(13, 11, 13, 11),
+            Padding = new Thickness(13, 11, 13, 11),
             Margin = new Thickness(0, 0, 0, 10),
             CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
             Background = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255)),
@@ -1346,113 +1423,16 @@ public partial class MainWindow
     }
 
     /*
-     * Referme les autres sections de la modale d'aide lorsqu'une nouvelle
-     * section vient d'être ouverte afin de conserver un comportement accordéon.
-     */
-    private static void RefermerAutresSectionsAide(
-        SystemControls.Expander sectionActive,
-        IEnumerable<SystemControls.Expander>? sectionsAide
-    )
-    {
-        if (sectionsAide is null)
-        {
-            return;
-        }
-
-        foreach (SystemControls.Expander section in sectionsAide)
-        {
-            if (ReferenceEquals(section, sectionActive) || !section.IsExpanded)
-            {
-                continue;
-            }
-
-            section.IsExpanded = false;
-        }
-    }
-
-    /*
-     * Planifie une remise en page après ouverture ou fermeture d'une section
-     * d'aide afin que le défilement de la modale suive bien la nouvelle hauteur.
-     */
-    private void PlanifierActualisationDispositionSectionAide(SystemControls.Expander expander)
-    {
-        _ = expander.Dispatcher.BeginInvoke(
-            () => ActualiserDispositionSectionAide(expander),
-            DispatcherPriority.Render
-        );
-    }
-
-    /*
-     * Force la remesure de la section d'aide, de la modale et du défilement
-     * interne porté par le ContentDialog.
-     */
-    private void ActualiserDispositionSectionAide(SystemControls.Expander expander)
-    {
-        expander.InvalidateMeasure();
-        expander.InvalidateArrange();
-        expander.UpdateLayout();
-
-        if (expander.Content is UIElement contenuExpander)
-        {
-            contenuExpander.InvalidateMeasure();
-            contenuExpander.InvalidateArrange();
-        }
-
-        UiControls.ContentDialog? dialogue = TrouverPremierAncetre<UiControls.ContentDialog>(
-            expander
-        );
-        dialogue?.InvalidateMeasure();
-        dialogue?.InvalidateArrange();
-        dialogue?.UpdateLayout();
-
-        if (dialogue is not null)
-        {
-            AjusterDefilementDialogueAide(dialogue);
-        }
-    }
-
-    /*
-     * Ajuste l'unique ScrollViewer interne de la modale d'aide pour lui laisser
-     * une hauteur automatique tout en bornant sa hauteur maximale disponible.
-     */
-    private void AjusterDefilementDialogueAide(UiControls.ContentDialog dialogueAide)
-    {
-        SystemControls.ScrollViewer? defileurAide = TrouverDescendants<SystemControls.ScrollViewer>(
-                dialogueAide
-            )
-            .FirstOrDefault();
-
-        if (defileurAide is null)
-        {
-            return;
-        }
-
-        double offsetCourant = defileurAide.VerticalOffset;
-
-        defileurAide.Height = double.NaN;
-        defileurAide.MaxHeight = CalculerHauteurMaximaleContenuModale();
-        defileurAide.VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Auto;
-        defileurAide.HorizontalScrollBarVisibility = SystemControls.ScrollBarVisibility.Disabled;
-        defileurAide.InvalidateMeasure();
-        defileurAide.InvalidateArrange();
-        defileurAide.UpdateLayout();
-        defileurAide.ScrollToVerticalOffset(offsetCourant);
-    }
-
-    /*
      * Construit la section d'aide consacrée aux logs, chemins et emplacements
      * des émulateurs.
      */
-    private SystemControls.Border ConstruireBlocAideLogsEmulateurs(
-        IList<SystemControls.Expander>? sectionsAide = null,
-        bool dispositionCompacte = false
-    )
+    private SystemControls.Border ConstruireBlocAideLogsEmulateurs()
     {
         SystemControls.StackPanel pile = new() { Margin = new Thickness(0) };
         pile.Children.Add(
             new SystemControls.TextBlock
             {
-                Margin = new Thickness(0, 0, 0, dispositionCompacte ? 8 : 10),
+                Margin = new Thickness(0, 0, 0, 10),
                 Opacity = 0.78,
                 Text =
                     "Cette section montre le fichier, le dossier ou l'exécutable que Compagnon attend réellement pour chaque émulateur.",
@@ -1462,7 +1442,7 @@ public partial class MainWindow
         pile.Children.Add(
             new SystemControls.TextBlock
             {
-                Margin = new Thickness(0, 0, 0, dispositionCompacte ? 8 : 10),
+                Margin = new Thickness(0, 0, 0, 10),
                 Opacity = 0.72,
                 Text =
                     "Commence par le journal local, puis ouvre la carte de l'émulateur concerné. Si besoin, définis un exécutable manuel.",
@@ -1476,10 +1456,8 @@ public partial class MainWindow
         UiControls.Button boutonOuvrirJournal = new()
         {
             Content = "Ouvrir le journal",
-            Padding = dispositionCompacte
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 0, dispositionCompacte ? 8 : 10),
+            Padding = new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 0, 10),
         };
         boutonOuvrirJournal.Click += (_, _) =>
         {
@@ -1496,7 +1474,6 @@ public partial class MainWindow
         pile.Children.Add(boutonOuvrirJournal);
 
         SystemControls.StackPanel contenu = new() { Margin = new Thickness(0, 2, 0, 0) };
-        List<SystemControls.Expander> sectionsLogsEmulateurs = [];
         bool contenuCharge = false;
 
         void ChargerContenu()
@@ -1512,13 +1489,7 @@ public partial class MainWindow
                 )
             )
             {
-                contenu.Children.Add(
-                    ConstruireCarteIndicatifLogsEmulateur(
-                        definition,
-                        sectionsLogsEmulateurs,
-                        dispositionCompacte
-                    )
-                );
+                contenu.Children.Add(ConstruireCarteIndicatifLogsEmulateur(definition));
             }
 
             contenuCharge = true;
@@ -1531,106 +1502,8 @@ public partial class MainWindow
             pile,
             "Chemins surveillés, exécutable visé et actions directes.",
             false,
-            ChargerContenu,
-            sectionsAide,
-            dispositionCompacte
+            ChargerContenu
         );
-    }
-
-    /*
-     * Construit une petite carte d'information réutilisable pour mieux
-     * structurer les contenus de diagnostic dans la modale d'aide.
-     */
-    private SystemControls.Border ConstruireCarteBlocDiagnosticAide(
-        string titre,
-        UIElement contenu,
-        bool dispositionCompacte,
-        string? sousTexte = null
-    )
-    {
-        SystemControls.StackPanel pile = new()
-        {
-            Children =
-            {
-                new SystemControls.TextBlock
-                {
-                    FontWeight = FontWeights.SemiBold,
-                    Opacity = 0.82,
-                    Text = titre,
-                    TextWrapping = TextWrapping.Wrap,
-                },
-            },
-        };
-
-        if (!string.IsNullOrWhiteSpace(sousTexte))
-        {
-            pile.Children.Add(
-                new SystemControls.TextBlock
-                {
-                    Margin = new Thickness(0, 4, 0, 0),
-                    Opacity = 0.68,
-                    Text = sousTexte,
-                    TextWrapping = TextWrapping.Wrap,
-                }
-            );
-        }
-
-        pile.Children.Add(
-            new SystemControls.Border { Margin = new Thickness(0, 8, 0, 0), Child = contenu }
-        );
-
-        return new SystemControls.Border
-        {
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = dispositionCompacte ? new Thickness(9, 8, 9, 8) : new Thickness(10, 9, 10, 9),
-            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-            Background = new SolidColorBrush(Color.FromArgb(22, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(30, 255, 255, 255)),
-            BorderThickness = ConstantesDesign.EpaisseurContourFin,
-            Child = pile,
-        };
-    }
-
-    /*
-     * Construit une petite grille de synthèse à une ou deux colonnes pour les
-     * cartes de diagnostic de la modale d'aide.
-     */
-    private static SystemControls.Grid ConstruireGrilleSyntheseDiagnosticAide(
-        bool dispositionCompacte,
-        params SystemControls.Border[] cartes
-    )
-    {
-        int nombreColonnes = dispositionCompacte ? 1 : 2;
-        SystemControls.Grid grille = new() { Margin = new Thickness(0, 0, 0, 8) };
-
-        for (int indexColonne = 0; indexColonne < nombreColonnes; indexColonne++)
-        {
-            grille.ColumnDefinitions.Add(
-                new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
-            );
-        }
-
-        for (int index = 0; index < cartes.Length; index++)
-        {
-            while (grille.RowDefinitions.Count <= (index / nombreColonnes))
-            {
-                grille.RowDefinitions.Add(
-                    new SystemControls.RowDefinition { Height = GridLength.Auto }
-                );
-            }
-
-            cartes[index].Margin = new Thickness(
-                0,
-                0,
-                index % nombreColonnes < nombreColonnes - 1 ? 8 : 0,
-                8
-            );
-            SystemControls.Grid.SetRow(cartes[index], index / nombreColonnes);
-            SystemControls.Grid.SetColumn(cartes[index], index % nombreColonnes);
-            grille.Children.Add(cartes[index]);
-        }
-
-        return grille;
     }
 
     /*
@@ -1638,9 +1511,7 @@ public partial class MainWindow
      * locales et ses chemins utiles.
      */
     private SystemControls.Border ConstruireCarteIndicatifLogsEmulateur(
-        DefinitionEmulateurLocal definition,
-        IList<SystemControls.Expander>? sectionsAide = null,
-        bool dispositionCompacte = false
+        DefinitionEmulateurLocal definition
     )
     {
         string source = ConstruireLibelleSourceLocaleEmulateur(definition);
@@ -1674,10 +1545,12 @@ public partial class MainWindow
             Opacity = 0.72,
             TextWrapping = TextWrapping.Wrap,
         };
-        SystemControls.TextBlock texteEmplacement = new() { TextWrapping = TextWrapping.Wrap };
-        SystemControls.Border zoneTexteEmplacement = ConstruireZoneTexteCopiableAide(
-            texteEmplacement
-        );
+        SystemControls.TextBox texteEmplacement = new()
+        {
+            Margin = new Thickness(0, 4, 0, 0),
+            Style = (Style)FindResource("StyleTexteCopiable"),
+            TextWrapping = TextWrapping.Wrap,
+        };
         SystemControls.TextBlock texteAideEmplacementManuel = new()
         {
             Margin = new Thickness(0, 6, 0, 0),
@@ -1687,35 +1560,27 @@ public partial class MainWindow
         SystemControls.Button boutonChoisirEmplacement = new()
         {
             Margin = new Thickness(0, 8, 8, 0),
-            Padding = dispositionCompacte
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(10, 4, 10, 4),
+            Padding = new Thickness(10, 4, 10, 4),
             MinWidth = 0,
         };
         SystemControls.Button boutonRetirerEmplacement = new()
         {
             Margin = new Thickness(0, 8, 0, 0),
-            Padding = dispositionCompacte
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(10, 4, 10, 4),
+            Padding = new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Retirer le choix manuel",
         };
         SystemControls.Button boutonOuvrirEmplacement = new()
         {
             Margin = new Thickness(0, 8, 8, 0),
-            Padding = dispositionCompacte
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(10, 4, 10, 4),
+            Padding = new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Ouvrir l'emplacement",
         };
         SystemControls.Button boutonOuvrirSource = new()
         {
             Margin = new Thickness(0, 8, 0, 0),
-            Padding = dispositionCompacte
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(10, 4, 10, 4),
+            Padding = new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Ouvrir la source",
         };
@@ -1779,12 +1644,26 @@ public partial class MainWindow
 
         SystemControls.StackPanel pile = new()
         {
-            Margin = new Thickness(0, dispositionCompacte ? 1 : 2, 0, 0),
             Children =
             {
+                ConstruireLibelleChampAide("Source locale suivie"),
+                ConstruireTexteDetailAide(source, 0.78),
+                ConstruireLibelleChampAide("Niveau de confiance"),
+                ConstruireTexteDetailAide(
+                    ConstruireTexteConfianceDetectionEmulateur(definition),
+                    0.72
+                ),
+                ConstruireTexteDetailAide(
+                    ConstruireTexteValidationEmulateur(definition),
+                    0.78,
+                    FontWeights.SemiBold,
+                    string.IsNullOrWhiteSpace(ConstruireTexteValidationEmulateur(definition))
+                        ? Visibility.Collapsed
+                        : Visibility.Visible
+                ),
                 ConstruireLibelleChampAide("Exécutable de l'émulateur"),
                 texteStatutEmplacement,
-                zoneTexteEmplacement,
+                texteEmplacement,
                 texteAideEmplacementManuel,
                 ConstruireTexteDetailAide(
                     ConstruireTexteProfilInstallationEmulateur(definition),
@@ -1818,41 +1697,6 @@ public partial class MainWindow
             },
         };
 
-        SystemControls.StackPanel pileSyntheseSource = new();
-        pileSyntheseSource.Children.Add(ConstruireTexteDetailAide(source, 0.78));
-
-        SystemControls.StackPanel pileSyntheseConfiance = new();
-        pileSyntheseConfiance.Children.Add(
-            ConstruireTexteDetailAide(ConstruireTexteConfianceDetectionEmulateur(definition), 0.72)
-        );
-        pileSyntheseConfiance.Children.Add(
-            ConstruireTexteDetailAide(
-                ConstruireTexteValidationEmulateur(definition),
-                0.78,
-                FontWeights.SemiBold,
-                string.IsNullOrWhiteSpace(ConstruireTexteValidationEmulateur(definition))
-                    ? Visibility.Collapsed
-                    : Visibility.Visible
-            )
-        );
-
-        pile.Children.Insert(
-            0,
-            ConstruireGrilleSyntheseDiagnosticAide(
-                dispositionCompacte,
-                ConstruireCarteBlocDiagnosticAide(
-                    "Source locale suivie",
-                    pileSyntheseSource,
-                    dispositionCompacte
-                ),
-                ConstruireCarteBlocDiagnosticAide(
-                    "Niveau de confiance",
-                    pileSyntheseConfiance,
-                    dispositionCompacte
-                )
-            )
-        );
-
         boutonChoisirEmplacement.Click += async (_, _) =>
         {
             await ChoisirEmplacementEmulateurManuelAsync(definition);
@@ -1885,10 +1729,7 @@ public partial class MainWindow
             definition.NomEmulateur,
             pile,
             ConstruireResumeSectionLogsEmulateur(definition, source),
-            false,
-            null,
-            sectionsAide,
-            dispositionCompacte
+            false
         );
     }
 
@@ -1934,67 +1775,14 @@ public partial class MainWindow
      * Construit une zone de texte copiable homogène pour les chemins et
      * journaux affichés dans la modale d'aide.
      */
-    private SystemControls.Border ConstruireZoneTexteCopiableAide(string texte)
+    private SystemControls.TextBox ConstruireZoneTexteCopiableAide(string texte)
     {
-        SystemControls.TextBlock texteBloc = new()
-        {
-            Text = texte,
-            TextWrapping = TextWrapping.Wrap,
-        };
-        return ConstruireZoneTexteCopiableAide(texteBloc);
-    }
-
-    /*
-     * Construit une zone de texte d'aide sans défilement interne, avec une
-     * action de copie explicite pour éviter les barres de défilement imbriquées.
-     */
-    private SystemControls.Border ConstruireZoneTexteCopiableAide(
-        SystemControls.TextBlock texteBloc
-    )
-    {
-        UiControls.Button boutonCopier = new()
-        {
-            Content = "Copier",
-            Padding = _modaleAideCompacteCourante
-                ? ConstantesDesign.PaddingBoutonActionCompact
-                : new Thickness(10, 4, 10, 4),
-            Margin = new Thickness(8, 0, 0, 0),
-            MinWidth = 0,
-        };
-
-        boutonCopier.Click += (_, _) =>
-        {
-            if (!string.IsNullOrWhiteSpace(texteBloc.Text))
-            {
-                Clipboard.SetText(texteBloc.Text);
-            }
-        };
-
-        SystemControls.Grid grille = new();
-        grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
-        );
-        grille.ColumnDefinitions.Add(
-            new SystemControls.ColumnDefinition { Width = GridLength.Auto }
-        );
-
-        texteBloc.Margin = new Thickness(0);
-        texteBloc.VerticalAlignment = VerticalAlignment.Center;
-        SystemControls.Grid.SetColumn(texteBloc, 0);
-        grille.Children.Add(texteBloc);
-
-        SystemControls.Grid.SetColumn(boutonCopier, 1);
-        grille.Children.Add(boutonCopier);
-
-        return new SystemControls.Border
+        return new SystemControls.TextBox
         {
             Margin = new Thickness(0, 4, 0, 0),
-            Padding = new Thickness(8, 6, 8, 6),
-            CornerRadius = ConstantesDesign.RayonCoinsPetit,
-            Background = new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderThickness = ConstantesDesign.EpaisseurContourFin,
-            Child = grille,
+            Style = (Style)FindResource("StyleTexteCopiable"),
+            Text = texte,
+            TextWrapping = TextWrapping.Wrap,
         };
     }
 
@@ -2446,95 +2234,57 @@ public partial class MainWindow
      * dans la modale de compte.
      */
     private SystemControls.Border ConstruireBlocJeuxRecemmentJoues(
-        IReadOnlyList<JeuRecentAffiche> jeux,
-        bool dispositionCompacte = false
+        IReadOnlyList<JeuRecentAffiche> jeux
     )
     {
         SystemControls.StackPanel pile = new()
         {
-            Margin = new Thickness(0, 0, 0, dispositionCompacte ? 10 : 14),
+            Margin = new Thickness(0, 0, 0, 14),
             Children =
             {
                 new SystemControls.TextBlock
                 {
                     Margin = new Thickness(0, 0, 0, 8),
-                    FontSize = dispositionCompacte
-                        ? ConstantesDesign.TaillePoliceInterfaceBase
-                        : 16,
+                    FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
                     Text = "Jeux récemment joués",
                 },
             },
         };
 
-        SystemControls.Grid grille = new() { Margin = new Thickness(0, 2, 0, 0) };
-        int nombreColonnes = dispositionCompacte ? 1 : 2;
-
-        for (int indexColonne = 0; indexColonne < nombreColonnes; indexColonne++)
+        foreach (JeuRecentAffiche jeu in jeux)
         {
-            grille.ColumnDefinitions.Add(
-                new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
+            pile.Children.Add(
+                new SystemControls.Border
+                {
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Padding = new Thickness(10, 8, 10, 8),
+                    CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
+                    Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+                    Child = new SystemControls.StackPanel
+                    {
+                        Children =
+                        {
+                            new SystemControls.TextBlock
+                            {
+                                FontWeight = FontWeights.SemiBold,
+                                Text = jeu.Titre,
+                                TextWrapping = TextWrapping.Wrap,
+                            },
+                            new SystemControls.TextBlock
+                            {
+                                Margin = new Thickness(0, 4, 0, 0),
+                                Opacity = 0.72,
+                                Text = jeu.SousTitre,
+                                TextWrapping = TextWrapping.Wrap,
+                            },
+                        },
+                    },
+                }
             );
         }
 
-        for (int index = 0; index < jeux.Count; index++)
-        {
-            while (grille.RowDefinitions.Count <= (index / nombreColonnes))
-            {
-                grille.RowDefinitions.Add(
-                    new SystemControls.RowDefinition { Height = GridLength.Auto }
-                );
-            }
-
-            SystemControls.Border carteJeu = new()
-            {
-                Margin = new Thickness(
-                    0,
-                    0,
-                    index % nombreColonnes < nombreColonnes - 1 ? 8 : 0,
-                    8
-                ),
-                Padding = dispositionCompacte
-                    ? new Thickness(10, 8, 10, 8)
-                    : new Thickness(12, 10, 12, 10),
-                CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-                Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
-                Child = new SystemControls.StackPanel
-                {
-                    Children =
-                    {
-                        new SystemControls.TextBlock
-                        {
-                            FontWeight = FontWeights.SemiBold,
-                            Text = jeux[index].Titre,
-                            TextWrapping = TextWrapping.Wrap,
-                        },
-                        new SystemControls.TextBlock
-                        {
-                            Margin = new Thickness(0, 4, 0, 0),
-                            Opacity = 0.72,
-                            Text = jeux[index].SousTitre,
-                            TextWrapping = TextWrapping.Wrap,
-                        },
-                    },
-                },
-            };
-            SystemControls.Grid.SetRow(carteJeu, index / nombreColonnes);
-            SystemControls.Grid.SetColumn(carteJeu, index % nombreColonnes);
-            grille.Children.Add(carteJeu);
-        }
-
-        pile.Children.Add(grille);
-
-        return new SystemControls.Border
-        {
-            Padding = new Thickness(10, 9, 10, 9),
-            CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-            Background = new SolidColorBrush(Color.FromArgb(18, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderThickness = ConstantesDesign.EpaisseurContourFin,
-            Child = pile,
-        };
+        return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
     /*
@@ -2692,23 +2442,6 @@ public partial class MainWindow
     }
 
     /*
-     * Ajuste la zone de défilement de la modale d'aide une fois son arbre
-     * visuel chargé.
-     */
-    private void DialogueAide_Chargement(object sender, RoutedEventArgs e)
-    {
-        if (sender is not UiControls.ContentDialog dialogueAide)
-        {
-            return;
-        }
-
-        dialogueAide.Dispatcher.BeginInvoke(
-            () => AjusterDefilementDialogueAide(dialogueAide),
-            DispatcherPriority.Loaded
-        );
-    }
-
-    /*
      * Ajuste le pied de la modale de confirmation après son chargement visuel.
      */
     private void DialogueConfirmation_Chargement(object sender, RoutedEventArgs e)
@@ -2722,17 +2455,6 @@ public partial class MainWindow
             () => AjusterPiedModaleConnexion(dialogueConfirmation),
             DispatcherPriority.Loaded
         );
-    }
-
-    /*
-     * Retourne une largeur minimale de bouton plus compacte quand une modale
-     * est affichée sur une faible largeur.
-     */
-    private static double CalculerLargeurMinimaleBoutonPiedModale(UiControls.ContentDialog dialogue)
-    {
-        return dialogue.ActualWidth < ConstantesDesign.EspaceFenetreLarge
-            ? ConstantesDesign.EspaceHeroique
-            : 120;
     }
 
     /*
@@ -2763,10 +2485,9 @@ public partial class MainWindow
         }
 
         string[] textesAutorises = [texteBoutonPrincipal, texteBoutonSecondaire];
-        double largeurMinimaleBouton = CalculerLargeurMinimaleBoutonPiedModale(dialogueConnexion);
 
-        boutonSecondaire.MinWidth = largeurMinimaleBouton;
-        boutonPrincipal.MinWidth = largeurMinimaleBouton;
+        boutonSecondaire.MinWidth = 120;
+        boutonPrincipal.MinWidth = 120;
 
         foreach (SystemControls.Button bouton in boutons)
         {
@@ -2825,7 +2546,7 @@ public partial class MainWindow
                 || texte.Equals(texteBoutonFermeture, StringComparison.OrdinalIgnoreCase)
             )
             {
-                bouton.MinWidth = CalculerLargeurMinimaleBoutonPiedModale(dialogueCompte);
+                bouton.MinWidth = 120;
                 bouton.Visibility = Visibility.Visible;
                 bouton.IsEnabled = true;
             }
@@ -3324,27 +3045,6 @@ public partial class MainWindow
                 }
 
                 return ancetre as SystemControls.Panel;
-            }
-
-            elementCourant = VisualTreeHelper.GetParent(elementCourant);
-        }
-
-        return null;
-    }
-
-    /*
-     * Remonte l'arbre visuel pour retrouver le premier ancêtre du type demandé.
-     */
-    private static TElement? TrouverPremierAncetre<TElement>(DependencyObject elementDepart)
-        where TElement : DependencyObject
-    {
-        DependencyObject? elementCourant = VisualTreeHelper.GetParent(elementDepart);
-
-        while (elementCourant is not null)
-        {
-            if (elementCourant is TElement ancetreTrouve)
-            {
-                return ancetreTrouve;
             }
 
             elementCourant = VisualTreeHelper.GetParent(elementCourant);

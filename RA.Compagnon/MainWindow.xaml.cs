@@ -103,6 +103,7 @@ public partial class MainWindow : FluentWindow
         .TotalMilliseconds;
     private const double RayonFlouTransitionImageJeuEnCours =
         ConstantesDesign.RayonFlouTransitionImageJeuEnCours;
+    private bool _modaleAideCompacteCourante;
 
     /*
      * Initialise la fenêtre principale, le ViewModel, les minuteurs et les
