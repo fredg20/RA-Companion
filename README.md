@@ -42,6 +42,7 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - affichage des visuels du jeu
 - affichage d'un rétrosuccès mis en avant
 - grille complète des rétrosuccès du jeu
+- distinction visuelle `Softcore` / `Hardcore` dans la grille et dans le rétrosuccès mis en avant
 - bouton `Recharger` pour forcer un rechargement du jeu courant
 - bouton `Rejouer` pour relancer le jeu courant quand le contexte local le permet
 - bouton `Passer` pour repousser localement un rétrosuccès non débloqué et afficher le suivant
@@ -52,6 +53,7 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - restauration locale au démarrage
 - retour automatique sur le premier rétrosuccès non débloqué au redémarrage
 - indicateur discret de synchronisation quand l'état local restauré est en cours de rafraîchissement
+- aide intégrée dans l'application, avec mise en avant du bouton `Aide` à la première utilisation
 
 ## Validation émulateurs
 
@@ -61,6 +63,7 @@ Validation confirmée :
   - détection locale du processus `retroarch`
   - lecture prioritaire du `Game ID` RetroAchievements depuis le dernier log horodaté
   - mise à jour correcte du `Game ID` lors des changements de jeu
+  - prise en charge de la version portable et de la version installable
   - succès et `Rejouer` validés
 - `RALibretro`
   - détection locale du processus `RALibretro`

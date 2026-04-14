@@ -31,6 +31,10 @@ Une fois la connexion réussie, `Compagnon` charge :
 - la progression du jeu
 - les rétrosuccès récents
 
+Remarque :
+
+- lors de la toute première utilisation, le bouton `Aide` peut être mis en avant visuellement pour guider la découverte de l'application
+
 ## 3. Organisation de la fenêtre
 
 L'interface principale est organisée en plusieurs zones.
@@ -49,9 +53,8 @@ Cette zone affiche :
 
 - le visuel du jeu
 - le titre du jeu
-- les informations principales
+- les informations principales sous forme de capsules
 - le pourcentage de progression
-- les détails du jeu
 - le résumé de progression
 - le bouton `Rejouer`
 - le bouton `Détails`
@@ -73,6 +76,11 @@ Elle affiche :
 ### Rétrosuccès du jeu
 
 Cette zone affiche la grille complète des badges du jeu courant.
+
+Elle contient aussi :
+
+- la légende visuelle `Softcore` / `Hardcore`
+- le bouton de changement de mode d'affichage de la grille
 
 ## 4. Boutons principaux
 
@@ -106,6 +114,16 @@ Repousse localement le rétrosuccès actuellement mis en avant pour afficher le 
 
 Le succès n'est ni supprimé ni modifié sur RetroAchievements.
 Il est seulement déplacé localement dans l'ordre d'affichage de la grille des succès non débloqués.
+
+### `Aide`
+
+Ouvre la notice d'aide intégrée.
+
+Elle permet notamment de :
+
+- relire le fonctionnement général de l'application
+- consulter les remarques de détection locale
+- retrouver des indications utiles sur certains journaux ou emplacements d'émulateurs
 
 ## 5. Utiliser la grille des rétrosuccès
 
@@ -174,11 +192,11 @@ Les émulateurs suivants sont actuellement validés et testés avec `Compagnon` 
 
 - `RetroArch`
 - `RALibretro`
-- `Flycast` version modifiée disponible avec 1.0.6
+- `Flycast`
 - `DuckStation`
 - `PCSX2`
 - `PPSSPP`
-- `BizHawk` version modifiée disponible avec 1.0.6
+- `BizHawk`
 - `Dolphin`
 - `RANes`
 - `RAVBA`
@@ -187,6 +205,7 @@ Les émulateurs suivants sont actuellement validés et testés avec `Compagnon` 
 
 Remarques :
 
+- `RetroArch` est pris en charge en version portable et en version installable
 - le niveau exact de détection peut varier selon l'émulateur, sa configuration locale et les sources disponibles
 - certains émulateurs permettent aussi la relance via `Rejouer`
 - `LunaProject64` n'est plus pris en charge
