@@ -2,14 +2,26 @@ using System.IO;
 using System.Security.Cryptography;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Calcule et met en cache les empreintes locales des fichiers de jeu afin
+ * de faciliter leur identification.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Produit les empreintes MD5 et SHA1 d'un jeu local avec un cache mémoire
+ * indexé sur le chemin et les métadonnées du fichier.
+ */
 public sealed class ServiceHachageJeuLocal
 {
     private readonly Dictionary<string, EmpreinteJeuLocalCachee> _cacheEmpreintes = new(
         StringComparer.OrdinalIgnoreCase
     );
 
+    /*
+     * Calcule l'empreinte d'un fichier de jeu local ou retourne une valeur
+     * déjà mémorisée si le fichier n'a pas changé.
+     */
     public async Task<EmpreinteJeuLocal?> CalculerEmpreinteAsync(
         string cheminFichier,
         CancellationToken jetonAnnulation = default
@@ -68,6 +80,9 @@ public sealed class ServiceHachageJeuLocal
         return resultat;
     }
 
+    /*
+     * Représente une empreinte mise en cache pour un fichier local donné.
+     */
     private sealed class EmpreinteJeuLocalCachee(EmpreinteJeuLocal empreinte)
     {
         public EmpreinteJeuLocal Empreinte { get; } = empreinte;

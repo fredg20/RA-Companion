@@ -9,16 +9,36 @@ using System.Windows.Automation;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Sonde les sources locales des émulateurs compatibles afin d'identifier
+ * le jeu en cours, son contexte de relance et certains déblocages locaux.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Centralise les heuristiques de détection locale utilisées pour lire les
+ * journaux, configurations, fenêtres et caches propres aux émulateurs.
+ */
 public sealed partial class ServiceSondeLocaleEmulateurs
 {
+    /*
+     * Représente un renseignement jeu minimal issu d'une source locale RA.
+     */
     private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
 
+    /*
+     * Représente l'état local d'un succès BizHawk selon ses modes de déblocage.
+     */
     private sealed record EtatSuccesBizHawk(bool DebloqueSoftcore, bool DebloqueHardcore);
 
+    /*
+     * Représente un renseignement de succès minimal issu d'un journal local RA.
+     */
     public sealed record RenseignementSuccesRA(int IdentifiantSucces, string TitreSucces);
 
+    /*
+     * Représente le délégué natif utilisé pour énumérer les fenêtres visibles.
+     */
     private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
     private const int ProcessCommandLineInformation = 60;
     private static readonly Lock VerrouCacheSuccesBizHawk = new();
@@ -31,8 +51,12 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static string _dernierRepertoireDuckStation = string.Empty;
     private static DateTime _dernierHorodatageCacheGamelistUtc = DateTime.MinValue;
     private static Dictionary<string, string> _cacheSerialVersCheminDuckStation = [];
-    private static Dictionary<string, RenseignementJeuRA> _cacheRenseignementProject64 = [];
-    private static Dictionary<string, DateTime> _cacheHorodatageRenseignementProject64Utc = [];
+    private static readonly Dictionary<string, RenseignementJeuRA> _cacheRenseignementProject64 =
+    [];
+    private static readonly Dictionary<
+        string,
+        DateTime
+    > _cacheHorodatageRenseignementProject64Utc = [];
     private static RenseignementJeuRA? _dernierRenseignementRALibretro;
     private static DateTime _dernierHorodatageRenseignementRALibretroUtc = DateTime.MinValue;
     private static RenseignementJeuRA? _dernierRenseignementPPSSPP;
@@ -55,13 +79,23 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     );
     private string _derniereSignatureJournalisee = "\u0000";
 
+    /*
+     * Réinitialise le journal de session de la sonde locale.
+     */
     public static void ReinitialiserJournalSession()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalSondeLocale);
     }
 
+    /*
+     * Retourne le chemin du journal produit par la sonde locale.
+     */
     public static string ObtenirCheminJournal() => CheminJournalSondeLocale;
 
+    /*
+     * Tente de reconstruire un contexte de rejouer complet à partir des
+     * sources locales connues pour un émulateur donné.
+     */
     public static bool EssayerObtenirContexteRejouerDepuisSources(
         string nomEmulateur,
         out int identifiantJeu,
@@ -161,6 +195,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             && File.Exists(cheminJeu);
     }
 
+    /*
+     * Journalise un événement lié à la sonde locale pour faciliter le diagnostic.
+     */
     public static void JournaliserEvenement(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -172,6 +209,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Sonde les émulateurs connus et retourne le meilleur état local trouvé.
+     */
     public EtatSondeLocaleEmulateur Sonder(bool journaliser = true)
     {
         try
@@ -210,6 +250,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return etatAucun;
     }
 
+    /*
+     * Indique si au moins un émulateur compatible semble actuellement présent.
+     */
     public static bool SonderPresenceEmulateur()
     {
         try
@@ -227,6 +270,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Construit l'état local pour une définition d'émulateur précise.
+     */
     private static EtatSondeLocaleEmulateur? SonderPourDefinition(
         DefinitionEmulateurLocal definition,
         IEnumerable<Process> processus
@@ -597,6 +643,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         };
     }
 
+    /*
+     * Extrait le chemin du jeu à partir de la stratégie déclarée pour
+     * l'émulateur courant.
+     */
     private static string ExtraireCheminJeuPourDefinition(
         DefinitionEmulateurLocal definition,
         Process processus,
@@ -658,6 +708,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         };
     }
 
+    /*
+     * Extrait le titre du jeu à partir de la stratégie déclarée pour
+     * l'émulateur courant.
+     */
     private static string ExtraireTitreJeuPourDefinition(
         DefinitionEmulateurLocal definition,
         Process processus,
@@ -720,6 +774,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         };
     }
 
+    /*
+     * Vérifie si un processus correspond globalement à une définition d'émulateur.
+     */
     private static bool Correspond(Process processus, DefinitionEmulateurLocal definition)
     {
         bool correspondAuNomProcessus = CorrespondNomProcessus(processus, definition);
@@ -761,6 +818,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             && titreFenetre.StartsWith(definition.NomEmulateur, StringComparison.OrdinalIgnoreCase);
     }
 
+    /*
+     * Vérifie si le nom d'un processus correspond aux noms attendus.
+     */
     private static bool CorrespondNomProcessus(
         Process processus,
         DefinitionEmulateurLocal definition
@@ -782,6 +842,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Vérifie si les métadonnées ou le chemin binaire correspondent à
+     * l'empreinte attendue d'un émulateur.
+     */
     private static bool CorrespondMetadonneesExecutable(
         Process processus,
         DefinitionEmulateurLocal definition
@@ -822,6 +886,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Vérifie qu'une valeur contient un jeton compatible avec l'émulateur.
+     */
     private static bool CorrespondValeurEmpreinteEmulateur(
         string valeur,
         IReadOnlyList<string> jetons
@@ -842,6 +909,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         });
     }
 
+    /*
+     * Lit le chemin exécutable d'un processus lorsqu'il est accessible.
+     */
     private static string LireCheminExecutableProcessus(Process processus)
     {
         try
@@ -854,6 +924,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Construit les jetons de correspondance utiles pour reconnaître
+     * un émulateur dans les noms de fichiers et processus.
+     */
     private static string[] ObtenirJetonsCorrespondanceEmulateur(
         DefinitionEmulateurLocal definition
     )
@@ -885,6 +959,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];
     }
 
+    /*
+     * Normalise une valeur textuelle pour les comparaisons souples d'empreinte.
+     */
     private static string NormaliserEmpreinteExecutable(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -905,6 +982,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return builder.ToString();
     }
 
+    /*
+     * Indique si un processus possède au moins une fenêtre visible.
+     */
     private static int ProcessusPossedeUneFenetreVisible(Process processus)
     {
         try
@@ -917,6 +997,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le meilleur titre de fenêtre disponible pour un processus.
+     */
     private static string LireTitreFenetre(Process processus)
     {
         try
@@ -943,6 +1026,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Extrait un titre probable à partir d'un séparateur présent dans la fenêtre.
+     */
     private static string ExtraireTitreAvecSeparateurs(
         string titreFenetre,
         params string[] jetonsEmulateur
@@ -988,6 +1074,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return NettoyerTitreJeu(titre, jetonsEmulateur);
     }
 
+    /*
+     * Indique si une valeur contient encore un jeton caractéristique
+     * de l'émulateur plutôt qu'un titre de jeu.
+     */
     private static bool ContientJetonEmulateur(string valeur, IEnumerable<string> jetonsEmulateur)
     {
         return jetonsEmulateur.Any(jeton =>
@@ -995,6 +1085,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Nettoie un titre de jeu en retirant les mentions parasites liées
+     * à l'émulateur.
+     */
     private static string NettoyerTitreJeu(string titre, IEnumerable<string> jetonsEmulateur)
     {
         string resultat = titre.Trim();
@@ -1013,6 +1107,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return resultat;
     }
 
+    /*
+     * Extrait un titre probable de DuckStation à partir du processus et
+     * de son titre de fenêtre.
+     */
     private static string ExtraireTitreDuckStation(Process processus, string titreFenetre)
     {
         string titreFenetreExtrait = ExtraireTitreAvecSeparateurs(
@@ -1051,6 +1149,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Extrait un titre probable de PCSX2 à partir de son titre de fenêtre.
+     */
     private static string ExtraireTitrePCSX2(Process _, string titreFenetre)
     {
         string titre = ExtraireTitreAvecSeparateurs(titreFenetre, "PCSX2");
@@ -1070,6 +1171,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return titreNettoye;
     }
 
+    /*
+     * Extrait un titre probable de PPSSPP à partir de son titre de fenêtre.
+     */
     private static string ExtraireTitrePPSSPP(Process _, string titreFenetre)
     {
         string titre = ExtraireTitreAvecSeparateurs(titreFenetre, "PPSSPP");
@@ -1089,6 +1193,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return titreNettoye;
     }
 
+    /*
+     * Extrait un titre probable de Dolphin depuis la fenêtre ou la ligne
+     * de commande du processus.
+     */
     private static string ExtraireTitreDolphin(Process processus, string titreFenetre)
     {
         string titre = ExtraireTitreAvecSeparateurs(
@@ -1118,6 +1226,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             : titreNettoye;
     }
 
+    /*
+     * Extrait un titre probable de Dolphin à partir de la ligne de commande.
+     */
     private static string ExtraireTitreDolphinDepuisCommande(Process processus)
     {
         string cheminJeu = NormaliserCheminJeuProbable(
@@ -1129,11 +1240,17 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             : NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
     }
 
+    /*
+     * Extrait un titre probable de Project64 à partir de son titre de fenêtre.
+     */
     private static string ExtraireTitreProject64(Process _, string titreFenetre)
     {
         return ExtraireTitreProject64DepuisFenetre(titreFenetre);
     }
 
+    /*
+     * Extrait un titre probable de RALibretro à partir de son titre de fenêtre.
+     */
     private static string ExtraireTitreRALibretro(Process _, string titreFenetre)
     {
         string titre = ExtraireTitreRALibretroDepuisFenetre(titreFenetre);
@@ -1185,6 +1302,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de RALibretro depuis sa configuration.
+     */
     private static string LireCheminJeuRALibretroDepuisConfiguration()
     {
         string cheminConfiguration =
@@ -1217,6 +1337,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de Project64 ou RAP64 depuis sa configuration.
+     */
     private static string LireCheminJeuProject64DepuisConfiguration(string nomEmulateur)
     {
         string cheminConfiguration =
@@ -1257,6 +1380,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de RANes depuis sa configuration.
+     */
     private static string LireCheminJeuRANesDepuisConfiguration(string titreJeuProbable)
     {
         string cheminConfiguration =
@@ -1381,6 +1507,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de RASnes9x depuis sa configuration.
+     */
     private static string LireCheminJeuRASnes9xDepuisConfiguration()
     {
         string cheminConfiguration =
@@ -1428,6 +1557,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de RAVBA depuis sa configuration.
+     */
     private static string LireCheminJeuRAVBADepuisConfiguration()
     {
         string cheminConfiguration =
@@ -1466,6 +1598,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de PCSX2 depuis son journal local.
+     */
     private static string LireCheminJeuPCSX2DepuisLog()
     {
         try
@@ -1506,6 +1641,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu courant de Flycast depuis sa configuration.
+     */
     private static string LireCheminJeuFlycastDepuisConfiguration(string titreJeuProbable)
     {
         try
@@ -1562,6 +1700,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Tente d'obtenir le chemin du jeu Flycast depuis le log puis la configuration.
+     */
     private static string LireCheminJeuFlycastDepuisLogOuConfiguration(string titreJeuProbable)
     {
         string cheminDepuisLog = LireCheminJeuFlycastDepuisLog();
@@ -1574,6 +1715,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return LireCheminJeuFlycastDepuisConfiguration(titreJeuProbable);
     }
 
+    /*
+     * Tente d'associer un titre au meilleur fichier jeu trouvé dans le
+     * répertoire de contenu Flycast.
+     */
     private static string TrouverCheminJeuFlycastDepuisRepertoireContenu(
         string repertoireContenu,
         string titreJeuProbable
@@ -1655,6 +1800,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return meilleurScore >= 30 ? meilleurChemin : string.Empty;
     }
 
+    /*
+     * Retourne la liste des fichiers jeu plausibles présents pour Flycast.
+     */
     private static List<string> ObtenirFichiersJeuFlycast(string repertoireContenu)
     {
         lock (VerrouCacheFlycast)
@@ -1690,6 +1838,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Calcule un score souple de proximité entre deux titres potentiellement
+     * équivalents.
+     */
     private static int CalculerScoreProximiteTitreSouple(
         string titreReferenceNormalise,
         string titreCandidat
@@ -1741,6 +1893,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return communs;
     }
 
+    /*
+     * Extrait un titre probable de RALibretro depuis son titre de fenêtre.
+     */
     private static string ExtraireTitreRALibretroDepuisFenetre(string titreFenetre)
     {
         string titre = titreFenetre.Trim();
@@ -1761,6 +1916,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return NettoyerNomFichierJeu(titre);
     }
 
+    /*
+     * Indique si un titre de fenêtre correspond plutôt à un dialogue Dolphin.
+     */
     private static bool EstDialogueDolphin(string titre)
     {
         if (string.IsNullOrWhiteSpace(titre))
@@ -1779,6 +1937,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 or "browse for folder";
     }
 
+    /*
+     * Indique si un titre de fenêtre correspond plutôt à un dialogue PCSX2.
+     */
     private static bool EstDialoguePCSX2(string titre)
     {
         if (string.IsNullOrWhiteSpace(titre))
@@ -1811,6 +1972,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 or "browse for folder";
     }
 
+    /*
+     * Extrait un titre probable de Project64 directement depuis une fenêtre.
+     */
     private static string ExtraireTitreProject64DepuisFenetre(string titreFenetre)
     {
         if (string.IsNullOrWhiteSpace(titreFenetre))
@@ -1865,6 +2029,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return ExtraireTitreAvecSeparateurs(titreFenetre, "Project64", "RAP64", "RAProject64");
     }
 
+    /*
+     * Indique si une valeur de fenêtre correspond uniquement à un bloc de version.
+     */
     private static bool EstBlocVersionProject64(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -1875,6 +2042,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return BlocVersionProject64Regex().IsMatch(valeur.Trim());
     }
 
+    /*
+     * Tente d'extraire le titre DuckStation via l'automatisation d'interface.
+     */
     private static string ExtraireTitreDuckStationDepuisAutomatisation(Process processus)
     {
         try
@@ -1921,6 +2091,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Évalue la pertinence d'un nom issu de l'automatisation DuckStation.
+     */
     private static double EvaluerNomAutomatisationDuckStation(string nom)
     {
         string valeur = nom.Trim();
@@ -1989,6 +2162,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return score;
     }
 
+    /*
+     * Journalise l'état local seulement lorsqu'il diffère du précédent.
+     */
     private void JournaliserSiChangement(EtatSondeLocaleEmulateur etat)
     {
         if (string.Equals(_derniereSignatureJournalisee, etat.Signature, StringComparison.Ordinal))
@@ -2000,6 +2176,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         Journaliser(etat);
     }
 
+    /*
+     * Écrit un état local complet dans le journal de diagnostic.
+     */
     private static void Journaliser(EtatSondeLocaleEmulateur etat)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -2011,6 +2190,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Nettoie une valeur textuelle avant de l'injecter dans le journal.
+     */
     private static string NettoyerPourJournal(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)
@@ -2018,6 +2200,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             : valeur.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 
+    /*
+     * Retourne la liste des titres visibles associés à un processus Windows.
+     */
     private static IReadOnlyList<string> LireTitresFenetresVisibles(Process processus)
     {
         List<string> titres = [];
@@ -2071,6 +2256,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return [.. titres.Distinct(StringComparer.Ordinal)];
     }
 
+    /*
+     * Choisit le meilleur titre de fenêtre à retenir pour un émulateur donné.
+     */
     private static string ChoisirTitreFenetre(
         DefinitionEmulateurLocal definition,
         Process processus,
@@ -2106,6 +2294,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             : string.Empty;
     }
 
+    /*
+     * Indique si un titre de fenêtre peut être retenu pour un émulateur précis.
+     */
     private static bool PeutRetenirTitreFenetrePourEmulateur(
         DefinitionEmulateurLocal definition,
         Process processus,
@@ -2134,6 +2325,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Calcule une priorité relative pour départager plusieurs titres de fenêtre.
+     */
     private static int CalculerPrioriteTitreFenetre(
         DefinitionEmulateurLocal definition,
         Process processus,
@@ -2187,6 +2381,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return score;
     }
 
+    /*
+     * Vérifie si un titre de fenêtre référence explicitement l'émulateur.
+     */
     private static bool TitreFenetreReferenceEmulateur(
         DefinitionEmulateurLocal definition,
         string titreFenetre
@@ -2203,6 +2400,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Détermine si un titre de fenêtre semble parasite pour la détection du jeu.
+     */
     private static bool TitreFenetreSembleParasite(string titreFenetre)
     {
         string titreNormalise = NormaliserTexteComparaison(titreFenetre);
@@ -2248,6 +2448,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Normalise un texte pour les comparaisons strictes de diagnostics.
+     */
     private static string NormaliserTexteComparaison(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -2271,6 +2474,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return constructeur.ToString().Normalize(NormalizationForm.FormC).Trim().ToLowerInvariant();
     }
 
+    /*
+     * Normalise un titre pour les comparaisons souples entre variantes.
+     */
     private static string NormaliserTitreComparaisonSouple(string valeur)
     {
         string normalise = NormaliserTexteComparaison(valeur);
@@ -2285,6 +2491,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return EspacesMultiplesRegex().Replace(normalise, " ").Trim();
     }
 
+    /*
+     * Indique si deux titres semblent représenter le même jeu.
+     */
     private static bool TitresSemblables(string titreA, string titreB)
     {
         string normaliseA = NormaliserTitreComparaisonSouple(titreA);
@@ -2300,6 +2509,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             || normaliseB.Contains(normaliseA, StringComparison.Ordinal);
     }
 
+    /*
+     * Construit un résumé de diagnostic sur la source utilisée pour identifier
+     * le jeu courant.
+     */
     private static string ConstruireDiagnosticSourceJeu(
         StrategieRenseignementJeuEmulateurLocal strategie,
         int identifiantJeu
@@ -2324,6 +2537,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return $"source={source};gameId={identifiantJeu.ToString(CultureInfo.InvariantCulture)}";
     }
 
+    /*
+     * Construit un diagnostic détaillé spécifique à DuckStation.
+     */
     private static string ConstruireDiagnosticDuckStation(
         Process processus,
         IReadOnlyList<string> titresFenetres
@@ -2396,6 +2612,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit la ligne de commande complète d'un processus lorsque c'est possible.
+     */
     private static string LireLigneCommandeProcessus(Process processus)
     {
         try
@@ -2451,6 +2670,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Tente d'extraire un chemin de jeu depuis une ligne de commande brute.
+     */
     private static string ExtraireCheminJeuDepuisLigneCommande(string ligneCommande)
     {
         if (string.IsNullOrWhiteSpace(ligneCommande))
@@ -2541,6 +2763,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Tente de retrouver le chemin du jeu Dolphin par plusieurs sources locales.
+     */
     private static string LireCheminJeuDolphin(string titreJeuProbable)
     {
         string cheminDepuisProcessus = LireCheminJeuDolphinDepuisProcessusActif();
@@ -2553,6 +2778,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return LireCheminJeuDolphinDepuisConfiguration(titreJeuProbable);
     }
 
+    /*
+     * Tente de retrouver le chemin du jeu Dolphin depuis le processus actif.
+     */
     private static string LireCheminJeuDolphinDepuisProcessusActif()
     {
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
@@ -2601,6 +2829,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Tente de retrouver le chemin du jeu Dolphin depuis les fichiers de configuration.
+     */
     private static string LireCheminJeuDolphinDepuisConfiguration(string titreJeuProbable)
     {
         try
@@ -2674,6 +2905,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Recherche le meilleur chemin de jeu Dolphin depuis plusieurs répertoires candidats.
+     */
     private static string TrouverCheminJeuDolphinDepuisRepertoires(
         IReadOnlyCollection<string> repertoires,
         string titreJeuProbable
@@ -2768,6 +3002,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return meilleurScore >= 30 ? meilleurChemin : string.Empty;
     }
 
+    /*
+     * Lit le renseignement jeu courant de Dolphin depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuDolphinDepuisLog()
     {
         try
@@ -2855,6 +3092,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Normalise un chemin de jeu probable pour faciliter les comparaisons.
+     */
     private static string NormaliserCheminJeuProbable(string cheminJeu)
     {
         if (string.IsNullOrWhiteSpace(cheminJeu))
@@ -2873,6 +3113,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu courant de Flycast depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuFlycastDepuisLog(
         Process processus,
         string titreJeuFenetre
@@ -2947,6 +3190,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return ConstruireRenseignementJeuFlycastDepuisCommande(processus, titreJeuFenetre);
     }
 
+    /*
+     * Construit le renseignement jeu Flycast pour le mode Rejouer à partir
+     * des sources locales disponibles.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuFlycastDepuisSourcesRejouer()
     {
         try
@@ -3024,6 +3271,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le chemin du jeu RetroArch depuis son journal local.
+     */
     private static string LireCheminJeuRetroArchDepuisLog()
     {
         try
@@ -3065,6 +3315,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le chemin du jeu Flycast depuis son journal local.
+     */
     private static string LireCheminJeuFlycastDepuisLog()
     {
         try
@@ -3105,6 +3358,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Construit un renseignement jeu Flycast à partir d'un chemin issu
+     * d'une commande ou d'un journal.
+     */
     private static RenseignementJeuRA? ConstruireRenseignementJeuFlycastDepuisCommande(
         Process processus,
         string titreJeuFenetre,
@@ -3136,6 +3393,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu courant de RetroArch depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRetroArchDepuisLog()
     {
         try
@@ -3256,6 +3516,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return LireRenseignementJeuRetroArchDepuisCache();
     }
 
+    /*
+     * Lit le renseignement jeu courant de DuckStation depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuDuckStationDepuisLog()
     {
         try
@@ -3324,6 +3587,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return null;
     }
 
+    /*
+     * Lit le renseignement jeu courant de PCSX2 depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuPCSX2DepuisLog()
     {
         try
@@ -3391,6 +3657,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return null;
     }
 
+    /*
+     * Lit le renseignement jeu courant de PPSSPP depuis son journal local.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuPPSSPPDepuisLog(string titreJeuAttendu)
     {
         try
@@ -3610,6 +3879,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return null;
     }
 
+    /*
+     * Déduit un titre probable de PPSSPP à partir du chemin du jeu.
+     */
     private static string ExtraireTitrePPSSPPDepuisCheminJeu(string cheminJeu)
     {
         if (string.IsNullOrWhiteSpace(cheminJeu))
@@ -3629,6 +3901,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return EspacesMultiplesRegex().Replace(titre, " ").Trim();
     }
 
+    /*
+     * Lit le chemin du jeu PPSSPP depuis son journal local.
+     */
     private static string LireCheminJeuPPSSPPDepuisLog()
     {
         try
@@ -3669,6 +3944,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Mémorise en cache le dernier renseignement jeu PPSSPP.
+     */
     private static RenseignementJeuRA? MemoriserRenseignementPPSSPP(
         RenseignementJeuRA renseignement
     )
@@ -3681,6 +3959,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Retourne le dernier renseignement jeu PPSSPP encore valide depuis le cache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuPPSSPPDepuisCache(string titreJeuAttendu)
     {
         lock (VerrouCachePPSSPP)
@@ -3707,6 +3988,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Mémorise en cache le dernier renseignement jeu RetroArch.
+     */
     private static RenseignementJeuRA? MemoriserRenseignementRetroArch(
         RenseignementJeuRA renseignement
     )
@@ -3719,6 +4003,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Retourne le dernier renseignement jeu RetroArch encore valide depuis le cache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRetroArchDepuisCache()
     {
         lock (VerrouCacheRetroArch)
@@ -3736,6 +4023,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu courant de Project64 depuis RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisRACache(
         string nomEmulateur
     )
@@ -3784,6 +4074,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Mémorise en cache le dernier renseignement jeu Project64.
+     */
     private static RenseignementJeuRA? MemoriserRenseignementProject64(
         string nomEmulateur,
         RenseignementJeuRA renseignement
@@ -3802,6 +4095,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Retourne le dernier renseignement jeu Project64 encore valide depuis le cache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisCache(string nomEmulateur)
     {
         if (string.IsNullOrWhiteSpace(nomEmulateur))
@@ -3830,6 +4126,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu courant de RANes depuis RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRANesDepuisRACache()
     {
         return LireRenseignementJeuDepuisRACache(
@@ -3837,6 +4136,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Lit le renseignement jeu courant de RAVBA depuis RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRAVBADepuisRACache()
     {
         return LireRenseignementJeuDepuisRACache(
@@ -3844,6 +4146,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Lit le renseignement jeu courant de RASnes9x depuis RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRASnes9xDepuisRACache()
     {
         return LireRenseignementJeuDepuisRACache(
@@ -3851,6 +4156,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Lit un renseignement jeu générique depuis un répertoire RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuDepuisRACache(string repertoireRACache)
     {
         try
@@ -3888,6 +4196,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu courant de RALibretro depuis RACache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisRACache()
     {
         try
@@ -3978,6 +4289,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Mémorise en cache le dernier renseignement jeu RALibretro.
+     */
     private static RenseignementJeuRA? MemoriserRenseignementRALibretro(
         RenseignementJeuRA renseignement
     )
@@ -3990,6 +4304,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Retourne le dernier renseignement jeu RALibretro encore valide depuis le cache.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisCache()
     {
         lock (VerrouCacheRALibretro)
@@ -4007,6 +4324,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu RALibretro directement depuis la configuration.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuRALibretroDepuisConfiguration()
     {
         string cheminConfiguration =
@@ -4058,6 +4378,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le renseignement jeu BizHawk directement depuis la configuration locale.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuBizHawkDepuisConfiguration()
     {
         string cheminJournal = ServiceSourcesLocalesEmulateurs.TrouverCheminJournalJeuBizHawk();
@@ -4121,6 +4444,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le chemin du jeu BizHawk depuis sa configuration locale.
+     */
     private static string LireCheminJeuBizHawkDepuisConfiguration()
     {
         string cheminConfiguration =
@@ -4179,6 +4505,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Lit le dernier succès débloqué BizHawk depuis son journal de jeu local.
+     */
     private static SuccesDebloqueDetecte? LireDernierSuccesDebloqueBizHawkDepuisJournalJeu(
         int identifiantJeu,
         string titreJeu,
@@ -4361,6 +4690,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Construit le cache d'état des succès BizHawk à partir du journal courant.
+     */
     private static Dictionary<int, EtatSuccesBizHawk> ConstruireCacheSuccesBizHawk(
         IEnumerable<(int Id, string Titre, bool Softcore, bool Hardcore)> etats
     )
@@ -4371,6 +4703,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Réinitialise le cache BizHawk lorsqu'un nouveau jeu est détecté.
+     */
     private static void ReinitialiserCacheSuccesBizHawk(int identifiantJeu)
     {
         lock (VerrouCacheSuccesBizHawk)
@@ -4380,6 +4715,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit un booléen BizHawk dans un élément JSON avec tolérance aux formats.
+     */
     private static bool LireBooleenBizHawk(JsonElement parent, string nomPropriete)
     {
         if (!parent.TryGetProperty(nomPropriete, out JsonElement valeur))
@@ -4405,6 +4743,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         };
     }
 
+    /*
+     * Lit le dernier succès débloqué à partir de la source locale adaptée
+     * à l'émulateur courant.
+     */
     public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueDepuisSourceLocale(
         string nomEmulateur,
         int identifiantJeu,
@@ -4468,6 +4810,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le dernier succès débloqué pour RALibretro à partir des journaux RA.
+     */
     public static SuccesDebloqueDetecte? LireDernierSuccesDebloqueRALibretro(
         int identifiantJeu,
         string titreJeu,
@@ -4482,6 +4827,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         );
     }
 
+    /*
+     * Lit le dernier identifiant de jeu mentionné dans un journal RA.
+     */
     private static int LireDernierIdentifiantJeuDepuisJournalRA(string cheminJournal)
     {
         try
@@ -4513,6 +4861,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return 0;
     }
 
+    /*
+     * Lit le dernier succès mentionné dans un journal RA.
+     */
     private static RenseignementSuccesRA? LireDernierSuccesDepuisJournalRA(string cheminJournal)
     {
         try
@@ -4600,6 +4951,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return null;
     }
 
+    /*
+     * Lit le dernier renseignement jeu Project64 depuis les fichiers Data.
+     */
     private static RenseignementJeuRA? LireDernierRenseignementJeuProject64DepuisData(
         string repertoireRACache
     )
@@ -4654,6 +5008,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit un renseignement jeu Project64 depuis un fichier Data précis.
+     */
     private static RenseignementJeuRA? LireRenseignementJeuProject64DepuisFichierData(
         string repertoireRACache,
         int identifiantJeu
@@ -4701,6 +5058,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Nettoie un nom de fichier de jeu pour l'utiliser comme titre probable.
+     */
     private static string NettoyerNomFichierJeu(string nomFichier)
     {
         if (string.IsNullOrWhiteSpace(nomFichier))
@@ -4714,6 +5074,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return resultat;
     }
 
+    /*
+     * Tente d'extraire un titre DuckStation depuis une carte mémoire récente.
+     */
     private static string ExtraireTitreDuckStationDepuisMemcardRecente()
     {
         try
@@ -4772,6 +5135,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Tente de retrouver le chemin du jeu DuckStation via une carte mémoire récente.
+     */
     private static string TrouverCheminJeuDuckStationDepuisMemcardRecente()
     {
         try
@@ -4824,6 +5190,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Lit le chemin du jeu DuckStation depuis son journal local.
+     */
     private static string LireCheminJeuDuckStationDepuisLog()
     {
         try
@@ -4874,6 +5243,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return TrouverCheminJeuDuckStationDepuisMemcardRecente();
     }
 
+    /*
+     * Résout un chemin de jeu DuckStation à partir d'un serial PlayStation.
+     */
     private static string ResoudreCheminJeuDuckStationDepuisSerial(
         string repertoireDuckStation,
         string serial
@@ -4921,6 +5293,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         }
     }
 
+    /*
+     * Construit le cache de correspondance entre serials et chemins DuckStation.
+     */
     private static Dictionary<string, string> ConstruireCacheSerialDuckStation(
         string cheminGamelist
     )
@@ -4944,6 +5319,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return correspondances;
     }
 
+    /*
+     * Extrait les chaînes lisibles d'un binaire pour y rechercher des indices.
+     */
     private static string[] ExtraireChainesLisiblesDepuisBinaire(
         string cheminFichier,
         int longueurMin
@@ -4978,6 +5356,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return [.. chaines];
     }
 
+    /*
+     * Indique si une valeur ressemble à un chemin de jeu DuckStation valide.
+     */
     private static bool EstCheminJeuDuckStation(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -5002,218 +5383,347 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return extensionsJeuPossibles.Contains(extension, StringComparer.OrdinalIgnoreCase);
     }
 
+    /*
+     * Indique si une valeur ressemble à un serial de jeu PlayStation.
+     */
     private static bool EstSerialJeuPlayStation(string valeur)
     {
         return !string.IsNullOrWhiteSpace(valeur) && SerialJeuPlayStationRegex().IsMatch(valeur);
     }
 
     [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui réduit les espaces multiples.
+     */
     private static partial Regex EspacesMultiplesRegex();
 
     [GeneratedRegex(@"^v?\d+(\.\d+)+$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    /*
+     * Déclare l'expression régulière qui reconnaît un bloc de version Project64.
+     */
     private static partial Regex BlocVersionProject64Regex();
 
     [GeneratedRegex(@"^\d+(\.\d+)*$", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui reconnaît une valeur purement numérique.
+     */
     private static partial Regex ValeurNumeriqueSeuleRegex();
 
     [GeneratedRegex(@"[A-Za-z].*[A-Za-z]", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui vérifie la présence d'au moins deux lettres.
+     */
     private static partial Regex ContientDeuxLettresRegex();
 
     [GeneratedRegex(@"\([^)]*\)", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui repère le texte placé entre parenthèses.
+     */
     private static partial Regex TexteEntreParenthesesRegex();
 
     [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui repère les caractères non alphanumériques.
+     */
     private static partial Regex CaracteresNonAlphaNumeriquesRegex();
 
     [GeneratedRegex("\"([^\"]+)\"|([^\\s]+)", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière utilisée pour découper une ligne de commande.
+     */
     private static partial Regex JetonsLigneCommandeRegex();
 
     [GeneratedRegex(
         @"RA:\s*game\s+(\d+)\s+loaded:\s*(.+?),\s*achievements",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière de détection de jeu chargé dans Flycast.
+     */
     private static partial Regex FlycastGameLoadedRegex();
 
     [GeneratedRegex(
         @"RA:\s*cdreader_open_track\s+(.+?)\s+track\s+\d+",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière de détection de contenu chargé dans Flycast.
+     */
     private static partial Regex FlycastContenuChargeRegex();
 
     [GeneratedRegex(
         @"(?:Identified game:\s*|Loading game\s+|Starting (?:new )?session for game\s+)(\d+)",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui extrait un Game ID depuis un journal.
+     */
     private static partial Regex JournalGameIdRegex();
 
     [GeneratedRegex(
         @"Awarding achievement\s+(\d+)\s*:\s*(.+)$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère une attribution de succès.
+     */
     private static partial Regex JournalSuccesAttributionRegex();
 
     [GeneratedRegex(
         @"Game loaded:\s*'(.+?)'\s*\(ID:\s*(\d+)\s*,",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière de détection de jeu chargé dans DuckStation.
+     */
     private static partial Regex DuckStationGameLoadedRegex();
 
     [GeneratedRegex(@"Boot Path:\s*(.+)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)]
+    /*
+     * Déclare l'expression régulière qui extrait un chemin de boot DuckStation.
+     */
     private static partial Regex DuckStationBootPathRegex();
 
     [GeneratedRegex(
         @"Achievements:\s+Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu identifié dans PCSX2.
+     */
     private static partial Regex PCSX2GameIdentifieRegex();
 
     [GeneratedRegex(
         @"Achievements:\s+Game\s+(\d+)\s+loaded\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu chargé dans PCSX2.
+     */
     private static partial Regex PCSX2GameChargeRegex();
 
     [GeneratedRegex(
         @"isoFile open ok:\s*(.+)$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère une ISO ouverte dans PCSX2.
+     */
     private static partial Regex PCSX2IsoOuverteRegex();
 
     [GeneratedRegex(
         @"Load callback:\s*(\d+)\s*\(([^)]*)\)",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un chargement PPSSPP.
+     */
     private static partial Regex PPSSPPLoadCallbackRegex();
 
     [GeneratedRegex(
         @"RetroAchievements:\s+Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu identifié dans PPSSPP.
+     */
     private static partial Regex PPSSPPGameIdentifieRegex();
 
     [GeneratedRegex(
         @"RetroAchievements:\s+Game\s+(\d+)\s+loaded\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu chargé dans PPSSPP.
+     */
     private static partial Regex PPSSPPGameChargeRegex();
 
     [GeneratedRegex(
         @"Booted\s+(.+?)\.\.\.$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère le démarrage d'un jeu PPSSPP.
+     */
     private static partial Regex PPSSPPJeuDemarreRegex();
 
     [GeneratedRegex(
         @"RetroAchievements\]:\s*Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu identifié dans Dolphin.
+     */
     private static partial Regex DolphinGameIdentifieRegex();
 
     [GeneratedRegex(
         @"RetroAchievements\]:\s*Game\s+(\d+)\s+loaded\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu chargé dans Dolphin.
+     */
     private static partial Regex DolphinGameChargeRegex();
 
     [GeneratedRegex(
         @"Achievement\s+(\d+)\s+awarded\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un succès attribué.
+     */
     private static partial Regex JournalSuccesAttribueRegex();
 
     [GeneratedRegex(
         @"Achievement\s+(\d+)\s+\((.+?)\)\s+for game\s+\d+\s+unlocked\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un succès débloqué dans DuckStation.
+     */
     private static partial Regex JournalSuccesDebloqueDuckStationRegex();
 
     [GeneratedRegex(
         @"Achievement\s+(.+?)\s+\((\d+)\)\s+for game\s+.+?\s+unlocked\b",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un succès débloqué dans Flycast.
+     */
     private static partial Regex JournalSuccesDebloqueFlycastRegex();
 
     [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
+    /*
+     * Déclare l'expression régulière qui reconnaît un fichier de données jeu.
+     */
     private static partial Regex FichierDonneesJeuRegex();
 
     [GeneratedRegex(
         @"(?:^|[_\-\s])(?:slot|card)\s*\d+$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un suffixe de slot mémoire.
+     */
     private static partial Regex SuffixeSlotCarteMemoireRegex();
 
     [GeneratedRegex(
         @"^(?:S[CLN][A-Z]{2}|PBPX)[-_ ]?\d{3,5}(?:[-_ ]?\d{2,3})?$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui valide un serial de jeu PlayStation.
+     */
     private static partial Regex SerialJeuPlayStationRegex();
 
     [GeneratedRegex(
         @"^[A-Z]{4}\d{5}\s*:\s*",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un préfixe de serial PPSSPP.
+     */
     private static partial Regex PrefixeSerialPpssppRegex();
 
     [GeneratedRegex(
         @"\s*\(([A-Z0-9]{4,8})\)\s*$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un suffixe de code jeu Dolphin.
+     */
     private static partial Regex SuffixeCodeJeuDolphinRegex();
 
     [GeneratedRegex(
         @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Identified game:\s*(\d+)\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu identifié dans RetroArch.
+     */
     private static partial Regex RetroArchGameIdentifieRegex();
 
     [GeneratedRegex(
         @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Starting session for game\s+(\d+)",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère une session jeu RetroArch.
+     */
     private static partial Regex RetroArchSessionJeuRegex();
 
     [GeneratedRegex(
         @"(?:\[[^\]]+\]\s+)*\[RCHEEVOS\]\s+Game\s+(\d+)\s+loaded",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un jeu chargé dans RetroArch.
+     */
     private static partial Regex RetroArchGameChargeRegex();
 
     [GeneratedRegex(
         @"(?:\[[^\]]+\]\s+)*\[(?:Core|Content)\]\s+(?:Using content|Chargement du fichier de contenu):\s+""([^""]+)""",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui repère un contenu chargé dans RetroArch.
+     */
     private static partial Regex RetroArchContenuChargeRegex();
 
     [GeneratedRegex(
         @"^(?:Luna'?s?\s+)?Project64\s+v?\d+(?:\.\d+)+$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui reconnaît un titre Project64 réduit à sa version.
+     */
     private static partial Regex TitreFenetreProject64VersionSeuleRegex();
 
     [GeneratedRegex(
         @"^(?:RAP64|RAProject64)\s*-\s*\d+(?:\.\d+)+(?:\s*-\s*[\w\s]+)?$",
         RegexOptions.CultureInvariant | RegexOptions.IgnoreCase
     )]
+    /*
+     * Déclare l'expression régulière qui reconnaît un titre générique Project64.
+     */
     private static partial Regex TitreFenetreProject64GeneriqueRegex();
 
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]
+    /*
+     * Déclare l'appel natif Windows utilisé pour énumérer les fenêtres.
+     */
     private static partial bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]
+    /*
+     * Déclare l'appel natif Windows qui indique si une fenêtre est visible.
+     */
     private static partial bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    /*
+     * Déclare l'appel natif Windows qui lit le texte d'une fenêtre.
+     */
     private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
     [LibraryImport("user32.dll")]
+    /*
+     * Déclare l'appel natif Windows qui retourne la longueur du texte d'une fenêtre.
+     */
     private static partial int GetWindowTextLength(IntPtr hWnd);
 
     [LibraryImport("user32.dll")]
+    /*
+     * Déclare l'appel natif Windows qui relie une fenêtre à son processus.
+     */
     private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
     [LibraryImport("ntdll.dll")]
+    /*
+     * Déclare l'appel natif bas niveau utilisé pour lire certaines informations de processus.
+     */
     private static partial int NtQueryInformationProcess(
         IntPtr processHandle,
         int processInformationClass,
@@ -5223,6 +5733,9 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     );
 
     [StructLayout(LayoutKind.Sequential)]
+    /*
+     * Représente une structure Unicode native utilisée par les appels bas niveau.
+     */
     private readonly struct UnicodeString
     {
         public readonly ushort Length;

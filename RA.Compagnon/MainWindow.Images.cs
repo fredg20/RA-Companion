@@ -4,10 +4,21 @@ using System.Security.Cryptography;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
+/*
+ * Regroupe le chargement, la mise en cache et la persistance locale des
+ * images distantes utilisées par l'interface.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les helpers de téléchargement et de réutilisation des images
+ * provenant de sources distantes.
+ */
 public partial class MainWindow
 {
+    /*
+     * Charge une image distante en utilisant le cache mémoire et disque si possible.
+     */
     private async Task<ImageSource?> ChargerImageDistanteAsync(string urlImage)
     {
         if (string.IsNullOrWhiteSpace(urlImage))
@@ -61,6 +72,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Télécharge une image distante puis l'enregistre dans le cache disque.
+     */
     private static async Task<ImageSource?> TelechargerEtMettreEnCacheImageDistanteAsync(
         string urlImage,
         string cheminCache
@@ -79,6 +93,9 @@ public partial class MainWindow
         return await Task.Run(() => ChargerImageDepuisOctets(contenu));
     }
 
+    /*
+     * Charge une image précédemment mise en cache sur disque.
+     */
     private static async Task<ImageSource?> ChargerImageDepuisFichierAsync(string cheminCache)
     {
         try
@@ -92,6 +109,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Reconstruit une image WPF à partir d'un tableau d'octets.
+     */
     private static BitmapImage? ChargerImageDepuisOctets(byte[] contenu)
     {
         if (contenu.Length == 0)
@@ -109,6 +129,9 @@ public partial class MainWindow
         return image;
     }
 
+    /*
+     * Retourne le chemin du fichier de cache associé à une URL d'image distante.
+     */
     private static string ObtenirCheminCacheImageDistante(string urlImage)
     {
         byte[] empreinte = SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(urlImage));

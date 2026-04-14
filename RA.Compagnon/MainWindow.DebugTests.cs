@@ -5,11 +5,22 @@ using RA.Compagnon.Modeles.Debug;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Services;
 
+/*
+ * Regroupe les raccourcis et scénarios de test DEBUG liés à la simulation
+ * de déblocages de succès dans la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique de déclenchement manuel des scénarios de test de succès
+ * en mode DEBUG.
+ */
 public partial class MainWindow
 {
 #if DEBUG
+    /*
+     * Intercepte certains raccourcis clavier DEBUG pour déclencher un test de succès.
+     */
     private async void FenetrePrincipale_PreviewKeyDown_Debug(object sender, KeyEventArgs e)
     {
         if (Keyboard.Modifiers != (ModifierKeys.Control | ModifierKeys.Shift))
@@ -39,6 +50,9 @@ public partial class MainWindow
         await DeclencherTestSuccesDebugAsync(modeDeclenchement, hardcore);
     }
 
+    /*
+     * Déclenche un scénario de test de succès selon le mode demandé.
+     */
     private async Task DeclencherTestSuccesDebugAsync(
         ModeDeclenchementTestSuccesDebug modeDeclenchement,
         bool hardcore
@@ -55,7 +69,7 @@ public partial class MainWindow
             : _dernieresDonneesJeuAffichees?.Jeu.Title?.Trim() ?? string.Empty;
 
         ResultatScenarioTestSuccesDebug resultat =
-            _serviceTestSuccesDebug.ConstruireScenarioDepuisContexte(
+            ServiceTestSuccesDebug.ConstruireScenarioDepuisContexte(
                 nomEmulateur,
                 identifiantJeu,
                 titreJeu,
@@ -91,7 +105,7 @@ public partial class MainWindow
         if (scenario.ModeDeclenchement == ModeDeclenchementTestSuccesDebug.SourceLocale)
         {
             ResultatExecutionTestSuccesDebug execution =
-                _serviceTestSuccesDebug.InjecterScenarioSourceLocale(scenario);
+                ServiceTestSuccesDebug.InjecterScenarioSourceLocale(scenario);
 
             ServiceTestSuccesDebug.JournaliserEvenement(
                 execution.EstReussi

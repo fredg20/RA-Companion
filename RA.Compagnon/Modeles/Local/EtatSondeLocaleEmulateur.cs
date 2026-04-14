@@ -1,5 +1,12 @@
+/*
+ * Décrit le résultat instantané d'une sonde locale d'émulateur.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Transporte toutes les informations détectées localement sur un émulateur
+ * et le jeu probable qu'il exécute.
+ */
 public sealed class EtatSondeLocaleEmulateur
 {
     public bool EmulateurDetecte { get; init; }

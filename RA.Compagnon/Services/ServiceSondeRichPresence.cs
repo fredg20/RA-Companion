@@ -2,8 +2,16 @@ using System.Globalization;
 using System.IO;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Interprète les données de profil et de résumé utilisateur pour produire un
+ * état de Rich Presence lisible par l'interface.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit la sonde de Rich Presence utilisée pour déterminer si le joueur
+ * est en jeu, sur son dernier jeu ou inactif.
+ */
 public sealed class ServiceSondeRichPresence
 {
     private static readonly TimeSpan DelaiPresenceActive = TimeSpan.FromMinutes(10);
@@ -13,11 +21,18 @@ public sealed class ServiceSondeRichPresence
         "journal-richpresence.log"
     );
 
+    /*
+     * Réinitialise le journal de session du Rich Presence.
+     */
     public static void ReinitialiserJournalSession()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalRichPresence);
     }
 
+    /*
+     * Analyse les données de compte pour construire un état de présence
+     * riche utilisable par l'interface.
+     */
     public static EtatRichPresence Sonder(DonneesCompteUtilisateur donnees, bool journaliser = true)
     {
         string messageRichPresenceResume = donnees.Resume?.RichPresenceMsg?.Trim() ?? string.Empty;
@@ -86,6 +101,10 @@ public sealed class ServiceSondeRichPresence
         return etat;
     }
 
+    /*
+     * Détermine l'identifiant du dernier jeu connu à partir des différentes
+     * sources utilisateur disponibles.
+     */
     private static int DeterminerDernierIdentifiantJeu(DonneesCompteUtilisateur donnees)
     {
         if (donnees.Resume?.LastGameId > 0)
@@ -106,6 +125,9 @@ public sealed class ServiceSondeRichPresence
         return 0;
     }
 
+    /*
+     * Tente de parser la date brute de Rich Presence en UTC.
+     */
     private static bool EssayerParserDatePresence(
         string datePresence,
         out DateTimeOffset dateParsee
@@ -138,11 +160,17 @@ public sealed class ServiceSondeRichPresence
         );
     }
 
+    /*
+     * Indique si le statut du site doit être considéré comme hors ligne.
+     */
     private static bool EstStatutHorsLigne(string statutSite)
     {
         return string.Equals(statutSite, "Offline", StringComparison.OrdinalIgnoreCase);
     }
 
+    /*
+     * Journalise le résultat détaillé d'une sonde de Rich Presence.
+     */
     private static void JournaliserSonde(EtatRichPresence etat)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -154,6 +182,9 @@ public sealed class ServiceSondeRichPresence
         );
     }
 
+    /*
+     * Nettoie une valeur avant son écriture dans le journal de diagnostic.
+     */
     private static string NettoyerPourJournal(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)

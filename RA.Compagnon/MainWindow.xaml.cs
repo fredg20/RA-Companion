@@ -1,12 +1,27 @@
 using System.Net.Http;
 using Wpf.Ui.Controls;
 
+/*
+ * Déclare la fenêtre principale, ses types internes et ses constantes
+ * structurantes utilisées par l'ensemble des fichiers partiels.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Représente la fenêtre principale de Compagnon et centralise l'initialisation
+ * globale des services, minuteurs et événements de l'interface.
+ */
 public partial class MainWindow : FluentWindow
 {
+    /*
+     * Représente un visuel du jeu courant dans le carrousel avec son libellé.
+     */
     private sealed record VisuelJeuEnCours(string Libelle, string CheminImage);
 
+    /*
+     * Transporte les informations nécessaires aux interactions sur un badge de
+     * succès affiché dans la grille complète.
+     */
     private sealed record BadgeSuccesGrilleContexte(
         int IdentifiantJeu,
         int IdentifiantSucces,
@@ -17,6 +32,10 @@ public partial class MainWindow : FluentWindow
         public int Id => IdentifiantSucces;
     }
 
+    /*
+     * Décrit les différents modes d'ordonnancement possibles de la grille des
+     * succès du jeu courant.
+     */
     private enum OrdreSuccesGrille
     {
         Normal,
@@ -72,6 +91,10 @@ public partial class MainWindow : FluentWindow
     private const double DureeFonduImageJeuEnCoursMillisecondes = 1000;
     private const double RayonFlouTransitionImageJeuEnCours = 14;
 
+    /*
+     * Initialise la fenêtre principale, le ViewModel, les minuteurs et les
+     * abonnements d'événements nécessaires au cycle de vie de l'application.
+     */
     public MainWindow()
     {
         App.JournaliserDemarrage("MainWindow ctor début");

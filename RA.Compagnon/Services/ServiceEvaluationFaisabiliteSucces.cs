@@ -1,10 +1,22 @@
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Évalue une faisabilité simplifiée d'un succès à partir de son taux de
+ * déblocage observé sur le jeu concerné.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Produit un score, un libellé et un niveau de confiance pour aider
+ * l'interface à qualifier rapidement la difficulté pratique d'un succès.
+ */
 public sealed class ServiceEvaluationFaisabiliteSucces
 {
+    /*
+     * Calcule l'évaluation de faisabilité en utilisant le nombre de joueurs
+     * distincts du jeu et le nombre de déblocages connus.
+     */
     public static EvaluationFaisabiliteSucces Evaluer(
         GameAchievementV2 succes,
         int identifiantJeu,
@@ -38,6 +50,9 @@ public sealed class ServiceEvaluationFaisabiliteSucces
         };
     }
 
+    /*
+     * Associe un score numérique à un libellé de faisabilité lisible.
+     */
     private static string DeterminerLibelle(int score)
     {
         return score switch
@@ -50,6 +65,10 @@ public sealed class ServiceEvaluationFaisabiliteSucces
         };
     }
 
+    /*
+     * Détermine le niveau de confiance de l'évaluation selon la taille de
+     * l'échantillon disponible pour le jeu.
+     */
     private static string DeterminerConfiance(int joueursDistincts)
     {
         return joueursDistincts switch

@@ -1,3 +1,8 @@
+/*
+ * Regroupe la logique détaillée de la carte du jeu courant, en particulier
+ * les actions Détails, Recharger et Rejouer ainsi que la modale de vue
+ * détaillée accessible depuis l'interface principale.
+ */
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -13,6 +18,10 @@ using UiControls = Wpf.Ui.Controls;
 
 namespace RA.Compagnon;
 
+/*
+ * Porte la partie de la fenêtre principale qui gère les actions détaillées
+ * associées au jeu courant et à sa relance locale.
+ */
 public partial class MainWindow
 {
     private static readonly string CheminJournalRejouer = Path.Combine(
@@ -21,6 +30,10 @@ public partial class MainWindow
         "journal-rejouer.log"
     );
 
+    /*
+     * Réinitialise les actions détaillées du jeu courant pour repartir d'un
+     * état neutre quand aucun jeu exploitable n'est disponible.
+     */
     private void ReinitialiserVueDetailleeJeuEnCours()
     {
         _vueModele.JeuCourant.LibelleActionDetails = "Détails";
@@ -34,6 +47,9 @@ public partial class MainWindow
         MettreAJourActionRechargerJeuEnCours();
     }
 
+    /*
+     * Met à jour l'action ouvrant la vue détaillée du jeu courant.
+     */
     private void MettreAJourActionVueDetailleeJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         bool actionDisponible = jeu.Id > 0;
@@ -46,6 +62,10 @@ public partial class MainWindow
         MettreAJourActionRechargerJeuEnCours(jeu.Id);
     }
 
+    /*
+     * Active ou désactive l'action Recharger selon le contexte courant
+     * du jeu et de la connexion.
+     */
     private void MettreAJourActionRechargerJeuEnCours(int identifiantJeu = 0)
     {
         if (identifiantJeu <= 0)
@@ -64,6 +84,10 @@ public partial class MainWindow
             : string.Empty;
     }
 
+    /*
+     * Met à jour l'état du bouton Rejouer à partir du dernier contexte
+     * local connu pour ce jeu.
+     */
     private void MettreAJourActionRejouerJeuEnCours(EtatJeuAfficheLocal? jeuSauvegarde)
     {
         if (jeuSauvegarde is not null)
@@ -107,6 +131,9 @@ public partial class MainWindow
             : string.Empty;
     }
 
+    /*
+     * Retourne l'état de jeu le plus pertinent pour une relance locale.
+     */
     private EtatJeuAfficheLocal? ObtenirEtatRejouableCourant(EtatJeuAfficheLocal? jeuSauvegarde)
     {
         if (
@@ -141,6 +168,10 @@ public partial class MainWindow
         return etat;
     }
 
+    /*
+     * Indique si l'action Rejouer doit rester visible mais inactive
+     * pendant qu'un jeu est encore considéré comme actif.
+     */
     private bool DoitMasquerActionRejouerPendantJeu()
     {
         if (_emulateurValideDetecteEnDirect)
@@ -164,6 +195,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Détermine l'exécutable à relancer pour le jeu courant en fonction
+     * de l'état local mémorisé.
+     */
     private static string DeterminerCheminExecutableRelance(EtatJeuAfficheLocal jeuSauvegarde)
     {
         if (
@@ -192,6 +227,10 @@ public partial class MainWindow
             : string.Empty;
     }
 
+    /*
+     * Construit les arguments de ligne de commande nécessaires pour relancer
+     * proprement un jeu selon l'émulateur retenu.
+     */
     private static string ConstruireArgumentsRelance(
         EtatJeuAfficheLocal jeuSauvegarde,
         string cheminExecutable
@@ -238,6 +277,10 @@ public partial class MainWindow
         return $"\"{jeuSauvegarde.CheminJeuLocal}\"";
     }
 
+    /*
+     * Tente de retrouver le core RetroArch à utiliser pour relancer le jeu
+     * à partir du contexte local disponible.
+     */
     private static string TrouverCheminCoreRetroArch(string cheminExecutable, string cheminJeu)
     {
         try
@@ -316,6 +359,9 @@ public partial class MainWindow
         return string.Empty;
     }
 
+    /*
+     * Déduit le core et le système à employer pour une relance via RALibretro.
+     */
     private static (string NomCore, int Systeme) TrouverContexteRelanceRALibretro(
         string cheminExecutable,
         string cheminJeu
@@ -401,6 +447,10 @@ public partial class MainWindow
         return (string.Empty, 0);
     }
 
+    /*
+     * Lance la relance locale du jeu courant si toutes les informations
+     * nécessaires sont disponibles.
+     */
     private void ExecuterActionRejouerJeuEnCours()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = ObtenirEtatRejouableCourant(
@@ -514,11 +564,17 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Gère le clic sur le bouton Rejouer de la carte du jeu courant.
+     */
     private void BoutonRejouerJeuEnCours_Click(object sender, RoutedEventArgs e)
     {
         ExecuterActionRejouerJeuEnCours();
     }
 
+    /*
+     * Écrit une entrée de diagnostic dédiée aux scénarios de relance locale.
+     */
     private static void JournaliserRejouer(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -527,6 +583,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Ouvre la vue détaillée du jeu courant lorsque les données disponibles
+     * le permettent.
+     */
     private async Task ExecuterActionVueDetailleeJeuEnCoursAsync()
     {
         if (_dernieresDonneesJeuAffichees?.Jeu is not GameInfoAndUserProgressV2 jeu || jeu.Id <= 0)
@@ -538,6 +598,9 @@ public partial class MainWindow
         await AfficherModaleVueDetailleeJeuAsync(jeu, jeuAffiche);
     }
 
+    /*
+     * Force un rechargement du jeu courant depuis l'API et l'état local.
+     */
     private async Task ExecuterActionRechargerJeuEnCoursAsync()
     {
         if (!ConfigurationConnexionEstComplete() || _chargementJeuEnCoursActif)
@@ -572,11 +635,17 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Gère le clic sur le bouton Détails de la carte du jeu courant.
+     */
     private async void BoutonVueDetailleeJeuEnCours_Click(object sender, RoutedEventArgs e)
     {
         await ExecuterActionVueDetailleeJeuEnCoursAsync();
     }
 
+    /*
+     * Construit puis affiche la modale de vue détaillée du jeu courant.
+     */
     private async Task AfficherModaleVueDetailleeJeuAsync(
         GameInfoAndUserProgressV2 jeu,
         JeuAffiche jeuAffiche
@@ -668,6 +737,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Construit la grille de contenu affichée dans la modale de détails
+     * du jeu courant.
+     */
     private SystemControls.Grid ConstruireGrilleVueDetailleeJeu(
         GameInfoAndUserProgressV2 jeu,
         JeuAffiche jeuAffiche
@@ -737,6 +810,9 @@ public partial class MainWindow
         return grille;
     }
 
+    /*
+     * Construit le résumé de points affiché dans la vue détaillée du jeu.
+     */
     private static string ConstruireTextePointsDetailJeu(GameInfoAndUserProgressV2 jeu)
     {
         int pointsTotaux = jeu.Succes.Values.Sum(item => Math.Max(0, item.Points));
@@ -752,12 +828,18 @@ public partial class MainWindow
         return $"{pointsObtenus.ToString(CultureInfo.CurrentCulture)} / {pointsTotaux.ToString(CultureInfo.CurrentCulture)}";
     }
 
+    /*
+     * Indique si un succès doit être considéré comme débloqué dans la vue détaillée.
+     */
     private static bool SuccesEstDebloquePourDetail(GameAchievementV2 succes)
     {
         return !string.IsNullOrWhiteSpace(succes.DateEarned)
             || !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore);
     }
 
+    /*
+     * Construit le texte de récompense globale visible dans les détails du jeu.
+     */
     private static string ConstruireTexteRecompenseJeu(GameInfoAndUserProgressV2 jeu)
     {
         string recompense = jeu.HighestAwardKind.Trim().ToLowerInvariant();
@@ -773,6 +855,9 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Construit le texte du dernier succès obtenu pour la vue détaillée.
+     */
     private static string ConstruireTexteDernierSuccesJeu(GameInfoAndUserProgressV2 jeu)
     {
         GameAchievementV2? dernierSucces = jeu
@@ -804,6 +889,9 @@ public partial class MainWindow
             : $"{dernierSucces.Title} - {mode} - {dateTexte}";
     }
 
+    /*
+     * Extrait la date de déblocage la plus utile pour comparer les succès entre eux.
+     */
     private static DateTimeOffset? ExtraireDateDernierDeblocage(GameAchievementV2 succes)
     {
         string valeur = !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore)
@@ -842,11 +930,17 @@ public partial class MainWindow
         return null;
     }
 
+    /*
+     * Construit l'URL publique de la page RetroAchievements du jeu.
+     */
     private static string ConstruireUrlJeuRetroAchievements(int identifiantJeu)
     {
         return $"https://retroachievements.org/game/{identifiantJeu.ToString(CultureInfo.InvariantCulture)}";
     }
 
+    /*
+     * Ouvre la page RetroAchievements du jeu dans le navigateur par défaut.
+     */
     private static void OuvrirPageJeuRetroAchievements(int identifiantJeu)
     {
         if (identifiantJeu <= 0)

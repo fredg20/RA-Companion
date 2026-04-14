@@ -1,9 +1,21 @@
 using RA.Compagnon.Modeles.Etat;
 
+/*
+ * Compare deux instantanés d'état utilisateur local afin d'identifier les
+ * succès nouvellement débloqués entre deux lectures.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Détecte les transitions de déblocage softcore et hardcore à partir des
+ * états locaux persistés du jeu utilisateur.
+ */
 public sealed class ServiceDetectionSuccesUtilisateurLocal
 {
+    /*
+     * Retourne la liste des succès qui apparaissent comme nouveaux entre
+     * un état précédent et l'état courant.
+     */
     public static IReadOnlyList<EtatSuccesUtilisateurLocal> DetecterNouveauxSucces(
         EtatJeuUtilisateurLocal? precedent,
         EtatJeuUtilisateurLocal courant

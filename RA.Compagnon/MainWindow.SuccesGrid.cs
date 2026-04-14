@@ -10,10 +10,21 @@ using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
+/*
+ * Regroupe la logique d'ordonnancement, de rendu et d'interaction de la
+ * grille affichant tous les succès du jeu courant.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la gestion complète de la grille de succès, depuis son mode
+ * d'affichage jusqu'aux interactions de sélection et de style.
+ */
 public partial class MainWindow
 {
+    /*
+     * Restaure le mode d'affichage des succès depuis la configuration locale.
+     */
     private void AppliquerModeAffichageSuccesDepuisConfiguration()
     {
         _etatListeSuccesUi.OrdreCourant = ConvertirModeAffichageSuccesDepuisConfiguration(
@@ -22,6 +33,10 @@ public partial class MainWindow
         MettreAJourLibelleOrdreSuccesGrilleEtModes();
     }
 
+    /*
+     * Convertit la chaîne stockée en configuration vers l'énumération interne
+     * utilisée par la grille de succès.
+     */
     private static OrdreSuccesGrille ConvertirModeAffichageSuccesDepuisConfiguration(
         string? modeAffichageSucces
     )
@@ -35,6 +50,9 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Sauvegarde le mode d'affichage courant lorsque l'utilisateur l'a modifié.
+     */
     private void MemoriserModeAffichageSucces()
     {
         string modeAffichage = _etatListeSuccesUi.OrdreCourant switch
@@ -60,6 +78,9 @@ public partial class MainWindow
         _modeAffichageSuccesModifie = true;
     }
 
+    /*
+     * Ouvre ou ferme le menu contextuel de choix du mode d'affichage.
+     */
     private void BoutonOrdreSuccesGrille_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement { ContextMenu: { } menu })
@@ -71,6 +92,10 @@ public partial class MainWindow
         menu.IsOpen = !menu.IsOpen;
     }
 
+    /*
+     * Change l'ordre de la grille, réinitialise la sélection visible puis
+     * recharge la grille si un jeu est déjà présent.
+     */
     private async Task ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille nouvelOrdre)
     {
         if (_etatListeSuccesUi.OrdreCourant == nouvelOrdre)
@@ -113,6 +138,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Efface toute sélection temporaire ou épinglée dans la grille de succès.
+     */
     private void ReinitialiserSelectionSuccesGrille()
     {
         _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
@@ -121,6 +149,9 @@ public partial class MainWindow
         _minuteurAffichageTemporaireSuccesGrille.Stop();
     }
 
+    /*
+     * Invalide l'ordre aléatoire mémorisé pour forcer un nouveau mélange.
+     */
     private void InvaliderOrdreAleatoireSuccesGrille()
     {
         _etatListeSuccesUi.IdentifiantJeuOrdreAleatoire = 0;
@@ -128,6 +159,10 @@ public partial class MainWindow
         _etatListeSuccesUi.PositionsAleatoires.Clear();
     }
 
+    /*
+     * Met à jour le libellé et l'état visuel des différents modes
+     * d'affichage de la grille.
+     */
     private void MettreAJourLibelleOrdreSuccesGrilleEtModes()
     {
         string libelle = _etatListeSuccesUi.OrdreCourant switch
@@ -178,6 +213,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ordonne les succès selon le mode courant puis applique la règle qui
+     * repousse les succès passés en fin de liste non débloquée.
+     */
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleSelonMode(
         int identifiantJeu,
         IEnumerable<GameAchievementV2> succes
@@ -209,6 +248,10 @@ public partial class MainWindow
         return AppliquerOrdreSuccesPasses(succesOrdonnes);
     }
 
+    /*
+     * Déplace les succès marqués comme passés après les autres succès non
+     * débloqués, tout en conservant les succès déjà obtenus à la fin.
+     */
     private List<GameAchievementV2> AppliquerOrdreSuccesPasses(
         List<GameAchievementV2> succesOrdonnes
     )
@@ -244,6 +287,10 @@ public partial class MainWindow
         return [.. succesNonDebloquesNormaux, .. succesNonDebloquesPasses, .. succesDebloques];
     }
 
+    /*
+     * Ordonne les succès par TrueRatio en conservant le regroupement entre
+     * succès obtenus et non obtenus.
+     */
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleParTrueRatio(
         IEnumerable<GameAchievementV2> succes,
         bool ordreCroissant
@@ -260,6 +307,10 @@ public partial class MainWindow
         return [.. ordreInitial.ThenBy(item => item.DisplayOrder).ThenBy(item => item.Id)];
     }
 
+    /*
+     * Recalcule l'ordre aléatoire mémorisé lorsqu'il n'est plus compatible
+     * avec la liste actuelle des succès non débloqués.
+     */
     private void MettreAJourOrdreAleatoireSuccesGrilleSiNecessaire(
         int identifiantJeu,
         IEnumerable<GameAchievementV2> succes
@@ -313,6 +364,9 @@ public partial class MainWindow
         _etatListeSuccesUi.SignatureOrdreAleatoire = signature;
     }
 
+    /*
+     * Ordonne les succès selon le mélange aléatoire mémorisé pour le jeu.
+     */
     private List<GameAchievementV2> OrdonnerSuccesPourGrilleAleatoire(
         int identifiantJeu,
         IEnumerable<GameAchievementV2> succes
@@ -338,6 +392,10 @@ public partial class MainWindow
         ];
     }
 
+    /*
+     * Reconstruit progressivement la grille de tous les succès pour le jeu
+     * courant, en respectant la version de chargement active.
+     */
     private async Task MettreAJourGrilleTousSuccesAsync(
         int identifiantJeu,
         List<GameAchievementV2> succes,
@@ -472,6 +530,10 @@ public partial class MainWindow
         TerminerDiagnosticChangementJeu("grille_fin", $"badges={etatsBadges.Count}");
     }
 
+    /*
+     * Construit le badge visuel cliquable utilisé pour représenter un succès
+     * dans la grille complète.
+     */
     private SystemControls.Border ConstruireBadgeGrilleSucces(
         int identifiantJeu,
         SuccesGrilleAffiche succesAffiche
@@ -534,6 +596,10 @@ public partial class MainWindow
         return conteneur;
     }
 
+    /*
+     * Charge en arrière-plan l'image du badge et applique le rendu adapté
+     * selon l'état débloqué ou non du succès.
+     */
     private async Task ChargerImageBadgeGrilleEnArrierePlanAsync(
         SystemControls.Image imageSucces,
         SystemControls.TextBlock texteSecours,
@@ -558,6 +624,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Applique le style d'un badge selon son état épinglé, temporaire ou
+     * hardcore dans la grille.
+     */
     private void AppliquerStyleBadgeEpingle(SystemControls.Border badge)
     {
         if (badge.Tag is not BadgeSuccesGrilleContexte contexte)
@@ -597,6 +667,10 @@ public partial class MainWindow
         AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: false);
     }
 
+    /*
+     * Applique le halo et la bordure du mode hardcore, avec une intensité
+     * plus forte lorsqu'un autre état prioritaire est actif.
+     */
     private static void AppliquerStyleBadgeHardcore(
         SystemControls.Border badge,
         BadgeSuccesGrilleContexte contexte,
@@ -627,6 +701,9 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Réapplique le style de tous les badges déjà présents dans la grille.
+     */
     private void RafraichirStyleBadgesGrilleSucces()
     {
         foreach (object enfant in GrilleTousSuccesJeuEnCours.Children)
@@ -638,18 +715,28 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ouvre durablement le succès sélectionné via un clic gauche.
+     */
     private async void BadgeGrilleSucces_ClicGauche(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         await AfficherSuccesGrilleSelectionneAsync(sender, permanent: true);
     }
 
+    /*
+     * Affiche temporairement le succès sélectionné via un clic droit.
+     */
     private async void BadgeGrilleSucces_ClicDroit(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
         await AfficherSuccesGrilleSelectionneAsync(sender, permanent: false);
     }
 
+    /*
+     * Détermine le type de sélection demandé pour un badge puis affiche le
+     * succès correspondant dans la carte de détail.
+     */
     private async Task AfficherSuccesGrilleSelectionneAsync(object sender, bool permanent)
     {
         if (
@@ -705,6 +792,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Termine l'affichage temporaire d'un succès puis revient soit au premier
+     * succès non débloqué, soit à l'état normal de la grille.
+     */
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)
     {
         _minuteurAffichageTemporaireSuccesGrille.Stop();
@@ -756,6 +847,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Réagit aux changements de taille du conteneur de la grille pour
+     * recalculer la disposition et l'écrêtage.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_TailleChangee(
         object sender,
         SizeChangedEventArgs e
@@ -777,6 +872,9 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
+    /*
+     * Programme un recalcul différé de la disposition de la grille de succès.
+     */
     private void PlanifierMiseAJourDispositionGrilleTousSucces()
     {
         if (_etatListeSuccesUi.MiseAJourDispositionPlanifiee)
@@ -797,6 +895,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Retourne la largeur visible réellement disponible pour la grille des
+     * succès, en préférant la zone dédiée lorsque présente.
+     */
     private double ObtenirLargeurVisibleListeSucces()
     {
         if (ZoneVisibleListeSuccesJeuEnCours is not null)
@@ -836,6 +938,10 @@ public partial class MainWindow
         return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualWidth);
     }
 
+    /*
+     * Retourne la hauteur visible réellement disponible pour la grille des
+     * succès dans son conteneur courant.
+     */
     private double ObtenirHauteurVisibleListeSucces()
     {
         if (ZoneVisibleListeSuccesJeuEnCours is not null)
@@ -858,6 +964,10 @@ public partial class MainWindow
         return Math.Max(0, ConteneurGrilleTousSuccesJeuEnCours.ActualHeight);
     }
 
+    /*
+     * Applique un écrêtage à coins arrondis à la zone visible de la liste
+     * complète des succès.
+     */
     private void AppliquerEcretageArrondiZoneSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null || ZoneVisibleListeSuccesJeuEnCours is null)
@@ -889,6 +999,10 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.Clip = null;
     }
 
+    /*
+     * Recalcule le nombre de colonnes et les marges des badges pour centrer
+     * la grille dans l'espace horizontal disponible.
+     */
     private void MettreAJourDispositionGrilleTousSucces()
     {
         if (

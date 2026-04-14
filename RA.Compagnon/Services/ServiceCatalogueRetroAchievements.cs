@@ -1,7 +1,15 @@
 using RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Met en cache certaines ressources de catalogue RetroAchievements pour éviter
+ * des requêtes répétées sur les consoles et les jeux d'un système.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit un accès mutualisé aux catalogues de consoles et de jeux système
+ * avec sérialisation des chargements concurrents.
+ */
 public sealed class ServiceCatalogueRetroAchievements
 {
     private readonly SemaphoreSlim _verrouConsoles = new(1, 1);
@@ -9,6 +17,10 @@ public sealed class ServiceCatalogueRetroAchievements
     private IReadOnlyList<ConsoleV2>? _consolesCache;
     private readonly Dictionary<int, IReadOnlyList<GameListEntryV2>> _jeuxSystemeCache = [];
 
+    /*
+     * Retourne la liste des consoles en réutilisant un cache mémoire lorsque
+     * celui-ci est déjà disponible.
+     */
     public async Task<IReadOnlyList<ConsoleV2>> ObtenirConsolesAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation = default
@@ -41,6 +53,10 @@ public sealed class ServiceCatalogueRetroAchievements
         }
     }
 
+    /*
+     * Retourne la liste des jeux d'un système avec leurs hashes en évitant
+     * de recharger plusieurs fois le même catalogue.
+     */
     public async Task<IReadOnlyList<GameListEntryV2>> ObtenirJeuxSystemeAvecHashesAsync(
         string cleApiWeb,
         int identifiantConsole,

@@ -1,5 +1,12 @@
+/*
+ * Déclare les phases possibles de l'orchestrateur d'état du jeu visible.
+ */
 namespace RA.Compagnon.Modeles.Etat;
 
+/*
+ * Représente les grandes phases traversées par un jeu entre détection,
+ * chargement et affichage.
+ */
 public enum PhaseOrchestrateurJeu
 {
     AucunJeu = 0,

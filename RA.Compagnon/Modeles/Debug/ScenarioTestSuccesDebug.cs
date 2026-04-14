@@ -1,5 +1,11 @@
+/*
+ * Décrit un scénario de test de succès simulé pour les outils de debug.
+ */
 namespace RA.Compagnon.Modeles.Debug;
 
+/*
+ * Transporte tous les paramètres nécessaires pour simuler un succès débloqué.
+ */
 public sealed class ScenarioTestSuccesDebug
 {
     public string NomEmulateur { get; init; } = string.Empty;

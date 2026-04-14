@@ -1,9 +1,19 @@
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Déclare le catalogue des émulateurs locaux pris en charge et les règles
+ * associées à leur détection ou à leur surveillance de succès.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit les métadonnées descriptives de chaque émulateur connu de Compagnon.
+ */
 public static class ServiceCatalogueEmulateursLocaux
 {
+    /*
+     * Expose la liste complète des définitions d'émulateurs connues.
+     */
     public static IReadOnlyList<DefinitionEmulateurLocal> Definitions { get; } =
     [
         new(
@@ -180,6 +190,9 @@ public static class ServiceCatalogueEmulateursLocaux
         ),
     ];
 
+    /*
+     * Recherche une définition d'émulateur par son nom logique.
+     */
     public static DefinitionEmulateurLocal? TrouverParNom(string nomEmulateur)
     {
         return Definitions.FirstOrDefault(definition =>
@@ -187,12 +200,19 @@ public static class ServiceCatalogueEmulateursLocaux
         );
     }
 
+    /*
+     * Indique si l'émulateur nommé possède au moins une stratégie exploitable
+     * par Compagnon.
+     */
     public static bool EstEmulateurValide(string nomEmulateur)
     {
         DefinitionEmulateurLocal? definition = TrouverParNom(nomEmulateur);
         return definition is not null && EstEmulateurValide(definition);
     }
 
+    /*
+     * Indique si une définition d'émulateur est réellement exploitable.
+     */
     public static bool EstEmulateurValide(DefinitionEmulateurLocal definition)
     {
         return definition.StrategieRenseignementJeu
@@ -200,16 +220,27 @@ public static class ServiceCatalogueEmulateursLocaux
             || definition.StrategieSurveillanceSucces != StrategieSurveillanceSuccesLocale.Aucune;
     }
 
+    /*
+     * Retourne les alias de consoles associés à un émulateur donné.
+     */
     public static string[] ObtenirAliasConsoles(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.AliasConsoles ?? [];
     }
 
+    /*
+     * Indique si l'émulateur peut fournir une détection directe d'un succès
+     * local sans repasser par l'API.
+     */
     public static bool EstSuccesLocalDirectPrisEnCharge(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.SupporteSuccesLocalDirect == true;
     }
 
+    /*
+     * Vérifie si un type de source local est compatible avec la détection
+     * directe des succès pour cet émulateur.
+     */
     public static bool TypeSourcePeutPorterSuccesDirect(string nomEmulateur, string typeSource)
     {
         DefinitionEmulateurLocal? definition = TrouverParNom(nomEmulateur);
@@ -224,6 +255,10 @@ public static class ServiceCatalogueEmulateursLocaux
         );
     }
 
+    /*
+     * Retourne le type de source journal attendu pour la surveillance de
+     * succès d'un émulateur donné.
+     */
     public static string ObtenirTypeSourceJournalSuccesLocal(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.StrategieRenseignementJeu switch
@@ -244,6 +279,10 @@ public static class ServiceCatalogueEmulateursLocaux
         };
     }
 
+    /*
+     * Indique si la surveillance locale des succès est active pour cet
+     * émulateur.
+     */
     public static bool SurveillanceSuccesActive(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.StrategieSurveillanceSucces switch
@@ -259,12 +298,20 @@ public static class ServiceCatalogueEmulateursLocaux
         };
     }
 
+    /*
+     * Indique si l'émulateur nécessite un signal initial pour amorcer la
+     * surveillance de ses succès.
+     */
     public static bool NecessiteSignalInitialSurveillance(string nomEmulateur)
     {
         return TrouverParNom(nomEmulateur)?.StrategieSurveillanceSucces
             == StrategieSurveillanceSuccesLocale.RetroArchLogs;
     }
 
+    /*
+     * Indique si le type de source reçu doit planifier un suivi actif des
+     * succès pour l'émulateur ciblé.
+     */
     public static bool TypeSourceDoitPlanifierSuivi(string nomEmulateur, string typeSource)
     {
         DefinitionEmulateurLocal? definition = TrouverParNom(nomEmulateur);

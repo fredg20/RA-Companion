@@ -5,10 +5,22 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 
+/*
+ * Regroupe les animations de défilement de la grille de succès ainsi que
+ * l'animation du titre du jeu courant.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les comportements animés de l'interface principale, notamment pour
+ * la grille de succès et le titre du jeu.
+ */
 public partial class MainWindow
 {
+    /*
+     * Expose une propriété attachée permettant d'animer le défilement vertical
+     * d'un ScrollViewer via WPF.
+     */
     public static readonly DependencyProperty OffsetVerticalAnimeProperty =
         DependencyProperty.RegisterAttached(
             "OffsetVerticalAnime",
@@ -17,16 +29,26 @@ public partial class MainWindow
             new PropertyMetadata(0d, OffsetVerticalAnimeChange)
         );
 
+    /*
+     * Lit la valeur animée d'offset vertical sur un objet WPF.
+     */
     public static double GetOffsetVerticalAnime(DependencyObject objet)
     {
         return (double)objet.GetValue(OffsetVerticalAnimeProperty);
     }
 
+    /*
+     * Écrit la valeur animée d'offset vertical sur un objet WPF.
+     */
     public static void SetOffsetVerticalAnime(DependencyObject objet, double valeur)
     {
         objet.SetValue(OffsetVerticalAnimeProperty, valeur);
     }
 
+    /*
+     * Applique l'offset vertical animé sur un ScrollViewer tout en bornant la
+     * valeur à la plage réellement défilable.
+     */
     private static void OffsetVerticalAnimeChange(
         DependencyObject objet,
         DependencyPropertyChangedEventArgs e
@@ -51,6 +73,10 @@ public partial class MainWindow
         scrollViewer.ScrollToVerticalOffset(offsetBorne);
     }
 
+    /*
+     * Programme un recalcul différé de l'animation automatique de la grille
+     * complète des succès.
+     */
     private void PlanifierMiseAJourAnimationGrilleTousSucces()
     {
         if (_etatListeSuccesUi.MiseAJourAnimationPlanifiee)
@@ -69,6 +95,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Décide si la grille de succès doit être animée automatiquement en
+     * fonction de sa hauteur visible et de son contenu.
+     */
     private void MettreAJourAnimationGrilleTousSucces()
     {
         if (
@@ -180,6 +210,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Coupe l'autodéfilement de la liste et ramène son offset en haut.
+     */
     private void DesactiverAutodefilementListeSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -196,6 +229,10 @@ public partial class MainWindow
         DefinirVisibiliteBarreDefilementListeSucces(visible: false);
     }
 
+    /*
+     * Arrête immédiatement l'animation de la grille tout en conservant la
+     * position courante de défilement.
+     */
     private void ArreterAnimationGrilleSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -215,6 +252,9 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(offsetCourant);
     }
 
+    /*
+     * Replace la grille de succès au tout début de son défilement.
+     */
     private void ReinitialiserPositionGrilleTousSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -227,6 +267,10 @@ public partial class MainWindow
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
     }
 
+    /*
+     * Réinitialise l'état d'animation de la liste après un redimensionnement
+     * important de la fenêtre.
+     */
     private void ReinitialiserListeSuccesPourRedimensionnement()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -243,6 +287,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Démarre une animation depuis la position actuelle jusqu'à une borne,
+     * avant de basculer ensuite sur le cycle automatique.
+     */
     private void DemarrerAnimationGrilleSuccesDepuisPosition(
         double offsetInitial,
         double amplitude,
@@ -326,6 +374,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Lance le cycle continu de va-et-vient vertical de la grille de succès.
+     */
     private void DemarrerAnimationGrilleSuccesCyclique(double amplitude, bool departEnHaut)
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -406,6 +457,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Met en pause l'animation de la grille lorsqu'un badge est survolé.
+     */
     private void BadgeGrilleSucces_EntreeSouris(object sender, MouseEventArgs e)
     {
         _etatListeSuccesUi.EtatInteraction = EtatInteractionListeSucces.PauseSurvol;
@@ -414,6 +468,9 @@ public partial class MainWindow
         ArreterAnimationGrilleSucces();
     }
 
+    /*
+     * Relance le minuteur de reprise d'animation à la sortie du survol d'un badge.
+     */
     private void BadgeGrilleSucces_SortieSouris(object sender, MouseEventArgs e)
     {
         if (_etatListeSuccesUi.EtatInteraction == EtatInteractionListeSucces.PauseSurvol)
@@ -425,6 +482,9 @@ public partial class MainWindow
         _minuteurRepriseAnimationGrilleSucces.Start();
     }
 
+    /*
+     * Réagit à la fin du délai de pause avant la reprise de l'animation.
+     */
     private void MinuteurRepriseAnimationGrilleSucces_Tick(object? sender, EventArgs e)
     {
         _minuteurRepriseAnimationGrilleSucces.Stop();
@@ -432,6 +492,10 @@ public partial class MainWindow
         ReprendreAnimationGrilleSuccesSiPossible();
     }
 
+    /*
+     * Reprend l'animation de la grille si aucun survol ou interaction manuelle
+     * ne la bloque encore.
+     */
     private void ReprendreAnimationGrilleSuccesSiPossible()
     {
         if (
@@ -458,6 +522,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Met à jour le titre du jeu courant et réinitialise l'état de son
+     * animation horizontale.
+     */
     private void DefinirTitreJeuEnCours(string titre)
     {
         bool titreInchange = string.Equals(
@@ -484,6 +552,10 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationTitreJeuEnCours();
     }
 
+    /*
+     * Démarre ou coupe l'animation du titre selon son débordement réel dans
+     * la zone disponible.
+     */
     private void MettreAJourAnimationTitreJeuEnCours()
     {
         if (
@@ -562,6 +634,9 @@ public partial class MainWindow
         translation.BeginAnimation(TranslateTransform.XProperty, animation);
     }
 
+    /*
+     * Programme une mise à jour différée de l'animation du titre du jeu.
+     */
     private void PlanifierMiseAJourAnimationTitreJeuEnCours()
     {
         if (_miseAJourAnimationTitreJeuPlanifiee)
@@ -580,6 +655,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Mesure la largeur réelle du titre du jeu pour décider si une animation
+     * de défilement horizontal est nécessaire.
+     */
     private double MesurerLargeurTitreJeuEnCours(double taillePolice)
     {
         string texte = TexteTitreJeuEnCours.Text ?? string.Empty;

@@ -4,15 +4,30 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using SystemControls = System.Windows.Controls;
 
+/*
+ * Regroupe les calculs de disposition, de hauteur et de défilement qui
+ * maintiennent la fenêtre principale lisible selon la taille disponible.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les ajustements de layout dynamique de la fenêtre principale,
+ * notamment pour les sections du jeu courant et la grille des succès.
+ */
 public partial class MainWindow
 {
+    /*
+     * Calcule la hauteur réellement occupée par un élément, marges comprises.
+     */
     private static double CalculerHauteurOccupee(FrameworkElement element)
     {
         return element.ActualHeight + element.Margin.Top + element.Margin.Bottom;
     }
 
+    /*
+     * Affiche brièvement la barre de défilement principale lorsqu'une
+     * interaction utilisateur suggère qu'elle peut être utile.
+     */
     private void AfficherTemporairementBarreDefilementPrincipale()
     {
         if (!ZonePrincipalePeutDefiler())
@@ -26,6 +41,10 @@ public partial class MainWindow
         _minuteurMasquageBarreDefilement.Start();
     }
 
+    /*
+     * Recherche puis mémorise la barre de défilement verticale de la zone
+     * principale pour éviter de rescanner l'arbre visuel à chaque appel.
+     */
     private SystemControls.Primitives.ScrollBar? ObtenirBarreDefilementVerticalePrincipale()
     {
         if (_barreDefilementVerticalePrincipale is not null)
@@ -40,6 +59,10 @@ public partial class MainWindow
         return _barreDefilementVerticalePrincipale;
     }
 
+    /*
+     * Recherche puis conserve la barre de défilement de la liste de succès
+     * afin de piloter sa visibilité de manière explicite.
+     */
     private SystemControls.Primitives.ScrollBar? ObtenirBarreDefilementVerticaleListeSucces()
     {
         if (_etatListeSuccesUi.BarreDefilementVerticale is not null)
@@ -61,6 +84,10 @@ public partial class MainWindow
         return _etatListeSuccesUi.BarreDefilementVerticale;
     }
 
+    /*
+     * Masque complètement la barre de défilement principale quand elle ne
+     * doit pas être visible ni interactive.
+     */
     private void DefinirVisibiliteBarreDefilementPrincipale()
     {
         if (ZonePrincipale is not null)
@@ -80,6 +107,10 @@ public partial class MainWindow
         barre.IsHitTestVisible = false;
     }
 
+    /*
+     * Active ou masque la barre de défilement de la grille de succès selon
+     * l'état de survol et la possibilité réelle de défiler.
+     */
     private void DefinirVisibiliteBarreDefilementListeSucces(bool visible)
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is null)
@@ -106,6 +137,10 @@ public partial class MainWindow
         SystemControls.Panel.SetZIndex(barre, 10);
     }
 
+    /*
+     * Détermine si la souris se trouve dans la bande latérale réservée à la
+     * détection de la barre de défilement.
+     */
     private static bool EstDansZoneBarreDefilement(
         SystemControls.ScrollViewer scrollViewer,
         Point position
@@ -115,17 +150,27 @@ public partial class MainWindow
             >= Math.Max(0, scrollViewer.ActualWidth - LargeurZoneDetectionBarreDefilement);
     }
 
+    /*
+     * Indique si la zone principale possède réellement un contenu défilable.
+     */
     private bool ZonePrincipalePeutDefiler()
     {
         return ZonePrincipale is not null && ZonePrincipale.ScrollableHeight > 0;
     }
 
+    /*
+     * Indique si la liste complète des succès dépasse la hauteur visible.
+     */
     private bool ListeSuccesPeutDefiler()
     {
         return ConteneurGrilleTousSuccesJeuEnCours is not null
             && ConteneurGrilleTousSuccesJeuEnCours.ScrollableHeight > 0;
     }
 
+    /*
+     * Vérifie si la souris survole actuellement la zone sensible de la barre
+     * de défilement principale.
+     */
     private bool SourisSurvoleZoneBarreDefilement()
     {
         if (ZonePrincipale is null || !ZonePrincipale.IsMouseOver)
@@ -137,11 +182,19 @@ public partial class MainWindow
         return EstDansZoneBarreDefilement(ZonePrincipale, position);
     }
 
+    /*
+     * Réagit à la molette sur la zone principale en révélant temporairement
+     * la barre de défilement.
+     */
     private void ZonePrincipale_ApercuMoletteSouris(object sender, MouseWheelEventArgs e)
     {
         AfficherTemporairementBarreDefilementPrincipale();
     }
 
+    /*
+     * Ajuste la visibilité de la barre principale lorsque la souris circule
+     * sur la zone de défilement.
+     */
     private void ZonePrincipale_DeplacementSouris(object sender, MouseEventArgs e)
     {
         if (sender is not SystemControls.ScrollViewer scrollViewer || !ZonePrincipalePeutDefiler())
@@ -165,6 +218,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Masque la barre principale à la sortie de la souris si aucun minuteur
+     * de délai n'est encore actif.
+     */
     private void ZonePrincipale_SortieSouris(object sender, MouseEventArgs e)
     {
         if (!_minuteurMasquageBarreDefilement.IsEnabled)
@@ -173,6 +230,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Réaffiche temporairement la barre principale lorsqu'un défilement
+     * vertical effectif est détecté.
+     */
     private void ZonePrincipale_DefilementChange(
         object sender,
         SystemControls.ScrollChangedEventArgs e
@@ -184,6 +245,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Termine la fenêtre de visibilité temporaire de la barre principale
+     * lorsque la souris n'est plus sur la zone sensible.
+     */
     private void MinuteurMasquageBarreDefilement_Tick(object? sender, EventArgs e)
     {
         if (SourisSurvoleZoneBarreDefilement())
@@ -195,6 +260,10 @@ public partial class MainWindow
         DefinirVisibiliteBarreDefilementPrincipale();
     }
 
+    /*
+     * Affiche la barre de défilement de la liste de succès à l'entrée de la
+     * souris pour rendre le défilement explicite.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris(object sender, MouseEventArgs e)
     {
         DefinirVisibiliteBarreDefilementListeSucces(
@@ -203,6 +272,10 @@ public partial class MainWindow
         JournaliserDiagnosticListeSucces("liste_mouseenter");
     }
 
+    /*
+     * Masque la barre de la liste à la sortie de la souris et relance au
+     * besoin le minuteur de reprise d'animation.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_SortieSouris(object sender, MouseEventArgs e)
     {
         if (_etatListeSuccesUi.InteractionActive && Mouse.LeftButton == MouseButtonState.Pressed)
@@ -220,6 +293,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Bascule la liste de succès en interaction manuelle au début d'un
+     * glisser ou d'un clic maintenu.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheBas(
         object sender,
         MouseButtonEventArgs e
@@ -234,6 +311,9 @@ public partial class MainWindow
         JournaliserDiagnosticListeSucces("liste_mouseleftdown");
     }
 
+    /*
+     * Finalise l'interaction de liste lorsque le bouton gauche est relâché.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_ApercuBoutonGaucheHaut(
         object sender,
         MouseButtonEventArgs e
@@ -242,6 +322,10 @@ public partial class MainWindow
         FinaliserInteractionListeSucces();
     }
 
+    /*
+     * Finalise l'interaction de liste quand la capture souris est perdue et
+     * qu'aucun glisser n'est encore en cours.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_PerteCaptureSouris(
         object sender,
         MouseEventArgs e
@@ -255,6 +339,10 @@ public partial class MainWindow
         FinaliserInteractionListeSucces();
     }
 
+    /*
+     * Déclenche les recalculs de layout de la liste lorsqu'un changement de
+     * viewport ou d'étendue vient modifier l'espace disponible.
+     */
     private void ConteneurGrilleTousSuccesJeuEnCours_DefilementChange(
         object sender,
         SystemControls.ScrollChangedEventArgs e
@@ -282,6 +370,10 @@ public partial class MainWindow
         DefinirVisibiliteBarreDefilementListeSucces(visible: true);
     }
 
+    /*
+     * Réinitialise l'état d'interaction manuel de la liste de succès et
+     * prépare la reprise éventuelle de son animation automatique.
+     */
     private void FinaliserInteractionListeSucces()
     {
         if (ConteneurGrilleTousSuccesJeuEnCours is not null)
@@ -300,6 +392,10 @@ public partial class MainWindow
         _minuteurRepriseAnimationGrilleSucces.Start();
     }
 
+    /*
+     * Réagit aux changements de taille du cadre des succès pour invalider les
+     * mesures et reprogrammer les ajustements différés nécessaires.
+     */
     private void CadreSuccesJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         if (!IsLoaded)
@@ -330,12 +426,20 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Planifie un relayout complet de la liste après une phase de
+     * redimensionnement de fenêtre.
+     */
     private void PlanifierRelayoutListeSuccesApresRedimensionnement()
     {
         _minuteurRelayoutApresRedimensionnement.Stop();
         _minuteurRelayoutApresRedimensionnement.Start();
     }
 
+    /*
+     * Exécute le relayout différé après redimensionnement pour restaurer des
+     * dimensions stables sur les cartes et la grille de succès.
+     */
     private void MinuteurRelayoutApresRedimensionnement_Tick(object? sender, EventArgs e)
     {
         _minuteurRelayoutApresRedimensionnement.Stop();
@@ -356,6 +460,10 @@ public partial class MainWindow
         JournaliserDimensionsListeSucces("relayout_apres_redimensionnement");
     }
 
+    /*
+     * Réorganise la grille principale entre une disposition simple ou double
+     * selon la largeur courante de la fenêtre.
+     */
     private void AjusterDisposition()
     {
         bool dispositionDouble = ActualWidth >= LargeurMinimaleDispositionDouble;
@@ -430,6 +538,10 @@ public partial class MainWindow
         AjusterHauteurCarteJeuEnCours();
     }
 
+    /*
+     * Répartit les trois sections du jeu courant selon les seuils de largeur
+     * pour passer en pile, en deux colonnes ou en trois colonnes.
+     */
     private void AjusterDispositionSectionsJeuEnCours()
     {
         if (
@@ -571,6 +683,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Détermine si la fenêtre est suffisamment large et haute pour activer la
+     * disposition triple proche du plein écran.
+     */
     private bool FenetreCouvreEcranPourDispositionTriple()
     {
         if (WindowState == WindowState.Maximized)
@@ -584,6 +700,10 @@ public partial class MainWindow
             && ActualHeight >= zoneTravail.Height - 48;
     }
 
+    /*
+     * Détermine si la fenêtre atteint le seuil intermédiaire permettant une
+     * disposition étendue à deux colonnes larges.
+     */
     private bool FenetreCouvreDeuxTiersEcran()
     {
         Rect zoneTravail = SystemParameters.WorkArea;
@@ -592,6 +712,10 @@ public partial class MainWindow
             || largeurCarteJeu >= LargeurMinimaleCarteJeuDispositionEtendue;
     }
 
+    /*
+     * Ajuste la hauteur globale de la carte principale du jeu courant pour
+     * qu'elle suive exactement la hauteur visible de la zone centrale.
+     */
     private void AjusterHauteurCarteJeuEnCours()
     {
         if (CarteJeuEnCours is null || ZonePrincipale is null || GrilleCartes is null)
@@ -666,6 +790,10 @@ public partial class MainWindow
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
     }
 
+    /*
+     * Programme l'ajustement différé de la hauteur de la liste complète des
+     * succès afin d'éviter les recalculs synchrones répétés.
+     */
     private void PlanifierAjustementHauteurListeSuccesJeuEnCours()
     {
         if (_etatListeSuccesUi.AjustementHauteurPlanifie)
@@ -684,6 +812,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Recalcule la hauteur visible allouée à la liste des succès en tenant
+     * compte de la place réellement disponible dans sa section.
+     */
     private void AjusterHauteurListeSuccesJeuEnCours()
     {
         const double SeuilHauteurSectionAberrante = 80;
@@ -799,12 +931,20 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Masque ou affiche le contenu principal tout en réappliquant les
+     * contraintes de hauteur de la carte du jeu courant.
+     */
     private void DefinirVisibiliteContenuPrincipal(bool afficher)
     {
         _vueModele.VisibiliteContenuPrincipal = afficher ? Visibility.Visible : Visibility.Hidden;
         AjusterHauteurCarteJeuEnCours();
     }
 
+    /*
+     * Restaure la géométrie sauvegardée de la fenêtre lorsqu'elle reste
+     * visible sur l'un des écrans disponibles.
+     */
     private void AppliquerGeometrieFenetre()
     {
         Width = Math.Max(MinWidth, _configurationConnexion.LargeurFenetre);
@@ -838,6 +978,10 @@ public partial class MainWindow
         Top = haut;
     }
 
+    /*
+     * Sauvegarde la position et la taille courantes de la fenêtre pour la
+     * prochaine ouverture de l'application.
+     */
     private void MemoriserGeometrieFenetre()
     {
         Rect geometrie =
@@ -849,6 +993,10 @@ public partial class MainWindow
         _configurationConnexion.HauteurFenetre = Math.Max(MinHeight, geometrie.Height);
     }
 
+    /*
+     * Lit un rayon de coins dans les ressources WPF et fournit une valeur de
+     * repli lorsque la ressource n'existe pas.
+     */
     private CornerRadius ObtenirRayonCoins(string cleRessource, double valeurParDefaut)
     {
         if (TryFindResource(cleRessource) is CornerRadius rayon)

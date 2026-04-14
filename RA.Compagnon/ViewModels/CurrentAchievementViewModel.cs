@@ -1,7 +1,15 @@
 using System.Windows.Media;
 
+/*
+ * Porte l'état visuel et les commandes de la carte du succès actuellement
+ * mis en avant dans la fenêtre principale.
+ */
 namespace RA.Compagnon.ViewModels;
 
+/*
+ * Expose les informations, détails et actions de navigation autour
+ * du succès courant affiché à l'utilisateur.
+ */
 public sealed class CurrentAchievementViewModel : ViewModelBase
 {
     private ImageSource? _image;
@@ -28,6 +36,9 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
     private Action? _executerNavigationSuivante;
     private Action? _executerPassage;
 
+    /*
+     * Initialise les commandes de navigation et de report du succès courant.
+     */
     public CurrentAchievementViewModel()
     {
         CommandePrecedent = new RelayCommand(
@@ -185,18 +196,27 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
 
     public RelayCommand CommandePasser { get; }
 
+    /*
+     * Associe l'action à exécuter pour naviguer vers le succès précédent.
+     */
     public void ConfigurerNavigationPrecedente(Action? action)
     {
         _executerNavigationPrecedente = action;
         CommandePrecedent.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour naviguer vers le succès suivant.
+     */
     public void ConfigurerNavigationSuivante(Action? action)
     {
         _executerNavigationSuivante = action;
         CommandeSuivant.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour reporter le succès courant.
+     */
     public void ConfigurerActionPasser(Action? action)
     {
         _executerPassage = action;

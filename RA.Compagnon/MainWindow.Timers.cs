@@ -1,7 +1,14 @@
 using System.Windows.Threading;
 
+/*
+ * Regroupe les minuteurs utilisés par la fenêtre principale pour ses
+ * rafraîchissements et temporisations visuelles.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la configuration et le pilotage des timers de la fenêtre principale.
+ */
 public partial class MainWindow
 {
     private readonly DispatcherTimer _minuteurActualisationApi = new(DispatcherPriority.Background);
@@ -21,6 +28,9 @@ public partial class MainWindow
     private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
     private readonly DispatcherTimer _minuteurSauvegardeGeometrieFenetre = new();
 
+    /*
+     * Configure tous les minuteurs utilisés par l'application et leurs callbacks.
+     */
     private void ConfigurerActualisationAutomatique()
     {
         _minuteurActualisationApi.Interval = IntervalleActualisationApi;
@@ -55,6 +65,9 @@ public partial class MainWindow
         _minuteurSauvegardeGeometrieFenetre.Tick += MinuteurSauvegardeGeometrieFenetre_Tick;
     }
 
+    /*
+     * Démarre les actualisations automatiques compatibles avec l'état courant.
+     */
     private void DemarrerActualisationAutomatique()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -83,6 +96,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Arrête l'ensemble des minuteurs actifs de la fenêtre principale.
+     */
     private void ArreterActualisationAutomatique()
     {
         _minuteurActualisationApi.Stop();

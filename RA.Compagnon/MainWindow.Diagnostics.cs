@@ -1,8 +1,16 @@
 using System.IO;
 using RA.Compagnon.Services;
 
+/*
+ * Regroupe les journaux de diagnostic utilisés pour suivre les performances
+ * et l'affichage du jeu courant.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les helpers de journalisation détaillée pour le changement de jeu
+ * et l'affichage de la liste des succès.
+ */
 public partial class MainWindow
 {
     private string _signatureDiagnosticChangementJeu = string.Empty;
@@ -28,12 +36,18 @@ public partial class MainWindow
         "journal-affichage-jeu.log"
     );
 
+    /*
+     * Réinitialise les journaux de diagnostic de performance utilisés au chargement.
+     */
     public static void ReinitialiserJournalDiagnosticPerformance()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticPerformance);
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticAffichageJeu);
     }
 
+    /*
+     * Réinitialise les journaux de diagnostic dédiés à la liste des succès.
+     */
     public static void ReinitialiserJournalDiagnosticListeSucces()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticListeSucces);
@@ -42,6 +56,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Journalise l'état courant de la liste des succès pour analyse.
+     */
     private void JournaliserDiagnosticListeSucces(string evenement, string? details = null)
     {
         double offset = ConteneurGrilleTousSuccesJeuEnCours?.VerticalOffset ?? 0;
@@ -57,6 +74,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Journalise les dimensions courantes de la zone de liste des succès.
+     */
     private void JournaliserDimensionsListeSucces(string evenement, string? details = null)
     {
         double largeurZonePrincipale = ZonePrincipaleListeSuccesJeuEnCours?.ActualWidth ?? 0;
@@ -82,6 +102,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Démarre une séquence de diagnostic pour un changement de jeu.
+     */
     private void DemarrerDiagnosticChangementJeu(string signature, string? details = null)
     {
         if (!ServiceModeDiagnostic.EstActif || string.IsNullOrWhiteSpace(signature))
@@ -99,6 +122,9 @@ public partial class MainWindow
         JournaliserDiagnosticChangementJeu("diagnostic_debut", details ?? signature);
     }
 
+    /*
+     * Journalise une étape intermédiaire du diagnostic de changement de jeu.
+     */
     private void JournaliserDiagnosticChangementJeu(string etape, string? details = null)
     {
         if (!ServiceModeDiagnostic.EstActif || _chronometreDiagnosticChangementJeu is null)
@@ -112,6 +138,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Journalise un événement lié à l'affichage du jeu courant.
+     */
     private void JournaliserDiagnosticAffichageJeu(string evenement, string? details = null)
     {
         if (!ServiceModeDiagnostic.EstActif)
@@ -125,6 +154,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Termine la séquence de diagnostic en cours et réinitialise son état.
+     */
     private void TerminerDiagnosticChangementJeu(string etape, string? details = null)
     {
         if (!ServiceModeDiagnostic.EstActif)

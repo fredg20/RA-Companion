@@ -1,3 +1,8 @@
+/*
+ * Regroupe la restauration et la persistance de l'état visible du jeu courant,
+ * du succès mis en avant et de la grille des succès afin de retrouver une
+ * interface cohérente au démarrage comme après chaque mise à jour importante.
+ */
 using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.Modeles.Api.V2.Game;
@@ -7,8 +12,17 @@ using SystemControls = System.Windows.Controls;
 
 namespace RA.Compagnon;
 
+/*
+ * Porte la partie persistance de la fenêtre principale.
+ * Ce partial restaure les derniers états connus et les resauvegarde
+ * quand l'interface évolue.
+ */
 public partial class MainWindow
 {
+    /*
+     * Réapplique le dernier jeu sauvegardé lorsqu'un état local valable
+     * est disponible au démarrage.
+     */
     private Task AppliquerDernierJeuSauvegardeAsync()
     {
         EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
@@ -22,6 +36,10 @@ public partial class MainWindow
         return Task.CompletedTask;
     }
 
+    /*
+     * Réinjecte dans l'interface l'état d'un jeu précédemment sauvegardé,
+     * avec ses informations, son visuel et son contexte de succès.
+     */
     private void AppliquerEtatJeuSauvegarde(EtatJeuAfficheLocal jeuSauvegarde)
     {
         DefinirTitreZoneJeu();
@@ -64,6 +82,10 @@ public partial class MainWindow
         DemarrerRestaurationSuccesSauvegardesEnArrierePlan(jeuSauvegarde.Id);
     }
 
+    /*
+     * Harmonise le résumé de progression restauré depuis le stockage local
+     * pour qu'il reste lisible dans l'interface.
+     */
     private static string NormaliserResumeProgressionSauvegarde(string? resumeProgression)
     {
         if (string.IsNullOrWhiteSpace(resumeProgression))
@@ -78,11 +100,19 @@ public partial class MainWindow
             : $"{resumeNettoye} succès";
     }
 
+    /*
+     * Lance en arrière-plan la restauration des succès sauvegardés afin
+     * de ne pas bloquer le rendu principal du jeu.
+     */
     private void DemarrerRestaurationSuccesSauvegardesEnArrierePlan(int identifiantJeu)
     {
         _ = RestaurerSuccesSauvegardesEnArrierePlanAsync(identifiantJeu);
     }
 
+    /*
+     * Restaure successivement le succès affiché, la grille sauvegardée puis,
+     * si besoin, le premier succès encore non débloqué.
+     */
     private async Task RestaurerSuccesSauvegardesEnArrierePlanAsync(int identifiantJeu)
     {
         try
@@ -98,6 +128,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Réapplique le dernier succès sauvegardé lorsqu'il correspond encore
+     * au jeu courant et qu'il reste pertinent à afficher.
+     */
     private async Task<bool> AppliquerDernierSuccesSauvegardeAsync(int identifiantJeu)
     {
         EtatSuccesAfficheLocal? succesSauvegarde = _configurationConnexion.DernierSuccesAffiche;
@@ -169,6 +203,10 @@ public partial class MainWindow
         return true;
     }
 
+    /*
+     * Normalise les anciennes variantes d'infobulle de faisabilité pour
+     * conserver un texte cohérent après restauration locale.
+     */
     private static string NormaliserToolTipFaisabilite(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -204,6 +242,10 @@ public partial class MainWindow
         return valeur;
     }
 
+    /*
+     * Recharge la dernière grille de succès sauvegardée pour le jeu courant
+     * afin de retrouver le même ordre et le même état visuel.
+     */
     private Task AppliquerDerniereListeSuccesSauvegardeeAsync(int identifiantJeu)
     {
         EtatListeSuccesAfficheeLocal? listeSauvegardee =
@@ -244,6 +286,10 @@ public partial class MainWindow
         return Task.CompletedTask;
     }
 
+    /*
+     * Affiche le premier succès encore verrouillé lorsque rien de plus précis
+     * n'a pu être restauré depuis l'état local.
+     */
     private async Task AppliquerPremierSuccesNonDebloqueSauvegardeAsync(int identifiantJeu)
     {
         EtatListeSuccesAfficheeLocal? listeSauvegardee =
@@ -311,6 +357,10 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.TexteVisuelVisible = true;
     }
 
+    /*
+     * Sauvegarde l'état visible du dernier jeu affiché, y compris le contexte
+     * nécessaire pour pouvoir relancer ce jeu plus tard.
+     */
     private Task SauvegarderDernierJeuAfficheAsync(
         GameInfoAndUserProgressV2 jeu,
         string detailsTempsJeu,
@@ -363,6 +413,10 @@ public partial class MainWindow
         return Task.CompletedTask;
     }
 
+    /*
+     * Sauvegarde le dernier succès affiché uniquement si son contenu a
+     * réellement changé depuis le dernier état persistant connu.
+     */
     private void SauvegarderDernierSuccesAffiche(EtatSuccesAfficheLocal nouvelEtat)
     {
         if (EtatSuccesAfficheEquivalent(_configurationConnexion.DernierSuccesAffiche, nouvelEtat))
@@ -374,6 +428,10 @@ public partial class MainWindow
         _dernierSuccesAfficheModifie = true;
     }
 
+    /*
+     * Nettoie les états persistants qui ne correspondent plus au jeu courant
+     * afin d'éviter les mélanges entre deux jeux différents.
+     */
     private void GarantirCoherenceEtatPersistantJeu(int identifiantJeu)
     {
         if (
@@ -395,6 +453,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Sauvegarde la dernière grille affichée avec son ordre courant et les
+     * succès passés, puis planifie sa persistance.
+     */
     private void SauvegarderDerniereListeSuccesAffichee(
         int identifiantJeu,
         List<ElementListeSuccesAfficheLocal> succes
@@ -422,6 +484,10 @@ public partial class MainWindow
         _ = PersisterDernierJeuAfficheSiNecessaireAsync();
     }
 
+    /*
+     * Persiste l'ordre des succès volontairement passés pour conserver
+     * la même progression de lecture à la prochaine ouverture.
+     */
     private void SauvegarderOrdreSuccesPasses(int identifiantJeu, List<int> succesPasses)
     {
         EtatListeSuccesAfficheeLocal etat =
@@ -436,6 +502,10 @@ public partial class MainWindow
         _ = PersisterDernierJeuAfficheSiNecessaireAsync();
     }
 
+    /*
+     * Compare deux états de succès affiché afin d'éviter une écriture locale
+     * inutile lorsque rien d'important n'a changé.
+     */
     private static bool EtatSuccesAfficheEquivalent(
         EtatSuccesAfficheLocal? precedent,
         EtatSuccesAfficheLocal? courant
@@ -469,6 +539,10 @@ public partial class MainWindow
             && string.Equals(precedent.TexteVisuel, courant.TexteVisuel, StringComparison.Ordinal);
     }
 
+    /*
+     * Compare deux listes de succès persistées pour savoir si leur contenu
+     * ou leur ordre ont réellement changé.
+     */
     private static bool EtatListeSuccesAfficheeEquivalent(
         EtatListeSuccesAfficheeLocal? precedent,
         EtatListeSuccesAfficheeLocal? courant
@@ -517,6 +591,10 @@ public partial class MainWindow
         return true;
     }
 
+    /*
+     * Reconstruit un objet jeu minimal à partir de l'état local sauvegardé
+     * afin de réhydrater rapidement la carte du jeu courant.
+     */
     private static GameInfoAndUserProgressV2 ConstruireJeuUtilisateurDepuisEtatLocal(
         EtatJeuAfficheLocal jeuSauvegarde
     )
@@ -533,6 +611,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Écrit la configuration locale seulement si un des états suivis a changé,
+     * puis réarme les drapeaux si l'écriture échoue.
+     */
     private async Task PersisterDernierJeuAfficheSiNecessaireAsync()
     {
         if (

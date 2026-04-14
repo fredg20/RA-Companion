@@ -3,8 +3,16 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
+/*
+ * Traduit des chaînes libres vers le français tout en protégeant certains
+ * segments sensibles comme les citations.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit une traduction opportuniste avec cache mémoire léger pour enrichir
+ * certains textes d'interface sans re-solliciter inutilement le service distant.
+ */
 public sealed partial class ServiceTraductionTexte
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
@@ -13,6 +21,10 @@ public sealed partial class ServiceTraductionTexte
         StringComparer.OrdinalIgnoreCase
     );
 
+    /*
+     * Traduit un texte vers le français en réutilisant le cache local et en
+     * restaurant les segments protégés après la requête.
+     */
     public async Task<string> TraduireVersFrancaisAsync(
         string texte,
         CancellationToken jetonAnnulation = default
@@ -94,12 +106,20 @@ public sealed partial class ServiceTraductionTexte
         }
     }
 
+    /*
+     * Mémorise une traduction dans le cache local puis retourne la valeur
+     * enregistrée.
+     */
     private string MemoriserTraduction(string source, string traduction)
     {
         _cacheTraductions[source] = traduction;
         return traduction;
     }
 
+    /*
+     * Remplace temporairement les segments entre guillemets par des jetons
+     * afin d'éviter qu'ils soient modifiés pendant la traduction.
+     */
     private static string ProtegerSegmentsEntreGuillemets(
         string texte,
         Dictionary<string, string> segmentsProteges
@@ -118,6 +138,9 @@ public sealed partial class ServiceTraductionTexte
         );
     }
 
+    /*
+     * Restaure les segments protégés dans le texte traduit final.
+     */
     private static string RestaurerSegmentsProteges(
         string texteTraduit,
         IReadOnlyDictionary<string, string> segmentsProteges
@@ -134,5 +157,9 @@ public sealed partial class ServiceTraductionTexte
     }
 
     [GeneratedRegex("\"[^\"]+\"|«\\s*[^»]+\\s*»", RegexOptions.Compiled)]
+    /*
+     * Déclare l'expression régulière utilisée pour repérer les segments
+     * encadrés de guillemets à préserver.
+     */
     private static partial Regex MyRegex();
 }

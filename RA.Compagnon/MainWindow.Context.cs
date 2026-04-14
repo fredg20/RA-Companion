@@ -9,8 +9,16 @@ using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
+/*
+ * Regroupe les dépendances, caches et champs d'état partagés par les
+ * différentes parties de la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte le contexte global de la fenêtre principale utilisé par ses
+ * fichiers partiels.
+ */
 public partial class MainWindow
 {
     private readonly ServiceConfigurationLocale _serviceConfigurationLocale = new();

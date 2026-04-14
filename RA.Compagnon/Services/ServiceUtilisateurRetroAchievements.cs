@@ -1,10 +1,21 @@
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Centralise les chargements relatifs au compte utilisateur RetroAchievements
+ * nécessaires à l'application.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Rassemble les appels de profil, résumé, points, récompenses et jeux récents
+ * pour exposer des données utilisateur plus simples à consommer.
+ */
 public sealed class ServiceUtilisateurRetroAchievements
 {
+    /*
+     * Charge le profil utilisateur complet à partir des identifiants fournis.
+     */
     public static async Task<UserProfileV2> ObtenirProfilAsync(
         string pseudo,
         string cleApiWeb,
@@ -18,6 +29,10 @@ public sealed class ServiceUtilisateurRetroAchievements
         );
     }
 
+    /*
+     * Agrège les principales données de compte en parallélisant les appels
+     * indépendants puis en complétant la progression si possible.
+     */
     public static async Task<DonneesCompteUtilisateur> ObtenirDonneesCompteAsync(
         string pseudo,
         string cleApiWeb,
@@ -82,6 +97,9 @@ public sealed class ServiceUtilisateurRetroAchievements
         };
     }
 
+    /*
+     * Charge le résumé utilisateur sans propager les erreurs non critiques.
+     */
     public static async Task<UserSummaryV2?> ObtenirResumeAsync(
         string pseudo,
         string cleApiWeb,
@@ -97,6 +115,9 @@ public sealed class ServiceUtilisateurRetroAchievements
         );
     }
 
+    /*
+     * Retourne la liste des jeux récemment joués pour le compte demandé.
+     */
     public static async Task<IReadOnlyList<RecentlyPlayedGameV2>> ObtenirJeuxRecemmentJouesAsync(
         string pseudo,
         string cleApiWeb,
@@ -110,6 +131,10 @@ public sealed class ServiceUtilisateurRetroAchievements
         );
     }
 
+    /*
+     * Exécute un appel asynchrone tolérant aux erreurs lorsque la donnée
+     * concernée reste optionnelle pour l'interface.
+     */
     private static async Task<T?> TenterAsync<T>(Func<Task<T>> action)
         where T : class
     {
@@ -123,6 +148,10 @@ public sealed class ServiceUtilisateurRetroAchievements
         }
     }
 
+    /*
+     * Construit la liste des Game ID à utiliser pour charger une progression
+     * utilisateur utile au compte affiché.
+     */
     private static List<int> ConstruireIdentifiantsJeuPourProgression(UserSummaryV2? resume)
     {
         if (resume is null)

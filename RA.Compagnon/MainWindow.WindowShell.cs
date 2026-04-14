@@ -2,16 +2,29 @@ using System.Reflection;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
+/*
+ * Regroupe l'initialisation de l'habillage de la fenêtre, notamment son
+ * icône et sa version visible.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les helpers de configuration de l'enveloppe visuelle de la fenêtre.
+ */
 public partial class MainWindow
 {
+    /*
+     * Initialise les éléments d'habillage visibles de la fenêtre principale.
+     */
     private void InitialiserHabillageFenetre()
     {
         AppliquerIconeApplication();
         AppliquerVersionApplication();
     }
 
+    /*
+     * Applique l'icône de l'application à la fenêtre et à son en-tête.
+     */
     private void AppliquerIconeApplication()
     {
         Uri uriIcone = new("pack://application:,,,/rac.ico", UriKind.Absolute);
@@ -31,6 +44,9 @@ public partial class MainWindow
         ImageIconeTitre.Source = imageIcone;
     }
 
+    /*
+     * Applique la version de l'application dans l'interface et le ViewModel.
+     */
     private void AppliquerVersionApplication()
     {
         if (TexteVersionApplication is null)

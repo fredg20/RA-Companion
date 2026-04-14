@@ -1,10 +1,21 @@
 using System.Windows.Media.Animation;
 using SystemControls = System.Windows.Controls;
 
+/*
+ * Regroupe les types internes qui décrivent l'état de la liste animée
+ * des succès affichés dans la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les structures internes utilisées pour suivre l'interaction
+ * et l'animation de la liste des succès.
+ */
 public partial class MainWindow
 {
+    /*
+     * Décrit les différents états d'interaction possibles avec la liste des succès.
+     */
     private enum EtatInteractionListeSucces
     {
         AutoScroll,
@@ -12,6 +23,10 @@ public partial class MainWindow
         InteractionManuelle,
     }
 
+    /*
+     * Regroupe l'ensemble de l'état UI nécessaire au pilotage de la grille
+     * et du défilement des succès.
+     */
     private sealed class EtatListeSuccesUi
     {
         public SystemControls.Primitives.ScrollBar? BarreDefilementVerticale { get; set; }

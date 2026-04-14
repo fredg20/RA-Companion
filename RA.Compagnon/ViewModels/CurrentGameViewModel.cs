@@ -1,8 +1,16 @@
 using System.Windows.Input;
 using System.Windows.Media;
 
+/*
+ * Porte l'état visuel et les commandes de la carte du jeu courant affichée
+ * dans la fenêtre principale.
+ */
 namespace RA.Compagnon.ViewModels;
 
+/*
+ * Expose les informations, visuels et actions liées au jeu actuellement
+ * présenté à l'utilisateur.
+ */
 public sealed class CurrentGameViewModel : ViewModelBase
 {
     private string _titre = string.Empty;
@@ -44,6 +52,9 @@ public sealed class CurrentGameViewModel : ViewModelBase
     private Action? _executerActionVisuelPrecedent;
     private Action? _executerActionVisuelSuivant;
 
+    /*
+     * Initialise les commandes de la carte Jeu en cours.
+     */
     public CurrentGameViewModel()
     {
         CommandeActionRejouer = new RelayCommand(
@@ -294,24 +305,36 @@ public sealed class CurrentGameViewModel : ViewModelBase
 
     public RelayCommand CommandeActionVisuelSuivant { get; }
 
+    /*
+     * Associe l'action à exécuter pour Rejouer.
+     */
     public void ConfigurerActionRejouer(Action? action)
     {
         _executerActionRejouer = action;
         CommandeActionRejouer.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour Détails.
+     */
     public void ConfigurerActionDetails(Action? action)
     {
         _executerActionDetails = action;
         CommandeActionDetails.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour afficher le visuel précédent.
+     */
     public void ConfigurerActionVisuelPrecedent(Action? action)
     {
         _executerActionVisuelPrecedent = action;
         CommandeActionVisuelPrecedent.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour afficher le visuel suivant.
+     */
     public void ConfigurerActionVisuelSuivant(Action? action)
     {
         _executerActionVisuelSuivant = action;

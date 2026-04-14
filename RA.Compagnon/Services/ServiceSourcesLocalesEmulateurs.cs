@@ -3,8 +3,16 @@ using System.IO;
 using System.Text;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Centralise la recherche des chemins locaux utiles aux émulateurs pris en
+ * charge, ainsi que la mémorisation de certains emplacements détectés.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit les helpers de résolution pour les journaux, configurations,
+ * répertoires RACache et exécutables des émulateurs compatibles.
+ */
 public static class ServiceSourcesLocalesEmulateurs
 {
     private static readonly Lock VerrouEmplacementsEmulateursManuels = new();
@@ -12,6 +20,9 @@ public static class ServiceSourcesLocalesEmulateurs
     private static Dictionary<string, string> _emplacementsEmulateursManuels = [];
     private static Dictionary<string, string> _emplacementsEmulateursDetectes = [];
 
+    /*
+     * Enregistre la table des emplacements manuels définis par l'utilisateur.
+     */
     public static void ConfigurerEmplacementsEmulateursManuels(
         IReadOnlyDictionary<string, string>? emplacements
     )
@@ -33,6 +44,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Enregistre la table des emplacements détectés automatiquement et valides.
+     */
     public static void ConfigurerEmplacementsEmulateursDetectes(
         IReadOnlyDictionary<string, string>? emplacements
     )
@@ -55,6 +69,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne l'emplacement manuel mémorisé pour un émulateur donné.
+     */
     public static string ObtenirEmplacementEmulateurManuel(string nomEmulateur)
     {
         if (string.IsNullOrWhiteSpace(nomEmulateur))
@@ -73,6 +90,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne l'emplacement détecté automatiquement pour un émulateur donné.
+     */
     public static string ObtenirEmplacementEmulateurDetecte(string nomEmulateur)
     {
         if (string.IsNullOrWhiteSpace(nomEmulateur))
@@ -91,6 +111,10 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Mémorise un emplacement détecté lorsqu'il correspond bien à l'émulateur
+     * déclaré et qu'il diffère de la valeur déjà connue.
+     */
     public static bool MemoriserEmplacementEmulateurDetecte(
         string nomEmulateur,
         string cheminExecutable
@@ -144,6 +168,10 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Indique si un chemin correspond à l'emplacement manuel choisi pour
+     * l'émulateur concerné.
+     */
     public static bool CorrespondAuCheminEmulateurManuel(
         string nomEmulateur,
         string cheminExecutable
@@ -204,6 +232,10 @@ public static class ServiceSourcesLocalesEmulateurs
         return false;
     }
 
+    /*
+     * Retourne le meilleur emplacement connu pour un émulateur en priorisant
+     * le choix manuel, puis l'emplacement détecté, puis une recherche locale.
+     */
     public static string TrouverEmplacementEmulateur(string nomEmulateur)
     {
         string emplacementManuel = ObtenirEmplacementEmulateurManuel(nomEmulateur);
@@ -269,6 +301,10 @@ public static class ServiceSourcesLocalesEmulateurs
         };
     }
 
+    /*
+     * Vérifie qu'un chemin d'exécutable ou de dossier correspond bien à
+     * l'empreinte attendue pour un émulateur donné.
+     */
     public static bool CheminExecutableCorrespondEmulateur(
         string nomEmulateur,
         string cheminExecutable
@@ -318,6 +354,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne le chemin du journal local à surveiller pour un émulateur.
+     */
     public static string TrouverCheminJournalSuccesLocal(string nomEmulateur)
     {
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
@@ -365,6 +404,10 @@ public static class ServiceSourcesLocalesEmulateurs
         };
     }
 
+    /*
+     * Recherche le répertoire des journaux RetroArch à partir des emplacements
+     * connus ou du processus en cours.
+     */
     public static string TrouverRepertoireLogsRetroArch()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -389,6 +432,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal RetroArch le plus récent disponible.
+     */
     public static string TrouverDernierCheminJournalRetroArch()
     {
         try
@@ -444,6 +490,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne le répertoire RACache utilisé par Project64 ou RAP64.
+     */
     public static string TrouverRepertoireRACacheProject64(string nomEmulateur = "RAP64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -462,6 +511,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidatsRAP64.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire RACache utilisé par RALibretro.
+     */
     public static string TrouverRepertoireRACacheRALibretro()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -477,6 +529,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire RACache utilisé par RANes.
+     */
     public static string TrouverRepertoireRACacheRANes()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -495,6 +550,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire RACache utilisé par RAVBA.
+     */
     public static string TrouverRepertoireRACacheRAVBA()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -519,6 +577,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire RACache utilisé par RASnes9x.
+     */
     public static string TrouverRepertoireRACacheRASnes9x()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -537,6 +598,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de RALibretro.
+     */
     public static string TrouverCheminConfigurationRALibretro()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -552,6 +616,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de BizHawk.
+     */
     public static string TrouverCheminConfigurationBizHawk()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -574,6 +641,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration RetroAchievements utilisé par Dolphin.
+     */
     public static string TrouverCheminConfigurationRetroAchievementsDolphin()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -588,6 +658,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration standard de Dolphin.
+     */
     public static string TrouverCheminConfigurationDolphin()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -609,6 +682,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration Qt de Dolphin lorsqu'il existe.
+     */
     public static string TrouverCheminConfigurationQtDolphin()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -630,6 +706,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal Dolphin utilisé pour la détection locale.
+     */
     public static string TrouverCheminJournalDolphin()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -651,6 +730,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal de jeu BizHawk lorsqu'il est disponible.
+     */
     public static string TrouverCheminJournalJeuBizHawk()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -679,6 +761,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de l'exécutable Dolphin connu localement.
+     */
     public static string TrouverCheminExecutableDolphin()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -702,6 +787,9 @@ public static class ServiceSourcesLocalesEmulateurs
             ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de Project64 ou RAP64.
+     */
     public static string TrouverCheminConfigurationProject64(string nomEmulateur = "RAP64")
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -720,6 +808,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidatsRAP64.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de RANes.
+     */
     public static string TrouverCheminConfigurationRANes()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -738,6 +829,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de RASnes9x.
+     */
     public static string TrouverCheminConfigurationRASnes9x()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -756,6 +850,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de RAVBA.
+     */
     public static string TrouverCheminConfigurationRAVBA()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -779,6 +876,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire principal de DuckStation.
+     */
     public static string TrouverRepertoireDuckStation()
     {
         string[] candidats =
@@ -800,6 +900,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire principal de PCSX2.
+     */
     public static string TrouverRepertoirePCSX2()
     {
         string[] candidats =
@@ -818,6 +921,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire principal de PPSSPP.
+     */
     public static string TrouverRepertoirePPSSPP()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -837,6 +943,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le répertoire principal de Flycast.
+     */
     public static string TrouverRepertoireFlycast()
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -856,6 +965,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(Directory.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin de configuration principal de Flycast.
+     */
     public static string TrouverCheminConfigurationFlycast()
     {
         string repertoireFlycast = TrouverRepertoireFlycast();
@@ -869,6 +981,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal Flycast lorsqu'il existe.
+     */
     public static string TrouverCheminJournalFlycast()
     {
         string repertoireFlycast = TrouverRepertoireFlycast();
@@ -882,6 +997,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal PCSX2 lorsqu'il existe.
+     */
     public static string TrouverCheminJournalPCSX2()
     {
         string[] candidats =
@@ -909,6 +1027,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal PPSSPP lorsqu'il existe.
+     */
     public static string TrouverCheminJournalPPSSPP()
     {
         string repertoirePPSSPP = TrouverRepertoirePPSSPP();
@@ -943,6 +1064,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Retourne le chemin du journal DuckStation lorsqu'il existe.
+     */
     public static string TrouverCheminJournalDuckStation()
     {
         string[] candidats =
@@ -967,6 +1091,10 @@ public static class ServiceSourcesLocalesEmulateurs
         return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
     }
 
+    /*
+     * Lit toutes les lignes d'un fichier en autorisant un partage d'accès
+     * adapté aux journaux encore ouverts par un autre processus.
+     */
     public static List<string> LireToutesLesLignesAvecPartage(string cheminFichier)
     {
         try
@@ -1002,6 +1130,10 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Tente de déduire l'emplacement d'un émulateur à partir de ses processus
+     * actuellement exécutés.
+     */
     private static string TrouverEmplacementEmulateurDepuisProcessus(
         DefinitionEmulateurLocal definition
     )
@@ -1034,6 +1166,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Tente de retrouver l'exécutable RetroArch à partir des processus actifs.
+     */
     private static string TrouverCheminExecutableRetroArchDepuisProcessus()
     {
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
@@ -1045,6 +1180,9 @@ public static class ServiceSourcesLocalesEmulateurs
             : TrouverEmplacementEmulateurDepuisProcessus(definition);
     }
 
+    /*
+     * Tente de retrouver l'exécutable Dolphin à partir des processus actifs.
+     */
     private static string TrouverCheminExecutableDolphinDepuisProcessus()
     {
         DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
@@ -1056,6 +1194,9 @@ public static class ServiceSourcesLocalesEmulateurs
             : TrouverEmplacementEmulateurDepuisProcessus(definition);
     }
 
+    /*
+     * Déduit le répertoire de logs RetroArch à partir de son emplacement local.
+     */
     private static string TrouverRepertoireLogsDepuisEmplacementRetroArch(string emplacement)
     {
         if (string.IsNullOrWhiteSpace(emplacement))
@@ -1083,6 +1224,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Construit la liste ordonnée des fichiers journal RetroArch à considérer.
+     */
     private static IEnumerable<string> ConstruireCandidatsFichiersJournalRetroArch(
         string emplacement
     )
@@ -1114,6 +1258,10 @@ public static class ServiceSourcesLocalesEmulateurs
         yield return Path.Combine(repertoireBase, "retroarch.log");
     }
 
+    /*
+     * Indique si le nom d'un processus correspond à l'un des noms attendus
+     * pour un émulateur donné.
+     */
     private static bool CorrespondNomProcessus(
         Process processus,
         IReadOnlyList<string> nomsProcessus
@@ -1127,6 +1275,9 @@ public static class ServiceSourcesLocalesEmulateurs
         );
     }
 
+    /*
+     * Lit le chemin exécutable d'un processus lorsqu'il est accessible.
+     */
     private static string LireCheminExecutableProcessus(Process processus)
     {
         try
@@ -1139,11 +1290,17 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne le fichier de configuration BizHawk à partir d'un emplacement.
+     */
     private static string TrouverFichierConfigurationBizHawkDepuisEmplacement(string emplacement)
     {
         return TrouverFichierBizHawkDepuisEmplacement(emplacement, "config.ini");
     }
 
+    /*
+     * Retourne l'exécutable Dolphin le plus plausible à partir d'un emplacement.
+     */
     private static string TrouverFichierDolphinDepuisEmplacement(string emplacement)
     {
         if (string.IsNullOrWhiteSpace(emplacement))
@@ -1178,6 +1335,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Construit un chemin relatif à partir d'un emplacement Dolphin connu.
+     */
     private static string TrouverFichierDolphinDepuisEmplacement(
         string emplacement,
         params string[] segments
@@ -1215,6 +1375,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return string.Empty;
     }
 
+    /*
+     * Retourne un fichier BizHawk précis à partir d'un emplacement connu.
+     */
     private static string TrouverFichierBizHawkDepuisEmplacement(
         string emplacement,
         string nomFichier
@@ -1245,6 +1408,10 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Vérifie qu'une valeur contient l'un des jetons de correspondance attendus
+     * pour un émulateur.
+     */
     private static bool CorrespondValeurEmpreinteEmulateur(
         string valeur,
         IReadOnlyList<string> jetons
@@ -1265,6 +1432,10 @@ public static class ServiceSourcesLocalesEmulateurs
         });
     }
 
+    /*
+     * Construit la liste des jetons textuels utiles pour reconnaître
+     * un émulateur sur disque ou en mémoire.
+     */
     private static string[] ObtenirJetonsCorrespondanceEmulateur(
         DefinitionEmulateurLocal definition
     )
@@ -1296,6 +1467,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];
     }
 
+    /*
+     * Normalise une valeur textuelle d'exécutable pour faciliter les comparaisons.
+     */
     private static string NormaliserEmpreinteExecutable(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -1316,6 +1490,9 @@ public static class ServiceSourcesLocalesEmulateurs
         return builder.ToString();
     }
 
+    /*
+     * Retourne le répertoire parent d'un chemin lorsque cela est possible.
+     */
     private static string TrouverParentSiPossible(string chemin)
     {
         if (string.IsNullOrWhiteSpace(chemin))
@@ -1343,6 +1520,9 @@ public static class ServiceSourcesLocalesEmulateurs
         }
     }
 
+    /*
+     * Retourne le répertoire associé à un chemin de fichier ou de dossier.
+     */
     private static string TrouverRepertoireFichier(string chemin)
     {
         if (string.IsNullOrWhiteSpace(chemin))

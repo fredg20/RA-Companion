@@ -1,5 +1,13 @@
+/*
+ * Représente la version persistée du succès actuellement affiché dans la
+ * section centrale de l'application.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Stocke les informations essentielles d'un succès affiché pour pouvoir le
+ * restaurer au démarrage.
+ */
 public sealed class EtatSuccesAfficheLocal
 {
     public int IdentifiantJeu { get; set; }

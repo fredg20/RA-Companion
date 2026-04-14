@@ -3,8 +3,16 @@ using System.IO;
 using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Surveille les journaux et caches locaux des émulateurs afin de détecter
+ * rapidement l'apparition de nouveaux signaux de succès.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Gère les FileSystemWatcher nécessaires à la détection locale des succès
+ * selon la stratégie propre à chaque émulateur pris en charge.
+ */
 public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
 {
     private static readonly string CheminJournalSurveillanceSucces = Path.Combine(
@@ -25,11 +33,17 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
 
     public event Action<SignalSuccesLocal>? SignalRecu;
 
+    /*
+     * Réinitialise le journal de session dédié à la surveillance locale.
+     */
     public static void ReinitialiserJournalSession()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalSurveillanceSucces);
     }
 
+    /*
+     * Journalise un événement de surveillance pour faciliter le diagnostic.
+     */
     public static void JournaliserEvenement(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -41,6 +55,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         );
     }
 
+    /*
+     * Met à jour la cible surveillée à partir de l'état courant de la sonde
+     * locale et reconstruit les watchers si nécessaire.
+     */
     public void MettreAJourCible(EtatSondeLocaleEmulateur? etat)
     {
         string nomEmulateur = etat is { EmulateurDetecte: true }
@@ -83,6 +101,9 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         }
     }
 
+    /*
+     * Arrête proprement toutes les surveillances actuellement actives.
+     */
     public void ArreterSurveillance()
     {
         lock (_verrou)
@@ -93,11 +114,18 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         }
     }
 
+    /*
+     * Libère les ressources de surveillance détenues par l'instance.
+     */
     public void Dispose()
     {
         ArreterSurveillance();
     }
 
+    /*
+     * Construit la paire de surveillances adaptée à la stratégie déclarée
+     * pour l'émulateur ciblé.
+     */
     private (
         FileSystemWatcher? Principale,
         FileSystemWatcher? Secondaire,
@@ -135,6 +163,9 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         };
     }
 
+    /*
+     * Construit les watchers nécessaires pour la stratégie de journaux RetroArch.
+     */
     private (
         FileSystemWatcher? Principale,
         FileSystemWatcher? Secondaire,
@@ -163,6 +194,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         return (principale, secondaire, $"RetroArch|{repertoireLogs}");
     }
 
+    /*
+     * Construit une surveillance basée sur un journal unique pour les
+     * émulateurs qui écrivent un fichier dédié.
+     */
     private (
         FileSystemWatcher? Principale,
         FileSystemWatcher? Secondaire,
@@ -195,6 +230,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         return (principale, null, $"{nomEmulateur}|{cheminJournal}");
     }
 
+    /*
+     * Construit les surveillances nécessaires aux émulateurs qui exposent
+     * leurs signaux via RACache et RALog.
+     */
     private (
         FileSystemWatcher? Principale,
         FileSystemWatcher? Secondaire,
@@ -217,6 +256,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         return (principale, secondaire, $"{nomEmulateur}|{repertoireData}|{repertoireRACache}");
     }
 
+    /*
+     * Crée un FileSystemWatcher configuré pour notifier les changements utiles
+     * sur un répertoire surveillé.
+     */
     private FileSystemWatcher CreerSurveillance(
         string nomEmulateur,
         string typeSource,
@@ -246,6 +289,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         return surveillance;
     }
 
+    /*
+     * Réagit à un changement de fichier et émet, si nécessaire, un signal
+     * local vers le reste de l'application.
+     */
     private void SignalerChangement(string nomEmulateur, string typeSource, string chemin)
     {
         if (!CheminDoitDeclencherSignal(typeSource, chemin))
@@ -284,6 +331,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         }
     }
 
+    /*
+     * Libère les watchers actuellement enregistrés sans modifier la signature
+     * de cible à elle seule.
+     */
     private void LibererSurveillances()
     {
         _surveillancePrincipale?.Dispose();
@@ -292,6 +343,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         _surveillanceSecondaire = null;
     }
 
+    /*
+     * Planifie un signal différé supplémentaire pour les stratégies RACache
+     * qui nécessitent une seconde lecture du journal.
+     */
     private void PlanifierSignalSuiviRACache(string nomEmulateur, string typeSource, string chemin)
     {
         string signatureCapturee;
@@ -354,6 +409,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         });
     }
 
+    /*
+     * Planifie le signal initial spécifique à RetroArch après un court délai
+     * pour laisser le journal se stabiliser.
+     */
     private void PlanifierSignalInitialRetroArch(string signatureCapturee)
     {
         string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
@@ -417,6 +476,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         });
     }
 
+    /*
+     * Construit l'objet signal transmis au reste de l'application lorsqu'un
+     * changement local pertinent est observé.
+     */
     private static SignalSuccesLocal ConstruireSignal(
         string nomEmulateur,
         string typeSource,
@@ -432,6 +495,9 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         };
     }
 
+    /*
+     * Nettoie une chaîne avant de l'inscrire dans les journaux de diagnostic.
+     */
     private static string Nettoyer(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)
@@ -439,6 +505,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
             : valeur.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 
+    /*
+     * Détermine si un chemin modifié doit réellement déclencher un signal
+     * pour la source surveillée.
+     */
     private static bool CheminDoitDeclencherSignal(string typeSource, string chemin)
     {
         string nomFichier = Path.GetFileName(chemin);
@@ -456,6 +526,10 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
         };
     }
 
+    /*
+     * Déclare l'expression régulière servant à reconnaître les fichiers jeu
+     * issus de RACache.
+     */
     [GeneratedRegex(@"^\d+\.json$", RegexOptions.CultureInvariant)]
     private static partial Regex MyRegex();
 }

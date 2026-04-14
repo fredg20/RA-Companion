@@ -1,3 +1,8 @@
+/*
+ * Regroupe la logique de connexion, de compte et d'aide utilisateur, ainsi
+ * que les modales associées et les outils de diagnostic reliés aux émulateurs
+ * et à l'état visible du compte dans l'interface principale.
+ */
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -16,8 +21,16 @@ using UiControls = Wpf.Ui.Controls;
 
 namespace RA.Compagnon;
 
+/*
+ * Porte la partie de la fenêtre principale qui gère la connexion utilisateur,
+ * la modale Compte, la modale Aide et la notice d'état visible dans l'entête.
+ */
 public partial class MainWindow
 {
+    /*
+     * Retourne un pinceau issu du thème courant ou une couleur de repli
+     * lorsque la ressource demandée n'est pas disponible.
+     */
     private SolidColorBrush ObtenirPinceauTheme(string cleRessource, Color couleurParDefaut)
     {
         if (TryFindResource(cleRessource) is SolidColorBrush pinceauLocal)
@@ -33,6 +46,9 @@ public partial class MainWindow
         return new SolidColorBrush(couleurParDefaut);
     }
 
+    /*
+     * Active ou désactive la racine visuelle qui porte les modales.
+     */
     private void DefinirEtatModalesActif(bool actif)
     {
         if (RacineModales is null)
@@ -44,6 +60,9 @@ public partial class MainWindow
         RacineModales.IsHitTestVisible = actif;
     }
 
+    /*
+     * Affiche ou masque le voile de fond dédié à la modale de connexion.
+     */
     private void DefinirVoileConnexionActif(bool actif)
     {
         if (VoileFenetreConnexion is null)
@@ -54,6 +73,10 @@ public partial class MainWindow
         VoileFenetreConnexion.Visibility = actif ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    /*
+     * Ouvre la modale de connexion et orchestre la validation puis la
+     * sauvegarde locale des informations de compte.
+     */
     private async Task AfficherModaleConnexionAsync(
         bool masquerContenuPrincipal = true,
         bool fermerApplicationSiAnnuleSansConfiguration = true
@@ -355,6 +378,10 @@ public partial class MainWindow
         DemarrerActualisationAutomatique();
     }
 
+    /*
+     * Ouvre la modale de compte avec les informations utilisateur
+     * les plus récentes disponibles.
+     */
     private async Task AfficherModaleCompteAsync()
     {
         DonneesCompteUtilisateur donnees = await ObtenirDonneesComptePourModaleAsync();
@@ -482,6 +509,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ouvre la modale d'aide et de diagnostic local de l'application.
+     */
     private async Task AfficherModaleAideAsync()
     {
         _ = VerifierMiseAJourApplicationSiNecessaireAsync();
@@ -582,6 +612,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Demande à l'utilisateur de confirmer la déconnexion du compte courant.
+     */
     private async Task<bool> ConfirmerDeconnexionAsync()
     {
         UiControls.ContentDialog dialogueConfirmation = new(RacineModales)
@@ -614,6 +647,10 @@ public partial class MainWindow
         return resultat == UiControls.ContentDialogResult.Primary;
     }
 
+    /*
+     * Supprime la configuration locale du compte et remet l'interface
+     * dans un état déconnecté.
+     */
     private async Task DeconnecterCompteAsync()
     {
         ArreterActualisationAutomatique();
@@ -639,6 +676,10 @@ public partial class MainWindow
         await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
     }
 
+    /*
+     * Récupère les données nécessaires à l'affichage détaillé du compte
+     * dans la modale dédiée.
+     */
     private async Task<DonneesCompteUtilisateur> ObtenirDonneesComptePourModaleAsync()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -681,6 +722,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Construit le bloc visuel correspondant à une section de la modale
+     * de compte.
+     */
     private SystemControls.Border ConstruireBlocCompte(SectionInformationsAffichee section)
     {
         SystemControls.StackPanel pile = new()
@@ -752,6 +797,9 @@ public partial class MainWindow
         return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
+    /*
+     * Construit l'en-tête du compte avec avatar, pseudo et statut.
+     */
     private static SystemControls.Border ConstruireEnTeteAvatarCompte(CompteAffiche compte)
     {
         SystemControls.Border conteneur = new()
@@ -802,11 +850,18 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Crée un séparateur visuel homogène pour les blocs de la modale de compte.
+     */
     private static SystemControls.Separator ConstruireSeparateurBlocCompte()
     {
         return new SystemControls.Separator { Margin = new Thickness(0, 2, 0, 12), Opacity = 0.45 };
     }
 
+    /*
+     * Construit un bloc d'aide standard avec un titre, une description
+     * et un contenu libre.
+     */
     private SystemControls.Border ConstruireBlocAide(
         string titre,
         IReadOnlyList<string> lignes,
@@ -832,6 +887,10 @@ public partial class MainWindow
         return ConstruireSectionAideRabattable(titre, pile, resume, estOuvertParDefaut);
     }
 
+    /*
+     * Construit une section d'aide rabattable réutilisable dans la modale
+     * d'assistance.
+     */
     private SystemControls.Border ConstruireSectionAideRabattable(
         string titre,
         UIElement contenu,
@@ -908,6 +967,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Construit la section d'aide consacrée aux logs, chemins et emplacements
+     * des émulateurs.
+     */
     private SystemControls.Border ConstruireBlocAideLogsEmulateurs()
     {
         SystemControls.StackPanel pile = new() { Margin = new Thickness(0) };
@@ -974,6 +1037,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Construit la carte de diagnostic d'un émulateur avec ses sources
+     * locales et ses chemins utiles.
+     */
     private SystemControls.Border ConstruireCarteIndicatifLogsEmulateur(
         DefinitionEmulateurLocal definition
     )
@@ -1173,6 +1240,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Résume en une ligne la source locale et le niveau de confiance
+     * d'un émulateur.
+     */
     private static string ConstruireResumeSectionLogsEmulateur(
         DefinitionEmulateurLocal definition,
         string source
@@ -1186,6 +1257,10 @@ public partial class MainWindow
         return $"{source} {confianceCourte}";
     }
 
+    /*
+     * Permet de choisir manuellement l'exécutable d'un émulateur puis
+     * mémorise ce choix.
+     */
     private async Task ChoisirEmplacementEmulateurManuelAsync(DefinitionEmulateurLocal definition)
     {
         OpenFileDialog dialogue = new()
@@ -1235,6 +1310,9 @@ public partial class MainWindow
         await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
     }
 
+    /*
+     * Retire l'emplacement manuel mémorisé pour un émulateur.
+     */
     private async Task RetirerEmplacementEmulateurManuelAsync(DefinitionEmulateurLocal definition)
     {
         if (_configurationConnexion.EmplacementsEmulateursManuels.Remove(definition.NomEmulateur))
@@ -1248,11 +1326,19 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Indique si un émulateur doit apparaître dans la section de diagnostic
+     * des logs.
+     */
     private static bool EstEmulateurValidePourIndicatifLogs(DefinitionEmulateurLocal definition)
     {
         return ServiceCatalogueEmulateursLocaux.EstEmulateurValide(definition);
     }
 
+    /*
+     * Décrit la source locale principale utilisée pour détecter le jeu
+     * d'un émulateur.
+     */
     private static string ConstruireLibelleSourceLocaleEmulateur(
         DefinitionEmulateurLocal definition
     )
@@ -1287,6 +1373,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Fournit les consignes d'activation nécessaires pour que la source locale
+     * soit exploitable.
+     */
     private static string ConstruireTexteActivationSourceLocale(DefinitionEmulateurLocal definition)
     {
         return definition.StrategieRenseignementJeu switch
@@ -1319,6 +1409,9 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Décrit le niveau de confiance de la détection locale pour un émulateur.
+     */
     private static string ConstruireTexteConfianceDetectionEmulateur(
         DefinitionEmulateurLocal definition
     )
@@ -1354,6 +1447,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Retourne le libellé de validation affiché pour les émulateurs
+     * déjà testés.
+     */
     private static string ConstruireTexteValidationEmulateur(DefinitionEmulateurLocal definition)
     {
         return definition.StrategieRenseignementJeu switch
@@ -1364,6 +1461,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Retourne le dossier indicatif où l'utilisateur retrouvera
+     * généralement l'émulateur.
+     */
     private static string ConstruireCheminIndicatifEmulateur(DefinitionEmulateurLocal definition)
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -1429,6 +1530,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Retourne le chemin indicatif de la source locale attendue
+     * pour un émulateur.
+     */
     private static string ConstruireCheminIndicatifSourceLocale(DefinitionEmulateurLocal definition)
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -1519,6 +1624,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Construit la liste visuelle des jeux récemment joués affichée
+     * dans la modale de compte.
+     */
     private SystemControls.Border ConstruireBlocJeuxRecemmentJoues(
         IReadOnlyList<JeuRecentAffiche> jeux
     )
@@ -1573,16 +1682,26 @@ public partial class MainWindow
         return new SystemControls.Border { Padding = new Thickness(0), Child = pile };
     }
 
+    /*
+     * Construit l'URL publique du profil RetroAchievements de l'utilisateur.
+     */
     private static string ConstruireUrlProfilRetroAchievements(string nomUtilisateur)
     {
         return $"https://retroachievements.org/user/{Uri.EscapeDataString(nomUtilisateur)}";
     }
 
+    /*
+     * Retourne l'URL du dépôt GitHub du projet.
+     */
     private static string ConstruireUrlDepotGitHub()
     {
         return "https://github.com/fredg20/RA-Companion";
     }
 
+    /*
+     * Ouvre le profil RetroAchievements de l'utilisateur dans le navigateur
+     * par défaut.
+     */
     private static void OuvrirProfilRetroAchievements(string nomUtilisateur)
     {
         if (string.IsNullOrWhiteSpace(nomUtilisateur))
@@ -1603,6 +1722,9 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Ouvre le dépôt GitHub du projet dans le navigateur par défaut.
+     */
     private static void OuvrirDepotGitHub()
     {
         try
@@ -1618,11 +1740,18 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Gère le clic sur le bouton ouvrant le dépôt GitHub du projet.
+     */
     private void BoutonDepotGitHub_Click(object sender, RoutedEventArgs e)
     {
         OuvrirDepotGitHub();
     }
 
+    /*
+     * Transforme un chemin d'image RetroAchievements en URL absolue exploitable
+     * par l'interface.
+     */
     private static string ConstruireUrlImageRetroAchievements(string? cheminImage)
     {
         if (string.IsNullOrWhiteSpace(cheminImage))
@@ -1635,6 +1764,9 @@ public partial class MainWindow
             : $"https://retroachievements.org{cheminImage}";
     }
 
+    /*
+     * Construit l'image d'avatar du compte lorsqu'une URL valide est disponible.
+     */
     private static SystemControls.Image? ConstruireImageAvatarCompte(
         string? urlAvatar,
         double largeur = 44,
@@ -1672,6 +1804,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ajuste le pied de la modale de connexion une fois son arbre visuel chargé.
+     */
     private void DialogueConnexion_Chargement(object sender, RoutedEventArgs e)
     {
         if (sender is not UiControls.ContentDialog dialogueConnexion)
@@ -1685,6 +1820,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Ajuste le pied de la modale de compte une fois son arbre visuel chargé.
+     */
     private void DialogueCompte_Chargement(object sender, RoutedEventArgs e)
     {
         if (sender is not UiControls.ContentDialog dialogueCompte)
@@ -1698,6 +1836,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Ajuste le pied de la modale de confirmation après son chargement visuel.
+     */
     private void DialogueConfirmation_Chargement(object sender, RoutedEventArgs e)
     {
         if (sender is not UiControls.ContentDialog dialogueConfirmation)
@@ -1711,6 +1852,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Centre et épure les boutons affichés dans le pied de la modale
+     * de connexion.
+     */
     private static void AjusterPiedModaleConnexion(UiControls.ContentDialog dialogueConnexion)
     {
         List<SystemControls.Button> boutons =
@@ -1772,6 +1917,9 @@ public partial class MainWindow
         conteneurBoutons.HorizontalAlignment = HorizontalAlignment.Center;
     }
 
+    /*
+     * Centre les actions visibles dans le pied de la modale de compte.
+     */
     private static void AjusterPiedModaleCompte(UiControls.ContentDialog dialogueCompte)
     {
         List<SystemControls.Button> boutons =
@@ -1822,6 +1970,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ouvre la modale de connexion depuis le bouton d'entête.
+     */
     private async void ConfigurerConnexion_Click(object sender, RoutedEventArgs e)
     {
         MemoriserGeometrieFenetre();
@@ -1831,16 +1982,26 @@ public partial class MainWindow
         await AfficherModaleConnexionAsync();
     }
 
+    /*
+     * Ouvre la modale de compte depuis le bouton utilisateur.
+     */
     private async void AfficherCompte_Click(object sender, RoutedEventArgs e)
     {
         await ExecuterActionAfficherCompteAsync();
     }
 
+    /*
+     * Ouvre la modale d'aide depuis le bouton correspondant.
+     */
     private async void AfficherAide_Click(object sender, RoutedEventArgs e)
     {
         await ExecuterActionAfficherAideAsync();
     }
 
+    /*
+     * Affiche la connexion ou le compte selon l'état actuel
+     * de la configuration.
+     */
     private async Task ExecuterActionAfficherCompteAsync()
     {
         if (!ConfigurationConnexionEstComplete())
@@ -1852,11 +2013,17 @@ public partial class MainWindow
         await AfficherModaleCompteAsync();
     }
 
+    /*
+     * Centralise l'ouverture de la modale d'aide.
+     */
     private async Task ExecuterActionAfficherAideAsync()
     {
         await AfficherModaleAideAsync();
     }
 
+    /*
+     * Met à jour le résumé de connexion visible dans l'entête et le ViewModel.
+     */
     private void MettreAJourResumeConnexion()
     {
         if (string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo))
@@ -1872,6 +2039,9 @@ public partial class MainWindow
         MettreAJourNoticeCompteEntete();
     }
 
+    /*
+     * Retourne le libellé à afficher sur le bouton de compte.
+     */
     private string ObtenirLibelleBoutonCompte()
     {
         return string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)
@@ -1879,6 +2049,10 @@ public partial class MainWindow
             : _configurationConnexion.Pseudo;
     }
 
+    /*
+     * Met à jour la notice d'état du compte et déclenche une synchronisation
+     * ciblée si l'état visible change.
+     */
     private void MettreAJourNoticeCompteEntete()
     {
         if (
@@ -1981,6 +2155,10 @@ public partial class MainWindow
         MettreAJourActionRejouerJeuEnCours(_configurationConnexion.DernierJeuAffiche);
     }
 
+    /*
+     * Réinitialise l'historique interne du dernier état de jeu visible
+     * dans l'entête.
+     */
     private void ReinitialiserSuiviEtatJeuVisible()
     {
         _suiviEtatJeuVisibleInitialise = false;
@@ -1988,6 +2166,10 @@ public partial class MainWindow
         _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
     }
 
+    /*
+     * Enregistre l'état de jeu visible et demande une synchronisation
+     * ciblée si sa valeur change.
+     */
     private void EnregistrerEtatJeuVisibleEtSynchroniserSiNecessaire(string etatVisible)
     {
         string signatureEtat = string.IsNullOrWhiteSpace(etatVisible)
@@ -2016,6 +2198,10 @@ public partial class MainWindow
         DemanderSynchronisationCibleeEtatJeu($"etat_visible={signatureEtat}");
     }
 
+    /*
+     * Déclenche ou diffère une synchronisation ciblée de l'état du jeu
+     * en respectant le debounce défini.
+     */
     private void DemanderSynchronisationCibleeEtatJeu(string raison)
     {
         if (!ConfigurationConnexionEstComplete())
@@ -2047,6 +2233,10 @@ public partial class MainWindow
         _ = SynchroniserEtatJeuApresChangementAsync();
     }
 
+    /*
+     * Recharge le jeu courant après un changement d'état détecté
+     * dans l'interface.
+     */
     private async Task SynchroniserEtatJeuApresChangementAsync()
     {
         try
@@ -2057,6 +2247,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Détermine le Game ID le plus pertinent à afficher dans la notice
+     * de compte.
+     */
     private int DeterminerIdentifiantJeuNoticeCompte()
     {
         if (EtatLocalEmulateurEstActifPourNotice())
@@ -2082,6 +2276,10 @@ public partial class MainWindow
         return 0;
     }
 
+    /*
+     * Retourne les couleurs associées au statut visible dans la notice
+     * de compte.
+     */
     private static (Brush Fond, Brush Bordure) ObtenirCouleursNoticeCompteEntete(string statut)
     {
         if (statut.Contains("En jeu", StringComparison.OrdinalIgnoreCase))
@@ -2102,6 +2300,10 @@ public partial class MainWindow
         return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 120, 200, 255)));
     }
 
+    /*
+     * Journalise les changements utiles de la notice de compte sans
+     * dupliquer les mêmes entrées.
+     */
     private void JournaliserNoticeCompteEntete(string statut, string identifiantJeu, string source)
     {
         string signature = $"{source}|{statut}|{identifiantJeu}";
@@ -2124,6 +2326,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Met à jour l'état de connexion courant et le répercute dans le ViewModel.
+     */
     private void DefinirEtatConnexion(string etatConnexion)
     {
         _etatConnexionCourant = etatConnexion;
@@ -2131,17 +2336,26 @@ public partial class MainWindow
         MettreAJourResumeConnexion();
     }
 
+    /*
+     * Indique si les informations minimales de connexion sont disponibles localement.
+     */
     private bool ConfigurationConnexionEstComplete()
     {
         return !string.IsNullOrWhiteSpace(_configurationConnexion.Pseudo)
             && !string.IsNullOrWhiteSpace(_configurationConnexion.CleApiWeb);
     }
 
+    /*
+     * Retourne le texte nettoyé porté par un bouton WPF.
+     */
     private static string TexteBouton(SystemControls.Button bouton)
     {
         return bouton.Content?.ToString()?.Trim() ?? string.Empty;
     }
 
+    /*
+     * Recherche le premier panneau ancêtre commun à deux éléments visuels.
+     */
     private static SystemControls.Panel? TrouverPanneauCommun(
         DependencyObject premierElement,
         DependencyObject secondElement
@@ -2178,6 +2392,10 @@ public partial class MainWindow
         return null;
     }
 
+    /*
+     * Parcourt récursivement l'arbre visuel pour retourner tous les descendants
+     * du type demandé.
+     */
     private static IEnumerable<TElement> TrouverDescendants<TElement>(DependencyObject racine)
         where TElement : DependencyObject
     {

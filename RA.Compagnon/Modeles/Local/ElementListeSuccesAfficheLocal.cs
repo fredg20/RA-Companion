@@ -1,5 +1,12 @@
+/*
+ * Représente un élément de la liste locale sérialisée des succès affichés
+ * pour restaurer rapidement la grille au démarrage.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Stocke l'identifiant, le titre et le badge d'un succès déjà affiché.
+ */
 public sealed class ElementListeSuccesAfficheLocal
 {
     public int IdentifiantSucces { get; set; }

@@ -1,5 +1,13 @@
+/*
+ * Déclare les énumérations et la définition d'un émulateur local connu par
+ * Compagnon.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Décrit la stratégie utilisée pour extraire le titre du jeu courant d'un
+ * émulateur local.
+ */
 public enum StrategieExtractionTitreEmulateurLocal
 {
     SeparateursRetroArch,
@@ -16,6 +24,10 @@ public enum StrategieExtractionTitreEmulateurLocal
     RASnes9x,
 }
 
+/*
+ * Décrit la stratégie utilisée pour déterminer le jeu courant dans un
+ * émulateur local.
+ */
 public enum StrategieRenseignementJeuEmulateurLocal
 {
     Aucune,
@@ -33,6 +45,10 @@ public enum StrategieRenseignementJeuEmulateurLocal
     PPSSPPLog,
 }
 
+/*
+ * Décrit la stratégie utilisée pour surveiller localement les succès d'un
+ * émulateur.
+ */
 public enum StrategieSurveillanceSuccesLocale
 {
     Aucune,
@@ -45,6 +61,10 @@ public enum StrategieSurveillanceSuccesLocale
     RASnes9xRACache,
 }
 
+/*
+ * Décrit un émulateur local, ses stratégies de détection et ses capacités
+ * de surveillance ou de détection directe des succès.
+ */
 public sealed record DefinitionEmulateurLocal(
     string NomEmulateur,
     string[] NomsProcessus,

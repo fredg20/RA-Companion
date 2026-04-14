@@ -2,10 +2,21 @@ using System.Globalization;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transforme les succès bruts de l'API en modèles d'affichage adaptés à la
+ * carte principale et à la grille des succès.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Centralise la présentation visuelle des succès, de leurs badges et de leurs
+ * libellés complémentaires pour l'interface.
+ */
 public sealed class ServicePresentationSucces
 {
+    /*
+     * Construit le modèle simplifié utilisé par la grille des succès.
+     */
     public static SuccesGrilleAffiche ConstruirePourGrille(GameAchievementV2 succes)
     {
         bool estDebloque = EstDebloque(succes);
@@ -21,6 +32,9 @@ public sealed class ServicePresentationSucces
         };
     }
 
+    /*
+     * Construit le modèle complet utilisé par la carte du succès mis en avant.
+     */
     public static SuccesAffiche Construire(
         GameAchievementV2 succes,
         int identifiantJeu,
@@ -51,6 +65,9 @@ public sealed class ServicePresentationSucces
         };
     }
 
+    /*
+     * Traduit le type technique d'un succès en libellé lisible en français.
+     */
     private static string TraduireTypeSucces(string type)
     {
         return (type ?? string.Empty).Trim().ToLowerInvariant() switch
@@ -62,6 +79,10 @@ public sealed class ServicePresentationSucces
         };
     }
 
+    /*
+     * Construit la ligne de détails décrivant les points, le type et les
+     * rétropoints du succès.
+     */
     private static string ConstruireDetailsPointsSucces(GameAchievementV2 succes)
     {
         List<string> segments = [];
@@ -85,6 +106,10 @@ public sealed class ServicePresentationSucces
         return string.Join(" • ", segments);
     }
 
+    /*
+     * Met en forme la faisabilité calculée pour affichage dans la carte
+     * principale du succès.
+     */
     private static string ConstruireDetailsFaisabiliteSucces(EvaluationFaisabiliteSucces evaluation)
     {
         if (string.IsNullOrWhiteSpace(evaluation.Libelle) || evaluation.NombreJoueursDistincts <= 0)
@@ -101,12 +126,19 @@ public sealed class ServicePresentationSucces
         return $"{evaluation.Libelle} ({pourcentage:0.#} %)";
     }
 
+    /*
+     * Détermine si un succès doit être considéré comme débloqué à partir des
+     * dates softcore et hardcore présentes dans les données.
+     */
     private static bool EstDebloque(GameAchievementV2 succes)
     {
         return !string.IsNullOrWhiteSpace(succes.DateEarned)
             || !string.IsNullOrWhiteSpace(succes.DateEarnedHardcore);
     }
 
+    /*
+     * Construit l'infobulle affichée au survol d'un badge dans la grille.
+     */
     private static string ConstruireToolTipGrilleSucces(GameAchievementV2 succes)
     {
         string titre = succes.Title?.Trim() ?? string.Empty;
@@ -120,6 +152,10 @@ public sealed class ServicePresentationSucces
         return string.IsNullOrWhiteSpace(titre) ? mode : $"{titre}{Environment.NewLine}{mode}";
     }
 
+    /*
+     * Déduit le mode d'obtention visible d'un succès selon ses dates de
+     * déblocage disponibles.
+     */
     private static string DeterminerModeObtentionSucces(GameAchievementV2 succes)
     {
         if (!string.IsNullOrWhiteSpace(succes.DateEarnedHardcore))
@@ -135,6 +171,10 @@ public sealed class ServicePresentationSucces
         return string.Empty;
     }
 
+    /*
+     * Transforme un nom de badge ou un chemin relatif en URL complète, avec
+     * prise en charge de la variante verrouillée si nécessaire.
+     */
     private static string ConstruireUrlBadgeDepuisNom(string nomBadge, bool versionVerrouillee)
     {
         if (string.IsNullOrWhiteSpace(nomBadge))

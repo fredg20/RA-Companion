@@ -6,8 +6,16 @@ using System.Text.RegularExpressions;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Catalogue;
 
+/*
+ * Met en cache localement un catalogue minimal des jeux et succès déjà vus
+ * afin de fournir un repli hors ligne et des correspondances locales.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Gère la lecture, la mise à jour et la normalisation du catalogue local
+ * des jeux observés par l'application.
+ */
 public sealed partial class ServiceCatalogueJeuxLocal
 {
     private static readonly JsonSerializerOptions OptionsJson = new() { WriteIndented = true };
@@ -15,6 +23,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
     private readonly SemaphoreSlim _verrou = new(1, 1);
     private CatalogueJeuxLocal? _catalogue;
 
+    /*
+     * Retourne la liste des jeux du catalogue, éventuellement filtrée par
+     * identifiants de console.
+     */
     public async Task<IReadOnlyList<JeuCatalogueLocal>> ObtenirJeuxAsync(
         IEnumerable<int>? identifiantsConsole = null,
         CancellationToken jetonAnnulation = default
@@ -37,6 +49,9 @@ public sealed partial class ServiceCatalogueJeuxLocal
         return [.. catalogue.Jeux.Where(jeu => consoles.Contains(jeu.ConsoleId))];
     }
 
+    /*
+     * Retourne un jeu précis du catalogue local à partir de son identifiant.
+     */
     public async Task<JeuCatalogueLocal?> ObtenirJeuAsync(
         int identifiantJeu,
         CancellationToken jetonAnnulation = default
@@ -51,6 +66,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         return catalogue.Jeux.FirstOrDefault(jeu => jeu.GameId == identifiantJeu);
     }
 
+    /*
+     * Insère ou met à jour un jeu dans le catalogue local à partir des
+     * données API et d'un éventuel titre observé localement.
+     */
     public async Task EnregistrerJeuAsync(
         GameInfoAndUserProgressV2 jeu,
         string? titreObserveLocal = null,
@@ -125,6 +144,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         }
     }
 
+    /*
+     * Charge le catalogue en sérialisant l'accès concurrent pour garantir
+     * une vision cohérente en mémoire.
+     */
     private async Task<CatalogueJeuxLocal> ChargerCatalogueAsync(CancellationToken jetonAnnulation)
     {
         await _verrou.WaitAsync(jetonAnnulation);
@@ -139,6 +162,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         }
     }
 
+    /*
+     * Charge le catalogue depuis la mémoire ou le disque sans reprendre
+     * le verrou lorsqu'il est déjà détenu par l'appelant.
+     */
     private async Task<CatalogueJeuxLocal> ChargerCatalogueInterneAsync(
         CancellationToken jetonAnnulation
     )
@@ -176,6 +203,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         return _catalogue;
     }
 
+    /*
+     * Sauvegarde le catalogue local via un fichier temporaire pour réduire
+     * les risques de corruption.
+     */
     private static async Task SauvegarderCatalogueAsync(
         CatalogueJeuxLocal catalogue,
         CancellationToken jetonAnnulation
@@ -199,6 +230,9 @@ public sealed partial class ServiceCatalogueJeuxLocal
         File.Move(cheminTemporaire, chemin);
     }
 
+    /*
+     * Retourne le chemin du fichier de catalogue local des jeux.
+     */
     private static string ObtenirCheminCatalogue()
     {
         return Path.Combine(
@@ -209,6 +243,9 @@ public sealed partial class ServiceCatalogueJeuxLocal
         );
     }
 
+    /*
+     * Convertit un succès API en succès sérialisable dans le catalogue local.
+     */
     private static SuccesCatalogueLocal ConvertirSucces(GameAchievementV2 succes)
     {
         return new SuccesCatalogueLocal
@@ -223,6 +260,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         };
     }
 
+    /*
+     * Fusionne les succès reçus avec ceux déjà connus sans perdre les entrées
+     * existantes lorsqu'aucune mise à jour n'est fournie.
+     */
     private static List<SuccesCatalogueLocal> FusionnerSuccesSansRegresser(
         List<SuccesCatalogueLocal> succesExistants,
         List<SuccesCatalogueLocal> succesRecus
@@ -250,6 +291,10 @@ public sealed partial class ServiceCatalogueJeuxLocal
         return [.. succesFusionnes.Values.OrderBy(item => item.AchievementId)];
     }
 
+    /*
+     * Ajoute un titre alternatif pertinent au jeu sans dupliquer le titre
+     * principal ni les entrées vides.
+     */
     private static void AjouterTitreAlternatif(
         HashSet<string> titresAlternatifs,
         string? titre,
@@ -271,11 +316,17 @@ public sealed partial class ServiceCatalogueJeuxLocal
         titresAlternatifs.Add(titreNettoye);
     }
 
+    /*
+     * Supprime les parenthèses et leur contenu d'un titre observé localement.
+     */
     private static string EnleverParentheses(string? titre)
     {
         return ParenthesesRegex().Replace(titre ?? string.Empty, string.Empty).Trim();
     }
 
+    /*
+     * Normalise un titre de jeu pour faciliter les comparaisons locales.
+     */
     private static string NormaliserTitre(string? valeur)
     {
         string titre = (valeur ?? string.Empty).Trim().ToLowerInvariant();
@@ -296,12 +347,23 @@ public sealed partial class ServiceCatalogueJeuxLocal
         return EspacesMultiplesRegex().Replace(alphanumerique, " ").Trim();
     }
 
+    /*
+     * Déclare l'expression régulière utilisée pour retirer les parenthèses
+     * d'un titre de jeu.
+     */
     [GeneratedRegex(@"\s*\([^)]*\)", RegexOptions.CultureInvariant)]
     private static partial Regex ParenthesesRegex();
 
+    /*
+     * Déclare l'expression régulière qui élimine les caractères non
+     * alphanumériques lors de la normalisation d'un titre.
+     */
     [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
     private static partial Regex CaracteresNonAlphaNumeriquesRegex();
 
+    /*
+     * Déclare l'expression régulière qui réduit les espaces multiples.
+     */
     [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
     private static partial Regex EspacesMultiplesRegex();
 }

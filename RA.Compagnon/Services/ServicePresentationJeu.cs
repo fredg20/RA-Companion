@@ -2,10 +2,22 @@ using System.Globalization;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transforme les données complètes d'un jeu en un modèle d'affichage lisible
+ * pour la carte principale de l'interface.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Assemble les libellés, résumés et indicateurs de progression visibles
+ * pour le jeu courant ou le dernier jeu détecté.
+ */
 public sealed class ServicePresentationJeu
 {
+    /*
+     * Construit le modèle de présentation principal du jeu à partir des
+     * données enrichies chargées en amont.
+     */
     public static JeuAffiche Construire(DonneesJeuAffiche donneesJeu)
     {
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
@@ -28,11 +40,18 @@ public sealed class ServicePresentationJeu
         };
     }
 
+    /*
+     * Met en forme le résumé textuel des succès débloqués sur le total du jeu.
+     */
     private static string FormaterResumeProgression(int nbSuccesDebloques, int nbSuccesTotal)
     {
         return $"{nbSuccesDebloques} / {nbSuccesTotal} succès";
     }
 
+    /*
+     * Construit le résumé des points softcore et hardcore du jeu à partir
+     * de la collection de succès.
+     */
     public static string ConstruireResumePoints(IReadOnlyCollection<GameAchievementV2> succes)
     {
         if (succes.Count == 0)
@@ -63,6 +82,10 @@ public sealed class ServicePresentationJeu
         );
     }
 
+    /*
+     * Assemble les détails secondaires du jeu, comme les points et le résumé
+     * communautaire lorsqu'ils existent.
+     */
     private static string ConstruireDetailsJeu(DonneesJeuAffiche donneesJeu)
     {
         GameInfoAndUserProgressV2 jeu = donneesJeu.Jeu;
@@ -85,6 +108,10 @@ public sealed class ServicePresentationJeu
         return string.Join(" • ", segments);
     }
 
+    /*
+     * Déduit le statut textuel du jeu à partir des récompenses connues et
+     * des compteurs de progression utilisateur.
+     */
     private static string DeterminerStatutJeu(GameInfoAndUserProgressV2 jeu)
     {
         string etatApi = jeu.HighestAwardKind.Trim().ToLowerInvariant();
@@ -121,6 +148,9 @@ public sealed class ServicePresentationJeu
         return string.Empty;
     }
 
+    /*
+     * Convertit une durée de jeu en secondes vers un format compact lisible.
+     */
     private static string FormaterTempsJeuTotal(int totalSecondes)
     {
         if (totalSecondes <= 0)
@@ -152,6 +182,9 @@ public sealed class ServicePresentationJeu
         return string.Join(" ", segments);
     }
 
+    /*
+     * Extrait la valeur numérique du pourcentage de complétion fourni par l'API.
+     */
     private static double ExtrairePourcentage(string pourcentageApi)
     {
         if (string.IsNullOrWhiteSpace(pourcentageApi))
@@ -188,6 +221,10 @@ public sealed class ServicePresentationJeu
         return 0;
     }
 
+    /*
+     * Normalise le pourcentage de complétion pour l'affichage textuel dans la
+     * carte du jeu.
+     */
     private static string NormaliserPourcentage(string pourcentageApi)
     {
         double valeur = ExtrairePourcentage(pourcentageApi);

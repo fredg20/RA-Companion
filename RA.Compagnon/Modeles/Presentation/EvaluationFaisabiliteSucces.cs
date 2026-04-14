@@ -1,5 +1,12 @@
+/*
+ * Décrit le résultat formaté d'une évaluation de faisabilité pour un succès.
+ */
 namespace RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transporte le score, le niveau de confiance et les métriques utiles à
+ * l'affichage de la faisabilité d'un succès.
+ */
 public sealed class EvaluationFaisabiliteSucces
 {
     public int Score { get; init; }

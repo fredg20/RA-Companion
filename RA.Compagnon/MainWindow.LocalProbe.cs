@@ -7,10 +7,22 @@ using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 
+/*
+ * Regroupe la surveillance locale des émulateurs, la résolution de jeu et
+ * la détection des succès débloqués issus des sources locales.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique de sondes locales et de synchronisation fine entre
+ * l'état détecté des émulateurs et l'interface utilisateur.
+ */
 public partial class MainWindow
 {
+    /*
+     * Indique si un émulateur local doit faire apparaître la notice de
+     * présence du compte dans l'en-tête.
+     */
     private bool EtatLocalEmulateurEstActifPourNotice()
     {
         return _serviceOrchestrateurEtatJeu.EtatLocalEmulateurEstActifPourNotice(
@@ -18,6 +30,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Indique si un jeu local est actuellement considéré comme actif.
+     */
     private bool EtatLocalJeuEstActif()
     {
         return _serviceOrchestrateurEtatJeu.EtatLocalJeuEstActif(
@@ -26,6 +41,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Redémarre le minuteur d'actualisation API lorsque le profil reste
+     * accessible, afin d'éviter une dérive de synchronisation.
+     */
     private void RedemarrerMinuteurActualisationApi()
     {
         if (!_profilUtilisateurAccessible)
@@ -37,6 +56,9 @@ public partial class MainWindow
         _minuteurActualisationApi.Start();
     }
 
+    /*
+     * Réinitialise l'ensemble du contexte de surveillance locale et distante.
+     */
     private void ReinitialiserContexteSurveillance()
     {
         _actualisationApiCibleeEnAttente = false;
@@ -68,6 +90,10 @@ public partial class MainWindow
         _horodatageDerniereSynchronisationEtatJeuUtc = DateTimeOffset.MinValue;
     }
 
+    /*
+     * Surveille périodiquement le Rich Presence utilisateur pour ajuster
+     * l'état visible du jeu si nécessaire.
+     */
     private async void ActualisationRichPresence_Tick(object? sender, EventArgs e)
     {
         if (
@@ -135,6 +161,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Détecte la présence locale d'un émulateur afin de mettre à jour
+     * l'indication de compte actif et la synchronisation ciblée.
+     */
     private async void ActualisationPresenceLocaleCompte_Tick(object? sender, EventArgs e)
     {
         if (_surveillancePresenceLocaleCompteEnCours)
@@ -168,6 +198,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Exécute la sonde locale principale pour résoudre le jeu courant à partir
+     * de l'émulateur détecté et de son contexte.
+     */
     private async void ActualisationSondeLocaleEmulateurs_Tick(object? sender, EventArgs e)
     {
         if (_surveillanceLocaleEmulateursEnCours)
@@ -411,6 +445,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Tente de résoudre un jeu local depuis le titre détecté, les jeux récents
+     * et les catalogues mis en cache.
+     */
     private async Task<JeuLocalResolut?> ResoudreJeuLocalDepuisSondeAsync(
         EtatSondeLocaleEmulateur etat
     )
@@ -500,6 +538,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Détermine les consoles candidates à partir du nom de l'émulateur
+     * détecté localement.
+     */
     private async Task<IReadOnlyList<int>> ObtenirIdentifiantsConsoleCandidatsParEmulateurAsync(
         string nomEmulateur
     )
@@ -556,6 +598,9 @@ public partial class MainWindow
         return [.. identifiants.Distinct()];
     }
 
+    /*
+     * Efface le contexte local utilisé pour l'action de rejeu.
+     */
     private void ReinitialiserContexteRejouerJeu()
     {
         _identifiantJeuRejouableCourant = 0;
@@ -564,6 +609,10 @@ public partial class MainWindow
         _cheminJeuRejouableCourant = string.Empty;
     }
 
+    /*
+     * Met à jour le contexte de rejeu avec les chemins détectés pour le jeu
+     * local actuellement résolu.
+     */
     private void ActualiserContexteRejouerJeu(EtatSondeLocaleEmulateur etat, int identifiantJeu)
     {
         if (
@@ -611,6 +660,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Retourne l'état du jeu affiché à enrichir pour le rejeu, en le créant
+     * au besoin à partir des données actuellement affichées.
+     */
     private EtatJeuAfficheLocal? ObtenirEtatJeuAffichePourContexteRejouer(int identifiantJeu)
     {
         if (_configurationConnexion.DernierJeuAffiche?.Id == identifiantJeu)
@@ -648,6 +701,10 @@ public partial class MainWindow
         return _configurationConnexion.DernierJeuAffiche;
     }
 
+    /*
+     * Mémorise le chemin d'un émulateur détecté localement pour faciliter les
+     * futures actions de rejeu.
+     */
     private async Task MemoriserEmplacementEmulateurDetecteAsync(EtatSondeLocaleEmulateur etat)
     {
         if (
@@ -705,11 +762,17 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Retourne les alias de consoles associés à un émulateur connu.
+     */
     private static string[] ObtenirAliasConsolesDepuisEmulateur(string nomEmulateur)
     {
         return ServiceCatalogueEmulateursLocaux.ObtenirAliasConsoles(nomEmulateur);
     }
 
+    /*
+     * Normalise un nom de console pour faciliter les rapprochements textuels.
+     */
     private static string NormaliserNomConsole(string valeur)
     {
         if (string.IsNullOrWhiteSpace(valeur))
@@ -722,6 +785,9 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Redirige un signal de succès local vers le thread UI pour traitement.
+     */
     private void SurveillanceSuccesLocaux_SignalRecu(SignalSuccesLocal signal)
     {
         ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
@@ -734,6 +800,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Traite un signal local de succès en essayant d'abord l'affichage direct,
+     * puis un rafraîchissement ciblé si nécessaire.
+     */
     private async Task TraiterSignalSuccesLocalAsync(SignalSuccesLocal signal)
     {
         if (!ConfigurationConnexionEstComplete() || !_profilUtilisateurAccessible)
@@ -819,6 +889,10 @@ public partial class MainWindow
         RedemarrerMinuteurActualisationApi();
     }
 
+    /*
+     * Tente d'afficher immédiatement un succès détecté via une source locale
+     * compatible sans attendre un rafraîchissement API complet.
+     */
     private async Task<bool> TenterAfficherSuccesLocalDirectAsync(
         SignalSuccesLocal signal,
         int identifiantJeu,
@@ -912,11 +986,19 @@ public partial class MainWindow
         return true;
     }
 
+    /*
+     * Construit une signature stable pour dédupliquer l'affichage d'un succès
+     * détecté localement.
+     */
     private static string ConstruireSignatureSuccesLocalDirect(SuccesDebloqueDetecte succes)
     {
         return $"{succes.IdentifiantJeu}|{succes.IdentifiantSucces}|{succes.TitreSucces}";
     }
 
+    /*
+     * Tente de détecter un nouveau succès en rechargeant rapidement les données
+     * API du jeu sans utiliser le cache.
+     */
     private async Task<bool> TenterAfficherSuccesApiSansCacheAsync(
         SignalSuccesLocal signal,
         int identifiantJeu
@@ -1026,11 +1108,19 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Indique si l'émulateur donné prend en charge la lecture directe d'un
+     * succès local débloqué.
+     */
     private static bool EstEmulateurSuccesLocalDirectPrisEnCharge(string nomEmulateur)
     {
         return ServiceCatalogueEmulateursLocaux.EstSuccesLocalDirectPrisEnCharge(nomEmulateur);
     }
 
+    /*
+     * Indique si le type de source reçu peut transporter une information de
+     * succès local directement exploitable.
+     */
     private static bool TypeSourcePeutPorterSuccesDirect(SignalSuccesLocal signal)
     {
         return ServiceCatalogueEmulateursLocaux.TypeSourcePeutPorterSuccesDirect(
@@ -1039,6 +1129,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Mémorise le contexte du dernier signal local afin de faciliter les
+     * diagnostics et la détection de source.
+     */
     private void EnregistrerContexteSignalSuccesLocal(
         SignalSuccesLocal signal,
         int identifiantJeuSignal
@@ -1050,6 +1144,9 @@ public partial class MainWindow
         _horodatageDernierSignalSuccesLocalUtc = signal.HorodatageUtc;
     }
 
+    /*
+     * Déduit une source de détection à partir du dernier contexte local récent.
+     */
     private string DeterminerSourceDetectionDepuisContexteLocalRecent(int identifiantJeu)
     {
         if (

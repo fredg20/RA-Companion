@@ -5,8 +5,16 @@ using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Orchestre le chargement des données de jeu RetroAchievements, avec une
+ * couche de cache mémoire pour les lectures rapides et enrichies.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit les données de jeu nécessaires à l'interface, depuis le chargement
+ * rapide jusqu'à l'enrichissement complet et au repli local.
+ */
 public sealed class ServiceJeuRetroAchievements
 {
     private static readonly TimeSpan DureeCacheDonneesRapides = TimeSpan.FromMinutes(2);
@@ -21,6 +29,10 @@ public sealed class ServiceJeuRetroAchievements
         EntreeCacheJeu<DonneesJeuAffiche>
     > _cacheJeuxEnrichis = new(StringComparer.Ordinal);
 
+    /*
+     * Charge les données rapides du jeu en privilégiant un cache court lorsque
+     * celui-ci reste encore valide.
+     */
     public async Task<DonneesJeuAffiche> ObtenirDonneesJeuRapidesAsync(
         string pseudo,
         string cleApiWeb,
@@ -55,6 +67,10 @@ public sealed class ServiceJeuRetroAchievements
         return donnees;
     }
 
+    /*
+     * Recharge les données rapides du jeu sans utiliser le cache distant,
+     * puis met à jour le cache mémoire local.
+     */
     public async Task<DonneesJeuAffiche> ObtenirDonneesJeuRapidesSansCacheAsync(
         string pseudo,
         string cleApiWeb,
@@ -76,6 +92,10 @@ public sealed class ServiceJeuRetroAchievements
         return donnees;
     }
 
+    /*
+     * Enrichit un jeu déjà chargé avec ses détails, sa progression globale
+     * et ses rangs, en conservant les données communautaires existantes.
+     */
     public async Task<DonneesJeuAffiche> EnrichirDonneesJeuAsync(
         string pseudo,
         string cleApiWeb,
@@ -145,6 +165,10 @@ public sealed class ServiceJeuRetroAchievements
         return resultat;
     }
 
+    /*
+     * Complète l'objet jeu courant avec les champs utiles fournis par les
+     * détails étendus sans écraser inutilement les données déjà présentes.
+     */
     private static void HydraterJeu(GameInfoAndUserProgressV2 jeu, GameExtendedDetailsV2? details)
     {
         if (details is null)
@@ -267,6 +291,10 @@ public sealed class ServiceJeuRetroAchievements
         }
     }
 
+    /*
+     * Exécute un appel asynchrone optionnel en convertissant ses erreurs en
+     * valeur par défaut pour ne pas interrompre l'enrichissement.
+     */
     private static async Task<T?> TenterAsync<T>(Func<Task<T>> action)
     {
         try
@@ -279,6 +307,9 @@ public sealed class ServiceJeuRetroAchievements
         }
     }
 
+    /*
+     * Tente de retrouver une entrée valide dans le cache mémoire demandé.
+     */
     private static bool TenterObtenirDepuisCache(
         ConcurrentDictionary<string, EntreeCacheJeu<DonneesJeuAffiche>> cache,
         string cleCache,
@@ -299,22 +330,36 @@ public sealed class ServiceJeuRetroAchievements
         return false;
     }
 
+    /*
+     * Construit la clé de cache associée à un utilisateur et à un jeu.
+     */
     private static string ConstruireCleCache(string pseudo, int identifiantJeu)
     {
         return $"{pseudo.Trim()}|{identifiantJeu}";
     }
 
+    /*
+     * Clone un objet de données via sérialisation JSON afin d'éviter les
+     * mutations partagées entre le cache et l'interface.
+     */
     private static T Cloner<T>(T source)
     {
         byte[] donnees = JsonSerializer.SerializeToUtf8Bytes(source, OptionsClone);
         return JsonSerializer.Deserialize<T>(donnees, OptionsClone)!;
     }
 
+    /*
+     * Représente une entrée de cache avec son horodatage de création.
+     */
     private sealed record EntreeCacheJeu<T>(T Valeur)
     {
         public DateTimeOffset DateMajUtc { get; } = DateTimeOffset.UtcNow;
     }
 
+    /*
+     * Construit un objet de jeu minimal à partir du cache catalogue local
+     * et de l'état utilisateur local lorsqu'aucune donnée API n'est disponible.
+     */
     public static DonneesJeuAffiche? ConstruireDonneesJeuDepuisCacheLocal(
         JeuCatalogueLocal? jeuCatalogue,
         EtatJeuUtilisateurLocal? etatUtilisateur

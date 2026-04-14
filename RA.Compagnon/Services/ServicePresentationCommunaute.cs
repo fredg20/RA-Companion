@@ -1,10 +1,21 @@
 using System.Globalization;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Convertit les informations communautaires d'un jeu en un résumé court
+ * destiné à la carte visible dans l'interface.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Construit le texte synthétique lié aux claims actifs et personnels du jeu.
+ */
 public sealed class ServicePresentationCommunaute
 {
+    /*
+     * Génère le résumé affiché pour la communauté du jeu à partir des claims
+     * disponibles dans les données chargées.
+     */
     public static CommunauteJeuAffichee Construire(DonneesCommunauteJeu communaute)
     {
         List<string> segments = [];

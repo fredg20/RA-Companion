@@ -1,5 +1,12 @@
+/*
+ * Représente un succès enregistré dans le catalogue local d'un jeu.
+ */
 namespace RA.Compagnon.Modeles.Catalogue;
 
+/*
+ * Stocke les informations locales essentielles d'un succès dans le cache
+ * catalogue.
+ */
 public sealed class SuccesCatalogueLocal
 {
     public int AchievementId { get; set; }

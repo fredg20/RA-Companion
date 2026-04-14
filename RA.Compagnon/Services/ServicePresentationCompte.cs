@@ -2,10 +2,22 @@ using System.Globalization;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transforme les données brutes du compte RetroAchievements en un modèle
+ * structuré pour la modale Compte.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Construit les sections, lignes et résumés visibles du compte utilisateur
+ * à partir des informations disponibles localement et via l'API.
+ */
 public sealed class ServicePresentationCompte
 {
+    /*
+     * Prépare la représentation complète du compte à afficher dans la modale
+     * dédiée de l'application.
+     */
     public static CompteAffiche Construire(DonneesCompteUtilisateur donnees, string pseudoParDefaut)
     {
         string nomUtilisateur = donnees.Profil?.User?.Trim() ?? pseudoParDefaut.Trim();
@@ -171,6 +183,10 @@ public sealed class ServicePresentationCompte
         };
     }
 
+    /*
+     * Construit l'URL absolue de l'avatar utilisateur à partir du chemin
+     * éventuellement renvoyé par l'API.
+     */
     private static string ConstruireUrlAvatar(string? cheminImage)
     {
         if (string.IsNullOrWhiteSpace(cheminImage))
@@ -183,6 +199,10 @@ public sealed class ServicePresentationCompte
             : $"https://retroachievements.org{cheminImage}";
     }
 
+    /*
+     * Formate la date d'inscription du profil dans un format lisible en
+     * français canadien.
+     */
     private static string FormaterDateProfil(string? dateProfil)
     {
         if (string.IsNullOrWhiteSpace(dateProfil))
@@ -218,11 +238,17 @@ public sealed class ServicePresentationCompte
         return dateProfil.Trim();
     }
 
+    /*
+     * Formate un nombre optionnel pour l'affichage, ou retourne une chaîne vide.
+     */
     private static string FormaterNombre(int? valeur)
     {
         return valeur.HasValue ? valeur.Value.ToString(CultureInfo.CurrentCulture) : string.Empty;
     }
 
+    /*
+     * Construit le résumé du classement global du compte lorsqu'il est connu.
+     */
     private static string ConstruireResumePositionCompte(UserSummaryV2? resume)
     {
         if (resume is null || resume.Rank <= 0 || resume.TotalRanked <= 0)
@@ -233,6 +259,9 @@ public sealed class ServicePresentationCompte
         return $"{resume.Rank.ToString(CultureInfo.CurrentCulture)} sur {resume.TotalRanked.ToString(CultureInfo.CurrentCulture)}";
     }
 
+    /*
+     * Résume le nombre de succès récents visibles dans le résumé utilisateur.
+     */
     private static string FormaterResumeSuccesRecents(UserSummaryV2? resume)
     {
         if (resume is null)
@@ -252,6 +281,9 @@ public sealed class ServicePresentationCompte
             : $"{nombreSucces.ToString(CultureInfo.CurrentCulture)} succès récents";
     }
 
+    /*
+     * Détermine le dernier jeu à afficher à partir du résumé ou du profil.
+     */
     private static string DeterminerDernierJeuAffiche(DonneesCompteUtilisateur donnees)
     {
         if (!string.IsNullOrWhiteSpace(donnees.Resume?.LastGame?.Titre))
@@ -267,6 +299,10 @@ public sealed class ServicePresentationCompte
         return string.Empty;
     }
 
+    /*
+     * Construit le sous-titre affiché pour un jeu récent dans la modale
+     * de compte.
+     */
     private static string ConstruireSousTitreJeuRecent(RecentlyPlayedGameV2 jeu)
     {
         List<string> segments = [];
@@ -284,6 +320,10 @@ public sealed class ServicePresentationCompte
         return segments.Count == 0 ? "Activité récente" : string.Join(" • ", segments);
     }
 
+    /*
+     * Ajoute une ligne de section seulement lorsqu'une valeur utile est
+     * effectivement disponible.
+     */
     private static void AjouterLigneSiValeurUtile(
         List<LigneInformationAffichee> lignes,
         string libelle,

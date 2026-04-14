@@ -1,8 +1,16 @@
 using System.Windows;
 using System.Windows.Media;
 
+/*
+ * Regroupe les propriétés et commandes exposées à la fenêtre principale
+ * pour piloter l'ensemble de l'interface utilisateur.
+ */
 namespace RA.Compagnon.ViewModels;
 
+/*
+ * Porte l'état bindé de la fenêtre principale, des sous-cartes visibles
+ * et des commandes globales de l'application.
+ */
 public sealed class MainWindowViewModel : ViewModelBase
 {
     private string _titreFenetre = "RA-Compagnon";
@@ -39,6 +47,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private Action? _executerActionOrdreSuccesFacile;
     private Action? _executerActionOrdreSuccesDifficile;
 
+    /*
+     * Initialise les sous-ViewModels et les commandes exposées à la fenêtre.
+     */
     public MainWindowViewModel()
     {
         JeuCourant = new CurrentGameViewModel();
@@ -252,48 +263,72 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /*
+     * Associe l'action à exécuter pour l'ouverture du compte.
+     */
     public void ConfigurerActionAfficherCompte(Action? action)
     {
         _executerActionAfficherCompte = action;
         CommandeAfficherCompte.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour l'ouverture de l'aide.
+     */
     public void ConfigurerActionAfficherAide(Action? action)
     {
         _executerActionAfficherAide = action;
         CommandeAfficherAide.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour la mise à jour de l'application.
+     */
     public void ConfigurerActionMiseAJourApplication(Action? action)
     {
         _executerActionMiseAJourApplication = action;
         CommandeMiseAJourApplication.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour le rechargement du jeu courant.
+     */
     public void ConfigurerActionRechargerJeu(Action? action)
     {
         _executerActionRechargerJeu = action;
         CommandeRechargerJeu.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour le mode d'ordre normal des succès.
+     */
     public void ConfigurerActionOrdreSuccesNormal(Action? action)
     {
         _executerActionOrdreSuccesNormal = action;
         CommandeOrdreSuccesNormal.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour le mode d'ordre aléatoire des succès.
+     */
     public void ConfigurerActionOrdreSuccesAleatoire(Action? action)
     {
         _executerActionOrdreSuccesAleatoire = action;
         CommandeOrdreSuccesAleatoire.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour le mode d'ordre facile des succès.
+     */
     public void ConfigurerActionOrdreSuccesFacile(Action? action)
     {
         _executerActionOrdreSuccesFacile = action;
         CommandeOrdreSuccesFacile.NotifierPeutExecuterChange();
     }
 
+    /*
+     * Associe l'action à exécuter pour le mode d'ordre difficile des succès.
+     */
     public void ConfigurerActionOrdreSuccesDifficile(Action? action)
     {
         _executerActionOrdreSuccesDifficile = action;

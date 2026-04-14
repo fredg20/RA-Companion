@@ -1,8 +1,16 @@
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Charge et met temporairement en cache les données communautaires utiles
+ * autour d'un jeu et d'un utilisateur.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Récupère les claims globaux et personnels, puis les filtre pour le jeu
+ * actuellement consulté par l'utilisateur.
+ */
 public sealed class ServiceCommunauteRetroAchievements
 {
     private static readonly TimeSpan DureeCacheClaims = TimeSpan.FromSeconds(30);
@@ -14,6 +22,10 @@ public sealed class ServiceCommunauteRetroAchievements
     private DateTimeOffset _horodatageClaimsUtilisateurCache;
     private string _pseudoClaimsUtilisateurCache = string.Empty;
 
+    /*
+     * Charge les données communautaires du jeu demandé en combinant les claims
+     * actives globales et celles du compte connecté.
+     */
     public async Task<DonneesCommunauteJeu> ObtenirDonneesJeuAsync(
         string pseudo,
         string cleApiWeb,
@@ -49,6 +61,10 @@ public sealed class ServiceCommunauteRetroAchievements
         };
     }
 
+    /*
+     * Retourne les claims actives avec un petit cache mémoire pour limiter
+     * les appels répétés lors des rafraîchissements rapprochés.
+     */
     private async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsActivesAsync(
         string cleApiWeb,
         CancellationToken jetonAnnulation
@@ -87,6 +103,10 @@ public sealed class ServiceCommunauteRetroAchievements
         }
     }
 
+    /*
+     * Retourne les claims du compte utilisateur en tenant compte du pseudo
+     * associé au cache courant.
+     */
     private async Task<IReadOnlyList<UserClaimV2>> ObtenirClaimsUtilisateurAsync(
         string pseudo,
         string cleApiWeb,
@@ -133,6 +153,10 @@ public sealed class ServiceCommunauteRetroAchievements
         }
     }
 
+    /*
+     * Exécute un appel optionnel sans faire échouer tout le chargement
+     * communautaire lorsqu'une source est indisponible.
+     */
     private static async Task<T?> TenterAsync<T>(Func<Task<T>> action)
     {
         try

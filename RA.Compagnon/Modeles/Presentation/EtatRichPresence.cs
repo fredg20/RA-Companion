@@ -1,5 +1,13 @@
+/*
+ * Décrit l'état de Rich Presence interprété à partir des données utilisateur
+ * RetroAchievements.
+ */
 namespace RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transporte les informations déjà analysées permettant d'afficher si
+ * l'utilisateur est en jeu, sur son dernier jeu ou inactif.
+ */
 public sealed class EtatRichPresence
 {
     public string SourceRichPresence { get; init; } = string.Empty;

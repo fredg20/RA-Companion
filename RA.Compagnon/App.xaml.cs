@@ -7,8 +7,15 @@ using RA.Compagnon.Services;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
+/*
+ * Définit le point d'entrée WPF de Compagnon, la politique d'instance unique
+ * et les journaux de démarrage de l'application.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Représente l'application WPF principale et orchestre son démarrage global.
+ */
 public partial class App : Application
 {
     private const string NomMutexInstanceUnique = @"Local\RA.Compagnon.InstanceUnique";
@@ -28,6 +35,10 @@ public partial class App : Application
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
 
+    /*
+     * Démarre l'application en imposant une instance unique, en préparant le
+     * thème global et en réinitialisant les journaux de session.
+     */
     protected override void OnStartup(StartupEventArgs e)
     {
         JournaliserDemarrage("OnStartup debut");
@@ -74,6 +85,9 @@ public partial class App : Application
         JournaliserDemarrage("OnStartup fin");
     }
 
+    /*
+     * Libère proprement le mutex d'instance unique à la fermeture.
+     */
     protected override void OnExit(ExitEventArgs e)
     {
         try
@@ -90,6 +104,10 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    /*
+     * Tente de réactiver une instance déjà ouverte plutôt que d'en créer une
+     * seconde.
+     */
     private static bool ActiverInstanceExistanteSiPossible()
     {
         try
@@ -116,6 +134,9 @@ public partial class App : Application
         }
     }
 
+    /*
+     * Nettoie d'éventuelles instances orphelines sans fenêtre principale.
+     */
     private static void NettoyerInstancesFantomes()
     {
         try
@@ -146,6 +167,10 @@ public partial class App : Application
         catch { }
     }
 
+    /*
+     * Écrit une ligne de diagnostic de démarrage lorsque le mode diagnostic
+     * est actif.
+     */
     internal static void JournaliserDemarrage(string message)
     {
         if (!ServiceModeDiagnostic.EstActif)

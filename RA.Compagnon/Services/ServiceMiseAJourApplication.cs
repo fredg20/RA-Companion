@@ -8,8 +8,15 @@ using System.Text.Json;
 using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Gère la vérification, le téléchargement et le lancement de l'installation
+ * des mises à jour de l'application.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit toutes les opérations liées au cycle de mise à jour de Compagnon.
+ */
 public sealed class ServiceMiseAJourApplication
 {
     private static readonly HttpClient HttpClient = new() { Timeout = TimeSpan.FromSeconds(4) };
@@ -26,11 +33,17 @@ public sealed class ServiceMiseAJourApplication
     private const string UrlManifesteVersionApplication =
         "https://raw.githubusercontent.com/fredg20/RA-Companion/main/update.json";
 
+    /*
+     * Crée l'état initial de mise à jour à partir de la version locale connue.
+     */
     public static EtatMiseAJourApplication CreerEtatInitial()
     {
         return EtatMiseAJourApplication.CreerEtatInitial(ObtenirVersionLocale());
     }
 
+    /*
+     * Retourne la version locale affichable de l'application.
+     */
     public static string ObtenirVersionLocale()
     {
         Assembly assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
@@ -54,6 +67,10 @@ public sealed class ServiceMiseAJourApplication
         return "0.0.0";
     }
 
+    /*
+     * Vérifie le manifeste distant et construit l'état de mise à jour
+     * correspondant pour l'interface.
+     */
     public static async Task<EtatMiseAJourApplication> VerifierAsync(
         CancellationToken jetonAnnulation = default
     )
@@ -151,6 +168,10 @@ public sealed class ServiceMiseAJourApplication
         }
     }
 
+    /*
+     * Télécharge le paquet de mise à jour dans un dossier local temporaire
+     * dédié à la version distante.
+     */
     public static async Task<ResultatTelechargementMiseAJourApplication> TelechargerPackageAsync(
         EtatMiseAJourApplication etat,
         CancellationToken jetonAnnulation = default
@@ -265,6 +286,10 @@ public sealed class ServiceMiseAJourApplication
         }
     }
 
+    /*
+     * Recherche un paquet déjà téléchargé et tente de finaliser un fichier
+     * temporaire si nécessaire.
+     */
     public static string? TrouverPackageTelechargeExistant(EtatMiseAJourApplication etat)
     {
         if (!etat.PeutTelecharger)
@@ -311,6 +336,10 @@ public sealed class ServiceMiseAJourApplication
         return cheminFichier;
     }
 
+    /*
+     * Lance le script d'installation PowerShell qui remplacera les fichiers
+     * après fermeture du processus parent.
+     */
     public static ResultatLancementInstallationMiseAJourApplication LancerInstallationPackage(
         string cheminPackageZip,
         string? versionDistante,
@@ -418,6 +447,9 @@ public sealed class ServiceMiseAJourApplication
         }
     }
 
+    /*
+     * Construit l'état de mise à jour à partir du manifeste JSON distant.
+     */
     private static EtatMiseAJourApplication ConstruireEtatDepuisManifeste(
         string versionLocale,
         VersionDistanteApplication manifeste
@@ -450,6 +482,9 @@ public sealed class ServiceMiseAJourApplication
         );
     }
 
+    /*
+     * Compare deux versions normalisées de l'application.
+     */
     public static int ComparerVersions(string versionGauche, string versionDroite)
     {
         Version gauche = ConvertirEnVersionComparable(versionGauche);
@@ -457,6 +492,10 @@ public sealed class ServiceMiseAJourApplication
         return gauche.CompareTo(droite);
     }
 
+    /*
+     * Vérifie qu'une URL de téléchargement distante répond bien avant de la
+     * proposer à l'utilisateur.
+     */
     private static async Task<bool> UrlTelechargementEstDisponibleAsync(
         string url,
         CancellationToken jetonAnnulation
@@ -515,11 +554,17 @@ public sealed class ServiceMiseAJourApplication
         }
     }
 
+    /*
+     * Normalise une chaîne de version en forme lisible homogène.
+     */
     private static string NormaliserVersionPourAffichage(string version)
     {
         return FormaterVersion(ConvertirEnVersionComparable(version));
     }
 
+    /*
+     * Convertit une chaîne de version en objet Version comparable.
+     */
     private static Version ConvertirEnVersionComparable(string? version)
     {
         if (string.IsNullOrWhiteSpace(version))
@@ -562,6 +607,9 @@ public sealed class ServiceMiseAJourApplication
         return new Version(valeurs[0], valeurs[1], valeurs[2], valeurs[3]);
     }
 
+    /*
+     * Formate une version .NET pour l'affichage utilisateur.
+     */
     private static string FormaterVersion(Version? version)
     {
         if (version is null)
@@ -572,6 +620,10 @@ public sealed class ServiceMiseAJourApplication
         return $"{version.Major}.{version.Minor}.{Math.Max(0, version.Build)}";
     }
 
+    /*
+     * Finalise un téléchargement en renommant le fichier temporaire vers sa
+     * destination définitive avec quelques tentatives de reprise.
+     */
     private static void FinaliserPackageTelecharge(string cheminTemporaire, string cheminFichier)
     {
         Exception? derniereErreur = null;
@@ -603,6 +655,9 @@ public sealed class ServiceMiseAJourApplication
         throw derniereErreur ?? new IOException("Impossible de finaliser le package téléchargé.");
     }
 
+    /*
+     * Détermine le nom du fichier zip de mise à jour à utiliser localement.
+     */
     private static string ObtenirNomFichierPackage(EtatMiseAJourApplication etat)
     {
         if (!string.IsNullOrWhiteSpace(etat.UrlTelechargement))
@@ -626,6 +681,10 @@ public sealed class ServiceMiseAJourApplication
         return $"RA.Compagnon-win-x64-{versionDistante}.zip";
     }
 
+    /*
+     * Retourne le chemin de PowerShell à utiliser pour le script
+     * d'installation.
+     */
     private static string ObtenirCheminPowerShell()
     {
         string cheminSysteme = Environment.SystemDirectory;
@@ -648,6 +707,10 @@ public sealed class ServiceMiseAJourApplication
         return "powershell.exe";
     }
 
+    /*
+     * Construit le script PowerShell chargé d'installer la mise à jour après
+     * fermeture de l'application.
+     */
     private static string ConstruireScriptInstallation()
     {
         return """
@@ -751,6 +814,9 @@ catch {
 """;
     }
 
+    /*
+     * Construit un script batch de lancement secondaire de l'installation.
+     */
     private static string ConstruireScriptLanceur(
         string cheminScript,
         string cheminPackageZip,

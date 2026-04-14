@@ -6,10 +6,21 @@ using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 
+/*
+ * Regroupe les aides liées au jeu local résolu, au dernier jeu rejouable et
+ * au préchargement local de l'affichage avant la réponse complète de l'API.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique qui relie la détection locale d'un jeu aux données
+ * affichées et aux actions de rejeu de la fenêtre principale.
+ */
 public partial class MainWindow
 {
+    /*
+     * Récupère le dernier jeu joué depuis le profil RetroAchievements.
+     */
     private async Task<RecentlyPlayedGameV2?> ObtenirDernierJeuJoueAsync()
     {
         try
@@ -28,6 +39,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Détermine un titre provisoire côté API à partir des différentes sources
+     * disponibles dans le profil utilisateur.
+     */
     private static string DeterminerTitreJeuApiProvisoire(
         string nomDernierJeuProfil,
         string? titreDernierJeuRecent
@@ -46,6 +61,10 @@ public partial class MainWindow
         return string.Empty;
     }
 
+    /*
+     * Indique si l'affichage doit rester verrouillé sur le dernier jeu actif
+     * récemment plutôt que d'être réinitialisé.
+     */
     private bool DoitVerrouillerAffichageSurDernierJeuActifRecemment()
     {
         if (EtatLocalJeuEstActif() || _configurationConnexion.DernierJeuAffiche?.Id <= 0)
@@ -69,6 +88,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Réapplique l'état du dernier jeu sauvegardé lorsqu'il doit rester
+     * visible malgré l'absence d'un jeu local actif.
+     */
     private void ReappliquerDernierJeuActifRecemment()
     {
         if (!DoitVerrouillerAffichageSurDernierJeuActifRecemment())
@@ -87,6 +110,10 @@ public partial class MainWindow
         AppliquerEtatJeuSauvegarde(jeuSauvegarde);
     }
 
+    /*
+     * Tente d'enrichir le contexte de rejeu du dernier jeu affiché à partir
+     * des sources locales actuellement détectables.
+     */
     private void HydraterActionRejouerDepuisSourcesLocalesActifRecemment(
         EtatJeuAfficheLocal jeuSauvegarde
     )
@@ -154,6 +181,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Affiche un titre provisoire issu de la sonde locale lorsqu'aucune
+     * donnée API plus fiable n'est encore disponible.
+     */
     private void AppliquerTitreJeuLocalProvisoire(EtatSondeLocaleEmulateur etat)
     {
         if (DoitVerrouillerAffichageSurDernierJeuActifRecemment())
@@ -211,6 +242,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Déclenche le chargement complet d'un jeu local résolu en tenant compte
+     * des informations déjà affichées ou encore en cours de chargement.
+     */
     private void ChargerJeuResolutLocal(int identifiantJeu, string titreJeuProvisoire)
     {
         if (identifiantJeu <= 0)
@@ -289,11 +324,18 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Démarre le préchargement local du jeu depuis les caches disponibles.
+     */
     private void DemarrerPrechargementJeuDepuisCacheLocal(int identifiantJeu, int versionChargement)
     {
         _ = PrechargerJeuDepuisCacheLocalAsync(identifiantJeu, versionChargement);
     }
 
+    /*
+     * Applique rapidement une progression de jeu construite depuis les caches
+     * locaux si le chargement demandé est toujours d'actualité.
+     */
     private async Task PrechargerJeuDepuisCacheLocalAsync(int identifiantJeu, int versionChargement)
     {
         try

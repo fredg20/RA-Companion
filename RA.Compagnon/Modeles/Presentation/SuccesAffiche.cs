@@ -1,5 +1,13 @@
+/*
+ * Décrit le modèle de présentation détaillé d'un succès affiché dans la
+ * section centrale de l'interface.
+ */
 namespace RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Regroupe les informations textuelles et visuelles déjà formatées pour un
+ * succès actuellement mis en avant.
+ */
 public sealed class SuccesAffiche
 {
     public string Titre { get; init; } = string.Empty;

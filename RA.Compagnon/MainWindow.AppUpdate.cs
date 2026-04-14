@@ -6,10 +6,22 @@ using RA.Compagnon.Modeles.Etat;
 using SystemControls = System.Windows.Controls;
 using UiControls = Wpf.Ui.Controls;
 
+/*
+ * Regroupe la vérification, le téléchargement et l'installation de mises à
+ * jour applicatives depuis la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique d'interface et d'action autour des mises à jour de
+ * l'application Compagnon.
+ */
 public partial class MainWindow
 {
+    /*
+     * Vérifie si une mise à jour doit être recherchée maintenant puis aligne
+     * l'état de l'interface avec le résultat.
+     */
     private async Task VerifierMiseAJourApplicationSiNecessaireAsync(bool forcer = false)
     {
         if (_verificationMiseAJourApplicationEnCours)
@@ -74,6 +86,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Répercute dans le ViewModel l'état courant de la mise à jour
+     * applicative et des éventuels téléchargements en cours.
+     */
     private void AppliquerEtatMiseAJourApplicationInterface()
     {
         if (_telechargementMiseAJourApplicationEnCours)
@@ -114,6 +130,10 @@ public partial class MainWindow
         _vueModele.ToolTipMiseAJourApplication = string.Empty;
     }
 
+    /*
+     * Exécute l'action principale de mise à jour, soit installation si le
+     * paquet est déjà prêt, soit téléchargement sinon.
+     */
     private async Task ExecuterActionMiseAJourApplicationAsync()
     {
         if (PaquetMiseAJourTelechargeDisponible())
@@ -125,6 +145,10 @@ public partial class MainWindow
         await TelechargerMiseAJourApplicationAsync();
     }
 
+    /*
+     * Construit le bloc d'aide dédié à la mise à jour applicative dans la
+     * fenêtre d'assistance.
+     */
     private SystemControls.Border ConstruireBlocAideMiseAJourApplication()
     {
         SystemControls.TextBlock texteVersionLocale = new()
@@ -354,6 +378,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Télécharge le paquet de mise à jour depuis la source distante puis met
+     * à jour l'interface et les messages de suivi.
+     */
     private async Task TelechargerMiseAJourApplicationAsync()
     {
         if (
@@ -412,6 +440,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Indique si un paquet de mise à jour déjà téléchargé est toujours valide
+     * pour la version distante actuellement connue.
+     */
     private bool PaquetMiseAJourTelechargeDisponible()
     {
         return !string.IsNullOrWhiteSpace(_cheminFichierMiseAJourTelechargee)
@@ -420,6 +452,10 @@ public partial class MainWindow
                 == (_etatMiseAJourApplication.VersionDistante ?? string.Empty);
     }
 
+    /*
+     * Lance l'installation d'un paquet de mise à jour déjà téléchargé après
+     * confirmation explicite de l'utilisateur.
+     */
     private void InstallerMiseAJourTelechargee()
     {
         if (!PaquetMiseAJourTelechargeDisponible())
@@ -468,6 +504,9 @@ public partial class MainWindow
         Application.Current.Shutdown();
     }
 
+    /*
+     * Ouvre l'explorateur sur le dossier contenant le paquet téléchargé.
+     */
     private static void OuvrirDossierContenant(string? cheminFichier)
     {
         if (string.IsNullOrWhiteSpace(cheminFichier))
@@ -503,6 +542,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Ouvre directement un fichier externe si possible, sinon son dossier.
+     */
     private static void OuvrirFichierExterne(string? cheminFichier)
     {
         if (string.IsNullOrWhiteSpace(cheminFichier) || !File.Exists(cheminFichier))

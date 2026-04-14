@@ -2,8 +2,16 @@ using System.IO;
 using System.Text.Json;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Gère la lecture, la normalisation et la sauvegarde atomique de la
+ * configuration locale de l'application.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Centralise les fichiers persistés du compte, du dernier jeu, du dernier
+ * succès affiché et des préférences applicatives.
+ */
 public sealed class ServiceConfigurationLocale
 {
     private static readonly JsonSerializerOptions OptionsJson = new() { WriteIndented = true };
@@ -26,6 +34,10 @@ public sealed class ServiceConfigurationLocale
     public static string CheminFichierListeSucces =>
         Path.Combine(ObtenirDossierConfiguration(), "achievements_list.json");
 
+    /*
+     * Charge l'état applicatif complet depuis les fichiers locaux puis
+     * normalise les données relues si nécessaire.
+     */
     public async Task<ConfigurationConnexion> ChargerAsync()
     {
         FinaliserFichierTemporaireSiNecessaire(CheminFichierUtilisateur);
@@ -59,12 +71,18 @@ public sealed class ServiceConfigurationLocale
         return configuration;
     }
 
+    /*
+     * Sauvegarde à la fois l'identité utilisateur et l'état applicatif.
+     */
     public async Task SauvegarderAsync(ConfigurationConnexion configuration)
     {
         await SauvegarderUtilisateurAsync(configuration);
         await SauvegarderEtatApplicationAsync(configuration);
     }
 
+    /*
+     * Sauvegarde uniquement les informations d'identification du compte.
+     */
     public async Task SauvegarderUtilisateurAsync(ConfigurationConnexion configuration)
     {
         await _verrouUtilisateur.WaitAsync();
@@ -87,6 +105,10 @@ public sealed class ServiceConfigurationLocale
         }
     }
 
+    /*
+     * Sauvegarde l'état applicatif visible, y compris les fichiers séparés
+     * du dernier jeu et de la liste des succès.
+     */
     public async Task SauvegarderEtatApplicationAsync(ConfigurationConnexion configuration)
     {
         await _verrouSauvegarde.WaitAsync();
@@ -111,6 +133,10 @@ public sealed class ServiceConfigurationLocale
         }
     }
 
+    /*
+     * Recharge l'état utilisateur local depuis son fichier dédié, avec repli
+     * vers l'ancien fichier de configuration si nécessaire.
+     */
     private static async Task<EtatUtilisateurLocal?> ChargerEtatUtilisateurAsync()
     {
         if (File.Exists(CheminFichierUtilisateur))
@@ -147,6 +173,10 @@ public sealed class ServiceConfigurationLocale
         }
     }
 
+    /*
+     * Recharge le dernier jeu affiché depuis son fichier dédié ou l'ancien
+     * fichier de configuration lorsqu'il n'a pas encore été découpé.
+     */
     private static async Task<EtatJeuAfficheLocal?> ChargerEtatJeuAsync()
     {
         if (File.Exists(CheminFichierJeu))
@@ -188,6 +218,9 @@ public sealed class ServiceConfigurationLocale
         }
     }
 
+    /*
+     * Recharge le dernier succès affiché depuis le stockage local dédié.
+     */
     private static async Task<EtatSuccesAfficheLocal?> ChargerEtatSuccesAsync()
     {
         return File.Exists(CheminFichierSucces)
@@ -195,6 +228,9 @@ public sealed class ServiceConfigurationLocale
             : null;
     }
 
+    /*
+     * Recharge la dernière liste de succès affichée depuis le stockage local.
+     */
     private static async Task<EtatListeSuccesAfficheeLocal?> ChargerEtatListeSuccesAsync()
     {
         return File.Exists(CheminFichierListeSucces)
@@ -202,6 +238,9 @@ public sealed class ServiceConfigurationLocale
             : null;
     }
 
+    /*
+     * Retourne le dossier applicatif où sont stockées les données locales.
+     */
     private static string ObtenirDossierConfiguration()
     {
         string dossierAppData = Environment.GetFolderPath(
@@ -210,6 +249,9 @@ public sealed class ServiceConfigurationLocale
         return Path.Combine(dossierAppData, "RA-Compagnon");
     }
 
+    /*
+     * Extrait proprement une valeur texte d'un objet JSON lu depuis disque.
+     */
     private static string ExtraireValeurString(JsonElement racine, string nomPropriete)
     {
         if (
@@ -223,6 +265,10 @@ public sealed class ServiceConfigurationLocale
         return element.GetString() ?? string.Empty;
     }
 
+    /*
+     * Charge un fichier JSON générique avec prise en charge du fichier
+     * temporaire de secours lorsqu'il existe seul.
+     */
     private static async Task<T?> ChargerJsonAsync<T>(string cheminFichier)
     {
         string cheminLecture = DeterminerCheminLecture(cheminFichier);
@@ -249,6 +295,10 @@ public sealed class ServiceConfigurationLocale
         }
     }
 
+    /*
+     * Sauvegarde un objet JSON via un fichier temporaire pour limiter les
+     * risques de corruption en cas d'interruption.
+     */
     private static async Task SauvegarderJsonAsync<T>(string cheminFichier, T donnees)
     {
         string cheminTemporaire = cheminFichier + ExtensionTemporaire;
@@ -266,6 +316,10 @@ public sealed class ServiceConfigurationLocale
         File.Move(cheminTemporaire, cheminFichier);
     }
 
+    /*
+     * Sauvegarde un objet optionnel ou supprime son fichier lorsqu'aucune
+     * donnée ne doit être conservée.
+     */
     private static async Task SauvegarderOuSupprimerAsync<T>(string cheminFichier, T? donnees)
         where T : class
     {
@@ -289,11 +343,19 @@ public sealed class ServiceConfigurationLocale
         await SauvegarderJsonAsync(cheminFichier, donnees);
     }
 
+    /*
+     * Détermine quel chemin lire entre le fichier final et son éventuel
+     * équivalent temporaire.
+     */
     private static string DeterminerCheminLecture(string cheminFichier)
     {
         return File.Exists(cheminFichier) ? cheminFichier : cheminFichier + ExtensionTemporaire;
     }
 
+    /*
+     * Finalise un fichier temporaire si celui-ci est resté sur disque après
+     * une écriture interrompue.
+     */
     private static void FinaliserFichierTemporaireSiNecessaire(string cheminFichier)
     {
         string cheminTemporaire = cheminFichier + ExtensionTemporaire;
@@ -312,6 +374,10 @@ public sealed class ServiceConfigurationLocale
         File.Move(cheminTemporaire, cheminFichier);
     }
 
+    /*
+     * Normalise l'état applicatif chargé en supprimant les valeurs invalides
+     * et en réalignant les dépendances entre les différents fichiers.
+     */
     private static bool NormaliserEtatApplication(ConfigurationConnexion configuration)
     {
         bool modifie = false;

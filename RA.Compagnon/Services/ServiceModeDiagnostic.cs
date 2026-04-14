@@ -1,8 +1,16 @@
 using System.Globalization;
 using System.IO;
 
+/*
+ * Gère l'activation du mode diagnostic local et les écritures de journaux
+ * associées à ce mode.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Expose les helpers de bas niveau qui permettent d'activer la journalisation
+ * détaillée via un drapeau local ou une variable d'environnement.
+ */
 public static class ServiceModeDiagnostic
 {
     private static readonly Lazy<bool> ModeDiagnosticActif = new(DeterminerSiModeDiagnosticActif);
@@ -16,6 +24,9 @@ public static class ServiceModeDiagnostic
             "diagnostic.enabled"
         );
 
+    /*
+     * Réinitialise le journal de session lorsque le mode diagnostic est actif.
+     */
     public static bool ReinitialiserJournalSession(string cheminJournal)
     {
         if (!EstActif)
@@ -44,6 +55,9 @@ public static class ServiceModeDiagnostic
         }
     }
 
+    /*
+     * Ajoute une ligne au journal de diagnostic si ce mode est activé.
+     */
     public static bool JournaliserLigne(string cheminJournal, string ligne)
     {
         if (!EstActif)
@@ -69,6 +83,10 @@ public static class ServiceModeDiagnostic
         }
     }
 
+    /*
+     * Détermine si le mode diagnostic doit être activé à partir de la variable
+     * d'environnement ou du fichier drapeau local.
+     */
     private static bool DeterminerSiModeDiagnosticActif()
     {
         string? variableEnvironnement = Environment.GetEnvironmentVariable(

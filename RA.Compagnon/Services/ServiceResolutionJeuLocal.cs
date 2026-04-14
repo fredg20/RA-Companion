@@ -7,8 +7,16 @@ using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Fournit les heuristiques de rapprochement entre un titre local détecté
+ * et les jeux RetroAchievements connus.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Résout un jeu local à partir de jeux récents, de catalogues locaux et de
+ * catalogues système distants, avec journalisation détaillée.
+ */
 public sealed partial class ServiceResolutionJeuLocal
 {
     private const double SeuilConfianceJeuxRecents = 0.84;
@@ -19,11 +27,18 @@ public sealed partial class ServiceResolutionJeuLocal
         "journal-resolution-locale.log"
     );
 
+    /*
+     * Réinitialise le journal de session dédié à la résolution locale.
+     */
     public static void ReinitialiserJournalSession()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalResolutionLocale);
     }
 
+    /*
+     * Écrit un événement de diagnostic lié à la résolution locale côté
+     * interface.
+     */
     public static void JournaliserEvenementInterface(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -35,6 +50,9 @@ public sealed partial class ServiceResolutionJeuLocal
         );
     }
 
+    /*
+     * Tente une résolution rapide à partir des jeux récemment joués.
+     */
     public static JeuLocalResolut? ResoudreDepuisJeuxRecents(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents
@@ -55,6 +73,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
+    /*
+     * Tente une résolution rapide à partir du catalogue local déjà connu.
+     */
     public static JeuLocalResolut? ResoudreDepuisCatalogueLocal(
         string titreJeuLocal,
         IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal,
@@ -80,6 +101,10 @@ public sealed partial class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
+    /*
+     * Exécute la résolution complète en combinant jeux récents, catalogue
+     * local et catalogues systèmes distants.
+     */
     public static async Task<JeuLocalResolut?> ResoudreAsync(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents,
@@ -176,6 +201,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return resolutionRetenue;
     }
 
+    /*
+     * Recherche la meilleure correspondance dans la liste des jeux récents.
+     */
     private static JeuLocalResolut? TrouverDansJeuxRecents(
         string titreJeuLocal,
         IReadOnlyList<RecentlyPlayedGameV2> jeuxRecents
@@ -214,6 +242,10 @@ public sealed partial class ServiceResolutionJeuLocal
         return meilleureResolution;
     }
 
+    /*
+     * Recherche la meilleure correspondance dans le catalogue local filtré
+     * par consoles candidates.
+     */
     private static JeuLocalResolut? TrouverDansCatalogueLocal(
         string titreJeuLocal,
         IReadOnlyList<JeuCatalogueLocal> jeuxCatalogueLocal,
@@ -264,6 +296,10 @@ public sealed partial class ServiceResolutionJeuLocal
         return meilleureResolution;
     }
 
+    /*
+     * Recherche la meilleure correspondance dans un catalogue système chargé
+     * depuis l'API.
+     */
     private static JeuLocalResolut? TrouverDansCatalogueSysteme(
         string titreJeuLocal,
         IReadOnlyList<GameListEntryV2> jeuxSysteme
@@ -302,6 +338,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return meilleureResolution;
     }
 
+    /*
+     * Calcule un score de similarité entre un titre local et un titre candidat.
+     */
     private static double CalculerScoreTitre(string titreLocal, string titreCandidat)
     {
         string local = NormaliserTitre(titreLocal);
@@ -375,6 +414,10 @@ public sealed partial class ServiceResolutionJeuLocal
         return (jaccard * 0.45) + (couverture * 0.4) + (prefixe * 0.15);
     }
 
+    /*
+     * Indique si l'heuristique rapide basée sur Contains est autorisée pour
+     * ce titre normalisé.
+     */
     private static bool PeutUtiliserRaccourciContient(string titreNormalise)
     {
         if (string.IsNullOrWhiteSpace(titreNormalise))
@@ -392,6 +435,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return titreNormalise.Length >= 4;
     }
 
+    /*
+     * Normalise un titre pour comparer des noms de jeux de manière robuste.
+     */
     private static string NormaliserTitre(string titre)
     {
         if (string.IsNullOrWhiteSpace(titre))
@@ -409,6 +455,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return resultat;
     }
 
+    /*
+     * Supprime les diacritiques d'une chaîne pour uniformiser la comparaison.
+     */
     private static string SupprimerDiacritiques(string valeur)
     {
         string valeurNormalisee = valeur.Normalize(NormalizationForm.FormD);
@@ -427,6 +476,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return resultat.ToString().Normalize(NormalizationForm.FormC);
     }
 
+    /*
+     * Retourne le ratio de longueur entre deux chaînes.
+     */
     private static double RatioLongueur(string texteCourt, string texteLong)
     {
         if (texteCourt.Length == 0 || texteLong.Length == 0)
@@ -439,6 +491,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return (double)plusCourt / plusLong;
     }
 
+    /*
+     * Mesure la longueur du préfixe commun entre deux titres normalisés.
+     */
     private static double RatioPrefixeCommun(string premier, string second)
     {
         int maximum = Math.Min(premier.Length, second.Length);
@@ -452,6 +507,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return maximum == 0 ? 0 : (double)longueurCommune / maximum;
     }
 
+    /*
+     * Journalise les meilleurs candidats trouvés et la résolution retenue.
+     */
     private static void JournaliserResolution(
         string mode,
         string titreJeuLocal,
@@ -471,6 +529,9 @@ public sealed partial class ServiceResolutionJeuLocal
         );
     }
 
+    /*
+     * Formate une résolution pour les journaux de diagnostic.
+     */
     private static string FormatterResolution(JeuLocalResolut? resolution)
     {
         if (resolution is null)
@@ -481,6 +542,9 @@ public sealed partial class ServiceResolutionJeuLocal
         return $"{resolution.IdentifiantJeu},{resolution.IdentifiantConsole},{NettoyerPourJournal(resolution.Source)},{resolution.ScoreConfiance.ToString("0.000", CultureInfo.InvariantCulture)},{NettoyerPourJournal(resolution.TitreRetroAchievements)}";
     }
 
+    /*
+     * Nettoie une valeur texte avant son écriture dans un journal de diagnostic.
+     */
     private static string NettoyerPourJournal(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)
@@ -488,15 +552,27 @@ public sealed partial class ServiceResolutionJeuLocal
             : valeur.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 
+    /*
+     * Retourne la regex supprimant les contenus entre parenthèses et crochets.
+     */
     [GeneratedRegex(@"[\(\[].*?[\)\]]", RegexOptions.CultureInvariant)]
     private static partial Regex ContenuEntreCrochetsOuParenthesesRegex();
 
+    /*
+     * Retourne la regex remplaçant les caractères non alphanumériques.
+     */
     [GeneratedRegex(@"[^a-z0-9]+", RegexOptions.CultureInvariant)]
     private static partial Regex CaracteresNonAlphaNumeriquesRegex();
 
+    /*
+     * Retourne la regex supprimant certains articles anglais peu discriminants.
+     */
     [GeneratedRegex(@"\b(the|a|an)\b", RegexOptions.CultureInvariant)]
     private static partial Regex ArticlesAnglaisRegex();
 
+    /*
+     * Retourne la regex compactant les espaces multiples.
+     */
     [GeneratedRegex(@"\s+", RegexOptions.CultureInvariant)]
     private static partial Regex EspacesMultiplesRegex();
 }

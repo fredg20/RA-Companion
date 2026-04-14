@@ -1,9 +1,20 @@
 using System.Windows;
 
+/*
+ * Regroupe la logique de réponse aux changements de taille et de géométrie
+ * de la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les ajustements réactifs déclenchés lors des redimensionnements
+ * et déplacements de la fenêtre principale.
+ */
 public partial class MainWindow
 {
+    /*
+     * Réagit à un changement de taille de la fenêtre principale.
+     */
     private void FenetrePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         TraiterChangementTaille(e.PreviousSize, e.NewSize);
@@ -11,11 +22,17 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
     }
 
+    /*
+     * Réagit à un changement de taille de la zone principale de contenu.
+     */
     private void ZonePrincipale_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         TraiterChangementTaille(e.PreviousSize, e.NewSize);
     }
 
+    /*
+     * Applique les ajustements nécessaires après un changement réel de taille.
+     */
     private void TraiterChangementTaille(Size taillePrecedente, Size nouvelleTaille)
     {
         if (
@@ -35,6 +52,9 @@ public partial class MainWindow
         PlanifierRelayoutListeSuccesApresRedimensionnement();
     }
 
+    /*
+     * Planifie la sauvegarde différée de la géométrie de la fenêtre.
+     */
     private void PlanifierSauvegardeGeometrieFenetre()
     {
         if (!_geometrieFenetrePretePourPersistance || !IsLoaded)
@@ -46,16 +66,25 @@ public partial class MainWindow
         _minuteurSauvegardeGeometrieFenetre.Start();
     }
 
+    /*
+     * Réagit à un déplacement de la fenêtre principale.
+     */
     private void FenetrePrincipale_PositionChangee(object? sender, EventArgs e)
     {
         PlanifierSauvegardeGeometrieFenetre();
     }
 
+    /*
+     * Réagit à un changement d'état de la fenêtre principale.
+     */
     private void FenetrePrincipale_EtatChange(object? sender, EventArgs e)
     {
         PlanifierSauvegardeGeometrieFenetre();
     }
 
+    /*
+     * Sauvegarde effectivement la géométrie de la fenêtre à l'expiration du timer.
+     */
     private async void MinuteurSauvegardeGeometrieFenetre_Tick(object? sender, EventArgs e)
     {
         _minuteurSauvegardeGeometrieFenetre.Stop();

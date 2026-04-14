@@ -1,5 +1,13 @@
+/*
+ * Décrit le modèle de présentation complet du compte utilisateur tel qu'il
+ * est affiché dans l'interface principale.
+ */
 namespace RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Regroupe les textes, sections et jeux récents déjà formatés pour la carte
+ * de compte utilisateur.
+ */
 public sealed class CompteAffiche
 {
     public string NomUtilisateur { get; init; } = string.Empty;

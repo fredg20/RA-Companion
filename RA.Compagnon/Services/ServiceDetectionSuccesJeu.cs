@@ -3,8 +3,16 @@ using System.IO;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Détecte les nouveaux déblocages de succès en comparant l'état courant d'un
+ * jeu avec un instantané précédent mémorisé localement.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Fournit les helpers de détection et de journalisation pour les succès
+ * nouvellement obtenus pendant une session.
+ */
 public sealed class ServiceDetectionSuccesJeu
 {
     private static readonly string CheminJournalDetectionSucces = Path.Combine(
@@ -13,11 +21,18 @@ public sealed class ServiceDetectionSuccesJeu
         "journal-detection-succes.log"
     );
 
+    /*
+     * Réinitialise le journal de session dédié à la détection des succès.
+     */
     public static void ReinitialiserJournalSession()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDetectionSucces);
     }
 
+    /*
+     * Compare un état précédent et les succès courants pour retourner les
+     * nouveaux déblocages softcore ou hardcore détectés.
+     */
     public static IReadOnlyList<SuccesDebloqueDetecte> DetecterNouveauxSucces(
         int identifiantJeu,
         string titreJeu,
@@ -73,6 +88,10 @@ public sealed class ServiceDetectionSuccesJeu
         return resultats;
     }
 
+    /*
+     * Capture un instantané simplifié de l'état des succès du jeu afin de
+     * préparer une future comparaison.
+     */
     public static Dictionary<int, EtatObservationSuccesLocal> CapturerEtat(
         IReadOnlyCollection<GameAchievementV2> succesCourants
     )
@@ -92,6 +111,9 @@ public sealed class ServiceDetectionSuccesJeu
         return resultat;
     }
 
+    /*
+     * Journalise l'initialisation du suivi de détection pour le jeu courant.
+     */
     public static void JournaliserInitialisation(
         int identifiantJeu,
         string titreJeu,
@@ -103,6 +125,9 @@ public sealed class ServiceDetectionSuccesJeu
         );
     }
 
+    /*
+     * Journalise un succès détecté comme débloqué pour faciliter le diagnostic.
+     */
     public static void JournaliserDetection(SuccesDebloqueDetecte succes, string source = "session")
     {
         JournaliserLigne(
@@ -110,6 +135,9 @@ public sealed class ServiceDetectionSuccesJeu
         );
     }
 
+    /*
+     * Écrit une ligne horodatée dans le journal de détection des succès.
+     */
     private static void JournaliserLigne(string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -118,6 +146,10 @@ public sealed class ServiceDetectionSuccesJeu
         );
     }
 
+    /*
+     * Nettoie une valeur textuelle avant de l'injecter dans une ligne
+     * de diagnostic.
+     */
     private static string Nettoyer(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)

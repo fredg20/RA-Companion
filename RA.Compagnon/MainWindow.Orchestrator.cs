@@ -1,9 +1,21 @@
 using RA.Compagnon.Modeles.Etat;
 
+/*
+ * Regroupe les interactions entre la fenêtre principale et l'orchestrateur
+ * d'état de jeu affiché.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique d'enregistrement des phases transitoires du jeu courant
+ * dans l'orchestrateur local.
+ */
 public partial class MainWindow
 {
+    /*
+     * Affiche dans l'interface l'état transitoire actuellement porté par
+     * l'orchestrateur de jeu.
+     */
     private void AfficherEtatTransitoireOrchestrateur()
     {
         if (!_serviceOrchestrateurEtatJeu.EtatTransitoireEstAffichable())
@@ -17,6 +29,10 @@ public partial class MainWindow
         _vueModele.JeuCourant.ProgressionValeur = 0;
     }
 
+    /*
+     * Enregistre une phase de détection locale dans l'orchestrateur puis
+     * applique éventuellement son état transitoire.
+     */
     private bool EnregistrerPhaseDetectionLocaleOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -38,6 +54,10 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
+    /*
+     * Enregistre une phase de chargement API dans l'orchestrateur puis
+     * applique éventuellement son état transitoire.
+     */
     private bool EnregistrerPhaseChargementApiOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -59,6 +79,9 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
+    /*
+     * Enregistre la phase où un jeu est pleinement affiché à l'écran.
+     */
     private bool EnregistrerPhaseJeuAfficheOrchestrateur(
         int identifiantJeu,
         string titreJeu,
@@ -68,6 +91,9 @@ public partial class MainWindow
         return _serviceOrchestrateurEtatJeu.EnregistrerJeuAffiche(identifiantJeu, titreJeu, source);
     }
 
+    /*
+     * Enregistre la phase où aucun jeu n'est actuellement détecté.
+     */
     private bool EnregistrerPhaseAucunJeuOrchestrateur(string source)
     {
         bool transitionAppliquee = _serviceOrchestrateurEtatJeu.EnregistrerAucunJeu(source);
@@ -80,6 +106,9 @@ public partial class MainWindow
         return transitionAppliquee;
     }
 
+    /*
+     * Enregistre une phase d'erreur de chargement pour le jeu courant.
+     */
     private bool EnregistrerPhaseErreurChargementOrchestrateur(
         int identifiantJeu,
         string titreJeu,

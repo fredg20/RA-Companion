@@ -4,10 +4,21 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 
+/*
+ * Regroupe la logique de typographie responsive appliquée à la fenêtre
+ * principale et à ses éléments visuels.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte les calculs de facteur d'échelle et l'application récursive
+ * des tailles de police responsives.
+ */
 public partial class MainWindow
 {
+    /*
+     * Calcule le facteur de typographie responsive à partir de la largeur courante.
+     */
     private double CalculerFacteurTypographieResponsive(double largeurFenetre)
     {
         double largeurNormalisee = Math.Clamp(
@@ -33,6 +44,9 @@ public partial class MainWindow
         return 1 + ((FacteurTypographieResponsiveMaximal - 1) * progressionAgrandissement);
     }
 
+    /*
+     * Calcule une taille de police responsive à partir d'une taille de base.
+     */
     private double CalculerTaillePoliceResponsive(double tailleBase)
     {
         return Math.Round(
@@ -42,11 +56,17 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Retourne la taille responsive normale du titre de jeu.
+     */
     private double ObtenirTaillePoliceTitreJeuNormaleResponsive()
     {
         return CalculerTaillePoliceResponsive(TaillePoliceTitreJeuNormale);
     }
 
+    /*
+     * Ajuste la typographie globale de la fenêtre lorsque le facteur change.
+     */
     private void AjusterTypographieResponsive(bool forcer = false)
     {
         double nouveauFacteur = CalculerFacteurTypographieResponsive(ActualWidth);
@@ -62,6 +82,9 @@ public partial class MainWindow
         AppliquerTypographieResponsiveSurObjet(this);
     }
 
+    /*
+     * Ajuste spécifiquement le titre de la fenêtre selon la largeur disponible.
+     */
     private void AjusterTitreFenetreResponsive()
     {
         if (TexteTitreFenetre is null || ConteneurTitreFenetre is null)
@@ -85,6 +108,9 @@ public partial class MainWindow
         TexteTitreFenetre.TextAlignment = TextAlignment.Left;
     }
 
+    /*
+     * Applique la typographie responsive à la racine visuelle donnée.
+     */
     private void AppliquerTypographieResponsiveSurObjet(DependencyObject? racine)
     {
         if (racine is null)
@@ -109,6 +135,10 @@ public partial class MainWindow
         AppliquerTypographieResponsiveSurObjetRecursif(racine, elementsVisites);
     }
 
+    /*
+     * Parcourt récursivement l'arbre visuel et logique pour appliquer
+     * la typographie responsive.
+     */
     private void AppliquerTypographieResponsiveSurObjetRecursif(
         DependencyObject element,
         HashSet<DependencyObject> elementsVisites
@@ -150,6 +180,9 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Applique une taille de police responsive à partir de la valeur locale de base.
+     */
     private void AppliquerTaillePoliceLocaleResponsive(
         DependencyObject element,
         DependencyProperty proprieteTaillePolice

@@ -2,10 +2,22 @@ using System.Globalization;
 using RA.Compagnon.Modeles.Api.V2.Achievement;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transforme les données d'activité récente issues de RetroAchievements en un
+ * modèle d'affichage simple pour la zone des succès récents.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Prépare les libellés, états et lignes visibles de la section d'activité
+ * récente dans l'interface principale.
+ */
 public sealed class ServicePresentationActivite
 {
+    /*
+     * Retourne un état neutre lorsque aucune activité récente n'est encore
+     * disponible pour le compte courant.
+     */
     public static ActiviteRecenteAffichee ConstruireEtatNeutre()
     {
         return new ActiviteRecenteAffichee
@@ -20,6 +32,10 @@ public sealed class ServicePresentationActivite
         };
     }
 
+    /*
+     * Retourne un état d'erreur prêt à être affiché lorsque le chargement de
+     * l'activité récente a échoué.
+     */
     public static ActiviteRecenteAffichee ConstruireErreur()
     {
         return new ActiviteRecenteAffichee
@@ -34,6 +50,10 @@ public sealed class ServicePresentationActivite
         };
     }
 
+    /*
+     * Construit la présentation de l'activité récente en priorisant les succès
+     * du jeu courant lorsqu'ils sont disponibles.
+     */
     public static ActiviteRecenteAffichee Construire(
         DonneesActiviteRecente activiteRecente,
         int identifiantJeuCourant
@@ -85,6 +105,9 @@ public sealed class ServicePresentationActivite
         );
     }
 
+    /*
+     * Assemble les lignes visibles à partir d'une liste de succès déjà triés.
+     */
     private static ActiviteRecenteAffichee ConstruireDepuisSucces(
         List<AchievementUnlockV2> succesRecents,
         string texteEtat
@@ -105,6 +128,10 @@ public sealed class ServicePresentationActivite
         return new ActiviteRecenteAffichee { TexteEtat = texteEtat, Lignes = lignes };
     }
 
+    /*
+     * Met en forme une ligne de succès récente avec son mode, son jeu et sa
+     * date de déblocage lisible.
+     */
     private static string ConstruireLigneSucces(AchievementUnlockV2 succes)
     {
         string mode = succes.HardcoreMode ? "Hardcore" : "Standard";
@@ -123,6 +150,10 @@ public sealed class ServicePresentationActivite
         return $"{succes.Title} - {succes.Points} pts - {mode}\n{titreJeu} - {dateFormatee}{description}";
     }
 
+    /*
+     * Convertit une date d'API en horodatage exploitable, avec plusieurs
+     * formats de repli pour rester tolérant aux variations reçues.
+     */
     private static DateTimeOffset ConvertirDateSucces(string dateApi)
     {
         if (string.IsNullOrWhiteSpace(dateApi))

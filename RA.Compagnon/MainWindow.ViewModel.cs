@@ -2,12 +2,23 @@ using System.Windows;
 using System.Windows.Media;
 using RA.Compagnon.ViewModels;
 
+/*
+ * Regroupe l'initialisation du ViewModel principal et le branchement des
+ * actions UI sur la fenêtre principale.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique de liaison entre la fenêtre principale et son ViewModel.
+ */
 public partial class MainWindow
 {
     private readonly MainWindowViewModel _vueModele = new();
 
+    /*
+     * Initialise le ViewModel principal avec ses valeurs par défaut et
+     * branche toutes les actions exposées à l'interface.
+     */
     private void InitialiserVueModele()
     {
         DataContext = _vueModele;

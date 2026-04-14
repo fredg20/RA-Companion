@@ -1,7 +1,15 @@
 using RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Regroupe les différentes réponses API liées au compte utilisateur avant
+ * leur transformation en modèles de présentation.
+ */
 namespace RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Transporte les données brutes de profil, de résumé, de points, de
+ * récompenses et de progression utilisateur.
+ */
 public sealed class DonneesCompteUtilisateur
 {
     public UserProfileV2? Profil { get; init; }

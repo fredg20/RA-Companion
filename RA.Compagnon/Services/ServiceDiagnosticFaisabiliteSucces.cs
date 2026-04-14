@@ -4,8 +4,16 @@ using System.Text;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Journalise le détail des évaluations de faisabilité calculées pour un jeu
+ * lorsque le mode diagnostic est activé.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Produit un journal lisible des scores de faisabilité afin de faciliter
+ * l'analyse et l'ajustement de l'algorithme.
+ */
 public sealed class ServiceDiagnosticFaisabiliteSucces
 {
     private static readonly string CheminJournalFaisabilite = Path.Combine(
@@ -19,6 +27,10 @@ public sealed class ServiceDiagnosticFaisabiliteSucces
     private static readonly bool SessionInitialisee =
         ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalFaisabilite);
 
+    /*
+     * Journalise l'ensemble des succès d'un jeu avec leur évaluation calculée,
+     * en évitant les doublons strictement identiques.
+     */
     public static void JournaliserJeu(
         int identifiantJeu,
         string titreJeu,
@@ -127,6 +139,10 @@ public sealed class ServiceDiagnosticFaisabiliteSucces
         _ = ServiceModeDiagnostic.JournaliserLigne(CheminJournalFaisabilite, contenu.ToString());
     }
 
+    /*
+     * Construit une signature stable du jeu et de ses succès pour éviter
+     * d'écrire plusieurs fois la même photographie.
+     */
     private static string ConstruireSignature(
         int identifiantJeu,
         IReadOnlyCollection<GameAchievementV2> succesJeu,
@@ -160,6 +176,10 @@ public sealed class ServiceDiagnosticFaisabiliteSucces
         return signature.ToString();
     }
 
+    /*
+     * Nettoie une valeur textuelle avant de l'inscrire dans le journal
+     * de diagnostic.
+     */
     private static string Nettoyer(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)

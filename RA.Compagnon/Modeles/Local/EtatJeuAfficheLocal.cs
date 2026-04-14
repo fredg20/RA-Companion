@@ -1,5 +1,13 @@
+/*
+ * Représente l'état persistant d'un jeu déjà affiché afin de pouvoir
+ * restaurer rapidement l'interface au démarrage.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Stocke la version locale sérialisable du jeu affiché avec ses métadonnées
+ * utiles à la restauration et au rejeu.
+ */
 public sealed class EtatJeuAfficheLocal
 {
     public string SignatureLocale { get; set; } = string.Empty;

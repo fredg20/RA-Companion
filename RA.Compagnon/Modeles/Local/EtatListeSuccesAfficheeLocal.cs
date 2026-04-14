@@ -1,5 +1,12 @@
+/*
+ * Représente la version persistée de la liste de succès affichée pour un jeu,
+ * afin de pouvoir la restaurer rapidement.
+ */
 namespace RA.Compagnon.Modeles.Local;
 
+/*
+ * Stocke les succès visibles d'un jeu ainsi que l'ordre des succès passés.
+ */
 public sealed class EtatListeSuccesAfficheeLocal
 {
     public int IdentifiantJeu { get; set; }

@@ -1,7 +1,15 @@
 using System.Windows.Media;
 
+/*
+ * Porte l'état synthétique du compte visible dans l'entête de la fenêtre
+ * principale.
+ */
 namespace RA.Compagnon.ViewModels;
 
+/*
+ * Expose le libellé du bouton compte ainsi que la notice de statut
+ * affichée à côté de celui-ci.
+ */
 public sealed class AccountSummaryViewModel : ViewModelBase
 {
     private string _libelleBouton = "Connexion";

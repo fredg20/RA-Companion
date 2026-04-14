@@ -1,3 +1,8 @@
+/*
+ * Regroupe le chargement du jeu courant depuis l'API, les enrichissements
+ * différés qui suivent et les gardes nécessaires pour éviter que des retours
+ * asynchrones tardifs ne dégradent l'état visible de la fenêtre.
+ */
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -12,8 +17,15 @@ using RA.Compagnon.Services;
 
 namespace RA.Compagnon;
 
+/*
+ * Porte la partie de la fenêtre principale qui orchestre le chargement du jeu
+ * courant, de sa progression et des données enrichies associées.
+ */
 public partial class MainWindow
 {
+    /*
+     * Met à jour l'indicateur discret de synchronisation du jeu courant.
+     */
     private void DefinirEtatSynchronisationJeu(string texte)
     {
         _vueModele.EtatSynchronisationJeu = texte;
@@ -22,11 +34,18 @@ public partial class MainWindow
             : Visibility.Visible;
     }
 
+    /*
+     * Réinitialise l'indicateur visuel de synchronisation du jeu.
+     */
     private void ReinitialiserEtatSynchronisationJeu()
     {
         DefinirEtatSynchronisationJeu(string.Empty);
     }
 
+    /*
+     * Lance le chargement du jeu courant depuis le profil utilisateur et
+     * recompose l'interface principale à partir du résultat obtenu.
+     */
     private async Task ChargerJeuEnCoursAsync(
         bool afficherEtatChargement = true,
         bool forcerChargementJeu = true,
@@ -196,6 +215,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Applique un profil utilisateur chargé en décidant s'il faut recharger
+     * le jeu courant, réutiliser un état existant ou afficher un état vide.
+     */
     private async Task AppliquerProfilUtilisateurAsync(
         UserProfileV2 profil,
         bool forcerChargementJeu,
@@ -368,6 +391,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Synchronise le pseudo local avec le profil reçu afin de garder une
+     * configuration persistante cohérente.
+     */
     private async Task SynchroniserPseudoUtilisateurDepuisProfilAsync(UserProfileV2 profil)
     {
         string pseudoApi = profil.User?.Trim() ?? string.Empty;
@@ -386,6 +413,10 @@ public partial class MainWindow
         await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(_configurationConnexion);
     }
 
+    /*
+     * Lance en arrière-plan le chargement détaillé du jeu utilisateur sans
+     * bloquer l'affichage initial déjà disponible.
+     */
     private void DemarrerChargementJeuUtilisateurEnArrierePlan(
         int identifiantJeuEffectif,
         string titreJeuProvisoire,
@@ -405,6 +436,10 @@ public partial class MainWindow
         );
     }
 
+    /*
+     * Charge le jeu utilisateur en arrière-plan et ignore les erreurs qui
+     * ne doivent pas casser le rendu principal déjà affiché.
+     */
     private async Task ChargerJeuUtilisateurEnArrierePlanAsync(
         int identifiantJeuEffectif,
         string titreJeuProvisoire,
@@ -473,6 +508,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Enrichit le jeu courant avec des informations complémentaires une fois
+     * le chargement principal terminé.
+     */
     private async Task EnrichirJeuEnArrierePlanAsync(
         int identifiantJeuEffectif,
         int versionChargement,
@@ -558,6 +597,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Enrichit la zone communauté du jeu courant sans bloquer le reste de
+     * l'interface si cette étape échoue.
+     */
     private async Task EnrichirCommunauteJeuEnArrierePlanAsync(
         int identifiantJeuEffectif,
         int versionChargement
@@ -594,6 +637,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Vérifie qu'un retour asynchrone concerne encore le jeu et la version
+     * de chargement actuellement visibles.
+     */
     private bool ChargementContenuJeuEstToujoursActuel(
         int versionChargement,
         int identifiantJeuEffectif
@@ -605,6 +652,9 @@ public partial class MainWindow
             && PipelineChargementJeuEstActuel(identifiantJeuEffectif, versionChargement);
     }
 
+    /*
+     * Charge les succès récents de l'utilisateur pour le jeu courant.
+     */
     private async Task ChargerSuccesRecentsAsync(
         UserProfileV2 profil,
         int versionChargement,
@@ -642,6 +692,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Lance en arrière-plan le chargement des succès récents affichés dans
+     * la zone dédiée de l'interface.
+     */
     private void DemarrerChargementSuccesRecentsEnArrierePlan(
         UserProfileV2 profil,
         int versionChargement,
@@ -651,6 +705,10 @@ public partial class MainWindow
         _ = ChargerSuccesRecentsEnArrierePlanAsync(profil, versionChargement, identifiantJeuProfil);
     }
 
+    /*
+     * Exécute le chargement des succès récents en arrière-plan en tolérant
+     * les échecs non critiques.
+     */
     private async Task ChargerSuccesRecentsEnArrierePlanAsync(
         UserProfileV2 profil,
         int versionChargement,
@@ -664,6 +722,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Vérifie qu'un retour de succès récents correspond encore au contexte
+     * de jeu actuellement affiché.
+     */
     private bool ChargementSuccesRecentsEstToujoursActuel(
         int versionChargement,
         int identifiantJeuProfil
@@ -681,6 +743,10 @@ public partial class MainWindow
             );
     }
 
+    /*
+     * Applique à l'interface la progression et les données principales
+     * du jeu courant.
+     */
     private async Task AppliquerProgressionJeuAsync(DonneesJeuAffiche donneesJeu)
     {
         donneesJeu = FusionnerDonneesJeuSansRegression(donneesJeu, _dernieresDonneesJeuAffichees);
@@ -739,6 +805,10 @@ public partial class MainWindow
         JournaliserDiagnosticChangementJeu("progression_fin");
     }
 
+    /*
+     * Fusionne un nouvel état de jeu avec l'état déjà affiché pour éviter
+     * les régressions visuelles lors des enrichissements successifs.
+     */
     private DonneesJeuAffiche FusionnerDonneesJeuSansRegression(
         DonneesJeuAffiche donneesNouvelles,
         DonneesJeuAffiche? donneesExistantes
@@ -789,6 +859,10 @@ public partial class MainWindow
         };
     }
 
+    /*
+     * Indique si deux états de jeu peuvent être considérés équivalents
+     * pour les besoins d'un rechargement idempotent.
+     */
     private static bool DonneesJeuSontIdempotentes(
         DonneesJeuAffiche donneesNouvelles,
         DonneesJeuAffiche? donneesExistantes
@@ -859,11 +933,17 @@ public partial class MainWindow
         return true;
     }
 
+    /*
+     * Lance la mise à jour des caches locaux dérivés du jeu courant.
+     */
     private void DemarrerMiseAJourCachesJeuLocaux(GameInfoAndUserProgressV2 jeu)
     {
         _ = MettreAJourCachesJeuLocauxAsync(jeu);
     }
 
+    /*
+     * Met à jour les caches locaux associés au jeu courant.
+     */
     private async Task MettreAJourCachesJeuLocauxAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
@@ -877,6 +957,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Détecte les nouveaux succès du jeu courant à partir des données API
+     * les plus récentes.
+     */
     private async Task DetecterNouveauxSuccesJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
         List<GameAchievementV2> succesCourants = [.. jeu.Succes.Values];
@@ -926,6 +1010,10 @@ public partial class MainWindow
         _etatSuccesObserves = ServiceDetectionSuccesJeu.CapturerEtat(succesCourants);
     }
 
+    /*
+     * Complète la détection des nouveaux succès en la confrontant au cache
+     * local persisté de l'utilisateur.
+     */
     private async Task DetecterNouveauxSuccesJeuDepuisCacheLocalAsync(GameInfoAndUserProgressV2 jeu)
     {
         EtatJeuUtilisateurLocal? precedent = await _serviceEtatUtilisateurJeuxLocal.ObtenirJeuAsync(
@@ -988,6 +1076,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Sélectionne le succès débloqué le plus récent parmi les candidats
+     * détectés pendant le chargement.
+     */
     private static SuccesDebloqueDetecte? SelectionnerSuccesDebloqueLePlusRecent(
         IReadOnlyList<SuccesDebloqueDetecte> succesDetectes
     )
@@ -1004,6 +1096,9 @@ public partial class MainWindow
             .FirstOrDefault();
     }
 
+    /*
+     * Convertit un texte de date de déblocage en horodatage comparable.
+     */
     private static DateTimeOffset ConvertirDateDeblocageSucces(string? valeur)
     {
         if (

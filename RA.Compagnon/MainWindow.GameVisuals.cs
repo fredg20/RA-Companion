@@ -9,8 +9,16 @@ using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Services;
 using SystemControls = System.Windows.Controls;
 
+/*
+ * Regroupe la gestion des visuels du jeu courant, de leur carrousel et des
+ * journaux de diagnostic associés aux changements d'image.
+ */
 namespace RA.Compagnon;
 
+/*
+ * Porte la logique de chargement, d'animation et d'enrichissement des
+ * visuels affichés pour le jeu courant.
+ */
 public partial class MainWindow
 {
     private static readonly string CheminJournalVisuelsJeu = Path.Combine(
@@ -19,6 +27,10 @@ public partial class MainWindow
         "journal-visuels-jeu.log"
     );
 
+    /*
+     * Télécharge puis applique l'image principale du jeu courant à partir
+     * d'un chemin relatif fourni par l'API.
+     */
     private async Task MettreAJourImageJeuEnCoursAsync(string? cheminImage)
     {
         JournaliserDiagnosticChangementJeu("image_debut", cheminImage ?? string.Empty);
@@ -56,6 +68,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Réinitialise complètement l'image principale, l'image de transition
+     * et les contraintes de taille du conteneur visuel.
+     */
     private void ReinitialiserImageJeuEnCours()
     {
         _largeurMaxVisuelJeuEnCours = 0;
@@ -88,6 +104,10 @@ public partial class MainWindow
         _vueModele.JeuCourant.TexteVisuelPrincipalVisible = false;
     }
 
+    /*
+     * Applique un nouveau visuel du jeu en utilisant un fondu pour éviter
+     * un changement abrupt entre deux images.
+     */
     private void AppliquerImageJeuEnCoursAvecFondu(ImageSource imageJeu, string urlImage)
     {
         if (ImageJeuEnCours.Source is null || ImageJeuEnCours.Visibility != Visibility.Visible)
@@ -195,6 +215,10 @@ public partial class MainWindow
         ImageJeuEnCoursTransition.BeginAnimation(UIElement.OpacityProperty, animationFonduEntree);
     }
 
+    /*
+     * Réinitialise le carrousel des visuels secondaires et l'état de
+     * navigation associé dans le ViewModel.
+     */
     private void ReinitialiserCarrouselVisuelsJeuEnCours()
     {
         _minuteurRotationVisuelsJeuEnCours.Stop();
@@ -206,6 +230,10 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionVisuelSuivantActivee = false;
     }
 
+    /*
+     * Remplace la liste des visuels disponibles en conservant si possible
+     * le visuel actuellement affiché.
+     */
     private void DefinirVisuelsJeuEnCours(IReadOnlyList<VisuelJeuEnCours> visuels)
     {
         string? cheminActuel =
@@ -234,6 +262,10 @@ public partial class MainWindow
         _ = MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
+    /*
+     * Synchronise l'image affichée, l'étape du pipeline et les commandes
+     * de navigation avec le visuel courant du carrousel.
+     */
     private async Task MettreAJourAffichageVisuelJeuEnCoursAsync()
     {
         if (_visuelsJeuEnCours.Count == 0)
@@ -261,6 +293,10 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionVisuelSuivantActivee = navigationDisponible;
     }
 
+    /*
+     * Active ou coupe la rotation automatique selon le nombre de visuels
+     * disponibles pour le jeu courant.
+     */
     private void MettreAJourRotationVisuelsJeuEnCours()
     {
         if (_visuelsJeuEnCours.Count > 1)
@@ -273,6 +309,10 @@ public partial class MainWindow
         _minuteurRotationVisuelsJeuEnCours.Stop();
     }
 
+    /*
+     * Fait avancer automatiquement le carrousel à chaque impulsion du
+     * minuteur de rotation.
+     */
     private async void MinuteurRotationVisuelsJeuEnCours_Tick(object? sender, EventArgs e)
     {
         if (_visuelsJeuEnCours.Count <= 1)
@@ -285,6 +325,10 @@ public partial class MainWindow
         await MettreAJourAffichageVisuelJeuEnCoursAsync();
     }
 
+    /*
+     * Applique la première version minimale des visuels dès que le jeu est
+     * connu, avant l'enrichissement complet.
+     */
     private void AppliquerVisuelsJeuEnCoursInitiaux(GameInfoAndUserProgressV2 jeu)
     {
         List<VisuelJeuEnCours> visuels = [];
@@ -292,11 +336,18 @@ public partial class MainWindow
         DefinirVisuelsJeuEnCours(visuels);
     }
 
+    /*
+     * Lance en arrière-plan l'enrichissement complet du carrousel de visuels.
+     */
     private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
         _ = EnrichirVisuelsJeuEnCoursAsync(jeu);
     }
 
+    /*
+     * Complète la liste des visuels avec les variantes disponibles dans le
+     * résumé utilisateur et le badge du jeu.
+     */
     private async Task EnrichirVisuelsJeuEnCoursAsync(GameInfoAndUserProgressV2 jeu)
     {
         try
@@ -319,6 +370,10 @@ public partial class MainWindow
         catch { }
     }
 
+    /*
+     * Ajoute un visuel à la collection cible lorsqu'il possède un chemin
+     * valide et qu'il n'est pas déjà présent.
+     */
     private static void AjouterVisuelJeu(
         List<VisuelJeuEnCours> visuels,
         string libelle,
@@ -342,6 +397,10 @@ public partial class MainWindow
         visuels.Add(new VisuelJeuEnCours(libelle, cheminImage.Trim()));
     }
 
+    /*
+     * Ajoute les visuels secondaires connus pour le jeu à partir des données
+     * détaillées et du résumé utilisateur.
+     */
     private static void AjouterVisuelsSecondairesJeu(
         List<VisuelJeuEnCours> visuels,
         GameInfoAndUserProgressV2 jeu,
@@ -370,6 +429,9 @@ public partial class MainWindow
         AjouterVisuelJeu(visuels, "En jeu", jeuRecent.CheminImageEnJeu);
     }
 
+    /*
+     * Ajoute un visuel déjà construit lorsqu'il est effectivement présent.
+     */
     private static void AjouterVisuelJeu(List<VisuelJeuEnCours> visuels, VisuelJeuEnCours? visuel)
     {
         if (visuel is null)
@@ -380,6 +442,10 @@ public partial class MainWindow
         AjouterVisuelJeu(visuels, visuel.Libelle, visuel.CheminImage);
     }
 
+    /*
+     * Retourne le résumé utilisateur nécessaire à l'enrichissement des
+     * visuels, en profitant du cache local si possible.
+     */
     private async Task<UserSummaryV2?> ObtenirResumeUtilisateurPourVisuelsAsync()
     {
         if (_dernierResumeUtilisateurCharge is not null)
@@ -407,6 +473,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Construit un visuel secondaire à partir d'une image de titre ou d'une
+     * image en jeu quand l'une des deux existe.
+     */
     private static VisuelJeuEnCours? ConstruireVisuelSecondaire(
         string? cheminImageTitre,
         string? cheminImageEnJeu
@@ -425,6 +495,9 @@ public partial class MainWindow
         return null;
     }
 
+    /*
+     * Recherche le chemin du badge du jeu dans le catalogue de son système.
+     */
     private async Task<string> ObtenirCheminBadgeJeuAsync(GameInfoAndUserProgressV2 jeu)
     {
         if (!ConfigurationConnexionEstComplete() || jeu.Id <= 0 || jeu.ConsoleId <= 0)
@@ -448,6 +521,10 @@ public partial class MainWindow
         }
     }
 
+    /*
+     * Journalise le détail des visuels retenus pour faciliter les diagnostics
+     * lors des changements de jeu.
+     */
     private static void JournaliserVisuelsJeu(
         GameInfoAndUserProgressV2 jeu,
         UserSummaryV2? resume,

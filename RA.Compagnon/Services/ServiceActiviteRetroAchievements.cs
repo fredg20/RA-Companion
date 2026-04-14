@@ -2,10 +2,22 @@ using RA.Compagnon.Modeles.Api.V2.Achievement;
 using RA.Compagnon.Modeles.Api.V2.Feed;
 using RA.Compagnon.Modeles.Presentation;
 
+/*
+ * Récupère les éléments d'activité récente utiles à l'application à partir
+ * des points d'entrée RetroAchievements concernés.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Agrège les succès récents et les récompenses de jeux récentes pour alimenter
+ * l'affichage de l'activité utilisateur.
+ */
 public sealed class ServiceActiviteRetroAchievements
 {
+    /*
+     * Charge l'activité récente du compte sur une fenêtre temporelle donnée
+     * en combinant plusieurs appels de l'API.
+     */
     public static async Task<DonneesActiviteRecente> ObtenirActiviteRecenteAsync(
         string pseudo,
         string cleApiWeb,
@@ -47,6 +59,10 @@ public sealed class ServiceActiviteRetroAchievements
         };
     }
 
+    /*
+     * Exécute une action asynchrone optionnelle en convertissant ses erreurs
+     * en valeur par défaut pour ne pas bloquer l'agrégation globale.
+     */
     private static async Task<T?> TenterAsync<T>(Func<Task<T>> action)
     {
         try

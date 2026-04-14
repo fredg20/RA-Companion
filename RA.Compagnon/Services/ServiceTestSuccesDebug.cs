@@ -4,8 +4,15 @@ using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Debug;
 using RA.Compagnon.Modeles.Local;
 
+/*
+ * Fournit les outils de simulation de déblocage de succès utilisés pour les
+ * tests de diagnostic et de validation de l'interface.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Construit et injecte des scénarios de test autour des succès débloqués.
+ */
 public sealed class ServiceTestSuccesDebug
 {
     private static readonly string CheminJournalTestSucces = Path.Combine(
@@ -14,6 +21,9 @@ public sealed class ServiceTestSuccesDebug
         "journal-test-succes-debug.log"
     );
 
+    /*
+     * Journalise un événement lié aux scénarios de test de succès.
+     */
     public static void JournaliserEvenement(string evenement, string details)
     {
         _ = ServiceModeDiagnostic.JournaliserLigne(
@@ -25,7 +35,11 @@ public sealed class ServiceTestSuccesDebug
         );
     }
 
-    public ResultatScenarioTestSuccesDebug ConstruireScenarioDepuisContexte(
+    /*
+     * Construit un scénario de test cohérent à partir du contexte courant du
+     * jeu et du mode de déclenchement demandé.
+     */
+    public static ResultatScenarioTestSuccesDebug ConstruireScenarioDepuisContexte(
         string nomEmulateur,
         int identifiantJeu,
         string titreJeu,
@@ -93,6 +107,9 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Construit l'objet de succès débloqué correspondant à un scénario de test.
+     */
     public static SuccesDebloqueDetecte ConstruireSuccesDebloque(ScenarioTestSuccesDebug scenario)
     {
         return new SuccesDebloqueDetecte
@@ -107,6 +124,10 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Construit une collection de succès virtuelle reflétant le scénario de
+     * test comme s'il venait d'être obtenu pendant la session.
+     */
     public static List<GameAchievementV2> ConstruireSuccesVirtuelsSession(
         IReadOnlyList<GameAchievementV2> succesJeuCourant,
         ScenarioTestSuccesDebug scenario
@@ -149,7 +170,10 @@ public sealed class ServiceTestSuccesDebug
         return succesClones;
     }
 
-    public ResultatExecutionTestSuccesDebug InjecterScenarioSourceLocale(
+    /*
+     * Injecte un scénario dans la source locale attendue par l'émulateur ciblé.
+     */
+    public static ResultatExecutionTestSuccesDebug InjecterScenarioSourceLocale(
         ScenarioTestSuccesDebug scenario
     )
     {
@@ -206,6 +230,9 @@ public sealed class ServiceTestSuccesDebug
         }
     }
 
+    /*
+     * Construit le signal local correspondant à un scénario injectable.
+     */
     public static SignalSuccesLocal? ConstruireSignalSourceLocale(ScenarioTestSuccesDebug scenario)
     {
         if (
@@ -227,11 +254,17 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Retourne un résultat de scénario invalide avec son motif.
+     */
     private static ResultatScenarioTestSuccesDebug Invalide(string motif)
     {
         return new ResultatScenarioTestSuccesDebug { EstValide = false, Motif = motif };
     }
 
+    /*
+     * Retourne un résultat d'exécution invalide pour une injection de test.
+     */
     private static ResultatExecutionTestSuccesDebug InvalideExecution(string motif, string chemin)
     {
         return new ResultatExecutionTestSuccesDebug
@@ -242,6 +275,10 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Détermine la configuration de source locale à utiliser pour le scénario
+     * de test demandé.
+     */
     private static (
         string SourceSimulee,
         string TypeSourceLocale,
@@ -281,6 +318,9 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Construit un identifiant de source simulée lisible pour le scénario.
+     */
     private static string ConstruireSourceSimulee(
         string nomEmulateur,
         ModeDeclenchementTestSuccesDebug modeDeclenchement
@@ -315,6 +355,9 @@ public sealed class ServiceTestSuccesDebug
         };
     }
 
+    /*
+     * Construit les lignes à écrire dans une source locale de test.
+     */
     private static List<string> ConstruireLignesInjection(ScenarioTestSuccesDebug scenario)
     {
         return string.Equals(
@@ -348,6 +391,10 @@ public sealed class ServiceTestSuccesDebug
             ];
     }
 
+    /*
+     * Détermine le chemin du journal RetroArch à utiliser pour une injection
+     * de test locale.
+     */
     private static string TrouverCheminJournalRetroArchPourInjection()
     {
         string repertoireLogs = ServiceSourcesLocalesEmulateurs.TrouverRepertoireLogsRetroArch();
@@ -368,6 +415,9 @@ public sealed class ServiceTestSuccesDebug
         return Path.Combine(repertoireLogs, $"retroarch__{DateTime.Now:yyyy_MM_dd__HH_mm_ss}.log");
     }
 
+    /*
+     * Nettoie une valeur texte avant journalisation.
+     */
     private static string Nettoyer(string? valeur)
     {
         return string.IsNullOrWhiteSpace(valeur)
