@@ -104,7 +104,12 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type TextBox}">
-              <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" />
+              <ScrollViewer
+                x:Name="PART_ContentHost"
+                Background="Transparent"
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Disabled"
+              />
             </ControlTemplate>
           </Setter.Value>
         </Setter>

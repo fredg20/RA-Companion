@@ -149,7 +149,9 @@ public partial class MainWindow
      * Construit le bloc d'aide dédié à la mise à jour applicative dans la
      * fenêtre d'assistance.
      */
-    private SystemControls.Border ConstruireBlocAideMiseAJourApplication()
+    private SystemControls.Border ConstruireBlocAideMiseAJourApplication(
+        IList<SystemControls.Expander>? sectionsAide = null
+    )
     {
         SystemControls.TextBlock texteVersionLocale = new()
         {
@@ -192,30 +194,39 @@ public partial class MainWindow
         UiControls.Button boutonVerification = new()
         {
             Content = "V\u00E9rifier maintenant",
-            Padding = new Thickness(12, 4, 12, 4),
+            Padding = _modaleAideCompacteCourante
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
         };
 
         UiControls.Button boutonAction = new()
         {
             Content = "T\u00E9l\u00E9charger la mise \u00E0 jour",
-            Padding = new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(8, 0, 0, 0),
+            Padding = _modaleAideCompacteCourante
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
             Visibility = Visibility.Collapsed,
         };
 
         UiControls.Button boutonZip = new()
         {
             Content = "Ouvrir le zip",
-            Padding = new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(8, 0, 0, 0),
+            Padding = _modaleAideCompacteCourante
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
             Visibility = Visibility.Collapsed,
         };
 
         UiControls.Button boutonDossier = new()
         {
             Content = "Ouvrir le dossier",
-            Padding = new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(8, 0, 0, 0),
+            Padding = _modaleAideCompacteCourante
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 8, 8),
             Visibility = Visibility.Collapsed,
         };
 
@@ -356,15 +367,22 @@ public partial class MainWindow
             Margin = new Thickness(0),
             Children =
             {
+                new SystemControls.TextBlock
+                {
+                    Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 6 : 8),
+                    Opacity = 0.78,
+                    Text =
+                        "Cette section sert à vérifier la version actuelle, lire les notes publiées et ouvrir directement le package déjà téléchargé.",
+                    TextWrapping = TextWrapping.Wrap,
+                },
                 texteVersionLocale,
                 texteEtat,
                 texteDate,
                 texteNotes,
                 textePackage,
-                new SystemControls.StackPanel
+                new SystemControls.WrapPanel
                 {
                     Orientation = SystemControls.Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Left,
                     Children = { boutonVerification, boutonAction, boutonZip, boutonDossier },
                 },
             },
@@ -373,8 +391,11 @@ public partial class MainWindow
         return ConstruireSectionAideRabattable(
             "Mise à jour",
             pile,
-            "État courant, notes de version et actions de téléchargement.",
-            false
+            "Version actuelle, notes et actions de téléchargement.",
+            false,
+            null,
+            sectionsAide,
+            _modaleAideCompacteCourante
         );
     }
 
