@@ -1,8 +1,16 @@
 using System.Text.Json.Serialization;
 using RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Représente les détails étendus d'un jeu retournés par l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte les métadonnées complètes d'un jeu, ses succès et les claims
+ * utilisateurs associés.
+ */
 public sealed class GameExtendedDetailsV2
 {
     [JsonPropertyName("ID")]

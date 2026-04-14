@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente la réponse de récompenses utilisateur de l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les compteurs de récompenses et la liste visible des badges
+ * utilisateur.
+ */
 public sealed class UserAwardsResponseV2
 {
     [JsonPropertyName("TotalAwardsCount")]

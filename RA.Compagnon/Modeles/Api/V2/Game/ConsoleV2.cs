@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une console ou un système connu de l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte l'identité, le nom et l'icône d'une console.
+ */
 public sealed class ConsoleV2
 {
     [JsonPropertyName("ID")]

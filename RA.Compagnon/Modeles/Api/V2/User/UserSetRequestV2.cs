@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une demande de set utilisateur dans l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte l'identité du jeu demandé, sa console et son image.
+ */
 public sealed class UserSetRequestV2
 {
     [JsonPropertyName("GameID")]

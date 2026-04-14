@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une entrée de système dans l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.System;
 
+/*
+ * Transporte l'identité, le nom et l'état d'activation d'un système.
+ */
 public sealed class SystemEntryV2
 {
     [JsonPropertyName("ID")]

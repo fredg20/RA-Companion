@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente le résumé enrichi d'un utilisateur dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les informations de profil, d'activité récente, de jeux joués
+ * et de succès récents d'un utilisateur.
+ */
 public sealed class UserSummaryV2
 {
     [JsonPropertyName("User")]

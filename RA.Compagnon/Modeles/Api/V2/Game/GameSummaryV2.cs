@@ -1,7 +1,14 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un résumé de jeu retourné par l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte les métadonnées synthétiques d'un jeu, y compris ses images et
+ * ses informations éditoriales.
+ */
 public sealed class GameSummaryV2
 {
     [JsonPropertyName("Title")]

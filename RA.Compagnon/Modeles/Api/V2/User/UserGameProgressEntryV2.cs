@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une entrée de progression utilisateur pour un jeu dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les compteurs de succès et de score obtenus en normal et en
+ * hardcore pour un jeu.
+ */
 public sealed class UserGameProgressEntryV2
 {
     [JsonPropertyName("NumPossibleAchievements")]

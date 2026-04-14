@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente le résumé des récompenses d'un utilisateur pour un jeu dans
+ * l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte le nombre de récompenses obtenues et les niveaux de récompense
+ * associés à un jeu.
+ */
 public sealed class UserAwardedGameSummaryV2
 {
     [JsonPropertyName("NumAwarded")]

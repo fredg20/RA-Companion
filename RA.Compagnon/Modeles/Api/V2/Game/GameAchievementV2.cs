@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un succès de jeu tel qu'il est retourné par l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte les données détaillées d'un succès, ses points, ses ratios et
+ * son état d'obtention utilisateur.
+ */
 public sealed class GameAchievementV2
 {
     [JsonPropertyName("ID")]

@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une récompense visible d'utilisateur dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les informations d'affichage d'une récompense utilisateur,
+ * notamment son titre, sa console et son image.
+ */
 public sealed class VisibleUserAwardV2
 {
     [JsonPropertyName("AwardedAt")]

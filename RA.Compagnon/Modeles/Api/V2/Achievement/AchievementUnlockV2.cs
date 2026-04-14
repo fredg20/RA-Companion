@@ -1,7 +1,14 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un déblocage de succès renvoyé par l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Achievement;
 
+/*
+ * Transporte les informations d'obtention d'un succès, y compris le mode
+ * hardcore et les métadonnées du jeu concerné.
+ */
 public sealed class AchievementUnlockV2
 {
     [JsonPropertyName("Date")]

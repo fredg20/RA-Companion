@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un jeu récemment joué par l'utilisateur dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte l'identité du jeu récent, ses images et quelques statistiques
+ * de progression de base.
+ */
 public sealed class RecentlyPlayedGameV2
 {
     [JsonPropertyName("GameID")]

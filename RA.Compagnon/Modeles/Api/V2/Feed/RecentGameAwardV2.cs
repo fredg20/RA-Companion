@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente une récompense de jeu récente issue du flux d'activité
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Feed;
 
+/*
+ * Transporte l'utilisateur, le jeu et le type de récompense associés à une
+ * entrée récente du flux.
+ */
 public sealed class RecentGameAwardV2
 {
     [JsonPropertyName("User")]

@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente le dernier jeu connu d'un utilisateur dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les métadonnées principales du dernier jeu associé à un profil
+ * utilisateur.
+ */
 public sealed class LastGameV2
 {
     [JsonPropertyName("ID")]

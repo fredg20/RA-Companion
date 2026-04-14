@@ -3,8 +3,15 @@ using System.Text.Json;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Etat;
 
+/*
+ * Gère le cache local persistant de progression utilisateur par jeu afin de
+ * permettre des comparaisons rapides entre deux états.
+ */
 namespace RA.Compagnon.Services;
 
+/*
+ * Charge, construit et sauvegarde l'état local des jeux utilisateur observés.
+ */
 public sealed class ServiceEtatUtilisateurJeuxLocal
 {
     private static readonly JsonSerializerOptions OptionsJson = new() { WriteIndented = true };
@@ -12,6 +19,9 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
     private readonly SemaphoreSlim _verrou = new(1, 1);
     private EtatUtilisateurJeuxLocal? _etat;
 
+    /*
+     * Retourne l'état local connu pour un jeu donné, si présent dans le cache.
+     */
     public async Task<EtatJeuUtilisateurLocal?> ObtenirJeuAsync(
         int identifiantJeu,
         CancellationToken jetonAnnulation = default
@@ -26,6 +36,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         return etat.Jeux.FirstOrDefault(jeu => jeu.GameId == identifiantJeu);
     }
 
+    /*
+     * Enregistre l'état courant d'un jeu dans le cache local et retourne
+     * l'état précédent éventuel.
+     */
     public async Task<(
         EtatJeuUtilisateurLocal? Precedent,
         EtatJeuUtilisateurLocal Courant
@@ -65,6 +79,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         }
     }
 
+    /*
+     * Construit un état local sérialisable à partir des données complètes
+     * d'un jeu et de sa progression utilisateur.
+     */
     public static EtatJeuUtilisateurLocal ConstruireEtatJeu(GameInfoAndUserProgressV2 jeu)
     {
         List<EtatSuccesUtilisateurLocal> succes =
@@ -110,6 +128,9 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         };
     }
 
+    /*
+     * Charge l'état complet du cache en garantissant l'exclusion mutuelle.
+     */
     private async Task<EtatUtilisateurJeuxLocal> ChargerEtatAsync(CancellationToken jetonAnnulation)
     {
         await _verrou.WaitAsync(jetonAnnulation);
@@ -124,6 +145,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         }
     }
 
+    /*
+     * Charge l'état complet du cache sans reprendre le verrou lorsqu'il est
+     * déjà détenu par l'appelant.
+     */
     private async Task<EtatUtilisateurJeuxLocal> ChargerEtatInterneAsync(
         CancellationToken jetonAnnulation
     )
@@ -161,6 +186,9 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         return _etat;
     }
 
+    /*
+     * Sauvegarde atomiquement l'état complet du cache utilisateur-jeux.
+     */
     private static async Task SauvegarderEtatAsync(
         EtatUtilisateurJeuxLocal etat,
         CancellationToken jetonAnnulation
@@ -184,6 +212,10 @@ public sealed class ServiceEtatUtilisateurJeuxLocal
         File.Move(cheminTemporaire, chemin);
     }
 
+    /*
+     * Retourne le chemin du fichier JSON contenant le cache local des jeux
+     * utilisateur.
+     */
     private static string ObtenirCheminEtat()
     {
         return Path.Combine(

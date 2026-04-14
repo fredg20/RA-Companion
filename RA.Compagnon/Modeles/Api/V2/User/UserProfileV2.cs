@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente le profil utilisateur de base retourné par l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les informations essentielles de profil d'un utilisateur,
+ * notamment ses points et son dernier jeu.
+ */
 public sealed class UserProfileV2
 {
     [JsonPropertyName("User")]

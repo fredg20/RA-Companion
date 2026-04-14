@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente les statistiques de progression d'un succès dans l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte les métriques médianes et les taux de déblocage associés à un
+ * succès de jeu.
+ */
 public sealed class GameProgressionAchievementV2
 {
     [JsonPropertyName("ID")]

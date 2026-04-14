@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente les informations complètes d'un jeu accompagnées de la
+ * progression de l'utilisateur dans l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte les métadonnées du jeu, la collection de succès et les
+ * indicateurs de progression utilisateur.
+ */
 public sealed class GameInfoAndUserProgressV2
 {
     [JsonPropertyName("ID")]

@@ -1,7 +1,13 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un claim utilisateur sur un jeu dans l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les informations d'un claim, son statut et le jeu concerné.
+ */
 public sealed class UserClaimV2
 {
     [JsonPropertyName("ID")]

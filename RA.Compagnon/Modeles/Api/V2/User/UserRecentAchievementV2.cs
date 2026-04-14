@@ -1,7 +1,14 @@
 using System.Text.Json.Serialization;
 
+/*
+ * Représente un succès récent d'utilisateur dans l'API RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.User;
 
+/*
+ * Transporte les informations essentielles d'un succès récemment obtenu par
+ * un utilisateur.
+ */
 public sealed class UserRecentAchievementV2
 {
     [JsonPropertyName("ID")]

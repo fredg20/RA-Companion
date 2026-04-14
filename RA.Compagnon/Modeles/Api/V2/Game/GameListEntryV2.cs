@@ -1,8 +1,15 @@
 using System.Text.Json.Serialization;
 using RA.Compagnon.Modeles.Api.V2.Common;
 
+/*
+ * Représente une entrée de liste de jeux retournée par l'API
+ * RetroAchievements v2.
+ */
 namespace RA.Compagnon.Modeles.Api.V2.Game;
 
+/*
+ * Transporte l'identité, les images et les empreintes d'un jeu de système.
+ */
 public sealed class GameListEntryV2 : ApiDtoV2Base
 {
     [JsonPropertyName("ID")]
