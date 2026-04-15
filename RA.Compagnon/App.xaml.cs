@@ -47,7 +47,7 @@ public partial class App : Application
 
         if (!premiereInstance)
         {
-            JournaliserDemarrage("Instance existante detectee");
+            JournaliserDemarrage("Instance existante détectée");
             if (ActiverInstanceExistanteSiPossible())
             {
                 Shutdown();
@@ -61,12 +61,12 @@ public partial class App : Application
 
             if (!premiereInstance)
             {
-                JournaliserDemarrage("Impossible de reprendre la main apres nettoyage");
+                JournaliserDemarrage("Impossible de reprendre la main après nettoyage");
                 Shutdown();
                 return;
             }
 
-            JournaliserDemarrage("Instance fantome nettoyee, poursuite du demarrage");
+            JournaliserDemarrage("Instance fantôme nettoyée, poursuite du démarrage");
         }
 
         ApplicationThemeManager.Apply(

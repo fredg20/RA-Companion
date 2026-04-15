@@ -21,8 +21,8 @@
   WindowBackdropType="Mica"
   SizeChanged="FenetrePrincipale_TailleChangee"
 >
-    <Grid Background="Transparent">
-      <Grid.Resources>
+  <Grid Background="Transparent">
+    <Grid.Resources>
       <Style x:Key="StyleBoutonIconeSecondaire" TargetType="ui:Button">
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
@@ -44,10 +44,16 @@
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                  <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
+                  <Setter
+                    Property="Background"
+                    Value="{DynamicResource ControlFillColorTertiaryBrush}"
+                  />
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                  <Setter Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
+                  <Setter
+                    Property="Background"
+                    Value="{DynamicResource ControlFillColorInputActiveBrush}"
+                  />
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                   <Setter Property="Opacity" Value="0.6" />
@@ -58,8 +64,14 @@
         </Setter>
       </Style>
       <Style x:Key="StyleOngletModulePrincipal" TargetType="ui:Button">
-        <Setter Property="Height" Value="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}" />
-        <Setter Property="Padding" Value="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}" />
+        <Setter
+          Property="Height"
+          Value="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+        />
+        <Setter
+          Property="Padding"
+          Value="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+        />
         <Setter Property="Margin" Value="0,0,8,0" />
         <Setter Property="Appearance" Value="Secondary" />
         <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
@@ -102,7 +114,10 @@
           </Setter.Value>
         </Setter>
         <Style.Triggers>
-          <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}" Value="True">
+          <DataTrigger
+            Binding="{Binding RelativeSource={RelativeSource Self}, Path=Tag}"
+            Value="True"
+          >
             <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
             <Setter Property="BorderBrush" Value="#78C8FF" />
           </DataTrigger>
@@ -250,898 +265,809 @@
             VerticalAlignment="Top"
           >
             <Grid x:Name="GrilleCartes" VerticalAlignment="Stretch">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="280" />
-              <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-              <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Grid
-              x:Name="CarteConnexion"
-              Grid.Column="0"
-              Visibility="{Binding VisibiliteCarteConnexion}"
-            >
-              <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="6" />
-                <RowDefinition Height="Auto" />
-              </Grid.RowDefinitions>
-
-              <TextBlock
-                Grid.Row="0"
-                Margin="8,0,0,0"
-                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
-                FontWeight="SemiBold"
-                Text="Connexion RetroAchievements"
-              />
-
-              <Border
-                x:Name="CadreCarteConnexion"
-                Grid.Row="2"
-                Style="{StaticResource StyleSectionArrondie}"
-              >
-                <Grid>
-                  <StackPanel x:Name="ContenuCarteConnexion">
-                    <TextBlock
-                      Opacity="0.78"
-                      TextWrapping="Wrap"
-                      Text="Renseigne ton pseudo et ta clé Web API pour charger ton dernier jeu joué, ta progression et tes succès récents."
-                    />
-                    <TextBlock
-                      Margin="{StaticResource MargeBlocCompacte}"
-                      Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
-                      TextWrapping="Wrap"
-                      Text="Utilise le bouton Connexion en haut à droite pour commencer."
-                    />
-                  </StackPanel>
-                </Grid>
-              </Border>
-            </Grid>
-
-            <Grid
-              x:Name="CarteJeuEnCours"
-              Grid.Column="2"
-              VerticalAlignment="Stretch"
-              ClipToBounds="True"
-              Visibility="{Binding VisibiliteCarteJeuEnCours}"
-              SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
-            >
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
               <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
               </Grid.RowDefinitions>
 
-              <Border
-                x:Name="CadreCarteJeuEnCours"
-                Grid.Row="0"
-                VerticalAlignment="Stretch"
-                Style="{StaticResource StyleSectionArrondie}"
+              <Grid
+                x:Name="CarteConnexion"
+                Grid.Column="0"
+                Visibility="{Binding VisibiliteCarteConnexion}"
               >
-                <Grid
-                  x:Name="GrilleCarteJeuEnCours"
-                  SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="6" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                  Grid.Row="0"
+                  Margin="8,0,0,0"
+                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+                  FontWeight="SemiBold"
+                  Text="Connexion RetroAchievements"
+                />
+
+                <Border
+                  x:Name="CadreCarteConnexion"
+                  Grid.Row="2"
+                  Style="{StaticResource StyleSectionArrondie}"
                 >
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="0" />
-                    <ColumnDefinition Width="0" />
-                    <ColumnDefinition Width="0" />
-                    <ColumnDefinition Width="0" />
-                  </Grid.ColumnDefinitions>
-                  <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="0" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="16" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="16" />
-                    <RowDefinition Height="*" />
-                  </Grid.RowDefinitions>
-
-                  <Grid x:Name="EnTeteCarteJeuEnCours" Grid.Row="0" Grid.ColumnSpan="5">
-                    <StackPanel
-                      x:Name="ZoneEtatCompteUtilisateur"
-                      MaxWidth="320"
-                      Margin="8,0,0,0"
-                      HorizontalAlignment="Left"
-                      VerticalAlignment="Top"
-                      Visibility="{Binding Compte.NoticeVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                    >
-                      <Border
-                        x:Name="BadgeEtatCompteUtilisateur"
-                        Padding="0"
-                        HorizontalAlignment="Left"
-                        CornerRadius="0"
-                        Background="{Binding Compte.FondNotice}"
-                        BorderBrush="{Binding Compte.BordureNotice}"
-                        BorderThickness="0"
-                      >
-                        <TextBlock
-                          x:Name="TexteEtatCompteUtilisateur"
-                          FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
-                          FontWeight="SemiBold"
-                          Opacity="0.92"
-                          Text="{Binding Compte.EtatNotice}"
-                          TextAlignment="Left"
-                        />
-                      </Border>
-
+                  <Grid>
+                    <StackPanel x:Name="ContenuCarteConnexion">
                       <TextBlock
-                        x:Name="TexteSousEtatCompteUtilisateur"
-                        Margin="2,3,0,0"
-                        HorizontalAlignment="Left"
-                        FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
-                        Opacity="0.45"
-                        TextAlignment="Left"
-                        Text="{Binding Compte.SousEtatNotice}"
-                        TextTrimming="CharacterEllipsis"
-                        Visibility="{Binding Compte.SousEtatVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                        Opacity="0.78"
+                        TextWrapping="Wrap"
+                        Text="Renseigne ton pseudo et ta clé Web API pour charger ton dernier jeu joué, ta progression et tes succès récents."
+                      />
+                      <TextBlock
+                        Margin="{StaticResource MargeBlocCompacte}"
+                        Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+                        TextWrapping="Wrap"
+                        Text="Utilise le bouton Connexion en haut à droite pour commencer."
                       />
                     </StackPanel>
                   </Grid>
+                </Border>
+              </Grid>
+
+              <Grid
+                x:Name="CarteJeuEnCours"
+                Grid.Column="2"
+                VerticalAlignment="Stretch"
+                ClipToBounds="True"
+                Visibility="{Binding VisibiliteCarteJeuEnCours}"
+                SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
+              >
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border
+                  x:Name="CadreCarteJeuEnCours"
+                  Grid.Row="0"
+                  VerticalAlignment="Stretch"
+                  Style="{StaticResource StyleSectionArrondie}"
+                >
                   <Grid
-                    x:Name="EnTeteSectionSuccesEnCours"
-                    Grid.Row="0"
-                    Grid.Column="2"
-                    VerticalAlignment="Bottom"
-                    Visibility="Collapsed"
+                    x:Name="GrilleCarteJeuEnCours"
+                    SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
                   >
-                    <TextBlock
-                      Margin="8,0,0,0"
-                      FontWeight="SemiBold"
-                      FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
-                      VerticalAlignment="Bottom"
-                      Text="Rétrosuccès en cours"
-                    />
-                  </Grid>
-                  <Grid
-                    x:Name="EnTeteSectionListeSuccesJeuEnCours"
-                    Grid.Row="0"
-                    Grid.Column="4"
-                    VerticalAlignment="Bottom"
-                    Visibility="Collapsed"
-                  >
-                    <TextBlock
-                      Margin="8,0,0,0"
-                      FontWeight="SemiBold"
-                      FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
-                      VerticalAlignment="Bottom"
-                      Text="Rétrosuccès du jeu"
-                    />
-                  </Grid>
-                  <Grid x:Name="SectionResumeJeuEnCours" Grid.Row="2" VerticalAlignment="Stretch">
-                    <Grid.RowDefinitions>
-                      <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Border
-                      Grid.Row="0"
-                      VerticalAlignment="Stretch"
-                      Style="{StaticResource StyleSousCarteJeu}"
-                    >
-                      <Grid>
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
-                            <ColumnDefinition Width="*" />
-                          </Grid.ColumnDefinitions>
-
-                          <Grid
-                            x:Name="ColonneImageJeuEnCours"
-                            Grid.Column="0"
-                            VerticalAlignment="Stretch"
-                          >
-                            <Grid.RowDefinitions>
-                              <RowDefinition Height="Auto" />
-                              <RowDefinition Height="*" />
-                              <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Border
-                              Grid.Row="0"
-                              x:Name="ConteneurImageJeuEnCours"
-                              MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
-                              MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
-                              VerticalAlignment="Top"
-                              HorizontalAlignment="Left"
-                              CornerRadius="{StaticResource RayonCoinsPetit}"
-                              BorderThickness="0"
-                              Background="Transparent"
-                            >
-                              <Grid>
-                                <Image
-                                  x:Name="ImageJeuEnCours"
-                                  Margin="0"
-                                  MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
-                                  MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Top"
-                                  Stretch="Uniform"
-                                  SizeChanged="ImageJeuEnCours_TailleChangee"
-                                  Visibility="Collapsed"
-                                >
-                                  <Image.RenderTransform>
-                                    <TranslateTransform />
-                                  </Image.RenderTransform>
-                                </Image>
-                                <Image
-                                  x:Name="ImageJeuEnCoursTransition"
-                                  Margin="0"
-                                  MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
-                                  MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Top"
-                                  Stretch="Uniform"
-                                  SizeChanged="ImageJeuEnCours_TailleChangee"
-                                  Visibility="Collapsed"
-                                >
-                                  <Image.RenderTransform>
-                                    <TranslateTransform />
-                                  </Image.RenderTransform>
-                                </Image>
-                                <TextBlock
-                                  x:Name="TexteImageJeuEnCours"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Top"
-                                  Margin="0"
-                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
-                                  Text="{Binding JeuCourant.TexteVisuelPrincipal}"
-                                  TextAlignment="Center"
-                                  TextWrapping="Wrap"
-                                  Visibility="{Binding JeuCourant.TexteVisuelPrincipalVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                />
-                              </Grid>
-                            </Border>
-                            <ui:Button
-                              x:Name="BoutonRejouerJeuEnCours"
-                              Grid.Row="2"
-                              Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                              Margin="{StaticResource MargeBlocCompacte}"
-                              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                              HorizontalAlignment="Left"
-                              VerticalAlignment="Bottom"
-                              Appearance="Secondary"
-                              Command="{Binding JeuCourant.CommandeActionRejouer}"
-                              Content="{Binding JeuCourant.LibelleActionRejouer}"
-                              IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
-                              ToolTip="{Binding JeuCourant.ToolTipActionRejouer}"
-                              Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                            />
-                          </Grid>
-
-                          <Grid Grid.Column="2" VerticalAlignment="Stretch">
-                            <Grid.RowDefinitions>
-                              <RowDefinition Height="Auto" />
-                              <RowDefinition Height="Auto" />
-                              <RowDefinition Height="*" />
-                              <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid Grid.Row="0" HorizontalAlignment="Stretch">
-                              <Border
-                                x:Name="ConteneurTitreJeuEnCours"
-                                ClipToBounds="True"
-                                VerticalAlignment="Top"
-                                SizeChanged="TitreJeuEnCours_MiseEnPageChangee"
-                              >
-                                <Canvas
-                                  x:Name="ZoneTitreJeuEnCours"
-                                  Background="Transparent"
-                                  Height="{x:Static compagnon:ConstantesDesign.HauteurZoneTitreJeu}"
-                                  SizeChanged="TitreJeuEnCours_MiseEnPageChangee"
-                                >
-                                  <TextBlock
-                                    x:Name="TexteTitreJeuEnCours"
-                                    Margin="0"
-                                    VerticalAlignment="Center"
-                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreJeu}"
-                                    FontWeight="SemiBold"
-                                    Text="{Binding JeuCourant.Titre}"
-                                    TextWrapping="NoWrap"
-                                  >
-                                    <TextBlock.RenderTransform>
-                                      <TranslateTransform />
-                                    </TextBlock.RenderTransform>
-                                  </TextBlock>
-                                </Canvas>
-                              </Border>
-                            </Grid>
-                            <Grid
-                              x:Name="GrilleInformationsJeuEnCours"
-                              Grid.Row="1"
-                              Margin="{x:Static compagnon:ConstantesDesign.MargeSousTitreCompacte}"
-                              SizeChanged="GrilleInformationsJeuEnCours_TailleChangee"
-                              Visibility="{Binding JeuCourant.InformationsVisibles, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                            >
-                              <Border
-                                x:Name="ZoneConsoleJeuEnCours"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
-                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
-                                CornerRadius="{StaticResource RayonCoinsPetit}"
-                                Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              >
-                                <StackPanel
-                                  Orientation="Horizontal"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                >
-                                  <Image
-                                    x:Name="ImageConsoleJeuEnCours"
-                                    Width="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
-                                    Height="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
-                                    Margin="{x:Static compagnon:ConstantesDesign.MargeCapsuleDroite}"
-                                    VerticalAlignment="Center"
-                                    Stretch="Uniform"
-                                    Source="{Binding JeuCourant.ImageConsole}"
-                                    Visibility="{Binding JeuCourant.ImageConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                  />
-                                  <TextBlock
-                                    x:Name="TexteConsoleJeuEnCours"
-                                    VerticalAlignment="Center"
-                                    HorizontalAlignment="Center"
-                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
-                                    FontWeight="SemiBold"
-                                    Opacity="0.86"
-                                    Text="{Binding JeuCourant.Console, Mode=OneWay}"
-                                    TextAlignment="Center"
-                                    TextWrapping="Wrap"
-                                  />
-                                </StackPanel>
-                              </Border>
-
-                              <Border
-                                x:Name="EtiquetteTypeJeuEnCours"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
-                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
-                                CornerRadius="{StaticResource RayonCoinsPetit}"
-                                Visibility="{Binding JeuCourant.GenreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              >
-                                <TextBlock
-                                  x:Name="TexteTypeJeuEnCours"
-                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
-                                  FontWeight="SemiBold"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Opacity="0.84"
-                                  Text="{Binding JeuCourant.Genre, Mode=OneWay}"
-                                  TextAlignment="Center"
-                                  TextWrapping="Wrap"
-                                />
-                              </Border>
-
-                              <Border
-                                x:Name="EtiquetteDateSortieJeuEnCours"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
-                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
-                                CornerRadius="{StaticResource RayonCoinsPetit}"
-                                Visibility="{Binding JeuCourant.DateSortieVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              >
-                                <TextBlock
-                                  x:Name="TexteDateSortieJeuEnCours"
-                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
-                                  FontWeight="SemiBold"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Opacity="0.84"
-                                  Text="{Binding JeuCourant.DateSortie, Mode=OneWay}"
-                                  TextAlignment="Center"
-                                  TextWrapping="Wrap"
-                                />
-                              </Border>
-
-                              <Border
-                                x:Name="EtiquetteCreditsJeuEnCours"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
-                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
-                                CornerRadius="{StaticResource RayonCoinsPetit}"
-                                Visibility="{Binding JeuCourant.CreditsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              >
-                                <TextBlock
-                                  x:Name="TexteDeveloppeurJeuEnCours"
-                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
-                                  FontWeight="SemiBold"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Opacity="0.84"
-                                  Text="{Binding JeuCourant.Credits, Mode=OneWay}"
-                                  TextAlignment="Center"
-                                  TextWrapping="Wrap"
-                                />
-                              </Border>
-                            </Grid>
-
-                            <Grid
-                              Grid.Row="3"
-                              Margin="{StaticResource MargeBlocStandard}"
-                              HorizontalAlignment="Stretch"
-                            >
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                              </Grid.ColumnDefinitions>
-                              <ui:Button
-                                x:Name="BoutonVueDetailleeJeuEnCours"
-                                Grid.Column="1"
-                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                                HorizontalAlignment="Right"
-                                Appearance="Secondary"
-                                Command="{Binding JeuCourant.CommandeActionDetails}"
-                                Content="{Binding JeuCourant.LibelleActionDetails}"
-                                IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
-                                ToolTip="{Binding JeuCourant.ToolTipActionDetails}"
-                                Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                            </Grid>
-                          </Grid>
-                        </Grid>
-                      </Grid>
-                    </Border>
-                  </Grid>
-
-                  <Grid x:Name="SectionSuccesEnCours" Grid.Row="4" VerticalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="0" />
+                      <ColumnDefinition Width="0" />
+                      <ColumnDefinition Width="0" />
+                      <ColumnDefinition Width="0" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                       <RowDefinition Height="Auto" />
-                      <RowDefinition x:Name="LigneEspacementSectionSuccesEnCours" Height="6" />
+                      <RowDefinition Height="0" />
+                      <RowDefinition Height="*" />
+                      <RowDefinition Height="16" />
+                      <RowDefinition Height="*" />
+                      <RowDefinition Height="16" />
                       <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <Grid x:Name="EnTeteInterneSectionSuccesEnCours" Grid.Row="0">
+                    <Grid x:Name="EnTeteCarteJeuEnCours" Grid.Row="0" Grid.ColumnSpan="5">
+                      <StackPanel
+                        x:Name="ZoneEtatCompteUtilisateur"
+                        MaxWidth="320"
+                        Margin="8,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Visibility="{Binding Compte.NoticeVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                      >
+                        <Border
+                          x:Name="BadgeEtatCompteUtilisateur"
+                          Padding="0"
+                          HorizontalAlignment="Left"
+                          CornerRadius="0"
+                          Background="{Binding Compte.FondNotice}"
+                          BorderBrush="{Binding Compte.BordureNotice}"
+                          BorderThickness="0"
+                        >
+                          <TextBlock
+                            x:Name="TexteEtatCompteUtilisateur"
+                            FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+                            FontWeight="SemiBold"
+                            Opacity="0.92"
+                            Text="{Binding Compte.EtatNotice}"
+                            TextAlignment="Left"
+                          />
+                        </Border>
+
+                        <TextBlock
+                          x:Name="TexteSousEtatCompteUtilisateur"
+                          Margin="2,3,0,0"
+                          HorizontalAlignment="Left"
+                          FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
+                          Opacity="0.45"
+                          TextAlignment="Left"
+                          Text="{Binding Compte.SousEtatNotice}"
+                          TextTrimming="CharacterEllipsis"
+                          Visibility="{Binding Compte.SousEtatVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                        />
+                      </StackPanel>
+                    </Grid>
+                    <Grid
+                      x:Name="EnTeteSectionSuccesEnCours"
+                      Grid.Row="0"
+                      Grid.Column="2"
+                      VerticalAlignment="Bottom"
+                      Visibility="Collapsed"
+                    >
                       <TextBlock
                         Margin="8,0,0,0"
                         FontWeight="SemiBold"
                         FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
+                        VerticalAlignment="Bottom"
                         Text="Rétrosuccès en cours"
                       />
                     </Grid>
-
-                    <Border
-                      Grid.Row="2"
-                      VerticalAlignment="Stretch"
-                      Style="{StaticResource StyleSousCarteJeu}"
+                    <Grid
+                      x:Name="EnTeteSectionListeSuccesJeuEnCours"
+                      Grid.Row="0"
+                      Grid.Column="4"
+                      VerticalAlignment="Bottom"
+                      Visibility="Collapsed"
                     >
-                      <Grid>
-                        <Grid.RowDefinitions>
-                          <RowDefinition Height="*" />
-                          <RowDefinition Height="10" />
-                          <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid>
-                              <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="{x:Static compagnon:ConstantesDesign.LargeurColonneBadgeVedette}" />
-                              <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <Border
-                              Grid.Column="0"
-                              x:Name="CartePremierSuccesNonDebloqueVisuel"
-                              VerticalAlignment="Top"
-                              CornerRadius="{StaticResource RayonCoinsPetit}"
-                              BorderThickness="0"
-                              Background="Transparent"
-                            >
-                              <Grid>
-                                <Image
-                                  x:Name="ImagePremierSuccesNonDebloque"
-                                  Source="{Binding SuccesEnCours.Image}"
-                                  Margin="0"
-                                  MaxWidth="{x:Static compagnon:ConstantesDesign.TailleBadgeVedette}"
-                                  MaxHeight="{x:Static compagnon:ConstantesDesign.TailleBadgeVedette}"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Opacity="{Binding SuccesEnCours.ImageOpacity}"
-                                  Stretch="Uniform"
-                                  SizeChanged="ImagePremierSuccesNonDebloque_TailleChangee"
-                                  Visibility="{Binding SuccesEnCours.ImageVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                />
-                                <TextBlock
-                                  x:Name="TexteImagePremierSuccesNonDebloque"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
-                                  Text="{Binding SuccesEnCours.TexteVisuel}"
-                                  TextAlignment="Center"
-                                  TextWrapping="Wrap"
-                                  Visibility="{Binding SuccesEnCours.TexteVisuelVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                />
-                              </Grid>
-                            </Border>
-
-                            <StackPanel Grid.Column="1" Margin="12,0,12,0">
-                              <TextBox
-                                x:Name="TexteTitrePremierSuccesNonDebloque"
-                                Style="{StaticResource StyleTexteCopiable}"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
-                                FontWeight="SemiBold"
-                                Text="{Binding SuccesEnCours.Titre}"
-                                Visibility="{Binding SuccesEnCours.TitreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                              <TextBox
-                                x:Name="TexteDescriptionPremierSuccesNonDebloque"
-                                Margin="0,4,0,0"
-                                Style="{StaticResource StyleTexteCopiable}"
-                                Opacity="0.78"
-                                Text="{Binding SuccesEnCours.Description}"
-                                TextWrapping="Wrap"
-                                Visibility="{Binding SuccesEnCours.DescriptionVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                              <TextBox
-                                x:Name="TextePointsPremierSuccesNonDebloque"
-                                Margin="0,4,0,0"
-                                Style="{StaticResource StyleTexteCopiable}"
-                                Opacity="0.72"
-                                Text="{Binding SuccesEnCours.DetailsPoints}"
-                                TextWrapping="Wrap"
-                                Visibility="{Binding SuccesEnCours.DetailsPointsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                              <TextBox
-                                x:Name="TexteFaisabilitePremierSuccesNonDebloque"
-                                Margin="0,4,0,0"
-                                Style="{StaticResource StyleTexteCopiable}"
-                                Opacity="0.72"
-                                Text="{Binding SuccesEnCours.DetailsFaisabilite}"
-                                ToolTip="{Binding SuccesEnCours.ToolTipDetailsFaisabilite}"
-                                TextWrapping="Wrap"
-                                Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                            </StackPanel>
-                          </Grid>
-                        </Grid>
-
-                        <Grid Grid.Row="2" Margin="0" VerticalAlignment="Bottom">
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel
-                            Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            Orientation="Horizontal"
-                          >
-                            <ui:Button
-                              x:Name="BoutonSuccesEnCoursPrecedent"
-                              Width="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
-                              Height="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
-                              Margin="{x:Static compagnon:ConstantesDesign.MargeActionAdjacente}"
-                              Appearance="Secondary"
-                              Command="{Binding SuccesEnCours.CommandePrecedent}"
-                              IsEnabled="{Binding SuccesEnCours.PrecedentActif}"
-                              ToolTip="Afficher le rétrosuccès précédent"
-                              Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                            >
-                              <TextBlock
-                                x:Name="TexteChevronSuccesEnCoursPrecedent"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
-                                FontWeight="ExtraBold"
-                                Opacity="{Binding SuccesEnCours.PrecedentOpacity}"
-                                Text="‹"
-                                TextAlignment="Center"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                Margin="0,-5,0,-1"
-                              />
-                            </ui:Button>
-                            <ui:Button
-                              x:Name="BoutonSuccesEnCoursSuivant"
-                              Width="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
-                              Height="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
-                              Appearance="Secondary"
-                              Command="{Binding SuccesEnCours.CommandeSuivant}"
-                              IsEnabled="{Binding SuccesEnCours.SuivantActif}"
-                              ToolTip="Afficher le rétrosuccès suivant"
-                              Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                            >
-                              <TextBlock
-                                x:Name="TexteChevronSuccesEnCoursSuivant"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
-                                FontWeight="ExtraBold"
-                                Opacity="{Binding SuccesEnCours.SuivantOpacity}"
-                                Text="›"
-                                TextAlignment="Center"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                Margin="0,-5,0,-1"
-                              />
-                            </ui:Button>
-                          </StackPanel>
-                          <ui:Button
-                            x:Name="BoutonPasserSuccesEnCours"
-                            Grid.Column="1"
-                            Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                            Margin="{StaticResource MargeInterneDroite}"
-                            Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                            Appearance="Secondary"
-                            Command="{Binding SuccesEnCours.CommandePasser}"
-                            Content="Passer"
-                            IsEnabled="{Binding SuccesEnCours.PasserActif}"
-                            ToolTip="Faire ce succès plus tard"
-                            Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                          />
-                        </Grid>
-                      </Grid>
-                    </Border>
-                  </Grid>
-
-                  <Grid
-                    x:Name="SectionListeSuccesJeuEnCours"
-                    Grid.Row="6"
-                    VerticalAlignment="Stretch"
-                  >
-                    <Grid.RowDefinitions>
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition
-                        x:Name="LigneEspacementSectionListeSuccesJeuEnCours"
-                        Height="6"
-                      />
-                      <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Grid x:Name="EnTeteInterneSectionListeSuccesJeuEnCours" Grid.Row="0">
                       <TextBlock
                         Margin="8,0,0,0"
-                        FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
                         FontWeight="SemiBold"
+                        FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
+                        VerticalAlignment="Bottom"
                         Text="Rétrosuccès du jeu"
                       />
                     </Grid>
+                    <Grid x:Name="SectionResumeJeuEnCours" Grid.Row="2" VerticalAlignment="Stretch">
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
 
-                    <Border
-                      x:Name="CarteListeSuccesJeuEnCours"
-                      Grid.Row="2"
-                      HorizontalAlignment="Stretch"
-                      SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
-                      VerticalAlignment="Stretch"
-                      Style="{StaticResource StyleSousCarteJeu}"
-                    >
-                      <Grid x:Name="StructureListeSuccesJeuEnCours">
-                        <Grid.RowDefinitions>
-                          <RowDefinition Height="*" />
-                          <RowDefinition Height="10" />
-                          <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                      <Border
+                        Grid.Row="0"
+                        VerticalAlignment="Stretch"
+                        Style="{StaticResource StyleSousCarteJeu}"
+                      >
+                        <Grid>
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
+                              <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
+                              <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
 
-                        <Grid x:Name="ZonePrincipaleListeSuccesJeuEnCours" Grid.Row="0">
-                          <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                          </Grid.RowDefinitions>
-                          <Grid Grid.Row="0">
-                            <Grid.RowDefinitions>
-                              <RowDefinition Height="Auto" />
-                              <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <ProgressBar
-                              x:Name="BarreProgressionJeuEnCours"
-                              Grid.Row="0"
-                              Height="{x:Static compagnon:ConstantesDesign.HauteurBarreProgression}"
-                              Margin="0"
-                              Minimum="0"
-                              Maximum="100"
-                              Value="{Binding JeuCourant.ProgressionValeur, Mode=OneWay}"
-                            />
-                            <Grid Grid.Row="1" Margin="{StaticResource MargeBlocStandard}">
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                              </Grid.ColumnDefinitions>
-                              <TextBlock
-                                x:Name="TextePourcentageJeuEnCours"
-                                Grid.Column="0"
-                                Margin="{x:Static compagnon:ConstantesDesign.MargeDroiteIntermediaire}"
+                            <Grid
+                              x:Name="ColonneImageJeuEnCours"
+                              Grid.Column="0"
+                              VerticalAlignment="Stretch"
+                            >
+                              <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                              </Grid.RowDefinitions>
+                              <Border
+                                Grid.Row="0"
+                                x:Name="ConteneurImageJeuEnCours"
+                                MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
+                                MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
+                                VerticalAlignment="Top"
                                 HorizontalAlignment="Left"
-                                MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
-                                Opacity="0.72"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
-                                LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
-                                LineStackingStrategy="BlockLineHeight"
-                                Text="{Binding JeuCourant.Pourcentage, Mode=OneWay}"
-                                TextAlignment="Left"
-                                TextWrapping="Wrap"
-                                VerticalAlignment="Center"
+                                CornerRadius="{StaticResource RayonCoinsPetit}"
+                                BorderThickness="0"
+                                Background="Transparent"
+                              >
+                                <Grid>
+                                  <Image
+                                    x:Name="ImageJeuEnCours"
+                                    Margin="0"
+                                    MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
+                                    MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Stretch="Uniform"
+                                    SizeChanged="ImageJeuEnCours_TailleChangee"
+                                    Visibility="Collapsed"
+                                  >
+                                    <Image.RenderTransform>
+                                      <TranslateTransform />
+                                    </Image.RenderTransform>
+                                  </Image>
+                                  <Image
+                                    x:Name="ImageJeuEnCoursTransition"
+                                    Margin="0"
+                                    MaxWidth="{x:Static compagnon:ConstantesDesign.LargeurMaxVisuelJeu}"
+                                    MaxHeight="{x:Static compagnon:ConstantesDesign.HauteurMaxVisuelJeu}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Stretch="Uniform"
+                                    SizeChanged="ImageJeuEnCours_TailleChangee"
+                                    Visibility="Collapsed"
+                                  >
+                                    <Image.RenderTransform>
+                                      <TranslateTransform />
+                                    </Image.RenderTransform>
+                                  </Image>
+                                  <TextBlock
+                                    x:Name="TexteImageJeuEnCours"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Margin="0"
+                                    Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+                                    Text="{Binding JeuCourant.TexteVisuelPrincipal}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                    Visibility="{Binding JeuCourant.TexteVisuelPrincipalVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                  />
+                                </Grid>
+                              </Border>
+                              <ui:Button
+                                x:Name="BoutonRejouerJeuEnCours"
+                                Grid.Row="2"
+                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                                Margin="{StaticResource MargeBlocCompacte}"
+                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom"
+                                Appearance="Secondary"
+                                Command="{Binding JeuCourant.CommandeActionRejouer}"
+                                Content="{Binding JeuCourant.LibelleActionRejouer}"
+                                IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
+                                ToolTip="{Binding JeuCourant.ToolTipActionRejouer}"
+                                Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               />
-                              <TextBlock
-                                x:Name="TexteDetailsJeuEnCours"
-                                Grid.Column="1"
-                                Margin="{x:Static compagnon:ConstantesDesign.MargeDroiteIntermediaire}"
-                                HorizontalAlignment="Center"
-                                MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
-                                Opacity="0.72"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
-                                LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
-                                LineStackingStrategy="BlockLineHeight"
-                                TextWrapping="Wrap"
-                                Text="{Binding JeuCourant.Details, Mode=OneWay}"
-                                TextAlignment="Center"
-                                VerticalAlignment="Center"
-                                Visibility="{Binding JeuCourant.DetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
-                              <TextBlock
-                                x:Name="TexteResumeProgressionJeuEnCours"
-                                Grid.Column="2"
-                                HorizontalAlignment="Right"
-                                MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
-                                Opacity="0.72"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
-                                LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
-                                LineStackingStrategy="BlockLineHeight"
-                                Text="{Binding JeuCourant.Progression, Mode=OneWay}"
-                                TextAlignment="Right"
-                                TextWrapping="Wrap"
-                                VerticalAlignment="Center"
-                              />
+                            </Grid>
+
+                            <Grid Grid.Column="2" VerticalAlignment="Stretch">
+                              <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                              </Grid.RowDefinitions>
+                              <Grid Grid.Row="0" HorizontalAlignment="Stretch">
+                                <Border
+                                  x:Name="ConteneurTitreJeuEnCours"
+                                  ClipToBounds="True"
+                                  VerticalAlignment="Top"
+                                  SizeChanged="TitreJeuEnCours_MiseEnPageChangee"
+                                >
+                                  <Canvas
+                                    x:Name="ZoneTitreJeuEnCours"
+                                    Background="Transparent"
+                                    Height="{x:Static compagnon:ConstantesDesign.HauteurZoneTitreJeu}"
+                                    SizeChanged="TitreJeuEnCours_MiseEnPageChangee"
+                                  >
+                                    <TextBlock
+                                      x:Name="TexteTitreJeuEnCours"
+                                      Margin="0"
+                                      VerticalAlignment="Center"
+                                      FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreJeu}"
+                                      FontWeight="SemiBold"
+                                      Text="{Binding JeuCourant.Titre}"
+                                      TextWrapping="NoWrap"
+                                    >
+                                      <TextBlock.RenderTransform>
+                                        <TranslateTransform />
+                                      </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                  </Canvas>
+                                </Border>
+                              </Grid>
+                              <Grid
+                                x:Name="GrilleInformationsJeuEnCours"
+                                Grid.Row="1"
+                                Margin="{x:Static compagnon:ConstantesDesign.MargeSousTitreCompacte}"
+                                SizeChanged="GrilleInformationsJeuEnCours_TailleChangee"
+                                Visibility="{Binding JeuCourant.InformationsVisibles, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                              >
+                                <Border
+                                  x:Name="ZoneConsoleJeuEnCours"
+                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
+                                  Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
+                                  CornerRadius="{StaticResource RayonCoinsPetit}"
+                                  Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                >
+                                  <StackPanel
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                  >
+                                    <Image
+                                      x:Name="ImageConsoleJeuEnCours"
+                                      Width="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
+                                      Height="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
+                                      Margin="{x:Static compagnon:ConstantesDesign.MargeCapsuleDroite}"
+                                      VerticalAlignment="Center"
+                                      Stretch="Uniform"
+                                      Source="{Binding JeuCourant.ImageConsole}"
+                                      Visibility="{Binding JeuCourant.ImageConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                    />
+                                    <TextBlock
+                                      x:Name="TexteConsoleJeuEnCours"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"
+                                      FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
+                                      FontWeight="SemiBold"
+                                      Opacity="0.86"
+                                      Text="{Binding JeuCourant.Console, Mode=OneWay}"
+                                      TextAlignment="Center"
+                                      TextWrapping="Wrap"
+                                    />
+                                  </StackPanel>
+                                </Border>
+
+                                <Border
+                                  x:Name="EtiquetteTypeJeuEnCours"
+                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
+                                  Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
+                                  CornerRadius="{StaticResource RayonCoinsPetit}"
+                                  Visibility="{Binding JeuCourant.GenreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                >
+                                  <TextBlock
+                                    x:Name="TexteTypeJeuEnCours"
+                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.84"
+                                    Text="{Binding JeuCourant.Genre, Mode=OneWay}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                  />
+                                </Border>
+
+                                <Border
+                                  x:Name="EtiquetteDateSortieJeuEnCours"
+                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
+                                  Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
+                                  CornerRadius="{StaticResource RayonCoinsPetit}"
+                                  Visibility="{Binding JeuCourant.DateSortieVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                >
+                                  <TextBlock
+                                    x:Name="TexteDateSortieJeuEnCours"
+                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.84"
+                                    Text="{Binding JeuCourant.DateSortie, Mode=OneWay}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                  />
+                                </Border>
+
+                                <Border
+                                  x:Name="EtiquetteCreditsJeuEnCours"
+                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
+                                  Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                  BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                  BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
+                                  CornerRadius="{StaticResource RayonCoinsPetit}"
+                                  Visibility="{Binding JeuCourant.CreditsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                >
+                                  <TextBlock
+                                    x:Name="TexteDeveloppeurJeuEnCours"
+                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.84"
+                                    Text="{Binding JeuCourant.Credits, Mode=OneWay}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                  />
+                                </Border>
+                              </Grid>
+
+                              <Grid
+                                Grid.Row="3"
+                                Margin="{StaticResource MargeBlocStandard}"
+                                HorizontalAlignment="Stretch"
+                              >
+                                <Grid.ColumnDefinitions>
+                                  <ColumnDefinition Width="*" />
+                                  <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:Button
+                                  x:Name="BoutonVueDetailleeJeuEnCours"
+                                  Grid.Column="1"
+                                  Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                                  HorizontalAlignment="Right"
+                                  Appearance="Secondary"
+                                  Command="{Binding JeuCourant.CommandeActionDetails}"
+                                  Content="{Binding JeuCourant.LibelleActionDetails}"
+                                  IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
+                                  ToolTip="{Binding JeuCourant.ToolTipActionDetails}"
+                                  Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                              </Grid>
+                            </Grid>
+                          </Grid>
+                        </Grid>
+                      </Border>
+                    </Grid>
+
+                    <Grid x:Name="SectionSuccesEnCours" Grid.Row="4" VerticalAlignment="Stretch">
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition x:Name="LigneEspacementSectionSuccesEnCours" Height="6" />
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
+
+                      <Grid x:Name="EnTeteInterneSectionSuccesEnCours" Grid.Row="0">
+                        <TextBlock
+                          Margin="8,0,0,0"
+                          FontWeight="SemiBold"
+                          FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
+                          Text="Rétrosuccès en cours"
+                        />
+                      </Grid>
+
+                      <Border
+                        Grid.Row="2"
+                        VerticalAlignment="Stretch"
+                        Style="{StaticResource StyleSousCarteJeu}"
+                      >
+                        <Grid>
+                          <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="Auto" />
+                          </Grid.RowDefinitions>
+
+                          <Grid Grid.Row="0">
+                            <Grid>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="{x:Static compagnon:ConstantesDesign.LargeurColonneBadgeVedette}" />
+                                <ColumnDefinition Width="*" />
+                              </Grid.ColumnDefinitions>
+
+                              <Border
+                                Grid.Column="0"
+                                x:Name="CartePremierSuccesNonDebloqueVisuel"
+                                VerticalAlignment="Top"
+                                CornerRadius="{StaticResource RayonCoinsPetit}"
+                                BorderThickness="0"
+                                Background="Transparent"
+                              >
+                                <Grid>
+                                  <Image
+                                    x:Name="ImagePremierSuccesNonDebloque"
+                                    Source="{Binding SuccesEnCours.Image}"
+                                    Margin="0"
+                                    MaxWidth="{x:Static compagnon:ConstantesDesign.TailleBadgeVedette}"
+                                    MaxHeight="{x:Static compagnon:ConstantesDesign.TailleBadgeVedette}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="{Binding SuccesEnCours.ImageOpacity}"
+                                    Stretch="Uniform"
+                                    SizeChanged="ImagePremierSuccesNonDebloque_TailleChangee"
+                                    Visibility="{Binding SuccesEnCours.ImageVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                  />
+                                  <TextBlock
+                                    x:Name="TexteImagePremierSuccesNonDebloque"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+                                    Text="{Binding SuccesEnCours.TexteVisuel}"
+                                    TextAlignment="Center"
+                                    TextWrapping="Wrap"
+                                    Visibility="{Binding SuccesEnCours.TexteVisuelVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                  />
+                                </Grid>
+                              </Border>
+
+                              <StackPanel Grid.Column="1" Margin="12,0,12,0">
+                                <TextBox
+                                  x:Name="TexteTitrePremierSuccesNonDebloque"
+                                  Style="{StaticResource StyleTexteCopiable}"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
+                                  FontWeight="SemiBold"
+                                  Text="{Binding SuccesEnCours.Titre}"
+                                  Visibility="{Binding SuccesEnCours.TitreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                                <TextBox
+                                  x:Name="TexteDescriptionPremierSuccesNonDebloque"
+                                  Margin="0,4,0,0"
+                                  Style="{StaticResource StyleTexteCopiable}"
+                                  Opacity="0.78"
+                                  Text="{Binding SuccesEnCours.Description}"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding SuccesEnCours.DescriptionVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                                <TextBox
+                                  x:Name="TextePointsPremierSuccesNonDebloque"
+                                  Margin="0,4,0,0"
+                                  Style="{StaticResource StyleTexteCopiable}"
+                                  Opacity="0.72"
+                                  Text="{Binding SuccesEnCours.DetailsPoints}"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding SuccesEnCours.DetailsPointsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                                <TextBox
+                                  x:Name="TexteFaisabilitePremierSuccesNonDebloque"
+                                  Margin="0,4,0,0"
+                                  Style="{StaticResource StyleTexteCopiable}"
+                                  Opacity="0.72"
+                                  Text="{Binding SuccesEnCours.DetailsFaisabilite}"
+                                  ToolTip="{Binding SuccesEnCours.ToolTipDetailsFaisabilite}"
+                                  TextWrapping="Wrap"
+                                  Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                              </StackPanel>
                             </Grid>
                           </Grid>
 
-                          <Grid
-                            x:Name="ZoneVisibleListeSuccesJeuEnCours"
-                            Grid.Row="1"
-                            Margin="{StaticResource MargeGrilleDense}"
-                            HorizontalAlignment="Stretch"
-                            VerticalAlignment="Stretch"
-                            ClipToBounds="True"
-                            SizeChanged="ConteneurGrilleTousSuccesJeuEnCours_TailleChangee"
-                          >
-                            <ScrollViewer
-                              x:Name="ConteneurGrilleTousSuccesJeuEnCours"
-                              CanContentScroll="False"
-                              HorizontalAlignment="Stretch"
-                              HorizontalScrollBarVisibility="Disabled"
-                              MouseEnter="ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris"
-                              MouseLeave="ConteneurGrilleTousSuccesJeuEnCours_SortieSouris"
-                              ScrollChanged="ConteneurGrilleTousSuccesJeuEnCours_DefilementChange"
-                              VerticalAlignment="Stretch"
-                              VerticalScrollBarVisibility="Hidden"
+                          <Grid Grid.Row="2" Margin="0" VerticalAlignment="Bottom">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel
+                              Grid.Column="0"
+                              HorizontalAlignment="Left"
+                              Orientation="Horizontal"
                             >
-                              <WrapPanel
-                                x:Name="GrilleTousSuccesJeuEnCours"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Top"
-                              />
-                            </ScrollViewer>
+                              <ui:Button
+                                x:Name="BoutonSuccesEnCoursPrecedent"
+                                Width="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
+                                Height="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
+                                Margin="{x:Static compagnon:ConstantesDesign.MargeActionAdjacente}"
+                                Appearance="Secondary"
+                                Command="{Binding SuccesEnCours.CommandePrecedent}"
+                                IsEnabled="{Binding SuccesEnCours.PrecedentActif}"
+                                ToolTip="Afficher le rétrosuccès précédent"
+                                Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                              >
+                                <TextBlock
+                                  x:Name="TexteChevronSuccesEnCoursPrecedent"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
+                                  FontWeight="ExtraBold"
+                                  Opacity="{Binding SuccesEnCours.PrecedentOpacity}"
+                                  Text="‹"
+                                  TextAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,-5,0,-1"
+                                />
+                              </ui:Button>
+                              <ui:Button
+                                x:Name="BoutonSuccesEnCoursSuivant"
+                                Width="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
+                                Height="{x:Static compagnon:ConstantesDesign.TailleBoutonNavigation}"
+                                Appearance="Secondary"
+                                Command="{Binding SuccesEnCours.CommandeSuivant}"
+                                IsEnabled="{Binding SuccesEnCours.SuivantActif}"
+                                ToolTip="Afficher le rétrosuccès suivant"
+                                Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                              >
+                                <TextBlock
+                                  x:Name="TexteChevronSuccesEnCoursSuivant"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
+                                  FontWeight="ExtraBold"
+                                  Opacity="{Binding SuccesEnCours.SuivantOpacity}"
+                                  Text="›"
+                                  TextAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,-5,0,-1"
+                                />
+                              </ui:Button>
+                            </StackPanel>
+                            <ui:Button
+                              x:Name="BoutonPasserSuccesEnCours"
+                              Grid.Column="1"
+                              Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                              Margin="{StaticResource MargeInterneDroite}"
+                              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                              Appearance="Secondary"
+                              Command="{Binding SuccesEnCours.CommandePasser}"
+                              Content="Passer"
+                              IsEnabled="{Binding SuccesEnCours.PasserActif}"
+                              ToolTip="Faire ce succès plus tard"
+                              Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                            />
                           </Grid>
                         </Grid>
+                      </Border>
+                    </Grid>
 
-                        <Grid Grid.Row="2" Margin="0" VerticalAlignment="Bottom">
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
+                    <Grid
+                      x:Name="SectionListeSuccesJeuEnCours"
+                      Grid.Row="6"
+                      VerticalAlignment="Stretch"
+                    >
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition
+                          x:Name="LigneEspacementSectionListeSuccesJeuEnCours"
+                          Height="6"
+                        />
+                        <RowDefinition Height="*" />
+                      </Grid.RowDefinitions>
 
-                          <Grid
-                            Grid.Column="0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                          >
+                      <Grid x:Name="EnTeteInterneSectionListeSuccesJeuEnCours" Grid.Row="0">
+                        <TextBlock
+                          Margin="8,0,0,0"
+                          FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSousTitre}"
+                          FontWeight="SemiBold"
+                          Text="Rétrosuccès du jeu"
+                        />
+                      </Grid>
+
+                      <Border
+                        x:Name="CarteListeSuccesJeuEnCours"
+                        Grid.Row="2"
+                        HorizontalAlignment="Stretch"
+                        SizeChanged="CadreSuccesJeuEnCours_TailleChangee"
+                        VerticalAlignment="Stretch"
+                        Style="{StaticResource StyleSousCarteJeu}"
+                      >
+                        <Grid x:Name="StructureListeSuccesJeuEnCours">
+                          <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="10" />
+                            <RowDefinition Height="Auto" />
+                          </Grid.RowDefinitions>
+
+                          <Grid x:Name="ZonePrincipaleListeSuccesJeuEnCours" Grid.Row="0">
+                            <Grid.RowDefinitions>
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                              <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                              </Grid.RowDefinitions>
+                              <ProgressBar
+                                x:Name="BarreProgressionJeuEnCours"
+                                Grid.Row="0"
+                                Height="{x:Static compagnon:ConstantesDesign.HauteurBarreProgression}"
+                                Margin="0"
+                                Minimum="0"
+                                Maximum="100"
+                                Value="{Binding JeuCourant.ProgressionValeur, Mode=OneWay}"
+                              />
+                              <Grid Grid.Row="1" Margin="{StaticResource MargeBlocStandard}">
+                                <Grid.ColumnDefinitions>
+                                  <ColumnDefinition Width="Auto" />
+                                  <ColumnDefinition Width="*" />
+                                  <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                  x:Name="TextePourcentageJeuEnCours"
+                                  Grid.Column="0"
+                                  Margin="{x:Static compagnon:ConstantesDesign.MargeDroiteIntermediaire}"
+                                  HorizontalAlignment="Left"
+                                  MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
+                                  Opacity="0.72"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
+                                  LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
+                                  LineStackingStrategy="BlockLineHeight"
+                                  Text="{Binding JeuCourant.Pourcentage, Mode=OneWay}"
+                                  TextAlignment="Left"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                />
+                                <TextBlock
+                                  x:Name="TexteDetailsJeuEnCours"
+                                  Grid.Column="1"
+                                  Margin="{x:Static compagnon:ConstantesDesign.MargeDroiteIntermediaire}"
+                                  HorizontalAlignment="Center"
+                                  MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
+                                  Opacity="0.72"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
+                                  LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
+                                  LineStackingStrategy="BlockLineHeight"
+                                  TextWrapping="Wrap"
+                                  Text="{Binding JeuCourant.Details, Mode=OneWay}"
+                                  TextAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Visibility="{Binding JeuCourant.DetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                />
+                                <TextBlock
+                                  x:Name="TexteResumeProgressionJeuEnCours"
+                                  Grid.Column="2"
+                                  HorizontalAlignment="Right"
+                                  MinHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneInformation}"
+                                  Opacity="0.72"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTexte}"
+                                  LineHeight="{x:Static compagnon:ConstantesDesign.HauteurLigneTexte}"
+                                  LineStackingStrategy="BlockLineHeight"
+                                  Text="{Binding JeuCourant.Progression, Mode=OneWay}"
+                                  TextAlignment="Right"
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                />
+                              </Grid>
+                            </Grid>
+
+                            <Grid
+                              x:Name="ZoneVisibleListeSuccesJeuEnCours"
+                              Grid.Row="1"
+                              Margin="{StaticResource MargeGrilleDense}"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              ClipToBounds="True"
+                              SizeChanged="ConteneurGrilleTousSuccesJeuEnCours_TailleChangee"
+                            >
+                              <ScrollViewer
+                                x:Name="ConteneurGrilleTousSuccesJeuEnCours"
+                                CanContentScroll="False"
+                                HorizontalAlignment="Stretch"
+                                HorizontalScrollBarVisibility="Disabled"
+                                MouseEnter="ConteneurGrilleTousSuccesJeuEnCours_EntreeSouris"
+                                MouseLeave="ConteneurGrilleTousSuccesJeuEnCours_SortieSouris"
+                                ScrollChanged="ConteneurGrilleTousSuccesJeuEnCours_DefilementChange"
+                                VerticalAlignment="Stretch"
+                                VerticalScrollBarVisibility="Hidden"
+                              >
+                                <WrapPanel
+                                  x:Name="GrilleTousSuccesJeuEnCours"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Top"
+                                />
+                              </ScrollViewer>
+                            </Grid>
+                          </Grid>
+
+                          <Grid Grid.Row="2" Margin="0" VerticalAlignment="Bottom">
                             <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="12" />
+                              <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <StackPanel
+                            <Grid
                               Grid.Column="0"
-                              Orientation="Horizontal"
+                              HorizontalAlignment="Left"
                               VerticalAlignment="Center"
                             >
-                              <Grid
-                                Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                              >
-                                <Border
-                                  Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                  Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                  Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                  CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeExterieur}"
-                                  ClipToBounds="True"
-                                >
-                                  <Grid>
-                                    <Rectangle Margin="1">
-                                      <Rectangle.Fill>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                          <GradientStop Color="#5878C9" Offset="0" />
-                                          <GradientStop Color="#3A5EA8" Offset="0.48" />
-                                          <GradientStop Color="#2B8C7B" Offset="1" />
-                                        </LinearGradientBrush>
-                                      </Rectangle.Fill>
-                                    </Rectangle>
-                                    <Rectangle
-                                      Margin="1"
-                                      Height="6"
-                                      VerticalAlignment="Bottom"
-                                      Fill="#66304A3A"
-                                    />
-                                    <Rectangle
-                                      Margin="1"
-                                      Height="3"
-                                      VerticalAlignment="Top"
-                                      Fill="#26FFFFFF"
-                                    />
-                                    <Ellipse
-                                      Width="7"
-                                      Height="7"
-                                      Margin="0,0,2,2"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Top"
-                                      Fill="#33FFF2B0"
-                                    />
-                                    <Ellipse
-                                      Width="6"
-                                      Height="6"
-                                      Margin="0,0,0,1"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Fill="#66FFFFFF"
-                                    />
-                                    <Rectangle
-                                      Width="9"
-                                      Height="2"
-                                      Margin="0,5,0,0"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Top"
-                                      Fill="#55D7F7FF"
-                                    />
-                                  </Grid>
-                                </Border>
-                              </Grid>
-                              <TextBlock
-                                Margin="6,0,0,0"
-                                VerticalAlignment="Center"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
-                                Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
-                                Text="Softcore"
-                              />
-                            </StackPanel>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
 
-                            <StackPanel
-                              Grid.Column="2"
-                              Orientation="Horizontal"
-                              VerticalAlignment="Center"
-                            >
-                              <Grid
-                                Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                              <StackPanel
+                                Grid.Column="0"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
                               >
-                                <Border
+                                <Grid
                                   Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
                                   Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                  Background="#1CF5C84C"
-                                  BorderBrush="#F5C84C"
-                                  BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourLegendeThickness}"
-                                  CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeExterieur}"
                                 >
-                                  <Border.Effect>
-                                    <DropShadowEffect
-                                      BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcorePrioritaire}"
-                                      ShadowDepth="0"
-                                      Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
-                                      Color="#F5C84C"
-                                    />
-                                  </Border.Effect>
                                   <Border
-                                    Margin="0"
+                                    Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                                    Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
                                     Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                                    CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeInterieur}"
+                                    CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeExterieur}"
                                     ClipToBounds="True"
                                   >
                                     <Grid>
                                       <Rectangle Margin="1">
                                         <Rectangle.Fill>
                                           <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                            <GradientStop Color="#AA6C2C" Offset="0" />
-                                            <GradientStop Color="#C58C38" Offset="0.42" />
-                                            <GradientStop Color="#5D3C16" Offset="1" />
+                                            <GradientStop Color="#5878C9" Offset="0" />
+                                            <GradientStop Color="#3A5EA8" Offset="0.48" />
+                                            <GradientStop Color="#2B8C7B" Offset="1" />
                                           </LinearGradientBrush>
                                         </Rectangle.Fill>
                                       </Rectangle>
@@ -1149,13 +1075,13 @@
                                         Margin="1"
                                         Height="6"
                                         VerticalAlignment="Bottom"
-                                        Fill="#70422712"
+                                        Fill="#66304A3A"
                                       />
                                       <Rectangle
                                         Margin="1"
                                         Height="3"
                                         VerticalAlignment="Top"
-                                        Fill="#24FFF7D0"
+                                        Fill="#26FFFFFF"
                                       />
                                       <Ellipse
                                         Width="7"
@@ -1163,7 +1089,7 @@
                                         Margin="0,0,2,2"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Top"
-                                        Fill="#40FFF0A8"
+                                        Fill="#33FFF2B0"
                                       />
                                       <Ellipse
                                         Width="6"
@@ -1171,7 +1097,7 @@
                                         Margin="0,0,0,1"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Fill="#78FFF6D6"
+                                        Fill="#66FFFFFF"
                                       />
                                       <Rectangle
                                         Width="9"
@@ -1179,172 +1105,261 @@
                                         Margin="0,5,0,0"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Top"
-                                        Fill="#66FFE7A0"
+                                        Fill="#55D7F7FF"
                                       />
                                     </Grid>
                                   </Border>
-                                </Border>
-                              </Grid>
-                              <TextBlock
-                                Margin="6,0,0,0"
+                                </Grid>
+                                <TextBlock
+                                  Margin="6,0,0,0"
+                                  VerticalAlignment="Center"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
+                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
+                                  Text="Softcore"
+                                />
+                              </StackPanel>
+
+                              <StackPanel
+                                Grid.Column="2"
+                                Orientation="Horizontal"
                                 VerticalAlignment="Center"
-                                FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
-                                Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
-                                Text="Hardcore"
-                              />
+                              >
+                                <Grid
+                                  Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                                  Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                                >
+                                  <Border
+                                    Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                                    Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
+                                    Background="#1CF5C84C"
+                                    BorderBrush="#F5C84C"
+                                    BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourLegendeThickness}"
+                                    CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeExterieur}"
+                                  >
+                                    <Border.Effect>
+                                      <DropShadowEffect
+                                        BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcorePrioritaire}"
+                                        ShadowDepth="0"
+                                        Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
+                                        Color="#F5C84C"
+                                      />
+                                    </Border.Effect>
+                                    <Border
+                                      Margin="0"
+                                      Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                      CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeInterieur}"
+                                      ClipToBounds="True"
+                                    >
+                                      <Grid>
+                                        <Rectangle Margin="1">
+                                          <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                              <GradientStop Color="#AA6C2C" Offset="0" />
+                                              <GradientStop Color="#C58C38" Offset="0.42" />
+                                              <GradientStop Color="#5D3C16" Offset="1" />
+                                            </LinearGradientBrush>
+                                          </Rectangle.Fill>
+                                        </Rectangle>
+                                        <Rectangle
+                                          Margin="1"
+                                          Height="6"
+                                          VerticalAlignment="Bottom"
+                                          Fill="#70422712"
+                                        />
+                                        <Rectangle
+                                          Margin="1"
+                                          Height="3"
+                                          VerticalAlignment="Top"
+                                          Fill="#24FFF7D0"
+                                        />
+                                        <Ellipse
+                                          Width="7"
+                                          Height="7"
+                                          Margin="0,0,2,2"
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Top"
+                                          Fill="#40FFF0A8"
+                                        />
+                                        <Ellipse
+                                          Width="6"
+                                          Height="6"
+                                          Margin="0,0,0,1"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Fill="#78FFF6D6"
+                                        />
+                                        <Rectangle
+                                          Width="9"
+                                          Height="2"
+                                          Margin="0,5,0,0"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Top"
+                                          Fill="#66FFE7A0"
+                                        />
+                                      </Grid>
+                                    </Border>
+                                  </Border>
+                                </Grid>
+                                <TextBlock
+                                  Margin="6,0,0,0"
+                                  VerticalAlignment="Center"
+                                  FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
+                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
+                                  Text="Hardcore"
+                                />
+                              </StackPanel>
+                            </Grid>
+
+                            <StackPanel
+                              Grid.Column="1"
+                              HorizontalAlignment="Right"
+                              Orientation="Horizontal"
+                              VerticalAlignment="Bottom"
+                            >
+                              <ui:Button
+                                x:Name="BoutonOrdreSuccesGrille"
+                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                                Appearance="Secondary"
+                                Click="BoutonOrdreSuccesGrille_Click"
+                                Content="{Binding LibelleOrdreSuccesGrille}"
+                                ToolTip="Changer le mode d'affichage des rétrosuccès"
+                              >
+                                <ui:Button.ContextMenu>
+                                  <ContextMenu
+                                    x:Name="MenuOrdreSuccesGrille"
+                                    DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                  >
+                                    <MenuItem
+                                      x:Name="MenuItemOrdreSuccesNormal"
+                                      Command="{Binding CommandeOrdreSuccesNormal}"
+                                    >
+                                      <MenuItem.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                          <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                            <Ellipse
+                                              x:Name="ContourOrdreSuccesNormal"
+                                              Stroke="{Binding ContourOrdreSuccesNormal}"
+                                              StrokeThickness="1.2"
+                                            />
+                                            <Ellipse
+                                              x:Name="CentreOrdreSuccesNormal"
+                                              Width="6"
+                                              Height="6"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Visibility="{Binding OrdreSuccesNormalActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                            />
+                                          </Grid>
+                                          <TextBlock VerticalAlignment="Center" Text="Normal" />
+                                        </StackPanel>
+                                      </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem
+                                      x:Name="MenuItemOrdreSuccesFacile"
+                                      Command="{Binding CommandeOrdreSuccesFacile}"
+                                    >
+                                      <MenuItem.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                          <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                            <Ellipse
+                                              x:Name="ContourOrdreSuccesFacile"
+                                              Stroke="{Binding ContourOrdreSuccesFacile}"
+                                              StrokeThickness="1.2"
+                                            />
+                                            <Ellipse
+                                              x:Name="CentreOrdreSuccesFacile"
+                                              Width="6"
+                                              Height="6"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Visibility="{Binding OrdreSuccesFacileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                            />
+                                          </Grid>
+                                          <TextBlock VerticalAlignment="Center" Text="Facile" />
+                                        </StackPanel>
+                                      </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem
+                                      x:Name="MenuItemOrdreSuccesDifficile"
+                                      Command="{Binding CommandeOrdreSuccesDifficile}"
+                                    >
+                                      <MenuItem.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                          <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                            <Ellipse
+                                              x:Name="ContourOrdreSuccesDifficile"
+                                              Stroke="{Binding ContourOrdreSuccesDifficile}"
+                                              StrokeThickness="1.2"
+                                            />
+                                            <Ellipse
+                                              x:Name="CentreOrdreSuccesDifficile"
+                                              Width="6"
+                                              Height="6"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Visibility="{Binding OrdreSuccesDifficileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                            />
+                                          </Grid>
+                                          <TextBlock VerticalAlignment="Center" Text="Difficile" />
+                                        </StackPanel>
+                                      </MenuItem.Header>
+                                    </MenuItem>
+                                    <MenuItem
+                                      x:Name="MenuItemOrdreSuccesAleatoire"
+                                      Command="{Binding CommandeOrdreSuccesAleatoire}"
+                                    >
+                                      <MenuItem.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                          <Grid Width="12" Height="12" Margin="0,0,6,0">
+                                            <Ellipse
+                                              x:Name="ContourOrdreSuccesAleatoire"
+                                              Stroke="{Binding ContourOrdreSuccesAleatoire}"
+                                              StrokeThickness="1.2"
+                                            />
+                                            <Ellipse
+                                              x:Name="CentreOrdreSuccesAleatoire"
+                                              Width="6"
+                                              Height="6"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Visibility="{Binding OrdreSuccesAleatoireActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                            />
+                                          </Grid>
+                                          <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
+                                        </StackPanel>
+                                      </MenuItem.Header>
+                                    </MenuItem>
+                                  </ContextMenu>
+                                </ui:Button.ContextMenu>
+                              </ui:Button>
                             </StackPanel>
                           </Grid>
 
-                          <StackPanel
-                            Grid.Column="1"
-                            HorizontalAlignment="Right"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Bottom"
-                          >
-                            <ui:Button
-                              x:Name="BoutonOrdreSuccesGrille"
-                              Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                              Appearance="Secondary"
-                              Click="BoutonOrdreSuccesGrille_Click"
-                              Content="{Binding LibelleOrdreSuccesGrille}"
-                              ToolTip="Changer le mode d'affichage des rétrosuccès"
-                            >
-                              <ui:Button.ContextMenu>
-                                <ContextMenu
-                                  x:Name="MenuOrdreSuccesGrille"
-                                  DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                                >
-                                  <MenuItem
-                                    x:Name="MenuItemOrdreSuccesNormal"
-                                    Command="{Binding CommandeOrdreSuccesNormal}"
-                                  >
-                                    <MenuItem.Header>
-                                      <StackPanel Orientation="Horizontal">
-                                        <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                          <Ellipse
-                                            x:Name="ContourOrdreSuccesNormal"
-                                            Stroke="{Binding ContourOrdreSuccesNormal}"
-                                            StrokeThickness="1.2"
-                                          />
-                                          <Ellipse
-                                            x:Name="CentreOrdreSuccesNormal"
-                                            Width="6"
-                                            Height="6"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding OrdreSuccesNormalActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                          />
-                                        </Grid>
-                                        <TextBlock VerticalAlignment="Center" Text="Normal" />
-                                      </StackPanel>
-                                    </MenuItem.Header>
-                                  </MenuItem>
-                                  <MenuItem
-                                    x:Name="MenuItemOrdreSuccesFacile"
-                                    Command="{Binding CommandeOrdreSuccesFacile}"
-                                  >
-                                    <MenuItem.Header>
-                                      <StackPanel Orientation="Horizontal">
-                                        <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                          <Ellipse
-                                            x:Name="ContourOrdreSuccesFacile"
-                                            Stroke="{Binding ContourOrdreSuccesFacile}"
-                                            StrokeThickness="1.2"
-                                          />
-                                          <Ellipse
-                                            x:Name="CentreOrdreSuccesFacile"
-                                            Width="6"
-                                            Height="6"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding OrdreSuccesFacileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                          />
-                                        </Grid>
-                                        <TextBlock VerticalAlignment="Center" Text="Facile" />
-                                      </StackPanel>
-                                    </MenuItem.Header>
-                                  </MenuItem>
-                                  <MenuItem
-                                    x:Name="MenuItemOrdreSuccesDifficile"
-                                    Command="{Binding CommandeOrdreSuccesDifficile}"
-                                  >
-                                    <MenuItem.Header>
-                                      <StackPanel Orientation="Horizontal">
-                                        <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                          <Ellipse
-                                            x:Name="ContourOrdreSuccesDifficile"
-                                            Stroke="{Binding ContourOrdreSuccesDifficile}"
-                                            StrokeThickness="1.2"
-                                          />
-                                          <Ellipse
-                                            x:Name="CentreOrdreSuccesDifficile"
-                                            Width="6"
-                                            Height="6"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding OrdreSuccesDifficileActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                          />
-                                        </Grid>
-                                        <TextBlock VerticalAlignment="Center" Text="Difficile" />
-                                      </StackPanel>
-                                    </MenuItem.Header>
-                                  </MenuItem>
-                                  <MenuItem
-                                    x:Name="MenuItemOrdreSuccesAleatoire"
-                                    Command="{Binding CommandeOrdreSuccesAleatoire}"
-                                  >
-                                    <MenuItem.Header>
-                                      <StackPanel Orientation="Horizontal">
-                                        <Grid Width="12" Height="12" Margin="0,0,6,0">
-                                          <Ellipse
-                                            x:Name="ContourOrdreSuccesAleatoire"
-                                            Stroke="{Binding ContourOrdreSuccesAleatoire}"
-                                            StrokeThickness="1.2"
-                                          />
-                                          <Ellipse
-                                            x:Name="CentreOrdreSuccesAleatoire"
-                                            Width="6"
-                                            Height="6"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding OrdreSuccesAleatoireActif, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                          />
-                                        </Grid>
-                                        <TextBlock VerticalAlignment="Center" Text="Aléatoire" />
-                                      </StackPanel>
-                                    </MenuItem.Header>
-                                  </MenuItem>
-                                </ContextMenu>
-                              </ui:Button.ContextMenu>
-                            </ui:Button>
-                          </StackPanel>
+                          <Grid Grid.Row="2" Visibility="Collapsed">
+                            <TextBlock
+                              x:Name="TexteEtatSuccesRecents"
+                              Text="Les succès récents apparaîtront ici."
+                            />
+                            <TextBlock
+                              x:Name="TexteSuccesRecent1"
+                              Text="Aucun succès récent à afficher."
+                            />
+                            <TextBlock
+                              x:Name="TexteSuccesRecent2"
+                              Text="Aucun succès récent à afficher."
+                            />
+                            <TextBlock
+                              x:Name="TexteSuccesRecent3"
+                              Text="Aucun succès récent à afficher."
+                            />
+                          </Grid>
                         </Grid>
-
-                        <Grid Grid.Row="2" Visibility="Collapsed">
-                          <TextBlock
-                            x:Name="TexteEtatSuccesRecents"
-                            Text="Les succès récents apparaîtront ici."
-                          />
-                          <TextBlock
-                            x:Name="TexteSuccesRecent1"
-                            Text="Aucun succès récent à afficher."
-                          />
-                          <TextBlock
-                            x:Name="TexteSuccesRecent2"
-                            Text="Aucun succès récent à afficher."
-                          />
-                          <TextBlock
-                            x:Name="TexteSuccesRecent3"
-                            Text="Aucun succès récent à afficher."
-                          />
-                        </Grid>
-                      </Grid>
-                    </Border>
+                      </Border>
+                    </Grid>
                   </Grid>
-                </Grid>
-              </Border>
-            </Grid>
+                </Border>
+              </Grid>
             </Grid>
           </Grid>
         </ScrollViewer>
@@ -1497,7 +1512,7 @@
             ToolTip="{Binding ToolTipRechargerJeu}"
             Style="{StaticResource StyleBoutonIconeSecondaire}"
           >
-            <Viewbox Width="16" Height="16" Stretch="Uniform">
+            <Viewbox Width="14" Height="14" Stretch="Uniform">
               <TextBlock
                 FontSize="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
                 LineHeight="16"
@@ -1507,7 +1522,12 @@
                 TextAlignment="Center"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
-              />
+                RenderTransformOrigin="0.5,0.5"
+              >
+                <TextBlock.RenderTransform>
+                  <RotateTransform Angle="45" />
+                </TextBlock.RenderTransform>
+              </TextBlock>
             </Viewbox>
           </ui:Button>
         </StackPanel>
@@ -1664,4 +1684,3 @@
     />
   </Grid>
 </ui:FluentWindow>
-

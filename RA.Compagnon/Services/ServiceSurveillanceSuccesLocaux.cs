@@ -344,7 +344,7 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
     }
 
     /*
-     * Planifie un signal différé supplémentaire pour les stratégies RACache
+     * Planifié un signal différé supplémentaire pour les stratégies RACache
      * qui nécessitent une seconde lecture du journal.
      */
     private void PlanifierSignalSuiviRACache(string nomEmulateur, string typeSource, string chemin)
@@ -410,7 +410,7 @@ public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
     }
 
     /*
-     * Planifie le signal initial spécifique à RetroArch après un court délai
+     * Planifié le signal initial spécifique à RetroArch après un court délai
      * pour laisser le journal se stabiliser.
      */
     private void PlanifierSignalInitialRetroArch(string signatureCapturee)

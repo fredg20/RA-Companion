@@ -14,48 +14,48 @@ static class TestRunner
     public static int Executer()
     {
         ExecuterTest(
-            "Orchestrateur ignore une detection locale faible apres un jeu valide recent",
+            "Orchestrateur ignore une détection locale faible après un jeu valide récent",
             OrchestrateurIgnoreDetectionLocaleFaibleApresJeuValideRecent
         );
         ExecuterTest(
-            "Orchestrateur conserve un jeu valide face a un aucun jeu tardif",
+            "Orchestrateur conserve un jeu valide face à un signal \"aucun jeu\" tardif",
             OrchestrateurConserveJeuValideFaceAAucunJeuTardif
         );
         ExecuterTest(
-            "Resolution rapide retrouve le bon GameID depuis les jeux recents",
+            "Résolution rapide retrouve le bon GameID depuis les jeux récents",
             ResolutionRapideRetrouveLeBonGameId
         );
         ExecuterTest(
-            "Resolution catalogue utilise aussi les titres alternatifs",
+            "Résolution catalogue utilise aussi les titres alternatifs",
             ResolutionCatalogueUtiliseTitresAlternatifs
         );
         ExecuterTest(
-            "Detection de succes local repere un nouveau hardcore",
+            "Détection de succès local repère un nouveau hardcore",
             DetectionSuccesRepereNouveauHardcore
         );
         ExecuterTest(
-            "Detection de succes local ignore un succes deja observe",
+            "Détection de succès local ignore un succès déjà observé",
             DetectionSuccesIgnoreSuccesDejaObserve
         );
         ExecuterTest(
-            "Le debloqueur virtuel couvre les familles log local",
+            "Le débloqueur virtuel couvre les familles de journaux locaux",
             DebloqueurVirtuelCouvreLesFamillesLogLocal
         );
         ExecuterTest(
-            "Fusion de succes catalogue ne regresse pas sur une liste longue",
+            "Fusion de succès catalogue ne régresse pas sur une liste longue",
             FusionSuccesCatalogueNeRegressePasSurListeLongue
         );
         ExecuterTest(
-            "Comparaison de versions detecte une version plus recente",
+            "Comparaison de versions détecte une version plus récente",
             ComparaisonVersionsDetecteVersionPlusRecente
         );
         ExecuterTest(
-            "Comparaison de versions traite 1.0.2 et 1.0.2.0 comme equivalentes",
+            "Comparaison de versions traite 1.0.2 et 1.0.2.0 comme équivalentes",
             ComparaisonVersionsTraiteFormatsEquivalents
         );
         Console.WriteLine();
         Console.WriteLine(
-            _echecs == 0 ? "Tous les tests sont passes." : $"{_echecs} test(s) en echec."
+            _echecs == 0 ? "Tous les tests sont passés." : $"{_echecs} test(s) en échec."
         );
         return _echecs == 0 ? 0 : 1;
     }
@@ -70,7 +70,7 @@ static class TestRunner
         catch (Exception exception)
         {
             _echecs++;
-            Console.WriteLine($"[ECHEC] {nom}");
+            Console.WriteLine($"[ÉCHEC] {nom}");
             Console.WriteLine($"        {exception.Message}");
         }
     }
@@ -80,24 +80,24 @@ static class TestRunner
         ServiceOrchestrateurEtatJeu service = new();
         Assert.True(
             service.EnregistrerJeuAffiche(11423, "Ace Combat", "api"),
-            "Le jeu affiche initial doit etre accepte."
+            "Le jeu affiché initial doit être accepté."
         );
 
         bool transitionAcceptee = service.EnregistrerDetectionLocale(0, string.Empty, "local");
 
         Assert.False(
             transitionAcceptee,
-            "Une detection locale faible recente ne doit pas ecraser un jeu valide."
+            "Une détection locale faible récente ne doit pas écraser un jeu valide."
         );
         Assert.Equal(
             11423,
             service.EtatCourant.IdentifiantJeu,
-            "Le GameID affiche doit etre conserve."
+            "Le GameID affiché doit être conservé."
         );
         Assert.Equal(
             "Ace Combat",
             service.EtatCourant.TitreJeu,
-            "Le titre affiche doit etre conserve."
+            "Le titre affiché doit être conservé."
         );
     }
 
@@ -106,19 +106,19 @@ static class TestRunner
         ServiceOrchestrateurEtatJeu service = new();
         Assert.True(
             service.EnregistrerJeuAffiche(18160, "Crash of the Titans", "api"),
-            "Le jeu affiche initial doit etre accepte."
+            "Le jeu affiché initial doit être accepté."
         );
 
         bool transitionAcceptee = service.EnregistrerAucunJeu("local");
 
         Assert.False(
             transitionAcceptee,
-            "Un 'aucun jeu' tardif ne doit pas vider un jeu recent deja valide."
+            "Un 'aucun jeu' tardif ne doit pas vider un jeu récent déjà valide."
         );
         Assert.Equal(
             18160,
             service.EtatCourant.IdentifiantJeu,
-            "Le GameID recent doit etre conserve."
+            "Le GameID récent doit être conservé."
         );
     }
 
@@ -139,8 +139,8 @@ static class TestRunner
             jeuxRecents
         );
 
-        Assert.NotNull(resolution, "La resolution rapide devrait trouver un jeu recent identique.");
-        Assert.Equal(18160, resolution!.IdentifiantJeu, "Le GameID recent doit etre retrouve.");
+        Assert.NotNull(resolution, "La résolution rapide devrait trouver un jeu récent identique.");
+        Assert.Equal(18160, resolution!.IdentifiantJeu, "Le GameID récent doit être retrouvé.");
         Assert.Equal("jeux_recents", resolution.Source, "La source attendue est jeux_recents.");
     }
 
@@ -167,7 +167,7 @@ static class TestRunner
         Assert.Equal(
             19924,
             resolution!.IdentifiantJeu,
-            "Le GameID du titre alternatif doit etre retrouve."
+            "Le GameID du titre alternatif doit être retrouvé."
         );
         Assert.Equal(
             "catalogue_local",
@@ -199,9 +199,9 @@ static class TestRunner
                 succesCourants
             );
 
-        Assert.Equal(1, resultat.Count, "Un nouveau succes hardcore doit etre detecte.");
-        Assert.True(resultat[0].Hardcore, "Le succes detecte doit etre marque hardcore.");
-        Assert.Equal(214818, resultat[0].IdentifiantSucces, "Le bon succes doit etre detecte.");
+        Assert.Equal(1, resultat.Count, "Un nouveau succès hardcore doit être détecté.");
+        Assert.True(resultat[0].Hardcore, "Le succès détecté doit être marqué hardcore.");
+        Assert.Equal(214818, resultat[0].IdentifiantSucces, "Le bon succès doit être détecté.");
     }
 
     private static void DetectionSuccesIgnoreSuccesDejaObserve()
@@ -237,7 +237,7 @@ static class TestRunner
                 succesCourants
             );
 
-        Assert.Equal(0, resultat.Count, "Un succes deja observe ne doit pas etre re-detecte.");
+        Assert.Equal(0, resultat.Count, "Un succès déjà observé ne doit pas être re-détecté.");
     }
 
     private static void FusionSuccesCatalogueNeRegressePasSurListeLongue()
@@ -249,7 +249,7 @@ static class TestRunner
                 .Select(index => new SuccesCatalogueLocal
                 {
                     AchievementId = index,
-                    Titre = $"Succes {index}",
+                    Titre = $"Succès {index}",
                     Points = index,
                 }),
         ];
@@ -258,61 +258,61 @@ static class TestRunner
             new SuccesCatalogueLocal
             {
                 AchievementId = 1,
-                Titre = "Succes 1 mis a jour",
+                Titre = "Succès 1 mis à jour",
                 Points = 999,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 2,
-                Titre = "Succes 2",
+                Titre = "Succès 2",
                 Points = 2,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 3,
-                Titre = "Succes 3",
+                Titre = "Succès 3",
                 Points = 3,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 4,
-                Titre = "Succes 4",
+                Titre = "Succès 4",
                 Points = 4,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 5,
-                Titre = "Succes 5",
+                Titre = "Succès 5",
                 Points = 5,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 6,
-                Titre = "Succes 6",
+                Titre = "Succès 6",
                 Points = 6,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 7,
-                Titre = "Succes 7",
+                Titre = "Succès 7",
                 Points = 7,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 8,
-                Titre = "Succes 8",
+                Titre = "Succès 8",
                 Points = 8,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 9,
-                Titre = "Succes 9",
+                Titre = "Succès 9",
                 Points = 9,
             },
             new SuccesCatalogueLocal
             {
                 AchievementId = 10,
-                Titre = "Succes 10",
+                Titre = "Succès 10",
                 Points = 10,
             },
         ];
@@ -324,26 +324,26 @@ static class TestRunner
 
         Assert.NotNull(
             methodeFusion,
-            "La methode de fusion des succes doit etre trouvable par reflection."
+            "La méthode de fusion des succès doit être trouvable par réflexion."
         );
 
         object? resultatBrut = methodeFusion!.Invoke(null, [succesExistants, succesRecus]);
         List<SuccesCatalogueLocal>? resultat = resultatBrut as List<SuccesCatalogueLocal>;
 
-        Assert.NotNull(resultat, "La fusion doit retourner une liste de succes.");
+        Assert.NotNull(resultat, "La fusion doit retourner une liste de succès.");
         Assert.Equal(
             204,
             resultat!.Count,
-            "Une mise a jour partielle ne doit pas reduire une longue liste existante."
+            "Une mise à jour partielle ne doit pas réduire une longue liste existante."
         );
         Assert.Equal(
             999,
             resultat.First(item => item.AchievementId == 1).Points,
-            "Les succes recents doivent quand meme mettre a jour les entrees recues."
+            "Les succès récents doivent quand même mettre à jour les entrées reçues."
         );
         Assert.NotNull(
             resultat.FirstOrDefault(item => item.AchievementId == 204),
-            "Les succes absents de la mise a jour partielle doivent etre conserves."
+            "Les succès absents de la mise à jour partielle doivent être conservés."
         );
     }
 
@@ -351,14 +351,14 @@ static class TestRunner
     {
         int resultat = ServiceMiseAJourApplication.ComparerVersions("1.0.3", "1.0.2");
 
-        Assert.True(resultat > 0, "La version 1.0.3 devrait etre plus recente que 1.0.2.");
+        Assert.True(resultat > 0, "La version 1.0.3 devrait être plus récente que 1.0.2.");
     }
 
     private static void ComparaisonVersionsTraiteFormatsEquivalents()
     {
         int resultat = ServiceMiseAJourApplication.ComparerVersions("1.0.2", "1.0.2.0");
 
-        Assert.Equal(0, resultat, "1.0.2 et 1.0.2.0 devraient etre considerees equivalentes.");
+        Assert.Equal(0, resultat, "1.0.2 et 1.0.2.0 devraient être considérées équivalentes.");
     }
 
     private static void DebloqueurVirtuelCouvreLesFamillesLogLocal()
@@ -369,19 +369,19 @@ static class TestRunner
         {
             Assert.True(
                 ServiceCatalogueEmulateursLocaux.EstSuccesLocalDirectPrisEnCharge(nomEmulateur),
-                $"Le succes local direct devrait etre pris en charge pour {nomEmulateur}."
+                $"Le succès local direct devrait être pris en charge pour {nomEmulateur}."
             );
             Assert.Equal(
                 "logs",
                 ServiceCatalogueEmulateursLocaux.ObtenirTypeSourceJournalSuccesLocal(nomEmulateur),
-                $"Le type de source locale attendu pour {nomEmulateur} devrait etre logs."
+                $"Le type de source locale attendu pour {nomEmulateur} devrait être logs."
             );
             Assert.True(
                 ServiceCatalogueEmulateursLocaux.TypeSourcePeutPorterSuccesDirect(
                     nomEmulateur,
                     "logs"
                 ),
-                $"Le type logs devrait porter un succes local direct pour {nomEmulateur}."
+                $"Le type logs devrait porter un succès local direct pour {nomEmulateur}."
             );
         }
 
@@ -391,19 +391,19 @@ static class TestRunner
         {
             Assert.True(
                 ServiceCatalogueEmulateursLocaux.EstSuccesLocalDirectPrisEnCharge(nomEmulateur),
-                $"Le succes local direct devrait etre pris en charge pour {nomEmulateur}."
+                $"Le succès local direct devrait être pris en charge pour {nomEmulateur}."
             );
             Assert.Equal(
                 "racache_log",
                 ServiceCatalogueEmulateursLocaux.ObtenirTypeSourceJournalSuccesLocal(nomEmulateur),
-                $"Le type de source locale attendu pour {nomEmulateur} devrait etre racache_log."
+                $"Le type de source locale attendu pour {nomEmulateur} devrait être racache_log."
             );
             Assert.True(
                 ServiceCatalogueEmulateursLocaux.TypeSourcePeutPorterSuccesDirect(
                     nomEmulateur,
                     "racache_log"
                 ),
-                $"Le type racache_log devrait porter un succes local direct pour {nomEmulateur}."
+                $"Le type racache_log devrait porter un succès local direct pour {nomEmulateur}."
             );
         }
     }

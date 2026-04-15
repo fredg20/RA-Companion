@@ -356,7 +356,7 @@ public partial class MainWindow
     }
 
     /*
-     * Termine la fenêtre de visibilité temporaire de la barre principale
+     * Terminé la fenêtre de visibilité temporaire de la barre principale
      * lorsque la souris n'est plus sur la zone sensible.
      */
     private void MinuteurMasquageBarreDefilement_Tick(object? sender, EventArgs e)
@@ -537,7 +537,7 @@ public partial class MainWindow
     }
 
     /*
-     * Planifie un relayout complet de la liste après une phase de
+     * Planifié un relayout complet de la liste après une phase de
      * redimensionnement de fenêtre.
      */
     private void PlanifierRelayoutListeSuccesApresRedimensionnement()
@@ -862,11 +862,11 @@ public partial class MainWindow
         }
 
         double largeurDisponible = Math.Max(0, GrilleInformationsJeuEnCours.ActualWidth);
-        double largeurMinimaleCapsule = Math.Min(
-            ConstantesDesign.LargeurMinimaleCapsuleInformation,
-            116
+        double largeurMinimaleCapsule = ConstantesDesign.LargeurMinimaleCapsuleInformation;
+        double largeurMinimaleCapsuleDeuxColonnes = Math.Max(
+            Math.Round(largeurMinimaleCapsule * ConstantesDesign.InverseNombreOr, 2),
+            ConstantesDesign.EspaceMajeur
         );
-        double largeurMinimaleCapsuleDeuxColonnes = Math.Max(largeurMinimaleCapsule - 20, 92);
         double espacement = ConstantesDesign.EspaceCompact;
 
         int nombreColonnes = 1;

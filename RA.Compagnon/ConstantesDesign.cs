@@ -297,10 +297,22 @@ public static class ConstantesDesign
         EspaceFenetreStandard + EspaceMajeur + EspaceEtendu + EspaceTresCompact + UniteFine;
 
     /*
+     * Définit la largeur cible de la modale d'aide sur une étape plus large
+     * de la progression dorée afin d'aérer davantage son contenu.
+     */
+    public const double LargeurContenuModaleAide = EspaceFenetreLarge;
+
+    /*
+     * Définit le seuil à partir duquel la modale d'aide peut quitter sa
+     * disposition compacte et afficher des espacements plus confortables.
+     */
+    public const double SeuilCompactModaleAide = EspaceFenetreStandard + EspaceMajeur;
+
+    /*
      * Définit la largeur minimale cible d'une capsule d'information du jeu
      * avant de forcer un retour à la ligne.
      */
-    public const double LargeurMinimaleCapsuleInformation = EspaceVisuelLarge;
+    public const double LargeurMinimaleCapsuleInformation = EspaceHeroique;
 
     /*
      * Définit la largeur minimale standard des boutons d'action secondaires.
@@ -517,10 +529,7 @@ public static class ConstantesDesign
     /*
      * Définit la taille de base du titre de fenêtre.
      */
-    public static readonly double TaillePoliceTitreFenetre = Math.Round(
-        TaillePoliceTexte * Math.Pow(NombreOr, 0.4),
-        MidpointRounding.AwayFromZero
-    );
+    public const double TaillePoliceTitreFenetre = 14;
 
     /*
      * Définit la largeur de référence de la typographie à partir d'une

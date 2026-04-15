@@ -478,7 +478,7 @@ public partial class MainWindow
                 $"raison=emulateur_introuvable;emulateur={jeuSauvegarde.NomEmulateurRelance};cheminExecutable={cheminExecutable}"
             );
             MessageBox.Show(
-                "L'emulateur n'a pas ete retrouve. Ouvre-le une fois ou corrige son emplacement dans l'aide.",
+                "L'émulateur n'a pas été retrouvé. Ouvre-le une fois ou corrige son emplacement dans l'aide.",
                 "Rejouer",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
@@ -493,7 +493,7 @@ public partial class MainWindow
                 $"raison=jeu_introuvable;cheminJeu={jeuSauvegarde.CheminJeuLocal}"
             );
             MessageBox.Show(
-                "Le fichier du jeu n'a pas ete retrouve a son dernier emplacement connu.",
+                "Le fichier du jeu n'a pas été retrouvé à son dernier emplacement connu.",
                 "Rejouer",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning
@@ -534,7 +534,7 @@ public partial class MainWindow
             {
                 JournaliserRejouer("echec", "raison=processus_null");
                 MessageBox.Show(
-                    "Le lancement a ete refuse ou n'a pas pu etre demarre.",
+                    "Le lancement a été refusé ou n'a pas pu être démarré.",
                     "Rejouer",
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning

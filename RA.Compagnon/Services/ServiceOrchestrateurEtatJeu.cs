@@ -515,8 +515,8 @@ public sealed class ServiceOrchestrateurEtatJeu
     {
         return EtatCourant.Source switch
         {
-            "non_configure" => "Connecte ton compte pour afficher ton activite.",
-            "aucun_jeu_recent" => "Aucun jeu recent a afficher.",
+            "non_configure" => "Connecte ton compte pour afficher ton activité.",
+            "aucun_jeu_recent" => "Aucun jeu récent à afficher.",
             _ => string.Empty,
         };
     }

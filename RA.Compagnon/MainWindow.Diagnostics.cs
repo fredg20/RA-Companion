@@ -155,7 +155,7 @@ public partial class MainWindow
     }
 
     /*
-     * Termine la séquence de diagnostic en cours et réinitialise son état.
+     * Terminé la séquence de diagnostic en cours et réinitialise son état.
      */
     private void TerminerDiagnosticChangementJeu(string etape, string? details = null)
     {

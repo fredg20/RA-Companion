@@ -156,7 +156,7 @@ public sealed partial class ServiceTraductionTexte
         return resultat;
     }
 
-    [GeneratedRegex("\"[^\"]+\"|«\\s*[^»]+\\s*»", RegexOptions.Compiled)]
+    [GeneratedRegex("\"[^\"]+\"|\\u00AB\\s*[^\\u00BB]+\\s*\\u00BB", RegexOptions.Compiled)]
     /*
      * Déclare l'expression régulière utilisée pour repérer les segments
      * encadrés de guillemets à préserver.

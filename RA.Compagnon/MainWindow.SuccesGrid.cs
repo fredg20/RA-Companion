@@ -797,7 +797,7 @@ public partial class MainWindow
     }
 
     /*
-     * Termine l'affichage temporaire d'un succès puis revient soit au premier
+     * Terminé l'affichage temporaire d'un succès puis revient soit au premier
      * succès non débloqué, soit à l'état normal de la grille.
      */
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)

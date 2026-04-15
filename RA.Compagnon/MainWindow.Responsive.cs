@@ -53,7 +53,7 @@ public partial class MainWindow
     }
 
     /*
-     * Planifie la sauvegarde différée de la géométrie de la fenêtre.
+     * Planifié la sauvegarde différée de la géométrie de la fenêtre.
      */
     private void PlanifierSauvegardeGeometrieFenetre()
     {

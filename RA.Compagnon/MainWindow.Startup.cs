@@ -63,9 +63,9 @@ public partial class MainWindow
      */
     private async Task ChargerConfigurationInitialeAsync()
     {
-        App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerConfig");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée avant ChargerConfig");
         _configurationConnexion = await _serviceConfigurationLocale.ChargerAsync();
-        App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerConfig");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée après ChargerConfig");
     }
 
     /*
@@ -112,9 +112,9 @@ public partial class MainWindow
      */
     private async Task<bool> RestaurerEtatInitialAsync()
     {
-        App.JournaliserDemarrage("FenetrePrincipaleChargee avant DernierJeuSauvegarde");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée avant DernierJeuSauvegarde");
         await AppliquerDernierJeuSauvegardeAsync();
-        App.JournaliserDemarrage("FenetrePrincipaleChargee apres DernierJeuSauvegarde");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée après DernierJeuSauvegarde");
         return _configurationConnexion.DernierJeuAffiche is not null;
     }
 
@@ -123,13 +123,13 @@ public partial class MainWindow
      */
     private async Task ChargerJeuInitialAsync(bool conserverEtatSauvegardeAuPremierChargement)
     {
-        App.JournaliserDemarrage("FenetrePrincipaleChargee avant ChargerJeuEnCours");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée avant ChargerJeuEnCours");
         await ChargerJeuEnCoursAsync(!conserverEtatSauvegardeAuPremierChargement, true);
-        App.JournaliserDemarrage("FenetrePrincipaleChargee apres ChargerJeuEnCours");
+        App.JournaliserDemarrage("FenêtrePrincipaleChargée après ChargerJeuEnCours");
     }
 
     /*
-     * Planifie le démarrage des actualisations automatiques après l'initialisation.
+     * Planifié le démarrage des actualisations automatiques après l'initialisation.
      */
     private void PlanifierDemarrageActualisations()
     {

@@ -413,7 +413,7 @@ public partial class MainWindow
             _vueModele.SuccesEnCours.TexteVisuelVisible = true;
             _vueModele.SuccesEnCours.Titre = "Tous les succès sont obtenus";
             _vueModele.SuccesEnCours.TitreVisible = true;
-            _vueModele.SuccesEnCours.Description = "Ce jeu ne contient plus de succès • débloquer.";
+            _vueModele.SuccesEnCours.Description = "Ce jeu ne contient plus de succès à débloquer.";
             _vueModele.SuccesEnCours.DescriptionVisible = true;
             _vueModele.SuccesEnCours.DetailsPoints = string.Empty;
             _vueModele.SuccesEnCours.DetailsPointsVisible = false;
@@ -728,7 +728,7 @@ public partial class MainWindow
     }
 
     /*
-     * Évite de retraiter plusieurs fois le même succès local lorsque plusieurs
+     * ?f???vite de retraiter plusieurs fois le m?f?me succ?f?s local lorsque plusieurs
      * signaux proches arrivent pendant une courte fenêtre de temps.
      */
     private bool SuccesDejaTraiteRecemment(SuccesDebloqueDetecte succes)
@@ -816,7 +816,9 @@ public partial class MainWindow
                 .ProgressionValeur;
             _configurationConnexion.DernierJeuAffiche.Details = _vueModele.JeuCourant.Details;
             _configurationConnexion.DernierJeuAffiche.EtatJeu =
-                nombreDebloques >= nombreSucces && nombreSucces > 0 ? "Jeu complété" : string.Empty;
+                nombreDebloques >= nombreSucces && nombreSucces > 0
+                    ? "Jeu compl\u00E9t\u00E9"
+                    : string.Empty;
             _dernierJeuAfficheModifie = true;
         }
     }
@@ -1020,6 +1022,7 @@ public partial class MainWindow
      * Convertit une image en niveaux de gris pour représenter visuellement
      * un succès encore verrouillé.
      */
+
     private static ImageSource ConvertirImageEnNoirEtBlanc(ImageSource image)
     {
         if (image is not BitmapSource bitmapSource)

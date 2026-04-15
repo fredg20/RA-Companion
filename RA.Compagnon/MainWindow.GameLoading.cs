@@ -101,7 +101,7 @@ public partial class MainWindow
                 _configurationConnexion.CleApiWeb
             );
 
-            App.JournaliserDemarrage("ChargerJeuEnCours apres Profil");
+            App.JournaliserDemarrage("ChargerJeuEnCours après Profil");
             JournaliserDiagnosticChangementJeu("charger_jeu_profil_charge");
             _profilUtilisateurAccessible = true;
             _dernierProfilUtilisateurCharge = profil;
@@ -112,13 +112,13 @@ public partial class MainWindow
                 forcerChargementJeu,
                 forcerChargementSansCache
             );
-            App.JournaliserDemarrage("ChargerJeuEnCours apres uppliquerProfil");
+            App.JournaliserDemarrage("ChargerJeuEnCours après AppliquerProfil");
             DemarrerChargementSuccesRecentsEnArrierePlan(
                 profil,
                 _versionChargementContenuJeu,
                 profil.LastGameId
             );
-            App.JournaliserDemarrage("ChargerJeuEnCours apres SuccesRecents");
+            App.JournaliserDemarrage("ChargerJeuEnCours après SuccèsRécents");
             JournaliserDiagnosticChangementJeu("charger_jeu_fin");
         }
         catch (UtilisateurRetroAchievementsInaccessibleException)

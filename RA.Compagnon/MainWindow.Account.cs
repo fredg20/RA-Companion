@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Regroupe la logique de connexion, de compte et d'aide utilisateur, ainsi
  * que les modales associées et les outils de diagnostic reliés aux émulateurs
  * et à l'état visible du compte dans l'interface principale.
@@ -618,12 +618,12 @@ public partial class MainWindow
     {
         _ = VerifierMiseAJourApplicationSiNecessaireAsync();
         double largeurContenuAide = CalculerLargeurContenuModale(
-            ConstantesDesign.LargeurCarteSecondaire,
+            ConstantesDesign.LargeurContenuModaleAide,
             ConstantesDesign.EspaceFenetreStandard
         );
         bool modaleAideCompacte = EstModaleCompacte(
             largeurContenuAide,
-            ConstantesDesign.LargeurCarteSecondaire + ConstantesDesign.EspaceCompact
+            ConstantesDesign.SeuilCompactModaleAide
         );
         _modaleAideCompacteCourante = modaleAideCompacte;
         List<SystemControls.Expander> sectionsAide = [];
