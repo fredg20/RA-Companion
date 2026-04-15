@@ -10,34 +10,22 @@
     <ResourceDictionary>
       <BooleanToVisibilityConverter x:Key="ConvertisseurBooleenVersVisibilite" />
       <x:Static x:Key="RayonCoinsPetit" Member="compagnon:ConstantesDesign.RayonCoinsPetit" />
-      <x:Static
-        x:Key="RayonCoinsStandard"
-        Member="compagnon:ConstantesDesign.RayonCoinsStandard"
-      />
+      <x:Static x:Key="RayonCoinsStandard" Member="compagnon:ConstantesDesign.RayonCoinsStandard" />
       <x:Static x:Key="RayonCoinsGrand" Member="compagnon:ConstantesDesign.RayonCoinsGrand" />
       <x:Static x:Key="MargeFenetreHaut" Member="compagnon:ConstantesDesign.MargeFenetreNulle" />
       <x:Static
         x:Key="MargeFenetreIntermediaire"
         Member="compagnon:ConstantesDesign.MargeFenetreNulle"
       />
-      <x:Static
-        x:Key="MargeFenetreContenu"
-        Member="compagnon:ConstantesDesign.MargeFenetreNulle"
-      />
+      <x:Static x:Key="MargeFenetreContenu" Member="compagnon:ConstantesDesign.MargeFenetreNulle" />
       <x:Static
         x:Key="PaddingFenetrePrincipale"
         Member="compagnon:ConstantesDesign.PaddingFenetrePrincipale"
       />
       <x:Static x:Key="MargeBlocStandard" Member="compagnon:ConstantesDesign.MargeBlocStandard" />
       <x:Static x:Key="MargeBlocCompacte" Member="compagnon:ConstantesDesign.MargeBlocCompacte" />
-      <x:Static
-        x:Key="MargeInterneDroite"
-        Member="compagnon:ConstantesDesign.MargeInterneDroite"
-      />
-      <x:Static
-        x:Key="MargeInterneIcone"
-        Member="compagnon:ConstantesDesign.MargeInterneIcone"
-      />
+      <x:Static x:Key="MargeInterneDroite" Member="compagnon:ConstantesDesign.MargeInterneDroite" />
+      <x:Static x:Key="MargeInterneIcone" Member="compagnon:ConstantesDesign.MargeInterneIcone" />
       <x:Static x:Key="MargeGrilleDense" Member="compagnon:ConstantesDesign.MargeGrilleDense" />
       <x:Static
         x:Key="EspaceColonnesPrincipal"
@@ -49,33 +37,57 @@
       />
 
       <Style x:Key="StyleSectionArrondie" TargetType="{x:Type Border}">
-        <Setter Property="Padding" Value="{x:Static compagnon:ConstantesDesign.PaddingFenetrePrincipale}" />
+        <Setter
+          Property="Padding"
+          Value="{x:Static compagnon:ConstantesDesign.PaddingFenetrePrincipale}"
+        />
         <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsStandard}" />
-        <Setter Property="BorderThickness" Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}" />
+        <Setter
+          Property="BorderThickness"
+          Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}"
+        />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Background" Value="#363636" />
       </Style>
 
       <Style x:Key="StylePastilleArrondie" TargetType="{x:Type Border}">
         <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsPetit}" />
-        <Setter Property="BorderThickness" Value="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}" />
+        <Setter
+          Property="BorderThickness"
+          Value="{x:Static compagnon:ConstantesDesign.EpaisseurContourFin}"
+        />
         <Setter Property="BorderBrush" Value="{DynamicResource TextFillColorSecondaryBrush}" />
         <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
-        <Setter Property="Opacity" Value="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}" />
+        <Setter
+          Property="Opacity"
+          Value="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+        />
       </Style>
 
       <Style x:Key="StyleSousCarteJeu" TargetType="{x:Type Border}">
         <Setter Property="Margin" Value="{x:Static compagnon:ConstantesDesign.MargeSousCarte}" />
-        <Setter Property="Padding" Value="{x:Static compagnon:ConstantesDesign.PaddingFenetrePrincipale}" />
+        <Setter
+          Property="Padding"
+          Value="{x:Static compagnon:ConstantesDesign.PaddingFenetrePrincipale}"
+        />
         <Setter Property="CornerRadius" Value="{StaticResource RayonCoinsPetit}" />
-        <Setter Property="BorderThickness" Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}" />
+        <Setter
+          Property="BorderThickness"
+          Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}"
+        />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Background" Value="#2C2C2C" />
       </Style>
 
       <Style x:Key="StyleLibelleJeu" TargetType="{x:Type TextBlock}">
-        <Setter Property="Opacity" Value="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}" />
-        <Setter Property="FontSize" Value="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}" />
+        <Setter
+          Property="Opacity"
+          Value="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
+        />
+        <Setter
+          Property="FontSize"
+          Value="{x:Static compagnon:ConstantesDesign.TaillePoliceMicro}"
+        />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Text" Value="Libellé" />
@@ -91,7 +103,10 @@
         <Setter Property="SelectionBrush" Value="{DynamicResource SystemAccentColorBrush}" />
         <Setter Property="SelectionOpacity" Value="0.35" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}" />
+        <Setter
+          Property="BorderThickness"
+          Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}"
+        />
         <Setter Property="Padding" Value="{x:Static compagnon:ConstantesDesign.AucuneMarge}" />
         <Setter Property="Margin" Value="{x:Static compagnon:ConstantesDesign.AucuneMarge}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />

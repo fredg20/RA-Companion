@@ -1,0 +1,187 @@
+<UserControl
+  x:Class="RA.Compagnon.Views.Modules.ParametresModuleView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:compagnon="clr-namespace:RA.Compagnon"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+>
+  <ScrollViewer
+    Margin="{StaticResource PaddingFenetrePrincipale}"
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+  >
+    <StackPanel Margin="{StaticResource MargeFenetreContenu}" VerticalAlignment="Top">
+      <Border Margin="0,0,0,12" Style="{StaticResource StyleSectionArrondie}">
+        <StackPanel>
+          <TextBlock
+            FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+            FontWeight="SemiBold"
+            Text="Paramètres"
+          />
+          <TextBlock
+            Margin="0,8,0,0"
+            Opacity="0.82"
+            TextWrapping="Wrap"
+            Text="Ce module rassemble les préférences déjà mémorisées, les actions de maintenance rapides et le socle des futurs réglages d'affichage, de synchronisation et de personnalisation."
+          />
+        </StackPanel>
+      </Border>
+
+      <WrapPanel ItemWidth="420" Orientation="Horizontal">
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Préférences mémorisées"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              FontWeight="SemiBold"
+              Opacity="0.78"
+              Text="Mode d'affichage des succès"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding LibelleOrdreSuccesGrille}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Version" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding VersionApplication}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Module actif" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding TitreModuleActif}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Synchronisation"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="État courant" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding EtatSynchronisationJeu}"
+              TextWrapping="Wrap"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeRechargerJeu}"
+                Content="Recharger"
+                IsEnabled="{Binding RechargerJeuActif}"
+              />
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeMiseAJourApplication}"
+                Content="{Binding LibelleMiseAJourApplication}"
+                IsEnabled="{Binding MiseAJourApplicationActivee}"
+                Visibility="{Binding VisibiliteMiseAJourApplication}"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherAide}"
+                Content="Aide"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Compte"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="État API" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding EtatConnexion}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              FontWeight="SemiBold"
+              Opacity="0.78"
+              Text="Notice visible"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding Compte.EtatNotice}"
+              TextWrapping="Wrap"
+              Visibility="{Binding Compte.NoticeVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.72"
+              Text="{Binding Compte.SousEtatNotice}"
+              TextWrapping="Wrap"
+              Visibility="{Binding Compte.SousEtatVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherCompte}"
+                Content="Profil"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherModuleBibliotheque}"
+                Content="Ouvrir la bibliothèque"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Interface"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              Opacity="0.82"
+              TextWrapping="Wrap"
+              Text="La fenêtre principale est maintenant prête à accueillir plusieurs modules séparés. Ce socle permettra d'ajouter ensuite des vues dédiées pour les outils avancés, la bibliothèque étendue ou les futurs écrans d'assistance."
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              Opacity="0.72"
+              TextWrapping="Wrap"
+              Text="L'objectif est de garder un tableau de bord principal lisible tout en faisant monter progressivement les réglages et modules spécialisés."
+            />
+          </StackPanel>
+        </Border>
+      </WrapPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -946,7 +946,13 @@ public partial class MainWindow
             return;
         }
 
-        if (ZonePrincipale.Visibility != Visibility.Visible)
+        bool accueilVisible =
+            _vueModele.VisibiliteModuleAccueil == Visibility.Visible
+            && CadreZonePrincipale?.Visibility == Visibility.Visible
+            && ZonePrincipale.Visibility == Visibility.Visible
+            && ZonePrincipale.IsVisible;
+
+        if (!accueilVisible)
         {
             if (ConteneurZonePrincipale is not null)
             {
@@ -1161,6 +1167,7 @@ public partial class MainWindow
     private void DefinirVisibiliteContenuPrincipal(bool afficher)
     {
         _vueModele.VisibiliteContenuPrincipal = afficher ? Visibility.Visible : Visibility.Hidden;
+        _vueModele.VisibiliteBarreModules = afficher ? Visibility.Visible : Visibility.Collapsed;
         AjusterHauteurCarteJeuEnCours();
     }
 

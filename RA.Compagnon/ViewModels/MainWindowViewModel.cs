@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
 
@@ -23,25 +24,36 @@ public sealed class MainWindowViewModel : ViewModelBase
     private string _toolTipRechargerJeu = string.Empty;
     private string _libelleOrdreSuccesGrille = "Normal";
     private string _etatSynchronisationJeu = string.Empty;
+    private string _titreModuleActif = "Accueil";
+    private string _messageBibliotheque = "Aucun jeu récent disponible pour le moment.";
     private bool _ordreSuccesNormalActif = true;
     private bool _ordreSuccesAleatoireActif;
     private bool _ordreSuccesFacileActif;
     private bool _ordreSuccesDifficileActif;
+    private bool _moduleAccueilActif = true;
+    private bool _moduleBibliothequeActif;
     private Brush? _contourOrdreSuccesNormal;
     private Brush? _contourOrdreSuccesAleatoire;
     private Brush? _contourOrdreSuccesFacile;
     private Brush? _contourOrdreSuccesDifficile;
     private Visibility _visibiliteContenuPrincipal = Visibility.Hidden;
+    private Visibility _visibiliteBarreModules = Visibility.Collapsed;
     private Visibility _visibiliteCarteConnexion = Visibility.Collapsed;
     private Visibility _visibiliteCarteJeuEnCours = Visibility.Visible;
     private Visibility _visibiliteMiseAJourApplication = Visibility.Collapsed;
     private Visibility _visibiliteSynchronisationJeu = Visibility.Collapsed;
+    private Visibility _visibiliteModuleAccueil = Visibility.Visible;
+    private Visibility _visibiliteModuleBibliotheque = Visibility.Collapsed;
+    private Visibility _visibiliteBibliothequeVide = Visibility.Visible;
+    private Visibility _visibiliteBibliothequeListe = Visibility.Collapsed;
     private bool _miseAJourApplicationActivee;
     private bool _rechargerJeuActif;
     private Action? _executerActionAfficherCompte;
     private Action? _executerActionAfficherAide;
     private Action? _executerActionMiseAJourApplication;
     private Action? _executerActionRechargerJeu;
+    private Action? _executerActionAfficherModuleAccueil;
+    private Action? _executerActionAfficherModuleBibliotheque;
     private Action? _executerActionOrdreSuccesNormal;
     private Action? _executerActionOrdreSuccesAleatoire;
     private Action? _executerActionOrdreSuccesFacile;
@@ -55,6 +67,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         JeuCourant = new CurrentGameViewModel();
         SuccesEnCours = new CurrentAchievementViewModel();
         Compte = new AccountSummaryViewModel();
+        JeuxBibliotheque = [];
         CommandeAfficherCompte = new RelayCommand(() => _executerActionAfficherCompte?.Invoke());
         CommandeAfficherAide = new RelayCommand(() => _executerActionAfficherAide?.Invoke());
         CommandeMiseAJourApplication = new RelayCommand(
@@ -64,6 +77,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         CommandeRechargerJeu = new RelayCommand(
             () => _executerActionRechargerJeu?.Invoke(),
             () => RechargerJeuActif
+        );
+        CommandeAfficherModuleAccueil = new RelayCommand(() =>
+            _executerActionAfficherModuleAccueil?.Invoke()
+        );
+        CommandeAfficherModuleBibliotheque = new RelayCommand(() =>
+            _executerActionAfficherModuleBibliotheque?.Invoke()
         );
         CommandeOrdreSuccesNormal = new RelayCommand(() =>
             _executerActionOrdreSuccesNormal?.Invoke()
@@ -85,6 +104,8 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public AccountSummaryViewModel Compte { get; }
 
+    public ObservableCollection<BibliothequeJeuViewModel> JeuxBibliotheque { get; }
+
     public RelayCommand CommandeAfficherCompte { get; }
 
     public RelayCommand CommandeAfficherAide { get; }
@@ -92,6 +113,10 @@ public sealed class MainWindowViewModel : ViewModelBase
     public RelayCommand CommandeMiseAJourApplication { get; }
 
     public RelayCommand CommandeRechargerJeu { get; }
+
+    public RelayCommand CommandeAfficherModuleAccueil { get; }
+
+    public RelayCommand CommandeAfficherModuleBibliotheque { get; }
 
     public RelayCommand CommandeOrdreSuccesNormal { get; }
 
@@ -161,6 +186,18 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _etatSynchronisationJeu, value);
     }
 
+    public string TitreModuleActif
+    {
+        get => _titreModuleActif;
+        set => SetProperty(ref _titreModuleActif, value);
+    }
+
+    public string MessageBibliotheque
+    {
+        get => _messageBibliotheque;
+        set => SetProperty(ref _messageBibliotheque, value);
+    }
+
     public bool OrdreSuccesNormalActif
     {
         get => _ordreSuccesNormalActif;
@@ -183,6 +220,18 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         get => _ordreSuccesDifficileActif;
         set => SetProperty(ref _ordreSuccesDifficileActif, value);
+    }
+
+    public bool ModuleAccueilActif
+    {
+        get => _moduleAccueilActif;
+        set => SetProperty(ref _moduleAccueilActif, value);
+    }
+
+    public bool ModuleBibliothequeActif
+    {
+        get => _moduleBibliothequeActif;
+        set => SetProperty(ref _moduleBibliothequeActif, value);
     }
 
     public Brush? ContourOrdreSuccesNormal
@@ -215,6 +264,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _visibiliteContenuPrincipal, value);
     }
 
+    public Visibility VisibiliteBarreModules
+    {
+        get => _visibiliteBarreModules;
+        set => SetProperty(ref _visibiliteBarreModules, value);
+    }
+
     public Visibility VisibiliteCarteConnexion
     {
         get => _visibiliteCarteConnexion;
@@ -237,6 +292,30 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         get => _visibiliteSynchronisationJeu;
         set => SetProperty(ref _visibiliteSynchronisationJeu, value);
+    }
+
+    public Visibility VisibiliteModuleAccueil
+    {
+        get => _visibiliteModuleAccueil;
+        set => SetProperty(ref _visibiliteModuleAccueil, value);
+    }
+
+    public Visibility VisibiliteModuleBibliotheque
+    {
+        get => _visibiliteModuleBibliotheque;
+        set => SetProperty(ref _visibiliteModuleBibliotheque, value);
+    }
+
+    public Visibility VisibiliteBibliothequeVide
+    {
+        get => _visibiliteBibliothequeVide;
+        set => SetProperty(ref _visibiliteBibliothequeVide, value);
+    }
+
+    public Visibility VisibiliteBibliothequeListe
+    {
+        get => _visibiliteBibliothequeListe;
+        set => SetProperty(ref _visibiliteBibliothequeListe, value);
     }
 
     public bool MiseAJourApplicationActivee
@@ -300,6 +379,32 @@ public sealed class MainWindowViewModel : ViewModelBase
     }
 
     /*
+     * Associe l'action à exécuter pour l'affichage du module d'accueil.
+     */
+    public void ConfigurerActionAfficherModuleAccueil(Action? action)
+    {
+        _executerActionAfficherModuleAccueil = action;
+        CommandeAfficherModuleAccueil.NotifierPeutExecuterChange();
+    }
+
+    /*
+     * Associe l'action à exécuter pour l'affichage du module bibliothèque.
+     */
+    public void ConfigurerActionAfficherModuleBibliotheque(Action? action)
+    {
+        _executerActionAfficherModuleBibliotheque = action;
+        CommandeAfficherModuleBibliotheque.NotifierPeutExecuterChange();
+    }
+
+    /*
+     * Associe l'action à exécuter pour l'affichage du module diagnostic.
+     */
+
+    /*
+     * Associe l'action à exécuter pour l'affichage du module paramètres.
+     */
+
+    /*
      * Associe l'action à exécuter pour le mode d'ordre normal des succès.
      */
     public void ConfigurerActionOrdreSuccesNormal(Action? action)
@@ -333,5 +438,28 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         _executerActionOrdreSuccesDifficile = action;
         CommandeOrdreSuccesDifficile.NotifierPeutExecuterChange();
+    }
+
+    /*
+     * Remplace les jeux visibles dans la bibliothèque et ajuste l'état de la
+     * liste ou du message vide.
+     */
+    public void RemplacerJeuxBibliotheque(
+        IEnumerable<BibliothequeJeuViewModel> jeux,
+        string messageVide
+    )
+    {
+        JeuxBibliotheque.Clear();
+
+        foreach (BibliothequeJeuViewModel jeu in jeux)
+        {
+            JeuxBibliotheque.Add(jeu);
+        }
+
+        MessageBibliotheque = messageVide;
+        VisibiliteBibliothequeListe =
+            JeuxBibliotheque.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        VisibiliteBibliothequeVide =
+            JeuxBibliotheque.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 }

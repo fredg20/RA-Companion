@@ -1,0 +1,285 @@
+<UserControl
+  x:Class="RA.Compagnon.Views.Modules.DiagnosticModuleView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:compagnon="clr-namespace:RA.Compagnon"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+>
+  <ScrollViewer
+    Margin="{StaticResource PaddingFenetrePrincipale}"
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+  >
+    <StackPanel Margin="{StaticResource MargeFenetreContenu}" VerticalAlignment="Top">
+      <Border Margin="0,0,0,12" Style="{StaticResource StyleSectionArrondie}">
+        <StackPanel>
+          <TextBlock
+            FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+            FontWeight="SemiBold"
+            Text="Diagnostic"
+          />
+          <TextBlock
+            Margin="0,8,0,0"
+            Opacity="0.82"
+            TextWrapping="Wrap"
+            Text="Vue de contrôle rapide de Compagnon : état du compte, jeu actuellement visible, succès mis en avant et actions utiles pour comprendre ce que l'application affiche."
+          />
+        </StackPanel>
+      </Border>
+
+      <WrapPanel ItemWidth="420" Orientation="Horizontal">
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Compte"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="État API" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding EtatConnexion}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              FontWeight="SemiBold"
+              Opacity="0.78"
+              Text="Notice visible"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding Compte.EtatNotice}"
+              TextWrapping="Wrap"
+              Visibility="{Binding Compte.NoticeVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.72"
+              Text="{Binding Compte.SousEtatNotice}"
+              TextWrapping="Wrap"
+              Visibility="{Binding Compte.SousEtatVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherCompte}"
+                Content="Profil"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherAide}"
+                Content="Aide"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Jeu visible"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Titre" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.86"
+              Text="{Binding JeuCourant.Titre}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="État" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding JeuCourant.Etat}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Résumé" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding JeuCourant.Progression}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.72"
+              Text="{Binding JeuCourant.Pourcentage}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.72"
+              Text="{Binding JeuCourant.Console}"
+              TextWrapping="Wrap"
+              Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeRechargerJeu}"
+                Content="Recharger"
+              />
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding JeuCourant.CommandeActionRejouer}"
+                Content="{Binding JeuCourant.LibelleActionRejouer}"
+                IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
+                Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding JeuCourant.CommandeActionDetails}"
+                Content="{Binding JeuCourant.LibelleActionDetails}"
+                IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
+                Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Succès courant"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Titre" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.86"
+              Text="{Binding SuccesEnCours.Titre}"
+              TextWrapping="Wrap"
+              Visibility="{Binding SuccesEnCours.TitreVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Description" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding SuccesEnCours.Description}"
+              TextWrapping="Wrap"
+              Visibility="{Binding SuccesEnCours.DescriptionVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Détails" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding SuccesEnCours.DetailsPoints}"
+              TextWrapping="Wrap"
+              Visibility="{Binding SuccesEnCours.DetailsPointsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.72"
+              Text="{Binding SuccesEnCours.DetailsFaisabilite}"
+              TextWrapping="Wrap"
+              Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding SuccesEnCours.CommandePrecedent}"
+                Content="Précédent"
+                IsEnabled="{Binding SuccesEnCours.PrecedentActif}"
+                Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+              />
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding SuccesEnCours.CommandeSuivant}"
+                Content="Suivant"
+                IsEnabled="{Binding SuccesEnCours.SuivantActif}"
+                Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding SuccesEnCours.CommandePasser}"
+                Content="Passer"
+                IsEnabled="{Binding SuccesEnCours.PasserActif}"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Margin="0,0,12,12" Style="{StaticResource StyleSectionArrondie}">
+          <StackPanel>
+            <TextBlock
+              FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+              FontWeight="SemiBold"
+              Text="Session"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              FontWeight="SemiBold"
+              Opacity="0.78"
+              Text="Synchronisation"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding EtatSynchronisationJeu}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Margin="0,10,0,0"
+              FontWeight="SemiBold"
+              Opacity="0.78"
+              Text="Mode de grille"
+            />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding LibelleOrdreSuccesGrille}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Margin="0,10,0,0" FontWeight="SemiBold" Opacity="0.78" Text="Version" />
+            <TextBlock
+              Margin="0,4,0,0"
+              Opacity="0.82"
+              Text="{Binding VersionApplication}"
+              TextWrapping="Wrap"
+            />
+            <WrapPanel Margin="0,14,0,0">
+              <ui:Button
+                Margin="0,0,8,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeMiseAJourApplication}"
+                Content="{Binding LibelleMiseAJourApplication}"
+                IsEnabled="{Binding MiseAJourApplicationActivee}"
+                Visibility="{Binding VisibiliteMiseAJourApplication}"
+              />
+              <ui:Button
+                Margin="0,0,0,8"
+                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                Appearance="Secondary"
+                Command="{Binding CommandeAfficherAide}"
+                Content="Guide utilisateur"
+              />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+      </WrapPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

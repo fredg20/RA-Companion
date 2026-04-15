@@ -1,0 +1,89 @@
+<UserControl
+  x:Class="RA.Compagnon.Views.Modules.BibliothequeModuleView"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:compagnon="clr-namespace:RA.Compagnon"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+>
+  <ScrollViewer
+    Margin="{StaticResource PaddingFenetrePrincipale}"
+    VerticalScrollBarVisibility="Auto"
+    HorizontalScrollBarVisibility="Disabled"
+  >
+    <StackPanel Margin="{StaticResource MargeFenetreContenu}" VerticalAlignment="Top">
+      <Border Margin="0,0,0,12" Style="{StaticResource StyleSectionArrondie}">
+        <StackPanel>
+          <TextBlock
+            FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceTitreSection}"
+            FontWeight="SemiBold"
+            Text="Bibliothèque"
+          />
+          <TextBlock
+            Margin="0,8,0,0"
+            Opacity="0.82"
+            TextWrapping="Wrap"
+            Text="Retrouve ici les jeux récemment visibles pour relancer rapidement le contexte, vérifier la progression mémorisée et revenir au tableau de bord principal."
+          />
+          <WrapPanel Margin="0,14,0,0">
+            <ui:Button
+              Margin="0,0,8,8"
+              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+              Appearance="Secondary"
+              Command="{Binding CommandeAfficherModuleAccueil}"
+              Content="Retour à l'accueil"
+            />
+            <ui:Button
+              Margin="0,0,8,8"
+              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+              Appearance="Secondary"
+              Command="{Binding CommandeRechargerJeu}"
+              Content="Recharger"
+              IsEnabled="{Binding RechargerJeuActif}"
+            />
+            <ui:Button
+              Margin="0,0,0,8"
+              Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+              Appearance="Secondary"
+              Command="{Binding CommandeAfficherCompte}"
+              Content="Profil"
+            />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <TextBlock
+        Margin="0,4,0,0"
+        Opacity="0.76"
+        Text="{Binding MessageBibliotheque}"
+        TextWrapping="Wrap"
+        Visibility="{Binding VisibiliteBibliothequeVide}"
+      />
+
+      <ItemsControl
+        ItemsSource="{Binding JeuxBibliotheque}"
+        Visibility="{Binding VisibiliteBibliothequeListe}"
+      >
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Margin="0,0,0,12" Style="{StaticResource StyleSectionArrondie}">
+              <StackPanel>
+                <TextBlock
+                  FontSize="18"
+                  FontWeight="SemiBold"
+                  Text="{Binding Titre}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock
+                  Margin="0,8,0,0"
+                  Opacity="0.76"
+                  Text="{Binding SousTitre}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

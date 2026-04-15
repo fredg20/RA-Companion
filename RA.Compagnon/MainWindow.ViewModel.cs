@@ -24,12 +24,21 @@ public partial class MainWindow
         DataContext = _vueModele;
         _vueModele.TitreFenetre = "Compagnon RA";
         _vueModele.TitreCarteJeuEnCours = "Dernier jeu joué";
+        _vueModele.TitreModuleActif = "Accueil";
+        _vueModele.MessageBibliotheque = "Aucun jeu récent disponible pour le moment.";
         _vueModele.EtatConnexion = _etatConnexionCourant;
         _vueModele.VisibiliteContenuPrincipal = Visibility.Hidden;
+        _vueModele.VisibiliteBarreModules = Visibility.Collapsed;
         _vueModele.VisibiliteCarteConnexion = Visibility.Collapsed;
         _vueModele.VisibiliteCarteJeuEnCours = Visibility.Visible;
         _vueModele.VisibiliteMiseAJourApplication = Visibility.Collapsed;
         _vueModele.VisibiliteSynchronisationJeu = Visibility.Hidden;
+        _vueModele.VisibiliteModuleAccueil = Visibility.Visible;
+        _vueModele.VisibiliteModuleBibliotheque = Visibility.Collapsed;
+        _vueModele.VisibiliteBibliothequeListe = Visibility.Collapsed;
+        _vueModele.VisibiliteBibliothequeVide = Visibility.Visible;
+        _vueModele.ModuleAccueilActif = true;
+        _vueModele.ModuleBibliothequeActif = false;
         _vueModele.MiseAJourApplicationActivee = false;
         _vueModele.LibelleMiseAJourApplication = "Mise à jour";
         _vueModele.ToolTipMiseAJourApplication = string.Empty;
@@ -85,6 +94,12 @@ public partial class MainWindow
             _ = ExecuterActionMiseAJourApplicationAsync()
         );
         _vueModele.ConfigurerActionRechargerJeu(() => _ = ExecuterActionRechargerJeuEnCoursAsync());
+        _vueModele.ConfigurerActionAfficherModuleAccueil(() =>
+            AfficherModulePrincipal(ModulePrincipal.Accueil)
+        );
+        _vueModele.ConfigurerActionAfficherModuleBibliotheque(() =>
+            AfficherModulePrincipal(ModulePrincipal.Bibliotheque)
+        );
         _vueModele.ConfigurerActionOrdreSuccesNormal(() =>
             _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Normal)
         );
