@@ -179,6 +179,37 @@ public partial class MainWindow
 
             break;
         }
+
+        if (contexteRelanceActuelValide || string.IsNullOrWhiteSpace(jeuSauvegarde.Title))
+        {
+            return;
+        }
+
+        foreach (
+            DefinitionEmulateurLocal definition in ServiceCatalogueEmulateursLocaux.Definitions.Where(
+                ServiceCatalogueEmulateursLocaux.EstEmulateurValide
+            )
+        )
+        {
+            if (
+                !ServiceSondeLocaleEmulateurs.EssayerObtenirContexteRejouerDepuisTitre(
+                    definition.NomEmulateur,
+                    jeuSauvegarde.Title,
+                    out string cheminExecutable,
+                    out string cheminJeu
+                )
+            )
+            {
+                continue;
+            }
+
+            jeuSauvegarde.NomEmulateurRelance = definition.NomEmulateur;
+            jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
+            jeuSauvegarde.CheminJeuLocal = cheminJeu;
+            _dernierJeuAfficheModifie = true;
+            _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+            break;
+        }
     }
 
     /*

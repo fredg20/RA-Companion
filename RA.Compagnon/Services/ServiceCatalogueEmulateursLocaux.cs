@@ -94,6 +94,27 @@ public static class ServiceCatalogueEmulateursLocaux
             ["logs"]
         ),
         new(
+            "SkyEmu",
+            ["skyemu"],
+            [
+                "game boy",
+                "gb",
+                "game boy color",
+                "gbc",
+                "game boy advance",
+                "gba",
+                "nintendo ds",
+                "nds",
+                "ds",
+            ],
+            StrategieExtractionTitreEmulateurLocal.SkyEmu,
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames,
+            StrategieSurveillanceSuccesLocale.Aucune,
+            false,
+            false,
+            []
+        ),
+        new(
             "RANes",
             ["ranes"],
             ["nintendo entertainment system", "nes", "famicom"],
@@ -270,6 +291,7 @@ public static class ServiceCatalogueEmulateursLocaux
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "logs",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "logs",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => "logs",
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames => "recent_games",
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => "racache_log",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache => "racache_log",
             StrategieRenseignementJeuEmulateurLocal.RANesRACache => "racache_log",

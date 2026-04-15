@@ -282,6 +282,8 @@ public static class ServiceSourcesLocalesEmulateurs
                 TrouverRepertoireDuckStation(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverRepertoirePCSX2(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverRepertoirePPSSPP(),
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                TrouverCheminExecutableSkyEmu(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache => TrouverParentSiPossible(
                 TrouverRepertoireRACacheProject64(definition.NomEmulateur)
             ),
@@ -400,6 +402,8 @@ public static class ServiceSourcesLocalesEmulateurs
                 TrouverCheminJournalDuckStation(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => TrouverCheminJournalPCSX2(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => TrouverCheminJournalPPSSPP(),
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                TrouverCheminRecentGamesSkyEmu(),
             _ => string.Empty,
         };
     }
@@ -838,6 +842,108 @@ public static class ServiceSourcesLocalesEmulateurs
                 .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
                 .FirstOrDefault(File.Exists)
             ?? string.Empty;
+    }
+
+    /*
+     * Retourne le chemin de l'exécutable SkyEmu connu localement.
+     */
+    public static string TrouverCheminExecutableSkyEmu()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        string localAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
+        string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        string programFilesX86 = Environment.GetFolderPath(
+            Environment.SpecialFolder.ProgramFilesX86
+        );
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("SkyEmu");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("SkyEmu");
+        string emplacementProcessus = TrouverCheminExecutableSkyEmuDepuisProcessus();
+
+        string[] candidats =
+        [
+            TrouverFichierSkyEmuDepuisEmplacement(emplacementManuel),
+            TrouverFichierSkyEmuDepuisEmplacement(emplacementDetecte),
+            TrouverFichierSkyEmuDepuisEmplacement(emplacementProcessus),
+            Path.Combine(documents, "emulation", "SkyEmu", "SkyEmu.exe"),
+            Path.Combine(documents, "SkyEmu", "SkyEmu.exe"),
+            Path.Combine(localAppData, "Programs", "SkyEmu", "SkyEmu.exe"),
+            Path.Combine(programFiles, "SkyEmu", "SkyEmu.exe"),
+            Path.Combine(programFilesX86, "SkyEmu", "SkyEmu.exe"),
+            Path.Combine(
+                Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\",
+                "SkyEmu",
+                "SkyEmu.exe"
+            ),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(File.Exists)
+            ?? string.Empty;
+    }
+
+    /*
+     * Retourne le chemin du fichier recent_games.txt de SkyEmu.
+     */
+    public static string TrouverCheminRecentGamesSkyEmu()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats = [Path.Combine(appData, "Sky", "SkyEmu", "recent_games.txt")];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    /*
+     * Retourne le chemin du fichier user_settings.bin de SkyEmu.
+     */
+    public static string TrouverCheminConfigurationSkyEmu()
+    {
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        string[] candidats = [Path.Combine(appData, "Sky", "SkyEmu", "user_settings.bin")];
+
+        return candidats.FirstOrDefault(File.Exists) ?? string.Empty;
+    }
+
+    /*
+     * Lit l'état de la configuration HTTP de SkyEmu lorsqu'elle est disponible
+     * dans user_settings.bin.
+     */
+    public static bool EssayerLireConfigurationHttpSkyEmu(out bool serveurActive, out int port)
+    {
+        serveurActive = false;
+        port = 0;
+
+        try
+        {
+            const int offsetPort = 92;
+            const int offsetActivation = 96;
+
+            string cheminConfiguration = TrouverCheminConfigurationSkyEmu();
+
+            if (string.IsNullOrWhiteSpace(cheminConfiguration) || !File.Exists(cheminConfiguration))
+            {
+                return false;
+            }
+
+            byte[] donnees = File.ReadAllBytes(cheminConfiguration);
+
+            if (donnees.Length < offsetActivation + sizeof(uint))
+            {
+                return false;
+            }
+
+            serveurActive = BitConverter.ToUInt32(donnees, offsetActivation) != 0;
+            port = (int)BitConverter.ToUInt32(donnees, offsetPort);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /*
@@ -1320,6 +1426,20 @@ public static class ServiceSourcesLocalesEmulateurs
     }
 
     /*
+     * Tente de retrouver l'exécutable SkyEmu à partir des processus actifs.
+     */
+    private static string TrouverCheminExecutableSkyEmuDepuisProcessus()
+    {
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            "SkyEmu"
+        );
+
+        return definition is null
+            ? string.Empty
+            : TrouverEmplacementEmulateurDepuisProcessus(definition);
+    }
+
+    /*
      * Déduit le répertoire de logs RetroArch à partir de son emplacement local.
      */
     private static string TrouverRepertoireLogsDepuisEmplacementRetroArch(string emplacement)
@@ -1574,6 +1694,43 @@ public static class ServiceSourcesLocalesEmulateurs
     }
 
     /*
+     * Retourne l'exécutable SkyEmu le plus plausible à partir d'un emplacement.
+     */
+    private static string TrouverFichierSkyEmuDepuisEmplacement(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (File.Exists(emplacement))
+            {
+                return string.Equals(
+                    Path.GetFileName(emplacement),
+                    "SkyEmu.exe",
+                    StringComparison.OrdinalIgnoreCase
+                )
+                    ? emplacement
+                    : string.Empty;
+            }
+
+            if (!Directory.Exists(emplacement))
+            {
+                return string.Empty;
+            }
+
+            string cheminExecutable = Path.Combine(emplacement, "SkyEmu.exe");
+            return File.Exists(cheminExecutable) ? cheminExecutable : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /*
      * Construit un chemin relatif à partir d'un emplacement Dolphin connu.
      */
     private static string TrouverFichierDolphinDepuisEmplacement(
@@ -1700,6 +1857,10 @@ public static class ServiceSourcesLocalesEmulateurs
             jetons.Add("RAProject64");
             jetons.Add("RA Project64");
             jetons.Add("RAP64");
+        }
+        else if (string.Equals(definition.NomEmulateur, "SkyEmu", StringComparison.Ordinal))
+        {
+            jetons.Add("Sky Emu");
         }
 
         return [.. jetons.Where(jeton => !string.IsNullOrWhiteSpace(jeton)).Distinct()];

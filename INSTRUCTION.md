@@ -210,6 +210,11 @@ Remarques :
 - certains émulateurs permettent aussi la relance via `Rejouer`
 - `LunaProject64` n'est plus pris en charge
 
+Sources d'émulateurs à surveiller pour de futures études :
+
+- `SkyEmu` : https://github.com/skylersaleh/SkyEmu
+- `Firelight` : https://github.com/firelight-emulator/firelight
+
 ## 10. Données locales
 
 Les données utilisateur sont stockées dans :

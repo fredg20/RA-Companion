@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
@@ -25,6 +26,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
      * Représente un renseignement jeu minimal issu d'une source locale RA.
      */
     private sealed record RenseignementJeuRA(int IdentifiantJeu, string TitreJeu);
+
+    /*
+     * Représente l'état minimal remonté par le serveur HTTP de SkyEmu.
+     */
+    private sealed record EtatHttpSkyEmu(int Port, string CheminRom);
 
     /*
      * Représente l'état local d'un succès BizHawk selon ses modes de déblocage.
@@ -77,6 +83,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         "RA-Compagnon",
         "journal-sonde-locale.log"
     );
+    private static readonly HttpClient HttpClientSkyEmu = new()
+    {
+        Timeout = TimeSpan.FromMilliseconds(250),
+    };
     private string _derniereSignatureJournalisee = "\u0000";
 
     /*
@@ -146,6 +156,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireRenseignementJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
                 LireRenseignementJeuPPSSPPDepuisLog(string.Empty),
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                LireRenseignementJeuSkyEmuDepuisSourcesRejouer(),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
                 LireRenseignementJeuFlycastDepuisSourcesRejouer(),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
@@ -175,6 +187,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                LireCheminJeuSkyEmuDepuisRecentGames(),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
                 LireCheminJeuFlycastDepuisLogOuConfiguration(titreJeu),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
@@ -193,6 +207,53 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return identifiantJeu > 0
             && !string.IsNullOrWhiteSpace(cheminJeu)
             && File.Exists(cheminJeu);
+    }
+
+    /*
+     * Tente de reconstruire un contexte de rejeu à partir d'un titre connu
+     * lorsque la source locale ne fournit pas directement d'identifiant RA.
+     */
+    public static bool EssayerObtenirContexteRejouerDepuisTitre(
+        string nomEmulateur,
+        string titreJeuAttendu,
+        out string cheminExecutable,
+        out string cheminJeu
+    )
+    {
+        cheminExecutable = string.Empty;
+        cheminJeu = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(nomEmulateur) || string.IsNullOrWhiteSpace(titreJeuAttendu))
+        {
+            return false;
+        }
+
+        DefinitionEmulateurLocal? definition = ServiceCatalogueEmulateursLocaux.TrouverParNom(
+            nomEmulateur
+        );
+
+        if (definition is null || !ServiceCatalogueEmulateursLocaux.EstEmulateurValide(definition))
+        {
+            return false;
+        }
+
+        cheminExecutable = ServiceSourcesLocalesEmulateurs.TrouverEmplacementEmulateur(
+            definition.NomEmulateur
+        );
+
+        if (string.IsNullOrWhiteSpace(cheminExecutable) || !File.Exists(cheminExecutable))
+        {
+            return false;
+        }
+
+        cheminJeu = definition.StrategieRenseignementJeu switch
+        {
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                LireCheminJeuSkyEmuDepuisRecentGames(titreJeuAttendu),
+            _ => string.Empty,
+        };
+
+        return !string.IsNullOrWhiteSpace(cheminJeu) && File.Exists(cheminJeu);
     }
 
     /*
@@ -600,6 +661,33 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 );
             }
         }
+        else if (
+            definition.StrategieRenseignementJeu
+            == StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames
+        )
+        {
+            EtatHttpSkyEmu? etatHttpSkyEmu = LireEtatHttpSkyEmu(processusCible);
+
+            if (etatHttpSkyEmu is not null && !string.IsNullOrWhiteSpace(etatHttpSkyEmu.CheminRom))
+            {
+                cheminJeuProbable = etatHttpSkyEmu.CheminRom;
+                titreJeuProbable = NettoyerNomFichierJeu(
+                    Path.GetFileNameWithoutExtension(etatHttpSkyEmu.CheminRom)
+                );
+                informationsDiagnostic =
+                    $"source=skyemu_http_status;port={etatHttpSkyEmu.Port.ToString(CultureInfo.InvariantCulture)};gameId=0";
+            }
+            else if (
+                !string.IsNullOrWhiteSpace(titreJeuProbable)
+                || !string.IsNullOrWhiteSpace(cheminJeuProbable)
+            )
+            {
+                informationsDiagnostic = ConstruireDiagnosticSourceJeu(
+                    definition.StrategieRenseignementJeu,
+                    identifiantJeuProbable
+                );
+            }
+        }
 
         if (
             definition.StrategieRenseignementJeu
@@ -692,6 +780,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 LireCheminJeuDuckStationDepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => LireCheminJeuPCSX2DepuisLog(),
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => LireCheminJeuPPSSPPDepuisLog(),
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
+                LireCheminJeuSkyEmuDepuisHttp(processus) is string cheminJeuSkyEmuHttp
+                && !string.IsNullOrWhiteSpace(cheminJeuSkyEmuHttp)
+                    ? cheminJeuSkyEmuHttp
+                    : LireCheminJeuSkyEmuDepuisRecentGames(titreJeuProbable),
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
                 LireCheminJeuFlycastDepuisLogOuConfiguration(titreJeuProbable),
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
@@ -740,6 +833,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 titreFenetre
             ),
             StrategieExtractionTitreEmulateurLocal.PPSSPP => ExtraireTitrePPSSPP(
+                processus,
+                titreFenetre
+            ),
+            StrategieExtractionTitreEmulateurLocal.SkyEmu => ExtraireTitreSkyEmu(
                 processus,
                 titreFenetre
             ),
@@ -1238,6 +1335,24 @@ public sealed partial class ServiceSondeLocaleEmulateurs
         return string.IsNullOrWhiteSpace(cheminJeu)
             ? string.Empty
             : NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+    }
+
+    /*
+     * Extrait un titre probable de SkyEmu à partir de la ligne de commande
+     * ou, à défaut, du titre de fenêtre.
+     */
+    private static string ExtraireTitreSkyEmu(Process processus, string titreFenetre)
+    {
+        string cheminJeu = NormaliserCheminJeuProbable(
+            ExtraireCheminJeuDepuisLigneCommande(LireLigneCommandeProcessus(processus))
+        );
+
+        if (!string.IsNullOrWhiteSpace(cheminJeu))
+        {
+            return NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+        }
+
+        return ExtraireTitreAvecSeparateurs(titreFenetre, "SkyEmu", "Sky Emu");
     }
 
     /*
@@ -2531,6 +2646,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog => "duckstation_log",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log => "pcsx2_log",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog => "ppsspp_log",
+            StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames => "skyemu_recent_games",
             _ => "inconnue",
         };
 
@@ -3348,6 +3464,228 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 );
 
                 if (!string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    return cheminNormalise;
+                }
+            }
+        }
+        catch { }
+
+        return string.Empty;
+    }
+
+    /*
+     * Construit le renseignement jeu SkyEmu pour le mode Rejouer à partir
+     * du fichier recent_games.txt.
+     */
+    private static RenseignementJeuRA? LireRenseignementJeuSkyEmuDepuisSourcesRejouer()
+    {
+        string cheminJeu = LireCheminJeuSkyEmuDepuisRecentGames();
+
+        if (string.IsNullOrWhiteSpace(cheminJeu))
+        {
+            return null;
+        }
+
+        string titreJeu = NettoyerNomFichierJeu(Path.GetFileNameWithoutExtension(cheminJeu));
+        return string.IsNullOrWhiteSpace(titreJeu) ? null : new RenseignementJeuRA(0, titreJeu);
+    }
+
+    /*
+     * Lit le chemin du jeu SkyEmu depuis l'état HTTP exposé localement.
+     */
+    private static string LireCheminJeuSkyEmuDepuisHttp(Process processus)
+    {
+        return LireEtatHttpSkyEmu(processus)?.CheminRom ?? string.Empty;
+    }
+
+    /*
+     * Lit l'état HTTP de SkyEmu quand son serveur de contrôle est accessible.
+     */
+    private static EtatHttpSkyEmu? LireEtatHttpSkyEmu(Process processus)
+    {
+        try
+        {
+            int port = LirePortServeurHttpSkyEmu(processus);
+
+            if (port <= 0 || port > 65535)
+            {
+                return null;
+            }
+
+            string contenu = HttpClientSkyEmu
+                .GetStringAsync(
+                    $"http://127.0.0.1:{port.ToString(CultureInfo.InvariantCulture)}/status"
+                )
+                .GetAwaiter()
+                .GetResult();
+
+            if (string.IsNullOrWhiteSpace(contenu))
+            {
+                return null;
+            }
+
+            using JsonDocument document = JsonDocument.Parse(contenu);
+
+            if (
+                !document.RootElement.TryGetProperty(
+                    "rom-loaded",
+                    out JsonElement romChargeeElement
+                )
+                || romChargeeElement.ValueKind != JsonValueKind.True
+            )
+            {
+                return null;
+            }
+
+            if (
+                !document.RootElement.TryGetProperty("rom-path", out JsonElement cheminRomElement)
+                || cheminRomElement.ValueKind != JsonValueKind.String
+            )
+            {
+                return null;
+            }
+
+            string cheminRom = NormaliserCheminJeuProbable(
+                cheminRomElement.GetString() ?? string.Empty
+            );
+
+            return string.IsNullOrWhiteSpace(cheminRom)
+                ? null
+                : new EtatHttpSkyEmu(port, cheminRom);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /*
+     * Détermine le port HTTP de SkyEmu à partir de la ligne de commande ou
+     * de son fichier de configuration binaire.
+     */
+    private static int LirePortServeurHttpSkyEmu(Process processus)
+    {
+        int port = LirePortServeurHttpSkyEmuDepuisLigneCommande(processus);
+
+        return port > 0 ? port : LirePortServeurHttpSkyEmuDepuisConfiguration();
+    }
+
+    /*
+     * Lit le port HTTP de SkyEmu lorsqu'il a été lancé en mode http_server.
+     */
+    private static int LirePortServeurHttpSkyEmuDepuisLigneCommande(Process processus)
+    {
+        try
+        {
+            IReadOnlyList<string> jetons = DecouperLigneCommande(
+                LireLigneCommandeProcessus(processus)
+            );
+
+            for (int index = 0; index < jetons.Count - 1; index++)
+            {
+                if (
+                    !string.Equals(jetons[index], "http_server", StringComparison.OrdinalIgnoreCase)
+                )
+                {
+                    continue;
+                }
+
+                if (
+                    int.TryParse(
+                        jetons[index + 1],
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out int port
+                    )
+                )
+                {
+                    return port;
+                }
+            }
+        }
+        catch { }
+
+        return 0;
+    }
+
+    /*
+     * Lit le port HTTP de SkyEmu depuis user_settings.bin si le serveur est
+     * activé dans les préférences.
+     */
+    private static int LirePortServeurHttpSkyEmuDepuisConfiguration()
+    {
+        return ServiceSourcesLocalesEmulateurs.EssayerLireConfigurationHttpSkyEmu(
+            out bool serveurActive,
+            out int port
+        ) && serveurActive
+            ? port
+            : 0;
+    }
+
+    /*
+     * Découpe une ligne de commande brute en jetons ordonnés.
+     */
+    private static IReadOnlyList<string> DecouperLigneCommande(string ligneCommande)
+    {
+        if (string.IsNullOrWhiteSpace(ligneCommande))
+        {
+            return [];
+        }
+
+        return
+        [
+            .. JetonsLigneCommandeRegex()
+                .Matches(ligneCommande)
+                .Cast<Match>()
+                .Select(correspondance =>
+                    correspondance.Groups[1].Success
+                        ? correspondance.Groups[1].Value
+                        : correspondance.Groups[2].Value
+                )
+                .Where(valeur => !string.IsNullOrWhiteSpace(valeur)),
+        ];
+    }
+
+    /*
+     * Lit le chemin du jeu SkyEmu depuis recent_games.txt, avec un filtrage
+     * optionnel sur le titre attendu.
+     */
+    private static string LireCheminJeuSkyEmuDepuisRecentGames(string titreJeuAttendu = "")
+    {
+        try
+        {
+            string cheminRecentGames =
+                ServiceSourcesLocalesEmulateurs.TrouverCheminRecentGamesSkyEmu();
+
+            if (string.IsNullOrWhiteSpace(cheminRecentGames) || !File.Exists(cheminRecentGames))
+            {
+                return string.Empty;
+            }
+
+            foreach (
+                string ligne in ServiceSourcesLocalesEmulateurs.LireToutesLesLignesAvecPartage(
+                    cheminRecentGames
+                )
+            )
+            {
+                string cheminNormalise = NormaliserCheminJeuProbable(ligne.Trim());
+
+                if (string.IsNullOrWhiteSpace(cheminNormalise))
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(titreJeuAttendu))
+                {
+                    return cheminNormalise;
+                }
+
+                string titreObserve = NettoyerNomFichierJeu(
+                    Path.GetFileNameWithoutExtension(cheminNormalise)
+                );
+
+                if (TitresSemblables(titreJeuAttendu, titreObserve))
                 {
                     return cheminNormalise;
                 }

@@ -862,16 +862,26 @@ public partial class MainWindow
         }
 
         double largeurDisponible = Math.Max(0, GrilleInformationsJeuEnCours.ActualWidth);
-        double largeurMinimaleCapsule = ConstantesDesign.LargeurMinimaleCapsuleInformation;
+        double largeurMinimaleCapsule = Math.Min(
+            ConstantesDesign.LargeurMinimaleCapsuleInformation,
+            116
+        );
+        double largeurMinimaleCapsuleDeuxColonnes = Math.Max(largeurMinimaleCapsule - 20, 92);
         double espacement = ConstantesDesign.EspaceCompact;
 
         int nombreColonnes = 1;
 
-        if (largeurDisponible >= (largeurMinimaleCapsule * 3) + (espacement * 2))
+        if (
+            capsulesVisibles.Length >= 3
+            && largeurDisponible >= (largeurMinimaleCapsule * 3) + (espacement * 2)
+        )
         {
             nombreColonnes = 3;
         }
-        else if (largeurDisponible >= (largeurMinimaleCapsule * 2) + espacement)
+        else if (
+            capsulesVisibles.Length >= 2
+            && largeurDisponible >= (largeurMinimaleCapsuleDeuxColonnes * 2) + espacement
+        )
         {
             nombreColonnes = 2;
         }

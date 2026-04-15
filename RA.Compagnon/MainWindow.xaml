@@ -191,7 +191,7 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel Margin="6,0,0,0" Orientation="Horizontal" VerticalAlignment="Center">
           <ui:Button
             Command="{Binding CommandeAfficherModuleAccueil}"
             Content="Accueil"
@@ -202,9 +202,11 @@
           <ui:Button
             Command="{Binding CommandeAfficherModuleBibliotheque}"
             Content="Bibliothèque"
+            IsEnabled="False"
             Style="{StaticResource StyleOngletModulePrincipal}"
             Tag="{Binding ModuleBibliothequeActif}"
-            ToolTip="Afficher la bibliothèque récente"
+            ToolTipService.ShowOnDisabled="True"
+            ToolTip="Bientôt disponible"
           />
         </StackPanel>
 

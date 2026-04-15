@@ -125,6 +125,8 @@ Ce fichier regroupe les évolutions possibles du projet, les améliorations de c
 - [ ] Ajouter une action pour revalider manuellement un émulateur configuré
 - [ ] Ajouter un indicateur de fraîcheur des journaux locaux utilisés
 - [ ] Étudier la prise en charge de nouveaux émulateurs compatibles avec la logique du projet
+- [ ] Étudier `SkyEmu` comme source potentielle pour une future prise en charge : https://github.com/skylersaleh/SkyEmu
+- [ ] Étudier `Firelight` comme source potentielle pour une future prise en charge : https://github.com/firelight-emulator/firelight
 - [ ] Ajouter une validation fonctionnelle plus poussée pour chaque émulateur déjà supporté
 
 ## `Rejouer`

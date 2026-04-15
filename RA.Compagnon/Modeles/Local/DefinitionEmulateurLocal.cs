@@ -19,6 +19,7 @@ public enum StrategieExtractionTitreEmulateurLocal
     Dolphin,
     Project64,
     Flycast,
+    SkyEmu,
     RANes,
     RAVBA,
     RASnes9x,
@@ -43,6 +44,7 @@ public enum StrategieRenseignementJeuEmulateurLocal
     DuckStationLog,
     PCSX2Log,
     PPSSPPLog,
+    SkyEmuRecentGames,
 }
 
 /*

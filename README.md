@@ -113,6 +113,11 @@ Validation confirmée :
   - détection via `RACache` et configuration `Project64`
   - succès et `Rejouer` validés
 
+Sources à surveiller pour de futurs émulateurs :
+
+- `SkyEmu` : https://github.com/skylersaleh/SkyEmu
+- `Firelight` : https://github.com/firelight-emulator/firelight
+
 Exclusion confirmée :
 
 - `LunaProject64`
