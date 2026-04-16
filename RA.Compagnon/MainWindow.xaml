@@ -250,7 +250,7 @@
         <ScrollViewer
           x:Name="ZonePrincipale"
           Visibility="{Binding VisibiliteContenuPrincipal}"
-          VerticalScrollBarVisibility="Hidden"
+          VerticalScrollBarVisibility="Auto"
           HorizontalScrollBarVisibility="Disabled"
           SizeChanged="ZonePrincipale_TailleChangee"
           PreviewMouseWheel="ZonePrincipale_ApercuMoletteSouris"
@@ -727,7 +727,7 @@
                         <Grid>
                           <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="10" />
+                            <RowDefinition Height="14" />
                             <RowDefinition Height="Auto" />
                           </Grid.RowDefinitions>
 
@@ -816,6 +816,7 @@
 
                           <Grid Grid.Row="2" Margin="0" VerticalAlignment="Bottom">
                             <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
@@ -823,6 +824,7 @@
                               Grid.Column="0"
                               HorizontalAlignment="Left"
                               Orientation="Horizontal"
+                              VerticalAlignment="Center"
                             >
                               <ui:Button
                                 x:Name="BoutonSuccesEnCoursPrecedent"
@@ -870,17 +872,94 @@
                                 />
                               </ui:Button>
                             </StackPanel>
+                            <ItemsControl
+                              Grid.Column="1"
+                              Margin="0"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              ItemsSource="{Binding SuccesEnCours.BadgesGroupeDetecte}"
+                              ToolTip="{Binding SuccesEnCours.ToolTipGroupeDetecte}"
+                              Visibility="{Binding SuccesEnCours.GroupeDetecteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                            >
+                              <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                  <WrapPanel />
+                                </ItemsPanelTemplate>
+                              </ItemsControl.ItemsPanel>
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                  <Border
+                                    Width="32"
+                                    Height="32"
+                                    Margin="0,0,4,0"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="0"
+                                    CornerRadius="{StaticResource RayonCoinsPetit}"
+                                    ToolTip="{Binding ToolTip}"
+                                  >
+                                    <Border.Style>
+                                      <Style TargetType="Border">
+                                        <Style.Triggers>
+                                          <DataTrigger Binding="{Binding EstHardcore}" Value="True">
+                                            <Setter Property="BorderBrush" Value="#F5C84C" />
+                                            <Setter Property="BorderThickness" Value="1" />
+                                            <Setter Property="Background" Value="#1CF5C84C" />
+                                            <Setter Property="Effect">
+                                              <Setter.Value>
+                                                <DropShadowEffect
+                                                  BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcore}"
+                                                  Color="#F5C84C"
+                                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteHaloHardcore}"
+                                                  ShadowDepth="0"
+                                                />
+                                              </Setter.Value>
+                                            </Setter>
+                                          </DataTrigger>
+                                        </Style.Triggers>
+                                      </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                      <TextBlock
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontSize="8"
+                                        FontWeight="SemiBold"
+                                        Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+                                        Text="{Binding TexteSecours}"
+                                        TextAlignment="Center"
+                                        TextWrapping="NoWrap"
+                                      />
+                                      <Image
+                                        Width="32"
+                                        Height="32"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Loaded="ImageBadgeGroupeSucces_Charge"
+                                        Opacity="{Binding ImageOpacity}"
+                                        SizeChanged="ImageBadgeGroupeSucces_TailleChangee"
+                                        Source="{Binding Image}"
+                                        Stretch="Uniform"
+                                        Visibility="{Binding ImageVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                                      />
+                                    </Grid>
+                                  </Border>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ui:Button
                               x:Name="BoutonPasserSuccesEnCours"
-                              Grid.Column="1"
+                              Grid.Column="2"
                               Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
                               Margin="{StaticResource MargeInterneDroite}"
                               Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
                               Appearance="Secondary"
                               Command="{Binding SuccesEnCours.CommandePasser}"
                               Content="Passer"
+                              HorizontalAlignment="Right"
                               IsEnabled="{Binding SuccesEnCours.PasserActif}"
                               ToolTip="Faire ce succès plus tard"
+                              VerticalAlignment="Center"
                               Visibility="{Binding SuccesEnCours.NavigationVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                             />
                           </Grid>

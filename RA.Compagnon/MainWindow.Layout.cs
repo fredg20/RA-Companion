@@ -112,6 +112,26 @@ public partial class MainWindow
     }
 
     /*
+     * Indique si la fenêtre occupe effectivement toute la hauteur utile
+     * de l'écran courant, ce qui justifie de contraindre les cartes à la
+     * hauteur visible plutôt que de laisser la fenêtre défiler.
+     */
+    private bool FenetreOccupeHauteurEcran(Rect zoneTravail)
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            return true;
+        }
+
+        if (zoneTravail.Height <= 0)
+        {
+            return true;
+        }
+
+        return ActualHeight >= zoneTravail.Height - 1;
+    }
+
+    /*
      * Met à jour la largeur minimale de la fenêtre pour empêcher un rendu
      * plus étroit qu'un quart d'écran.
      */
@@ -135,20 +155,12 @@ public partial class MainWindow
     }
 
     /*
-     * Affiche brièvement la barre de défilement principale lorsqu'une
-     * interaction utilisateur suggère qu'elle peut être utile.
+     * Réapplique l'état naturel de la barre de défilement principale
+     * après une interaction ou un changement de layout.
      */
     private void AfficherTemporairementBarreDefilementPrincipale()
     {
-        if (!ZonePrincipalePeutDefiler())
-        {
-            DefinirVisibiliteBarreDefilementPrincipale();
-            return;
-        }
-
         DefinirVisibiliteBarreDefilementPrincipale();
-        _minuteurMasquageBarreDefilement.Stop();
-        _minuteurMasquageBarreDefilement.Start();
     }
 
     /*
@@ -195,14 +207,18 @@ public partial class MainWindow
     }
 
     /*
-     * Masque complètement la barre de défilement principale quand elle ne
-     * doit pas être visible ni interactive.
+     * Laisse la barre de défilement principale suivre un comportement
+     * automatique: visible seulement quand le contenu dépasse réellement.
      */
     private void DefinirVisibiliteBarreDefilementPrincipale()
     {
+        bool afficher = ZonePrincipalePeutDefiler();
+
         if (ZonePrincipale is not null)
         {
-            ZonePrincipale.VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Hidden;
+            ZonePrincipale.VerticalScrollBarVisibility = afficher
+                ? SystemControls.ScrollBarVisibility.Auto
+                : SystemControls.ScrollBarVisibility.Hidden;
         }
 
         SystemControls.Primitives.ScrollBar? barre = ObtenirBarreDefilementVerticalePrincipale();
@@ -212,9 +228,10 @@ public partial class MainWindow
             return;
         }
 
-        barre.Opacity = 0;
-        barre.Visibility = Visibility.Hidden;
-        barre.IsHitTestVisible = false;
+        barre.Opacity = afficher ? 1 : 0;
+        barre.Visibility = afficher ? Visibility.Visible : Visibility.Hidden;
+        barre.IsHitTestVisible = afficher;
+        SystemControls.Panel.SetZIndex(barre, 10);
     }
 
     /*
@@ -293,8 +310,8 @@ public partial class MainWindow
     }
 
     /*
-     * Réagit à la molette sur la zone principale en révélant temporairement
-     * la barre de défilement.
+     * Réagit à la molette sur la zone principale en réappliquant la
+     * visibilité automatique de la barre.
      */
     private void ZonePrincipale_ApercuMoletteSouris(object sender, MouseWheelEventArgs e)
     {
@@ -302,47 +319,32 @@ public partial class MainWindow
     }
 
     /*
-     * Ajuste la visibilité de la barre principale lorsque la souris circule
-     * sur la zone de défilement.
+     * Réapplique la visibilité automatique de la barre principale lorsque
+     * la souris circule sur la zone de défilement.
      */
     private void ZonePrincipale_DeplacementSouris(object sender, MouseEventArgs e)
     {
-        if (sender is not SystemControls.ScrollViewer scrollViewer || !ZonePrincipalePeutDefiler())
+        if (sender is not SystemControls.ScrollViewer || !ZonePrincipalePeutDefiler())
         {
             DefinirVisibiliteBarreDefilementPrincipale();
             return;
         }
 
-        bool surZoneBarre = EstDansZoneBarreDefilement(scrollViewer, e.GetPosition(scrollViewer));
-
-        if (surZoneBarre)
-        {
-            _minuteurMasquageBarreDefilement.Stop();
-            DefinirVisibiliteBarreDefilementPrincipale();
-            return;
-        }
-
-        if (!_minuteurMasquageBarreDefilement.IsEnabled)
-        {
-            DefinirVisibiliteBarreDefilementPrincipale();
-        }
+        DefinirVisibiliteBarreDefilementPrincipale();
     }
 
     /*
-     * Masque la barre principale à la sortie de la souris si aucun minuteur
-     * de délai n'est encore actif.
+     * Réapplique l'état automatique de la barre principale à la sortie de
+     * la souris.
      */
     private void ZonePrincipale_SortieSouris(object sender, MouseEventArgs e)
     {
-        if (!_minuteurMasquageBarreDefilement.IsEnabled)
-        {
-            DefinirVisibiliteBarreDefilementPrincipale();
-        }
+        DefinirVisibiliteBarreDefilementPrincipale();
     }
 
     /*
-     * Réaffiche temporairement la barre principale lorsqu'un défilement
-     * vertical effectif est détecté.
+     * Réapplique la visibilité automatique de la barre principale lorsqu'un
+     * défilement vertical effectif est détecté.
      */
     private void ZonePrincipale_DefilementChange(
         object sender,
@@ -356,16 +358,11 @@ public partial class MainWindow
     }
 
     /*
-     * Terminé la fenêtre de visibilité temporaire de la barre principale
-     * lorsque la souris n'est plus sur la zone sensible.
+     * Termine le cycle hérité du minuteur en revenant à la visibilité
+     * automatique de la barre principale.
      */
     private void MinuteurMasquageBarreDefilement_Tick(object? sender, EventArgs e)
     {
-        if (SourisSurvoleZoneBarreDefilement())
-        {
-            return;
-        }
-
         _minuteurMasquageBarreDefilement.Stop();
         DefinirVisibiliteBarreDefilementPrincipale();
     }
@@ -849,9 +846,10 @@ public partial class MainWindow
             EtiquetteCreditsJeuEnCours,
         ];
 
-        capsulesVisibles = capsulesVisibles
-            .Where(capsule => capsule.Visibility == Visibility.Visible)
-            .ToArray();
+        capsulesVisibles =
+        [
+            .. capsulesVisibles.Where(capsule => capsule.Visibility == Visibility.Visible),
+        ];
 
         GrilleInformationsJeuEnCours.ColumnDefinitions.Clear();
         GrilleInformationsJeuEnCours.RowDefinitions.Clear();
@@ -961,6 +959,8 @@ public partial class MainWindow
             && CadreZonePrincipale?.Visibility == Visibility.Visible
             && ZonePrincipale.Visibility == Visibility.Visible
             && ZonePrincipale.IsVisible;
+        Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
+        bool contraindreHauteurCartes = FenetreOccupeHauteurEcran(zoneTravail);
 
         if (!accueilVisible)
         {
@@ -992,6 +992,45 @@ public partial class MainWindow
                 ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
                 ZoneVisibleListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
             }
+            return;
+        }
+
+        if (!contraindreHauteurCartes)
+        {
+            if (ConteneurZonePrincipale is not null)
+            {
+                ConteneurZonePrincipale.MinHeight = 0;
+                ConteneurZonePrincipale.Height = double.NaN;
+            }
+
+            GrilleCartes.MinHeight = 0;
+            GrilleCartes.Height = double.NaN;
+            CarteJeuEnCours.MinHeight = 0;
+            CarteJeuEnCours.Height = double.NaN;
+            CarteJeuEnCours.MaxHeight = double.PositiveInfinity;
+
+            if (CarteListeSuccesJeuEnCours is not null)
+            {
+                CarteListeSuccesJeuEnCours.Height = double.NaN;
+                CarteListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
+
+            if (ZoneVisibleListeSuccesJeuEnCours is not null)
+            {
+                ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
+                ZoneVisibleListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
+
+            if (ConteneurGrilleTousSuccesJeuEnCours is not null)
+            {
+                ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
+                ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            }
+
+            _ = Dispatcher.BeginInvoke(
+                (Action)DefinirVisibiliteBarreDefilementPrincipale,
+                DispatcherPriority.Render
+            );
             return;
         }
 
@@ -1027,6 +1066,10 @@ public partial class MainWindow
         CarteJeuEnCours.Height = hauteurCible;
         CarteJeuEnCours.MaxHeight = hauteurCible;
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        _ = Dispatcher.BeginInvoke(
+            (Action)DefinirVisibiliteBarreDefilementPrincipale,
+            DispatcherPriority.Render
+        );
     }
 
     /*
@@ -1071,6 +1114,20 @@ public partial class MainWindow
             || !CarteListeSuccesJeuEnCours.IsLoaded
         )
         {
+            return;
+        }
+
+        if (!FenetreOccupeHauteurEcran(ObtenirZoneTravailFenetreCourante()))
+        {
+            ZoneVisibleListeSuccesJeuEnCours.MinHeight = 0;
+            ZoneVisibleListeSuccesJeuEnCours.Height = double.NaN;
+            ZoneVisibleListeSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            ConteneurGrilleTousSuccesJeuEnCours.MinHeight = 0;
+            ConteneurGrilleTousSuccesJeuEnCours.Width = double.NaN;
+            ConteneurGrilleTousSuccesJeuEnCours.Height = double.NaN;
+            ConteneurGrilleTousSuccesJeuEnCours.MaxWidth = double.PositiveInfinity;
+            ConteneurGrilleTousSuccesJeuEnCours.MaxHeight = double.PositiveInfinity;
+            DefinirVisibiliteBarreDefilementListeSucces(visible: false);
             return;
         }
 

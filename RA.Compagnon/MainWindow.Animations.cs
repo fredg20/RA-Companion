@@ -4,6 +4,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using RA.Compagnon.Modeles.Presentation;
+using SystemControls = System.Windows.Controls;
 
 /*
  * Regroupe les animations de défilement de la grille de succès ainsi que

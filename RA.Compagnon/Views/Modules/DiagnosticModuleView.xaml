@@ -190,6 +190,76 @@
               TextWrapping="Wrap"
               Visibility="{Binding SuccesEnCours.DetailsFaisabiliteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
             />
+            <ItemsControl
+              Margin="0,8,0,0"
+              ItemsSource="{Binding SuccesEnCours.BadgesGroupeDetecte}"
+              ToolTip="{Binding SuccesEnCours.ToolTipGroupeDetecte}"
+              Visibility="{Binding SuccesEnCours.GroupeDetecteVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+            >
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border
+                    Width="28"
+                    Height="28"
+                    Margin="0,0,4,4"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource RayonCoinsPetit}"
+                    ToolTip="{Binding ToolTip}"
+                  >
+                    <Border.Style>
+                      <Style TargetType="Border">
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding EstHardcore}" Value="True">
+                            <Setter Property="BorderBrush" Value="#F5C84C" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="Background" Value="#1CF5C84C" />
+                            <Setter Property="Effect">
+                              <Setter.Value>
+                                <DropShadowEffect
+                                  BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcore}"
+                                  Color="#F5C84C"
+                                  Opacity="{x:Static compagnon:ConstantesDesign.OpaciteHaloHardcore}"
+                                  ShadowDepth="0"
+                                />
+                              </Setter.Value>
+                            </Setter>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
+                    <Grid>
+                      <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        FontSize="8"
+                        FontWeight="SemiBold"
+                        Opacity="{x:Static compagnon:ConstantesDesign.OpaciteSecondaire}"
+                        Text="{Binding TexteSecours}"
+                        TextAlignment="Center"
+                        TextWrapping="NoWrap"
+                      />
+                      <Image
+                        Width="28"
+                        Height="28"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Opacity="{Binding ImageOpacity}"
+                        Source="{Binding Image}"
+                        Stretch="Uniform"
+                        Visibility="{Binding ImageVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                      />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <WrapPanel Margin="0,14,0,0">
               <ui:Button
                 Margin="0,0,8,8"

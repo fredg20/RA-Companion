@@ -31,6 +31,7 @@ public partial class MainWindow
     private readonly ServiceCatalogueRetroAchievements _serviceCatalogueRetroAchievements = new();
     private readonly ServiceCatalogueJeuxLocal _serviceCatalogueJeuxLocal = new();
     private readonly ServiceEtatUtilisateurJeuxLocal _serviceEtatUtilisateurJeuxLocal = new();
+    private readonly ServiceAnalyseDescriptionsSucces _serviceAnalyseDescriptionsSucces = new();
     private readonly ServiceSondeLocaleEmulateurs _serviceSondeLocaleEmulateurs = new();
     private readonly ServiceSurveillanceSuccesLocaux _serviceSurveillanceSuccesLocaux = new();
     private readonly ServiceDetectionSuccesJeu _serviceDetectionSuccesJeu = new();
@@ -87,6 +88,7 @@ public partial class MainWindow
     private int _indexVisuelJeuEnCours;
     private int _identifiantJeuSuccesCourant;
     private int _versionAffichageSuccesEnCours;
+    private ResultatAnalyseDescriptionsSucces? _analyseSuccesEnCours;
     private double _largeurMaxVisuelJeuEnCours;
     private double _hauteurMaxVisuelJeuEnCours;
     private Dictionary<int, HashSet<int>> _succesDebloquesLocauxTemporaires = [];

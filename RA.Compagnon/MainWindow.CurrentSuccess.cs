@@ -15,6 +15,7 @@ using RA.Compagnon.Modeles.Etat;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
+using RA.Compagnon.ViewModels;
 
 namespace RA.Compagnon;
 
@@ -24,12 +25,15 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
+    private const int SeuilAffichageGroupeSucces = 70;
+
     /*
      * Réinitialise totalement la carte du succès mis en avant afin de repartir
      * d'un état propre lors d'un changement de jeu ou de contexte.
      */
     private void ReinitialiserPremierSuccesNonDebloque()
     {
+        _analyseSuccesEnCours = null;
         _vueModele.SuccesEnCours.Image = null;
         ImagePremierSuccesNonDebloque.Clip = null;
         AppliquerStyleBadgeSuccesEnCours(false);
@@ -46,6 +50,12 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+        _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+        _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
         MettreAJourNavigationSuccesEnCours(null);
     }
 
@@ -404,6 +414,7 @@ public partial class MainWindow
     {
         if (succesSelectionne is null)
         {
+            _analyseSuccesEnCours = null;
             _versionAffichageSuccesEnCours++;
             _vueModele.SuccesEnCours.Image = null;
             _vueModele.SuccesEnCours.ImageVisible = false;
@@ -420,6 +431,12 @@ public partial class MainWindow
             _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
             _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
             _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+            _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+            _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
             MettreAJourNavigationSuccesEnCours(null);
             SauvegarderDernierSuccesAffiche(
                 new EtatSuccesAfficheLocal
@@ -469,6 +486,8 @@ public partial class MainWindow
         );
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = succesAffiche.ExplicationFaisabilite;
         MettreAJourNavigationSuccesEnCours(succesSelectionne);
+        MettreAJourAnalyseSuccesEnCours(succesSelectionne);
+        _ = ChargerBadgesGroupeSuccesEnCoursAsync(identifiantJeu, versionAffichage);
 
         if (doitSauvegarder)
         {
@@ -498,6 +517,202 @@ public partial class MainWindow
             estEpingleManuellement
         );
         return Task.CompletedTask;
+    }
+
+    /*
+     * Recalcule l'analyse hybride du succès courant afin de préparer un futur
+     * affichage de groupes cohérents sans bloquer l'interface.
+     */
+    private void MettreAJourAnalyseSuccesEnCours(GameAchievementV2 succesSelectionne)
+    {
+        _analyseSuccesEnCours = ServiceAnalyseDescriptionsSucces.Analyser(
+            succesSelectionne,
+            _succesJeuCourant
+        );
+
+        AppliquerPresentationGroupeSuccesEnCours();
+
+        if (_analyseSuccesEnCours.GroupePrincipal is null)
+        {
+            JournaliserDiagnosticAffichageJeu(
+                "analyse_succes",
+                $"succes={succesSelectionne.Id};groupes=0"
+            );
+            return;
+        }
+
+        string details = string.Join(
+            " | ",
+            _analyseSuccesEnCours
+                .Groupes.Take(3)
+                .Select(groupe =>
+                    $"{groupe.TypeGroupe}:{groupe.Ancre};score={groupe.ScoreConfiance};nb={groupe.IdentifiantsSucces.Count}"
+                )
+        );
+
+        JournaliserDiagnosticAffichageJeu(
+            "analyse_succes",
+            $"succes={succesSelectionne.Id};groupes={_analyseSuccesEnCours.Groupes.Count};top={details}"
+        );
+    }
+
+    /*
+     * Projette le meilleur groupe détecté dans le ViewModel du succès courant
+     * lorsqu'il atteint un seuil de confiance suffisamment fiable.
+     */
+    private void AppliquerPresentationGroupeSuccesEnCours()
+    {
+        GroupeSuccesPotentiel? groupe = _analyseSuccesEnCours?.GroupePrincipal;
+
+        if (groupe is null || groupe.ScoreConfiance < SeuilAffichageGroupeSucces)
+        {
+            _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+            _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+            _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+            _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
+            return;
+        }
+
+        string type = TraduireTypeGroupeSucces(groupe.TypeGroupe);
+        string libelleSucces = groupe.IdentifiantsSucces.Count > 1 ? "succès liés" : "succès lié";
+
+        _vueModele.SuccesEnCours.GroupeDetecteType = type;
+        _vueModele.SuccesEnCours.GroupeDetecteAncre = groupe.Ancre;
+        _vueModele.SuccesEnCours.GroupeDetecteQuantite =
+            $"{groupe.IdentifiantsSucces.Count} {libelleSucces}";
+        _vueModele.SuccesEnCours.ToolTipGroupeDetecte =
+            $"Cohérence détectée : {type}{Environment.NewLine}Ancre : {groupe.Ancre}{Environment.NewLine}Confiance : {groupe.LibelleConfiance} ({groupe.ScoreConfiance}){Environment.NewLine}Règle : {groupe.RegleSource}{Environment.NewLine}Succès reliés : {groupe.IdentifiantsSucces.Count}";
+        _vueModele.SuccesEnCours.GroupeDetecteVisible = true;
+    }
+
+    /*
+     * Recharge les badges du groupe détecté afin de redonner un repère visuel
+     * immédiat autour du succès actuellement affiché.
+     */
+    private async Task ChargerBadgesGroupeSuccesEnCoursAsync(
+        int identifiantJeu,
+        int versionAffichage
+    )
+    {
+        GroupeSuccesPotentiel? groupe = _analyseSuccesEnCours?.GroupePrincipal;
+        _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
+
+        if (groupe is null || groupe.ScoreConfiance < SeuilAffichageGroupeSucces)
+        {
+            return;
+        }
+
+        HashSet<int> identifiantsGroupe = [.. groupe.IdentifiantsSucces];
+        List<GameAchievementV2> succesDuGroupe =
+        [
+            .. _succesJeuCourant.Where(item => identifiantsGroupe.Contains(item.Id)),
+        ];
+
+        foreach (GameAchievementV2 succes in succesDuGroupe)
+        {
+            SuccesGrilleAffiche succesAffiche = ServicePresentationSucces.ConstruirePourGrille(
+                succes
+            );
+            CurrentAchievementGroupBadgeViewModel badge = new()
+            {
+                IdentifiantSucces = succesAffiche.IdentifiantSucces,
+                Titre = succesAffiche.Titre,
+                ToolTip = string.Empty,
+                TexteSecours = string.IsNullOrWhiteSpace(succesAffiche.Titre)
+                    ? "?"
+                    : succesAffiche.Titre[..1].ToUpperInvariant(),
+                EstHardcore = succesAffiche.EstHardcore,
+                ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58,
+            };
+
+            _vueModele.SuccesEnCours.BadgesGroupeDetecte.Add(badge);
+
+            try
+            {
+                string descriptionTraduite =
+                    await _serviceTraductionTexte.TraduireVersFrancaisAsync(succes.Description);
+
+                if (
+                    _versionAffichageSuccesEnCours != versionAffichage
+                    || _identifiantJeuSuccesCourant != identifiantJeu
+                )
+                {
+                    return;
+                }
+
+                badge.ToolTip = string.IsNullOrWhiteSpace(descriptionTraduite)
+                    ? succes.Description.Trim()
+                    : descriptionTraduite.Trim();
+
+                ImageSource? imageBadge = await ChargerImageDistanteAsync(succesAffiche.UrlBadge);
+
+                if (
+                    _versionAffichageSuccesEnCours != versionAffichage
+                    || _identifiantJeuSuccesCourant != identifiantJeu
+                )
+                {
+                    return;
+                }
+
+                if (imageBadge is null)
+                {
+                    continue;
+                }
+
+                badge.Image = succesAffiche.EstDebloque
+                    ? imageBadge
+                    : ConvertirImageEnNoirEtBlanc(imageBadge);
+                badge.ImageOpacity = succesAffiche.EstDebloque ? 1 : 0.58;
+                badge.ImageVisible = true;
+            }
+            catch { }
+        }
+    }
+
+    /*
+     * Arrondit les coins d'un badge rendu dans le groupe du succès courant
+     * pour conserver le même traitement que dans la grille principale.
+     */
+    private void ImageBadgeGroupeSucces_Charge(object sender, RoutedEventArgs e)
+    {
+        if (sender is Image image)
+        {
+            AppliquerCoinsArrondisImage(image);
+        }
+    }
+
+    /*
+     * Réapplique les coins arrondis lorsque la taille d'un badge du groupe
+     * change après un chargement ou un redimensionnement.
+     */
+    private void ImageBadgeGroupeSucces_TailleChangee(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is Image image)
+        {
+            AppliquerCoinsArrondisImage(image);
+        }
+    }
+
+    /*
+     * Traduit le type de groupe technique en libellé lisible en français.
+     */
+    private static string TraduireTypeGroupeSucces(TypeGroupeSuccesPotentiel type)
+    {
+        return type switch
+        {
+            TypeGroupeSuccesPotentiel.Niveau => "Niveau",
+            TypeGroupeSuccesPotentiel.Monde => "Monde",
+            TypeGroupeSuccesPotentiel.Boss => "Boss",
+            TypeGroupeSuccesPotentiel.Collection => "Collection",
+            TypeGroupeSuccesPotentiel.Mode => "Mode",
+            TypeGroupeSuccesPotentiel.Objet => "Objet",
+            TypeGroupeSuccesPotentiel.DefiTechnique => "Défi",
+            TypeGroupeSuccesPotentiel.NonRelie => "Ensemble",
+            TypeGroupeSuccesPotentiel.Lexical => "Famille",
+            _ => "Groupe",
+        };
     }
 
     /*

@@ -81,6 +81,12 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+        _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+        _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
         _vueModele.JeuCourant.VisuelsSecondairesVisible = false;
         _vueModele.JeuCourant.LibelleVisuelCourant = string.Empty;
         _vueModele.JeuCourant.TexteVisuelPrincipal = string.Empty;

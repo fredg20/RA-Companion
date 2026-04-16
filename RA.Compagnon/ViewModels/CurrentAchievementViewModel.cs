@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Windows.Media;
 
 /*
@@ -26,6 +27,11 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
     private string _detailsFaisabilite = string.Empty;
     private bool _detailsFaisabiliteVisible;
     private string _toolTipDetailsFaisabilite = string.Empty;
+    private string _groupeDetecteType = string.Empty;
+    private string _groupeDetecteAncre = string.Empty;
+    private string _groupeDetecteQuantite = string.Empty;
+    private string _toolTipGroupeDetecte = string.Empty;
+    private bool _groupeDetecteVisible;
     private bool _navigationVisible;
     private bool _precedentActif;
     private bool _suivantActif;
@@ -41,6 +47,7 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
      */
     public CurrentAchievementViewModel()
     {
+        BadgesGroupeDetecte = [];
         CommandePrecedent = new RelayCommand(
             () => _executerNavigationPrecedente?.Invoke(),
             () => PrecedentActif
@@ -141,6 +148,38 @@ public sealed class CurrentAchievementViewModel : ViewModelBase
         get => _navigationVisible;
         set => SetProperty(ref _navigationVisible, value);
     }
+
+    public string GroupeDetecteType
+    {
+        get => _groupeDetecteType;
+        set => SetProperty(ref _groupeDetecteType, value);
+    }
+
+    public string GroupeDetecteAncre
+    {
+        get => _groupeDetecteAncre;
+        set => SetProperty(ref _groupeDetecteAncre, value);
+    }
+
+    public string GroupeDetecteQuantite
+    {
+        get => _groupeDetecteQuantite;
+        set => SetProperty(ref _groupeDetecteQuantite, value);
+    }
+
+    public string ToolTipGroupeDetecte
+    {
+        get => _toolTipGroupeDetecte;
+        set => SetProperty(ref _toolTipGroupeDetecte, value);
+    }
+
+    public bool GroupeDetecteVisible
+    {
+        get => _groupeDetecteVisible;
+        set => SetProperty(ref _groupeDetecteVisible, value);
+    }
+
+    public ObservableCollection<CurrentAchievementGroupBadgeViewModel> BadgesGroupeDetecte { get; }
 
     public bool PrecedentActif
     {

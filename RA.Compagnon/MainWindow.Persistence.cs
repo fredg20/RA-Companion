@@ -174,6 +174,12 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = NormaliserToolTipFaisabilite(
             succesSauvegarde.ExplicationFaisabilite
         );
+        _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+        _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+        _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
         if (!string.IsNullOrWhiteSpace(succesSauvegarde.CheminImageBadge))
         {
             ImageSource? imageSucces = await ChargerImageDistanteAsync(
@@ -329,6 +335,12 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.DetailsFaisabilite = string.Empty;
         _vueModele.SuccesEnCours.DetailsFaisabiliteVisible = false;
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteQuantite = string.Empty;
+        _vueModele.SuccesEnCours.ToolTipGroupeDetecte = string.Empty;
+        _vueModele.SuccesEnCours.GroupeDetecteVisible = false;
+        _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
         MettreAJourNavigationSuccesEnCours(null);
 
         if (!string.IsNullOrWhiteSpace(premierSuccesNonDebloque.CheminImageBadge))

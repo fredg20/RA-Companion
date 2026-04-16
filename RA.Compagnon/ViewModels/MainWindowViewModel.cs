@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Media;
+using RA.Compagnon.Modeles.Presentation;
 
 /*
  * Regroupe les propriétés et commandes exposées à la fenêtre principale

@@ -3,6 +3,7 @@ using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Catalogue;
 using RA.Compagnon.Modeles.Local;
+using RA.Compagnon.Modeles.Presentation;
 using RA.Compagnon.Services;
 
 return TestRunner.Executer();
@@ -52,6 +53,46 @@ static class TestRunner
         ExecuterTest(
             "Comparaison de versions traite 1.0.2 et 1.0.2.0 comme équivalentes",
             ComparaisonVersionsTraiteFormatsEquivalents
+        );
+        ExecuterTest(
+            "Analyse hybride regroupe un niveau partagé par plusieurs familles",
+            AnalyseHybrideRegroupeUnNiveauPartage
+        );
+        ExecuterTest(
+            "Analyse hybride détecte un boss partagé entre version standard et défi",
+            AnalyseHybrideDetecteUnBossPartage
+        );
+        ExecuterTest(
+            "Analyse hybride conserve un repli lexical quand aucun patron fort n'existe",
+            AnalyseHybrideConserveRepliLexical
+        );
+        ExecuterTest(
+            "Analyse hybride retrouve un niveau nommé sans dépendre de in",
+            AnalyseHybrideRetrouveNiveauNommeSansPrepositionForte
+        );
+        ExecuterTest(
+            "Analyse hybride retrouve un niveau numéroté",
+            AnalyseHybrideRetrouveNiveauNumerote
+        );
+        ExecuterTest(
+            "Analyse hybride priorise le niveau sur un mode récurrent",
+            AnalyseHybridePrioriseNiveauSurModeRecurrent
+        );
+        ExecuterTest(
+            "Traduction protège les noms propres probables avant traduction",
+            TraductionProtegeNomsPropresProbables
+        );
+        ExecuterTest(
+            "Traduction évite de protéger un début d'instruction banal",
+            TraductionIgnoreDebutInstructionBanal
+        );
+        ExecuterTest(
+            "Analyse hybride priorise boss sur monde aprÃ¨s niveau",
+            AnalyseHybridePrioriseBossSurMonde
+        );
+        ExecuterTest(
+            "Analyse hybride regroupe ensemble les succÃ¨s non reliÃ©s",
+            AnalyseHybrideRegroupeSuccesNonRelies
         );
         Console.WriteLine();
         Console.WriteLine(
@@ -178,8 +219,7 @@ static class TestRunner
 
     private static void DetectionSuccesRepereNouveauHardcore()
     {
-        IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent =
-            new Dictionary<int, EtatObservationSuccesLocal>();
+        Dictionary<int, EtatObservationSuccesLocal> etatPrecedent = [];
         IReadOnlyCollection<GameAchievementV2> succesCourants =
         [
             new GameAchievementV2
@@ -206,10 +246,7 @@ static class TestRunner
 
     private static void DetectionSuccesIgnoreSuccesDejaObserve()
     {
-        IReadOnlyDictionary<int, EtatObservationSuccesLocal> etatPrecedent = new Dictionary<
-            int,
-            EtatObservationSuccesLocal
-        >
+        Dictionary<int, EtatObservationSuccesLocal> etatPrecedent = new()
         {
             [214818] = new EtatObservationSuccesLocal
             {
@@ -406,6 +443,336 @@ static class TestRunner
                 $"Le type racache_log devrait porter un succès local direct pour {nomEmulateur}."
             );
         }
+    }
+
+    private static void AnalyseHybrideRegroupeUnNiveauPartage()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(1, "Collect the 3 plane toys in Ancient Fate, then complete the stage."),
+            CreerSucces(2, "Collect the Warp Boss Icon in Ancient Fate."),
+            CreerSucces(3, "Complete Ancient Fate Time Attack."),
+            CreerSucces(4, "Complete Artifact Way Time Attack."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Un groupe principal devrait être produit pour un niveau clairement partagé."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le regroupement principal devrait être le niveau."
+        );
+        Assert.Equal(
+            "Ancient Fate",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre de niveau devrait être retrouvée."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les trois succès du même niveau devraient être regroupés."
+        );
+    }
+
+    private static void AnalyseHybrideDetecteUnBossPartage()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(10, "Defeat Merlock."),
+            CreerSucces(
+                11,
+                "Defeat Merlock without taking any damage, losing a life and in 30 B/Y presses or less. [Exit Stage to Reset]"
+            ),
+            CreerSucces(12, "Survive Merlock's final phase."),
+            CreerSucces(13, "Collect the Warp Boss Icon in Dangerous Cliff."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(resultat.GroupePrincipal, "Le boss devrait produire un groupe principal.");
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Boss,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "La structure boss doit être reconnue."
+        );
+        Assert.Equal(
+            "Merlock",
+            resultat.GroupePrincipal.Ancre,
+            "Le nom du boss doit être extrait proprement."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les succès mentionnant le même boss devraient être rapprochés même avec un autre verbe."
+        );
+    }
+
+    private static void AnalyseHybrideConserveRepliLexical()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(20, "Ring every bell in the frozen chapel."),
+            CreerSucces(21, "Light every candle in the frozen chapel."),
+            CreerSucces(22, "Defeat the guardian in the desert arena."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        GroupeSuccesPotentiel? groupeLexical = resultat.Groupes.FirstOrDefault(groupe =>
+            groupe.TypeGroupe == TypeGroupeSuccesPotentiel.Lexical
+        );
+
+        Assert.NotNull(
+            groupeLexical,
+            "Le repli lexical devrait survivre lorsqu'aucun patron fort ne s'applique."
+        );
+        Assert.True(
+            groupeLexical!.IdentifiantsSucces.Contains(21),
+            "Le second succès lexicalement proche devrait être rapproché."
+        );
+    }
+
+    private static void AnalyseHybrideRetrouveNiveauNommeSansPrepositionForte()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(30, "Finish Sky Fortress without taking any damage."),
+            CreerSucces(31, "Open every cage in Sky Fortress."),
+            CreerSucces(32, "Collect the hidden emblem in Sky Fortress."),
+            CreerSucces(33, "Defeat Iron Whale."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(resultat.GroupePrincipal, "Un niveau nommé devrait être détecté.");
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le groupe principal devrait rester un niveau."
+        );
+        Assert.Equal(
+            "Sky Fortress",
+            resultat.GroupePrincipal.Ancre,
+            "Le nom du niveau devrait être conservé."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les trois succès du même niveau devraient être regroupés."
+        );
+    }
+
+    private static void AnalyseHybrideRetrouveNiveauNumerote()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(40, "Collect all crystals in Level 1."),
+            CreerSucces(41, "Finish Level 1 in under 2 minutes."),
+            CreerSucces(42, "Defeat the mini-boss in Level 1."),
+            CreerSucces(43, "Finish Level 2."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(resultat.GroupePrincipal, "Un niveau numéroté devrait être détecté.");
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le groupe principal devrait être le niveau numéroté."
+        );
+        Assert.Equal(
+            "Level 1",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre Level 1 devrait être retrouvée."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les succès liés à Level 1 devraient être regroupés."
+        );
+    }
+
+    private static void AnalyseHybridePrioriseNiveauSurModeRecurrent()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(50, "Finish Level 1 on Hard Mode."),
+            CreerSucces(51, "Collect all red gems in Level 1."),
+            CreerSucces(52, "Defeat the guardian in Level 1."),
+            CreerSucces(53, "Activate Hyper Mode for the first time."),
+            CreerSucces(54, "Win a race in Hard Mode."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le succès devrait être rattaché à un groupe principal."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le niveau doit rester prioritaire sur un mode récurrent."
+        );
+        Assert.Equal(
+            "Level 1",
+            resultat.GroupePrincipal.Ancre,
+            "Le groupe principal doit pointer vers le niveau."
+        );
+    }
+
+    private static void AnalyseHybridePrioriseBossSurMonde()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(60, "Defeat Hydra."),
+            CreerSucces(61, "Defeat Hydra without taking damage."),
+            CreerSucces(62, "Complete the 3 stages of Olympus."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le succès devrait être rattaché à un groupe principal."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Boss,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le boss doit devenir prioritaire devant le monde quand aucun niveau n'est détecté."
+        );
+        Assert.Equal(
+            "Hydra",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre prioritaire doit être celle du boss partagé."
+        );
+    }
+
+    private static void AnalyseHybrideRegroupeSuccesNonRelies()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(70, "Defeat Hydra."),
+            CreerSucces(71, "Defeat Hydra without taking damage."),
+            CreerSucces(72, "Press Start on the title screen."),
+            CreerSucces(73, "Reset the game after viewing the ending."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[2],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Un succès orphelin devrait rejoindre le groupe de repli commun."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.NonRelie,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Les succès non reliés doivent être regroupés ensemble."
+        );
+        Assert.Equal(
+            2,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Le groupe de repli doit contenir les succès non reliés."
+        );
+        Assert.True(
+            resultat.GroupePrincipal.IdentifiantsSucces.Contains(72)
+                && resultat.GroupePrincipal.IdentifiantsSucces.Contains(73),
+            "Le groupe de repli doit contenir les deux succès orphelins."
+        );
+    }
+
+    private static void TraductionProtegeNomsPropresProbables()
+    {
+        MethodInfo? methode = typeof(ServiceTraductionTexte).GetMethod(
+            "ProtegerSegmentsSensibles",
+            BindingFlags.NonPublic | BindingFlags.Static
+        );
+        Assert.NotNull(methode, "La méthode interne de protection devrait exister.");
+
+        Dictionary<string, string> segmentsProteges = [];
+        string resultat =
+            (string?)
+                methode!.Invoke(
+                    null,
+                    ["Collect all emblems in Green Hill Zone with RetroArch", segmentsProteges]
+                )
+            ?? string.Empty;
+
+        Assert.True(
+            segmentsProteges.Values.Contains("Green Hill Zone"),
+            "Le nom du niveau devrait être protégé."
+        );
+        Assert.True(
+            segmentsProteges.Values.Contains("RetroArch"),
+            "Le nom du produit devrait être protégé."
+        );
+        Assert.False(
+            resultat.Contains("Green Hill Zone", StringComparison.Ordinal),
+            "Le segment protégé ne devrait plus apparaître tel quel avant traduction."
+        );
+    }
+
+    private static void TraductionIgnoreDebutInstructionBanal()
+    {
+        MethodInfo? methode = typeof(ServiceTraductionTexte).GetMethod(
+            "ProtegerSegmentsSensibles",
+            BindingFlags.NonPublic | BindingFlags.Static
+        );
+        Assert.NotNull(methode, "La méthode interne de protection devrait exister.");
+
+        Dictionary<string, string> segmentsProteges = [];
+        string resultat =
+            (string?)methode!.Invoke(null, ["Finish Level 1 on Hard Mode", segmentsProteges])
+            ?? string.Empty;
+
+        Assert.Equal(
+            "Finish Level 1 on Hard Mode",
+            resultat,
+            "Une instruction simple ne devrait pas être surprotégée."
+        );
+        Assert.Equal(
+            0,
+            segmentsProteges.Count,
+            "Aucun segment ne devrait être protégé dans cette phrase générique."
+        );
+    }
+
+    private static GameAchievementV2 CreerSucces(int id, string description)
+    {
+        return new GameAchievementV2
+        {
+            Id = id,
+            Title = $"Succès {id}",
+            Description = description,
+        };
     }
 }
 
