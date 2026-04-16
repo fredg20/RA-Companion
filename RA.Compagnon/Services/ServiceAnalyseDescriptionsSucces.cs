@@ -136,6 +136,44 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             ),
         ];
 
+        GroupeSuccesPotentiel? groupeNiveauReference = ConstruireGroupeNiveauDepuisReference(
+            reference,
+            descriptionsAnalysees
+        );
+
+        if (groupeNiveauReference is not null)
+        {
+            groupes.Add(groupeNiveauReference);
+        }
+
+        GroupeSuccesPotentiel? groupeMondeReference = ConstruireGroupeMondeDepuisReference(
+            reference,
+            descriptionsAnalysees
+        );
+
+        if (groupeMondeReference is not null)
+        {
+            groupes.Add(groupeMondeReference);
+        }
+
+        GroupeSuccesPotentiel? groupeCollectionReference =
+            ConstruireGroupeCollectionDepuisReference(reference, descriptionsAnalysees);
+
+        if (groupeCollectionReference is not null)
+        {
+            groupes.Add(groupeCollectionReference);
+        }
+
+        GroupeSuccesPotentiel? groupeModeReference = ConstruireGroupeModeDepuisReference(
+            reference,
+            descriptionsAnalysees
+        );
+
+        if (groupeModeReference is not null)
+        {
+            groupes.Add(groupeModeReference);
+        }
+
         GroupeSuccesPotentiel? groupeBossReference = ConstruireGroupeBossDepuisReference(
             reference,
             descriptionsAnalysees
@@ -144,17 +182,6 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         if (groupeBossReference is not null)
         {
             groupes.Add(groupeBossReference);
-        }
-
-        GroupeSuccesPotentiel? groupeNonRelie = ConstruireGroupeSuccesNonRelies(
-            succesReference,
-            succesJeu,
-            analyseGlobale.Groupes
-        );
-
-        if (groupeNonRelie is not null)
-        {
-            groupes.Add(groupeNonRelie);
         }
 
         if (!groupes.Any(groupe => groupe.TypeGroupe == TypeGroupeSuccesPotentiel.Niveau))
@@ -171,23 +198,43 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             }
         }
 
+        List<GroupeSuccesPotentiel> groupesCouvertsPourNonRelie =
+        [
+            .. analyseGlobale.Groupes,
+            .. groupes,
+        ];
+
+        GroupeSuccesPotentiel? groupeNonRelie = ConstruireGroupeSuccesNonRelies(
+            succesReference,
+            succesJeu,
+            groupesCouvertsPourNonRelie
+        );
+
+        if (groupeNonRelie is not null)
+        {
+            groupes.Add(groupeNonRelie);
+        }
+
         groupes =
         [
             .. groupes
                 .GroupBy(groupe => $"{groupe.TypeGroupe}|{NormaliserCle(groupe.Ancre)}")
                 .Select(group => group.OrderByDescending(item => item.ScoreConfiance).First())
-                .OrderByDescending(groupe => ObtenirPrioriteType(groupe.TypeGroupe))
+                .OrderByDescending(CalculerScoreSelection)
                 .ThenByDescending(groupe => groupe.ScoreConfiance)
+                .ThenByDescending(groupe => ObtenirPrioriteType(groupe.TypeGroupe))
                 .ThenByDescending(groupe => groupe.IdentifiantsSucces.Count)
                 .ThenBy(groupe => groupe.Ancre, StringComparer.OrdinalIgnoreCase),
         ];
+
+        GroupeSuccesPotentiel? groupePrincipal = groupes.FirstOrDefault();
 
         return new ResultatAnalyseDescriptionsSucces
         {
             IdentifiantSuccesReference = succesReference.Id,
             DescriptionReference = succesReference.Description?.Trim() ?? string.Empty,
-            GroupePrincipal = groupes.FirstOrDefault(),
-            Groupes = groupes,
+            GroupePrincipal = groupePrincipal,
+            Groupes = groupePrincipal is null ? [] : [groupePrincipal],
         };
     }
 
@@ -262,6 +309,260 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
     }
 
     /*
+     * Construit un groupe niveau à partir des ancres détectées dans le succès
+     * courant, puis rassemble tous les succès qui mentionnent explicitement ce
+     * même niveau, même avec une formulation plus longue.
+     */
+    private static GroupeSuccesPotentiel? ConstruireGroupeNiveauDepuisReference(
+        DescriptionAnalysee reference,
+        IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees
+    )
+    {
+        List<GroupeSuccesPotentiel> groupesCandidats = [];
+
+        foreach (
+            string ancreNiveau in reference
+                .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Niveau)
+                .Select(indice => NettoyerAncre(indice.Ancre))
+                .Where(AncreSembleValidePourNiveau)
+                .GroupBy(NormaliserCle)
+                .Select(group => group.OrderByDescending(item => item.Length).First())
+                .OrderByDescending(ancre =>
+                    ancre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length
+                )
+                .ThenByDescending(ancre => ancre.Length)
+        )
+        {
+            List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                descriptionsAnalysees,
+                ancreNiveau
+            );
+
+            if (identifiantsSucces.Count < 2)
+            {
+                continue;
+            }
+
+            int scoreConfiance = 56;
+            scoreConfiance += identifiantsSucces.Count switch
+            {
+                >= 5 => 16,
+                4 => 12,
+                3 => 8,
+                _ => 4,
+            };
+            scoreConfiance += RegexMotCleNiveau().IsMatch(ancreNiveau) ? 6 : 0;
+            scoreConfiance +=
+                ancreNiveau.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2 ? 4 : 0;
+
+            groupesCandidats.Add(
+                new GroupeSuccesPotentiel
+                {
+                    TypeGroupe = TypeGroupeSuccesPotentiel.Niveau,
+                    Ancre = ancreNiveau,
+                    RegleSource = "NiveauReferenceTexte",
+                    ScoreConfiance = Math.Clamp(scoreConfiance, 0, 96),
+                    LibelleConfiance = DeterminerLibelleConfiance(scoreConfiance),
+                    IdentifiantsSucces = identifiantsSucces,
+                }
+            );
+        }
+
+        return groupesCandidats
+            .OrderByDescending(groupe => groupe.IdentifiantsSucces.Count)
+            .ThenByDescending(groupe => groupe.ScoreConfiance)
+            .ThenByDescending(groupe => groupe.Ancre.Length)
+            .FirstOrDefault();
+    }
+
+    /*
+     * Construit un groupe monde à partir de l'ancre détectée dans le succès
+     * courant, puis rassemble les succès qui mentionnent explicitement ce même
+     * monde avec des formulations différentes.
+     */
+    private static GroupeSuccesPotentiel? ConstruireGroupeMondeDepuisReference(
+        DescriptionAnalysee reference,
+        IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees
+    )
+    {
+        List<GroupeSuccesPotentiel> groupesCandidats = [];
+
+        foreach (
+            string ancreMonde in reference
+                .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Monde)
+                .Select(indice => NettoyerAncre(indice.Ancre))
+                .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
+                .GroupBy(NormaliserCle)
+                .Select(group => group.OrderByDescending(item => item.Length).First())
+                .OrderByDescending(ancre => ancre.Length)
+        )
+        {
+            List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                descriptionsAnalysees,
+                ancreMonde
+            );
+
+            if (identifiantsSucces.Count < 2)
+            {
+                continue;
+            }
+
+            int scoreConfiance = 68;
+            scoreConfiance += identifiantsSucces.Count switch
+            {
+                >= 4 => 10,
+                3 => 6,
+                _ => 2,
+            };
+            scoreConfiance +=
+                ancreMonde.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2 ? 4 : 0;
+
+            groupesCandidats.Add(
+                new GroupeSuccesPotentiel
+                {
+                    TypeGroupe = TypeGroupeSuccesPotentiel.Monde,
+                    Ancre = ancreMonde,
+                    RegleSource = "MondeReferenceTexte",
+                    ScoreConfiance = Math.Clamp(scoreConfiance, 0, 90),
+                    LibelleConfiance = DeterminerLibelleConfiance(scoreConfiance),
+                    IdentifiantsSucces = identifiantsSucces,
+                }
+            );
+        }
+
+        return groupesCandidats
+            .OrderByDescending(groupe => groupe.IdentifiantsSucces.Count)
+            .ThenByDescending(groupe => groupe.ScoreConfiance)
+            .ThenByDescending(groupe => groupe.Ancre.Length)
+            .FirstOrDefault();
+    }
+
+    /*
+     * Construit un groupe collection à partir de l'objet détecté dans le succès
+     * courant, puis rassemble les succès qui mentionnent explicitement ce même
+     * objet de collection.
+     */
+    private static GroupeSuccesPotentiel? ConstruireGroupeCollectionDepuisReference(
+        DescriptionAnalysee reference,
+        IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees
+    )
+    {
+        List<GroupeSuccesPotentiel> groupesCandidats = [];
+
+        foreach (
+            string ancreCollection in reference
+                .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Collection)
+                .Select(indice => NettoyerAncre(indice.Ancre))
+                .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
+                .GroupBy(NormaliserCle)
+                .Select(group => group.OrderByDescending(item => item.Length).First())
+                .OrderByDescending(ancre => ancre.Length)
+        )
+        {
+            List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                descriptionsAnalysees,
+                ancreCollection
+            );
+
+            if (identifiantsSucces.Count < 2)
+            {
+                continue;
+            }
+
+            int scoreConfiance = 58;
+            scoreConfiance += identifiantsSucces.Count switch
+            {
+                >= 4 => 10,
+                3 => 6,
+                _ => 2,
+            };
+            scoreConfiance +=
+                ancreCollection.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2
+                    ? 4
+                    : 0;
+
+            groupesCandidats.Add(
+                new GroupeSuccesPotentiel
+                {
+                    TypeGroupe = TypeGroupeSuccesPotentiel.Collection,
+                    Ancre = ancreCollection,
+                    RegleSource = "CollectionReferenceTexte",
+                    ScoreConfiance = Math.Clamp(scoreConfiance, 0, 84),
+                    LibelleConfiance = DeterminerLibelleConfiance(scoreConfiance),
+                    IdentifiantsSucces = identifiantsSucces,
+                }
+            );
+        }
+
+        return groupesCandidats
+            .OrderByDescending(groupe => groupe.IdentifiantsSucces.Count)
+            .ThenByDescending(groupe => groupe.ScoreConfiance)
+            .ThenByDescending(groupe => groupe.Ancre.Length)
+            .FirstOrDefault();
+    }
+
+    /*
+     * Construit un groupe mode à partir du mode détecté dans le succès
+     * courant, puis rattache les autres succès qui mentionnent ce même mode.
+     */
+    private static GroupeSuccesPotentiel? ConstruireGroupeModeDepuisReference(
+        DescriptionAnalysee reference,
+        IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees
+    )
+    {
+        List<GroupeSuccesPotentiel> groupesCandidats = [];
+
+        foreach (
+            string ancreMode in reference
+                .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Mode)
+                .Select(indice => NettoyerAncre(indice.Ancre))
+                .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
+                .GroupBy(NormaliserCle)
+                .Select(group => group.OrderByDescending(item => item.Length).First())
+                .OrderByDescending(ancre => ancre.Length)
+        )
+        {
+            List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                descriptionsAnalysees,
+                ancreMode
+            );
+
+            if (identifiantsSucces.Count < 2)
+            {
+                continue;
+            }
+
+            int scoreConfiance = 54;
+            scoreConfiance += identifiantsSucces.Count switch
+            {
+                >= 4 => 10,
+                3 => 6,
+                _ => 2,
+            };
+            scoreConfiance +=
+                ancreMode.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2 ? 4 : 0;
+
+            groupesCandidats.Add(
+                new GroupeSuccesPotentiel
+                {
+                    TypeGroupe = TypeGroupeSuccesPotentiel.Mode,
+                    Ancre = ancreMode,
+                    RegleSource = "ModeReferenceTexte",
+                    ScoreConfiance = Math.Clamp(scoreConfiance, 0, 80),
+                    LibelleConfiance = DeterminerLibelleConfiance(scoreConfiance),
+                    IdentifiantsSucces = identifiantsSucces,
+                }
+            );
+        }
+
+        return groupesCandidats
+            .OrderByDescending(groupe => groupe.IdentifiantsSucces.Count)
+            .ThenByDescending(groupe => groupe.ScoreConfiance)
+            .ThenByDescending(groupe => groupe.Ancre.Length)
+            .FirstOrDefault();
+    }
+
+    /*
      * Construit un groupe boss à partir du nom détecté dans le succès courant,
      * puis rassemble tous les succès qui mentionnent ce même boss, même si le
      * verbe d'ouverture de leur description diffère.
@@ -283,14 +584,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             return null;
         }
 
-        List<int> identifiantsSucces =
-        [
-            .. descriptionsAnalysees
-                .Where(description => DescriptionMentionneBoss(description.Description, ancreBoss))
-                .Select(description => description.Succes.Id)
-                .Distinct()
-                .OrderBy(identifiant => identifiant),
-        ];
+        List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+            descriptionsAnalysees,
+            ancreBoss
+        );
 
         if (identifiantsSucces.Count < 2)
         {
@@ -1229,6 +1526,27 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
     }
 
     /*
+     * Construit la liste triée des succès qui mentionnent explicitement une
+     * ancre textuelle complète.
+     */
+    private static List<int> ConstruireIdentifiantsSuccesPourAncre(
+        IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees,
+        string ancre
+    )
+    {
+        return
+        [
+            .. descriptionsAnalysees
+                .Where(description =>
+                    DescriptionMentionneAncreComplete(description.Description, ancre)
+                )
+                .Select(description => description.Succes.Id)
+                .Distinct()
+                .OrderBy(identifiant => identifiant),
+        ];
+    }
+
+    /*
      * Vérifie si une description mentionne explicitement le boss de référence,
      * indépendamment du verbe qui introduit la phrase.
      */
@@ -1244,7 +1562,57 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             return false;
         }
 
-        return descriptionNettoyee.Contains(bossNettoye, StringComparison.OrdinalIgnoreCase);
+        return DescriptionMentionneAncreComplete(descriptionNettoyee, bossNettoye);
+    }
+
+    /*
+     * Vérifie qu'une ancre apparaît comme segment complet dans une description,
+     * afin d'éviter les faux positifs du type Act 1 dans Act 10.
+     */
+    private static bool DescriptionMentionneAncreComplete(string description, string ancre)
+    {
+        string descriptionNormalisee = NettoyerDescription(description).ToLowerInvariant();
+        string ancreNormalisee = NettoyerAncre(ancre).ToLowerInvariant();
+
+        if (
+            string.IsNullOrWhiteSpace(descriptionNormalisee)
+            || string.IsNullOrWhiteSpace(ancreNormalisee)
+        )
+        {
+            return false;
+        }
+
+        int indexRecherche = 0;
+
+        while (indexRecherche < descriptionNormalisee.Length)
+        {
+            int position = descriptionNormalisee.IndexOf(
+                ancreNormalisee,
+                indexRecherche,
+                StringComparison.Ordinal
+            );
+
+            if (position < 0)
+            {
+                return false;
+            }
+
+            int fin = position + ancreNormalisee.Length;
+            bool borneGaucheValide =
+                position == 0 || !char.IsLetterOrDigit(descriptionNormalisee[position - 1]);
+            bool borneDroiteValide =
+                fin >= descriptionNormalisee.Length
+                || !char.IsLetterOrDigit(descriptionNormalisee[fin]);
+
+            if (borneGaucheValide && borneDroiteValide)
+            {
+                return true;
+            }
+
+            indexRecherche = fin;
+        }
+
+        return false;
     }
 
     /*
@@ -1271,6 +1639,37 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             TypeGroupeSuccesPotentiel.DefiTechnique => 30,
             TypeGroupeSuccesPotentiel.NonRelie => 20,
             TypeGroupeSuccesPotentiel.Lexical => 10,
+            _ => 0,
+        };
+    }
+
+    /*
+     * Produit un score de sélection plus souple que la simple priorité de type
+     * afin qu'un groupe très solide puisse dépasser un groupe seulement
+     * prioritaire par défaut.
+     */
+    private static int CalculerScoreSelection(GroupeSuccesPotentiel groupe)
+    {
+        return groupe.ScoreConfiance + ObtenirBonusSelectionType(groupe.TypeGroupe);
+    }
+
+    /*
+     * Donne un léger bonus aux familles naturellement plus structurantes sans
+     * les rendre automatiquement gagnantes face à un score de confiance plus fort.
+     */
+    private static int ObtenirBonusSelectionType(TypeGroupeSuccesPotentiel type)
+    {
+        return type switch
+        {
+            TypeGroupeSuccesPotentiel.Niveau => 6,
+            TypeGroupeSuccesPotentiel.Boss => 5,
+            TypeGroupeSuccesPotentiel.Monde => 4,
+            TypeGroupeSuccesPotentiel.Collection => 3,
+            TypeGroupeSuccesPotentiel.Mode => 2,
+            TypeGroupeSuccesPotentiel.Objet => 1,
+            TypeGroupeSuccesPotentiel.DefiTechnique => 0,
+            TypeGroupeSuccesPotentiel.NonRelie => -2,
+            TypeGroupeSuccesPotentiel.Lexical => -4,
             _ => 0,
         };
     }

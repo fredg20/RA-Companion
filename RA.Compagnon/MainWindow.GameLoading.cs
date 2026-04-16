@@ -562,6 +562,21 @@ public partial class MainWindow
                     identifiantJeuEffectif,
                     versionChargement
                 );
+
+                if (
+                    SuccesEnCoursDoitEtreRafraichi(
+                        identifiantJeuEffectif,
+                        donneesEnrichies.Jeu.Succes.Count
+                    )
+                )
+                {
+                    JournaliserDiagnosticChangementJeu(
+                        "pipeline_idempotent_enrichissement_repare_succes",
+                        $"jeu={identifiantJeuEffectif};succes={donneesEnrichies.Jeu.Succes.Count}"
+                    );
+                    await MettreAJourSuccesJeuEnArrierePlanAsync(donneesEnrichies.Jeu);
+                }
+
                 return;
             }
 
@@ -769,6 +784,16 @@ public partial class MainWindow
                 donneesJeu.Jeu.Id,
                 _versionChargementContenuJeu
             );
+
+            if (SuccesEnCoursDoitEtreRafraichi(donneesJeu.Jeu.Id, donneesJeu.Jeu.Succes.Count))
+            {
+                JournaliserDiagnosticChangementJeu(
+                    "pipeline_idempotent_progression_repare_succes",
+                    $"jeu={donneesJeu.Jeu.Id};succes={donneesJeu.Jeu.Succes.Count}"
+                );
+                await MettreAJourSuccesJeuEnArrierePlanAsync(donneesJeu.Jeu);
+            }
+
             return;
         }
 

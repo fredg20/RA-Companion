@@ -14,6 +14,8 @@ public sealed class EtatRichPresence
 
     public string MessageRichPresence { get; init; } = string.Empty;
 
+    public AnalyseZoneRichPresence AnalyseZone { get; init; } = new();
+
     public string StatutSite { get; init; } = string.Empty;
 
     public string StatutAffiche { get; init; } = string.Empty;

@@ -60,6 +60,43 @@ public partial class MainWindow
     }
 
     /*
+     * Détecte si la carte du succès courant doit être reconstruite, même
+     * quand la synchronisation considère encore le jeu comme identique.
+     */
+    private bool SuccesEnCoursDoitEtreRafraichi(int identifiantJeu, int nombreSuccesJeu)
+    {
+        if (identifiantJeu <= 0)
+        {
+            return false;
+        }
+
+        if (_identifiantJeuSuccesCourant != identifiantJeu)
+        {
+            return true;
+        }
+
+        if (nombreSuccesJeu > 0 && _succesJeuCourant.Count == 0)
+        {
+            return true;
+        }
+
+        if (!_vueModele.SuccesEnCours.TitreVisible || string.IsNullOrWhiteSpace(_vueModele.SuccesEnCours.Titre))
+        {
+            return true;
+        }
+
+        if (
+            !_vueModele.SuccesEnCours.DescriptionVisible
+            || string.IsNullOrWhiteSpace(_vueModele.SuccesEnCours.Description)
+        )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /*
      * Applique un style visuel différent sur le badge principal selon que
      * le succès a été obtenu en hardcore ou non.
      */

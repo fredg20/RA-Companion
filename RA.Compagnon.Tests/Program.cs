@@ -75,7 +75,27 @@ static class TestRunner
             AnalyseHybrideRetrouveNiveauNumerote
         );
         ExecuterTest(
-            "Analyse hybride priorise le niveau sur un mode récurrent",
+            "Analyse hybride rattache un niveau de reference mentionne plus largement",
+            AnalyseHybrideRattacheNiveauReferenceMentionEtendue
+        );
+        ExecuterTest(
+            "Analyse hybride ne confond pas Act 1 et Act 10",
+            AnalyseHybrideNeConfondPasAct1EtAct10
+        );
+        ExecuterTest(
+            "Analyse hybride rattache un monde depuis la reference",
+            AnalyseHybrideRattacheMondeDepuisReference
+        );
+        ExecuterTest(
+            "Analyse hybride rattache un mode depuis la reference",
+            AnalyseHybrideRattacheModeDepuisReference
+        );
+        ExecuterTest(
+            "Analyse hybride laisse une collection forte depasser un niveau faible",
+            AnalyseHybrideCollectionForteDepasseNiveauFaible
+        );
+        ExecuterTest(
+            "Analyse hybride priorise le niveau sur un mode recurrent",
             AnalyseHybridePrioriseNiveauSurModeRecurrent
         );
         ExecuterTest(
@@ -358,7 +378,6 @@ static class TestRunner
             "FusionnerSuccesSansRegresser",
             BindingFlags.NonPublic | BindingFlags.Static
         );
-
         Assert.NotNull(
             methodeFusion,
             "La méthode de fusion des succès doit être trouvable par réflexion."
@@ -608,6 +627,182 @@ static class TestRunner
             3,
             resultat.GroupePrincipal.IdentifiantsSucces.Count,
             "Les succès liés à Level 1 devraient être regroupés."
+        );
+    }
+
+    private static void AnalyseHybrideRattacheNiveauReferenceMentionEtendue()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(44, "Collect the 5 seals in Temple of Dawn."),
+            CreerSucces(45, "Reach Temple of Dawn's secret exit."),
+            CreerSucces(46, "Finish Iron Ruins."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le niveau de reference devrait pouvoir rassembler les mentions etendues."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le groupe principal devrait rester un niveau."
+        );
+        Assert.Equal(
+            "Temple of Dawn",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre retenue devrait etre le niveau de base."
+        );
+        Assert.True(
+            resultat.GroupePrincipal.IdentifiantsSucces.Contains(45),
+            "La mention etendue du meme niveau devrait etre rattachee au groupe."
+        );
+    }
+
+    private static void AnalyseHybrideNeConfondPasAct1EtAct10()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(47, "Collect all medals in Act 1."),
+            CreerSucces(48, "Find the hidden room in Act 1."),
+            CreerSucces(49, "Finish Act 10."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le niveau de reference devrait produire un groupe principal."
+        );
+        Assert.Equal(
+            "Act 1",
+            resultat.GroupePrincipal!.Ancre,
+            "L'ancre devrait rester exactement Act 1."
+        );
+        Assert.Equal(
+            2,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Act 10 ne doit pas etre inclus par erreur."
+        );
+        Assert.False(
+            resultat.GroupePrincipal.IdentifiantsSucces.Contains(49),
+            "Le groupe Act 1 ne doit jamais absorber Act 10."
+        );
+    }
+
+    private static void AnalyseHybrideRattacheMondeDepuisReference()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(80, "Complete the 3 stages of Olympus."),
+            CreerSucces(81, "Find every hidden relic in Olympus."),
+            CreerSucces(82, "Reach the summit in Olympus."),
+            CreerSucces(83, "Defeat Hydra."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le monde de reference devrait produire un groupe principal."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Monde,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le groupe principal devrait etre le monde detecte depuis la reference."
+        );
+        Assert.Equal(
+            "Olympus",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre du monde devrait etre conservee."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les succes mentionnant le meme monde devraient etre rattaches."
+        );
+    }
+
+    private static void AnalyseHybrideRattacheModeDepuisReference()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(84, "Activate Hyper Mode for the first time."),
+            CreerSucces(85, "Win the desert race in Hyper Mode."),
+            CreerSucces(86, "Clear the arena in Hyper Mode."),
+            CreerSucces(87, "Collect all medals in Ancient Fate."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Le mode de reference devrait produire un groupe principal."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Mode,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le groupe principal devrait etre le mode detecte depuis la reference."
+        );
+        Assert.Equal(
+            "Hyper Mode",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre du mode devrait etre conservee."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les succes mentionnant le meme mode devraient etre rattaches."
+        );
+    }
+
+    private static void AnalyseHybrideCollectionForteDepasseNiveauFaible()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(88, "Collect the Warp Boss Icon in Ancient Fate."),
+            CreerSucces(89, "Collect the Warp Boss Icon in Dangerous Cliff."),
+            CreerSucces(90, "Gain an extra life by collecting Warp Boss Icon."),
+            CreerSucces(91, "Collect all rings in Ancient Fate."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[0],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Une collection plus solide devrait pouvoir devenir le groupe principal."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Collection,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "La collection devrait depasser le niveau plus faible sur ce cas."
+        );
+        Assert.Equal(
+            "Warp Boss Icon",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre retenue devrait etre l'objet de collection partage."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Le groupe principal devrait contenir les trois succes lies a cet objet."
         );
     }
 

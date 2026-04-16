@@ -146,6 +146,13 @@ public sealed class ServicePresentationCompte
         );
         AjouterLigneSiValeurUtile(
             lignesActivite,
+            "Zone actuelle",
+            etatRichPresence.AnalyseZone.EstFiable
+                ? etatRichPresence.AnalyseZone.ZoneDetectee
+                : string.Empty
+        );
+        AjouterLigneSiValeurUtile(
+            lignesActivite,
             "Succès récents",
             FormaterResumeSuccesRecents(donnees.Resume)
         );

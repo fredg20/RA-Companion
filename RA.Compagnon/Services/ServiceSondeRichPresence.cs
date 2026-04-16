@@ -51,6 +51,9 @@ public sealed class ServiceSondeRichPresence
             datePresenceBrute,
             out DateTimeOffset datePresenceUtc
         );
+        AnalyseZoneRichPresence analyseZone = ServiceExtractionZoneRichPresence.Analyser(
+            messageRichPresence
+        );
         bool presenceManifestementAncienne =
             presenceDateValide && DateTimeOffset.UtcNow - datePresenceUtc > DelaiPresenceActive;
 
@@ -82,6 +85,7 @@ public sealed class ServiceSondeRichPresence
         {
             SourceRichPresence = sourceRichPresence,
             MessageRichPresence = messageRichPresence,
+            AnalyseZone = analyseZone,
             StatutSite = statutSite,
             StatutAffiche = statutAffiche,
             SousStatutAffiche = sousStatutAffiche,
@@ -177,7 +181,7 @@ public sealed class ServiceSondeRichPresence
             CheminJournalRichPresence,
             string.Create(
                 CultureInfo.InvariantCulture,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] source={NettoyerPourJournal(etat.SourceRichPresence)};statutSite={NettoyerPourJournal(etat.StatutSite)};message={NettoyerPourJournal(etat.MessageRichPresence)};dateBrute={NettoyerPourJournal(etat.DatePresenceBrute)};dateValide={etat.PresenceDateValide};ancienne={etat.PresenceManifestementAncienne};dernierJeu={etat.IdentifiantDernierJeu};enJeu={etat.EstEnJeu};statutAffiche={NettoyerPourJournal(etat.StatutAffiche)};sousStatut={NettoyerPourJournal(etat.SousStatutAffiche)}{Environment.NewLine}"
+                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] source={NettoyerPourJournal(etat.SourceRichPresence)};statutSite={NettoyerPourJournal(etat.StatutSite)};message={NettoyerPourJournal(etat.MessageRichPresence)};zone={NettoyerPourJournal(etat.AnalyseZone.ZoneDetectee)};typeZone={NettoyerPourJournal(etat.AnalyseZone.LibelleType)};confianceZone={etat.AnalyseZone.ScoreConfiance};zoneFiable={etat.AnalyseZone.EstFiable};dateBrute={NettoyerPourJournal(etat.DatePresenceBrute)};dateValide={etat.PresenceDateValide};ancienne={etat.PresenceManifestementAncienne};dernierJeu={etat.IdentifiantDernierJeu};enJeu={etat.EstEnJeu};statutAffiche={NettoyerPourJournal(etat.StatutAffiche)};sousStatut={NettoyerPourJournal(etat.SousStatutAffiche)}{Environment.NewLine}"
             )
         );
     }
