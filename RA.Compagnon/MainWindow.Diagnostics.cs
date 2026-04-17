@@ -15,26 +15,10 @@ public partial class MainWindow
 {
     private string _signatureDiagnosticChangementJeu = string.Empty;
     private System.Diagnostics.Stopwatch? _chronometreDiagnosticChangementJeu;
-    private static readonly string CheminJournalDiagnosticPerformance = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-performance-jeu.log"
-    );
-    private static readonly string CheminJournalDiagnosticListeSucces = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-liste-succes.log"
-    );
-    private static readonly string CheminJournalDiagnosticDimensionsListeSucces = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-dimensions-liste-succes.log"
-    );
-    private static readonly string CheminJournalDiagnosticAffichageJeu = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-affichage-jeu.log"
-    );
+    private static readonly string CheminJournalDiagnosticPerformance =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-performance-jeu.log");
+    private static readonly string CheminJournalDiagnosticListeSucces =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-liste-succes.log");
 
     /*
      * Réinitialise les journaux de diagnostic de performance utilisés au chargement.
@@ -42,7 +26,6 @@ public partial class MainWindow
     public static void ReinitialiserJournalDiagnosticPerformance()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticPerformance);
-        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticAffichageJeu);
     }
 
     /*
@@ -51,9 +34,6 @@ public partial class MainWindow
     public static void ReinitialiserJournalDiagnosticListeSucces()
     {
         _ = ServiceModeDiagnostic.ReinitialiserJournalSession(CheminJournalDiagnosticListeSucces);
-        _ = ServiceModeDiagnostic.ReinitialiserJournalSession(
-            CheminJournalDiagnosticDimensionsListeSucces
-        );
     }
 
     /*
@@ -70,7 +50,7 @@ public partial class MainWindow
 
         _ = ServiceModeDiagnostic.JournaliserLigne(
             CheminJournalDiagnosticListeSucces,
-            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] categorie=liste;evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
         );
     }
 
@@ -97,8 +77,8 @@ public partial class MainWindow
             $"carteW={largeurCarte:0.##};carteH={hauteurCarte:0.##};contenuW={largeurZonePrincipale:0.##};contenuH={hauteurZonePrincipale:0.##};zoneW={largeurZoneVisible:0.##};zoneH={hauteurZoneVisible:0.##};conteneurW={largeurConteneur:0.##};conteneurH={hauteurConteneur:0.##};viewportW={largeurViewport:0.##};viewportH={hauteurViewport:0.##};grilleW={largeurGrille:0.##};grilleH={hauteurGrille:0.##};extentW={extentLargeur:0.##};extentH={extentHauteur:0.##}";
 
         _ = ServiceModeDiagnostic.JournaliserLigne(
-            CheminJournalDiagnosticDimensionsListeSucces,
-            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
+            CheminJournalDiagnosticListeSucces,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] categorie=dimensions;evenement={evenement};etat={etat}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
         );
     }
 
@@ -134,7 +114,7 @@ public partial class MainWindow
 
         _ = ServiceModeDiagnostic.JournaliserLigne(
             CheminJournalDiagnosticPerformance,
-            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] +{_chronometreDiagnosticChangementJeu.Elapsed.TotalMilliseconds, 6:0} ms | {etape}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] categorie=performance;+{_chronometreDiagnosticChangementJeu.Elapsed.TotalMilliseconds, 6:0}ms;evenement={etape}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
         );
     }
 
@@ -149,8 +129,8 @@ public partial class MainWindow
         }
 
         _ = ServiceModeDiagnostic.JournaliserLigne(
-            CheminJournalDiagnosticAffichageJeu,
-            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $" | {details}")}{Environment.NewLine}"
+            CheminJournalDiagnosticPerformance,
+            $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] categorie=affichage;evenement={evenement}{(string.IsNullOrWhiteSpace(details) ? string.Empty : $";details={details}")}{Environment.NewLine}"
         );
     }
 
@@ -169,5 +149,32 @@ public partial class MainWindow
         JournaliserDiagnosticChangementJeu(etape, details);
         _signatureDiagnosticChangementJeu = string.Empty;
         _chronometreDiagnosticChangementJeu = null;
+    }
+
+    /*
+     * Journalise une exception non bloquante survenue dans un flux asynchrone
+     * afin de préserver la stabilité tout en gardant une trace exploitable.
+     */
+    private void JournaliserExceptionNonBloquante(string contexte, Exception exception)
+    {
+        if (!ServiceModeDiagnostic.EstActif || exception is null)
+        {
+            return;
+        }
+
+        string details =
+            $"{exception.GetType().Name}: {NettoyerDetailsDiagnostic(exception.Message)}";
+
+        JournaliserDiagnosticAffichageJeu($"exception_{contexte}", details);
+    }
+
+    /*
+     * Nettoie un texte libre avant son écriture dans un journal de diagnostic.
+     */
+    private static string NettoyerDetailsDiagnostic(string? details)
+    {
+        return string.IsNullOrWhiteSpace(details)
+            ? string.Empty
+            : details.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }

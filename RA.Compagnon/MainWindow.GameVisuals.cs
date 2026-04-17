@@ -21,11 +21,8 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
-    private static readonly string CheminJournalVisuelsJeu = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-visuels-jeu.log"
-    );
+    private static readonly string CheminJournalVisuelsJeu =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-visuels-jeu.log");
 
     /*
      * Télécharge puis applique l'image principale du jeu courant à partir

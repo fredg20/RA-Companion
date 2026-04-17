@@ -204,16 +204,47 @@ public sealed class ServiceConfigurationLocale
         try
         {
             Directory.CreateDirectory(ObtenirDossierConfiguration());
-            await SauvegarderJsonAsync(CheminFichierConfiguration, configuration);
-            await SauvegarderOuSupprimerAsync(CheminFichierJeu, configuration.DernierJeuAffiche);
-            await SauvegarderOuSupprimerAsync(
+            string[] cheminsEtatApplicatif =
+            [
+                CheminFichierConfiguration,
+                CheminFichierJeu,
                 CheminFichierSucces,
-                configuration.DernierSuccesAffiche
-            );
-            await SauvegarderOuSupprimerAsync(
                 CheminFichierListeSucces,
-                configuration.DerniereListeSuccesAffichee
-            );
+            ];
+
+            SauvegarderInstantaneEtatApplicatif(cheminsEtatApplicatif);
+
+            try
+            {
+                await SauvegarderJsonAsync(CheminFichierConfiguration, configuration);
+                await SauvegarderOuSupprimerAsync(CheminFichierJeu, configuration.DernierJeuAffiche);
+                await SauvegarderOuSupprimerAsync(
+                    CheminFichierSucces,
+                    configuration.DernierSuccesAffiche
+                );
+                await SauvegarderOuSupprimerAsync(
+                    CheminFichierListeSucces,
+                    configuration.DerniereListeSuccesAffichee
+                );
+
+                bool etatValide = await VerifierEtatApplicationSauvegardeAsync(configuration);
+
+                if (!etatValide)
+                {
+                    RestaurerInstantaneEtatApplicatif(cheminsEtatApplicatif);
+                    throw new IOException(
+                        "La vérification de l'état applicatif a échoué après l'écriture."
+                    );
+                }
+            }
+            catch (Exception exception)
+            {
+                JournaliserIncidentPersistance(
+                    "sauvegarde_etat_application_echec",
+                    $"{exception.GetType().Name}: {exception.Message}"
+                );
+                throw;
+            }
         }
         finally
         {
@@ -442,6 +473,254 @@ public sealed class ServiceConfigurationLocale
      * Détermine quel chemin lire entre le fichier final et son éventuel
      * équivalent temporaire.
      */
+    /*
+     * Conserve un instantané des fichiers d'état applicatif avant toute
+     * écriture afin de pouvoir revenir à un ensemble cohérent en cas d'échec.
+     */
+    private static void SauvegarderInstantaneEtatApplicatif(IEnumerable<string> cheminsFichiers)
+    {
+        foreach (string cheminFichier in cheminsFichiers)
+        {
+            string cheminSauvegarde = cheminFichier + ExtensionSauvegarde;
+
+            if (File.Exists(cheminFichier))
+            {
+                File.Copy(cheminFichier, cheminSauvegarde, overwrite: true);
+                continue;
+            }
+
+            if (File.Exists(cheminSauvegarde))
+            {
+                File.Delete(cheminSauvegarde);
+            }
+        }
+    }
+
+    /*
+     * Restaure l'instantané précédent des fichiers d'état applicatif lorsqu'une
+     * écriture plus récente n'est pas relue de manière cohérente.
+     */
+    private static void RestaurerInstantaneEtatApplicatif(IEnumerable<string> cheminsFichiers)
+    {
+        foreach (string cheminFichier in cheminsFichiers)
+        {
+            string cheminTemporaire = cheminFichier + ExtensionTemporaire;
+            string cheminSauvegarde = cheminFichier + ExtensionSauvegarde;
+
+            if (File.Exists(cheminFichier))
+            {
+                File.Delete(cheminFichier);
+            }
+
+            if (File.Exists(cheminTemporaire))
+            {
+                File.Delete(cheminTemporaire);
+            }
+
+            if (File.Exists(cheminSauvegarde))
+            {
+                File.Copy(cheminSauvegarde, cheminFichier, overwrite: true);
+            }
+        }
+    }
+
+    /*
+     * Vérifie que les fichiers relus juste après la sauvegarde restent
+     * cohérents entre eux et fidèles aux valeurs minimales attendues.
+     */
+    private static async Task<bool> VerifierEtatApplicationSauvegardeAsync(
+        ConfigurationConnexion configurationAttendue
+    )
+    {
+        ConfigurationConnexion? configurationRelue =
+            await ChargerJsonAsync<ConfigurationConnexion>(CheminFichierConfiguration);
+        EtatJeuAfficheLocal? jeuRelu = await ChargerJsonAsync<EtatJeuAfficheLocal>(CheminFichierJeu);
+        EtatSuccesAfficheLocal? succesRelu =
+            await ChargerJsonAsync<EtatSuccesAfficheLocal>(CheminFichierSucces);
+        EtatListeSuccesAfficheeLocal? listeRelue =
+            await ChargerJsonAsync<EtatListeSuccesAfficheeLocal>(CheminFichierListeSucces);
+
+        if (!EtatApplicationCorrespond(configurationRelue, configurationAttendue))
+        {
+            return false;
+        }
+
+        if (!EtatJeuCorrespond(jeuRelu, configurationAttendue.DernierJeuAffiche))
+        {
+            return false;
+        }
+
+        if (!EtatSuccesCorrespond(succesRelu, configurationAttendue.DernierSuccesAffiche))
+        {
+            return false;
+        }
+
+        if (
+            !EtatListeSuccesCorrespond(
+                listeRelue,
+                configurationAttendue.DerniereListeSuccesAffichee
+            )
+        )
+        {
+            return false;
+        }
+
+        return EtatApplicatifEstCoherent(configurationRelue, jeuRelu, succesRelu, listeRelue);
+    }
+
+    /*
+     * Compare les préférences principales de configuration relues aux valeurs
+     * qui viennent d'être demandées en écriture.
+     */
+    private static bool EtatApplicationCorrespond(
+        ConfigurationConnexion? configurationRelue,
+        ConfigurationConnexion configurationAttendue
+    )
+    {
+        return configurationRelue is not null
+            && configurationRelue.LargeurFenetre == configurationAttendue.LargeurFenetre
+            && configurationRelue.HauteurFenetre == configurationAttendue.HauteurFenetre
+            && configurationRelue.PositionGaucheFenetre == configurationAttendue.PositionGaucheFenetre
+            && configurationRelue.PositionHautFenetre == configurationAttendue.PositionHautFenetre
+            && string.Equals(
+                configurationRelue.ModeAffichageSucces,
+                configurationAttendue.ModeAffichageSucces,
+                StringComparison.Ordinal
+            )
+            && configurationRelue.HaloBoutonAidePremiereUtilisationDejaAffiche
+                == configurationAttendue.HaloBoutonAidePremiereUtilisationDejaAffiche
+            && DictionnaireCorrespond(
+                configurationRelue.EmplacementsEmulateursManuels,
+                configurationAttendue.EmplacementsEmulateursManuels
+            )
+            && DictionnaireCorrespond(
+                configurationRelue.EmplacementsEmulateursDetectes,
+                configurationAttendue.EmplacementsEmulateursDetectes
+            );
+    }
+
+    /*
+     * Compare l'état du dernier jeu relu à l'état attendu juste après
+     * l'écriture.
+     */
+    private static bool EtatJeuCorrespond(
+        EtatJeuAfficheLocal? jeuRelu,
+        EtatJeuAfficheLocal? jeuAttendu
+    )
+    {
+        if (jeuRelu is null || jeuAttendu is null)
+        {
+            return jeuRelu is null && jeuAttendu is null;
+        }
+
+        return jeuRelu.IdentifiantJeu == jeuAttendu.IdentifiantJeu
+            && string.Equals(jeuRelu.Titre, jeuAttendu.Titre, StringComparison.Ordinal)
+            && string.Equals(
+                jeuRelu.ResumeProgression,
+                jeuAttendu.ResumeProgression,
+                StringComparison.Ordinal
+            )
+            && string.Equals(jeuRelu.EtatJeu, jeuAttendu.EtatJeu, StringComparison.Ordinal);
+    }
+
+    /*
+     * Compare l'état du succès courant relu à la valeur attendue.
+     */
+    private static bool EtatSuccesCorrespond(
+        EtatSuccesAfficheLocal? succesRelu,
+        EtatSuccesAfficheLocal? succesAttendu
+    )
+    {
+        if (succesRelu is null || succesAttendu is null)
+        {
+            return succesRelu is null && succesAttendu is null;
+        }
+
+        return succesRelu.IdentifiantJeu == succesAttendu.IdentifiantJeu
+            && succesRelu.IdentifiantSucces == succesAttendu.IdentifiantSucces
+            && string.Equals(succesRelu.Titre, succesAttendu.Titre, StringComparison.Ordinal);
+    }
+
+    /*
+     * Compare la liste de succès relue à la version attendue.
+     */
+    private static bool EtatListeSuccesCorrespond(
+        EtatListeSuccesAfficheeLocal? listeRelue,
+        EtatListeSuccesAfficheeLocal? listeAttendue
+    )
+    {
+        if (listeRelue is null || listeAttendue is null)
+        {
+            return listeRelue is null && listeAttendue is null;
+        }
+
+        return listeRelue.IdentifiantJeu == listeAttendue.IdentifiantJeu
+            && listeRelue.Succes.Count == listeAttendue.Succes.Count
+            && listeRelue.SuccesPasses.Count == listeAttendue.SuccesPasses.Count;
+    }
+
+    /*
+     * Vérifie les dépendances minimales entre le jeu, le succès courant et la
+     * liste de succès afin d'éviter un état mélangé au prochain démarrage.
+     */
+    private static bool EtatApplicatifEstCoherent(
+        ConfigurationConnexion? configurationRelue,
+        EtatJeuAfficheLocal? jeuRelu,
+        EtatSuccesAfficheLocal? succesRelu,
+        EtatListeSuccesAfficheeLocal? listeRelue
+    )
+    {
+        if (configurationRelue is null)
+        {
+            return false;
+        }
+
+        int identifiantJeu = jeuRelu?.IdentifiantJeu ?? 0;
+
+        if (identifiantJeu <= 0)
+        {
+            return succesRelu is null && listeRelue is null;
+        }
+
+        return (succesRelu is null || succesRelu.IdentifiantJeu == identifiantJeu)
+            && (listeRelue is null || listeRelue.IdentifiantJeu == identifiantJeu);
+    }
+
+    /*
+     * Compare deux dictionnaires de manière stricte pour valider une écriture
+     * relue juste après persistance.
+     */
+    private static bool DictionnaireCorrespond(
+        IReadOnlyDictionary<string, string>? gauche,
+        IReadOnlyDictionary<string, string>? droite
+    )
+    {
+        if (ReferenceEquals(gauche, droite))
+        {
+            return true;
+        }
+
+        if (gauche is null || droite is null || gauche.Count != droite.Count)
+        {
+            return false;
+        }
+
+        foreach ((string cle, string valeur) in gauche)
+        {
+            if (!droite.TryGetValue(cle, out string? valeurDroite))
+            {
+                return false;
+            }
+
+            if (!string.Equals(valeur, valeurDroite, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static string DeterminerCheminLecture(string cheminFichier)
     {
         return File.Exists(cheminFichier) ? cheminFichier : cheminFichier + ExtensionTemporaire;
@@ -488,11 +767,10 @@ public sealed class ServiceConfigurationLocale
     {
         try
         {
-            string cheminJournal = Path.Combine(
-                ObtenirDossierConfiguration(),
+            string cheminJournal = ServiceModeDiagnostic.ConstruireCheminJournal(
                 "journal-configuration-locale.log"
             );
-            Directory.CreateDirectory(ObtenirDossierConfiguration());
+            Directory.CreateDirectory(ServiceModeDiagnostic.DossierJournaux);
             File.AppendAllText(
                 cheminJournal,
                 $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] evenement={evenement};details={details}{Environment.NewLine}"

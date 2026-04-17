@@ -16,11 +16,8 @@ namespace RA.Compagnon.Services;
  */
 public sealed class ServiceDiagnosticFaisabiliteSucces
 {
-    private static readonly string CheminJournalFaisabilite = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-faisabilite-succes.log"
-    );
+    private static readonly string CheminJournalFaisabilite =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-faisabilite-succes.log");
 
     private static readonly Lock Verrou = new();
     private static string _derniereSignature = string.Empty;

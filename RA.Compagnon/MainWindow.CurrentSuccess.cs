@@ -80,7 +80,10 @@ public partial class MainWindow
             return true;
         }
 
-        if (!_vueModele.SuccesEnCours.TitreVisible || string.IsNullOrWhiteSpace(_vueModele.SuccesEnCours.Titre))
+        if (
+            !_vueModele.SuccesEnCours.TitreVisible
+            || string.IsNullOrWhiteSpace(_vueModele.SuccesEnCours.Titre)
+        )
         {
             return true;
         }
@@ -338,7 +341,10 @@ public partial class MainWindow
         {
             await MettreAJourSuccesJeuAsync(jeu);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("enrichissement_succes_en_cours", exception);
+        }
     }
 
     /*

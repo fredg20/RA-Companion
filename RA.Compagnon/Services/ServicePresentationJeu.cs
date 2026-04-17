@@ -78,7 +78,7 @@ public sealed class ServicePresentationJeu
 
         return string.Create(
             CultureInfo.CurrentCulture,
-            $"{pointsSoftcore} / {totalPoints} en softcore - {pointsHardcore} / {totalPoints} en hardcore"
+            $"{pointsSoftcore} / {totalPoints} pts softcore - {pointsHardcore} / {totalPoints} pts hardcore"
         );
     }
 

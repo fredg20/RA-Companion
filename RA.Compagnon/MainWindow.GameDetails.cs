@@ -24,11 +24,8 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
-    private static readonly string CheminJournalRejouer = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-rejouer.log"
-    );
+    private static readonly string CheminJournalRejouer =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-rejouer.log");
 
     /*
      * Réinitialise les actions détaillées du jeu courant pour repartir d'un

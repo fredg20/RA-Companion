@@ -154,7 +154,10 @@ public partial class MainWindow
                 await ChargerJeuEnCoursAsync(false, true);
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("richpresence_tick", exception);
+        }
         finally
         {
             _surveillanceRichPresenceEnCours = false;
@@ -191,7 +194,10 @@ public partial class MainWindow
                 );
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("presence_locale_compte_tick", exception);
+        }
         finally
         {
             _surveillancePresenceLocaleCompteEnCours = false;
@@ -438,7 +444,10 @@ public partial class MainWindow
 
             _serviceOrchestrateurEtatJeu.OublierResolutionLocale();
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("sonde_locale_emulateurs_tick", exception);
+        }
         finally
         {
             _surveillanceLocaleEmulateursEnCours = false;

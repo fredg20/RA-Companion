@@ -15,11 +15,8 @@ namespace RA.Compagnon.Services;
  */
 public sealed class ServiceTestSuccesDebug
 {
-    private static readonly string CheminJournalTestSucces = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-test-succes-debug.log"
-    );
+    private static readonly string CheminJournalTestSucces =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-test-succes-debug.log");
 
     /*
      * Journalise un événement lié aux scénarios de test de succès.

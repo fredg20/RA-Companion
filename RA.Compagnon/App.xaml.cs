@@ -20,11 +20,8 @@ public partial class App : Application
 {
     private const string NomMutexInstanceUnique = @"Local\RA.Compagnon.InstanceUnique";
     private const int SwRestore = 9;
-    private static readonly string CheminJournalDemarrage = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-demarrage.log"
-    );
+    private static readonly string CheminJournalDemarrage =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-demarrage.log");
     private static Mutex? _mutexInstanceUnique;
 
     [LibraryImport("user32.dll")]
@@ -41,6 +38,7 @@ public partial class App : Application
      */
     protected override void OnStartup(StartupEventArgs e)
     {
+        ServiceModeDiagnostic.MigrerJournauxExistants();
         JournaliserDemarrage("OnStartup debut");
 
         _mutexInstanceUnique = new Mutex(true, NomMutexInstanceUnique, out bool premiereInstance);

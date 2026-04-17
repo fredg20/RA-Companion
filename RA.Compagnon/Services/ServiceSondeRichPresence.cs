@@ -15,11 +15,8 @@ namespace RA.Compagnon.Services;
 public sealed class ServiceSondeRichPresence
 {
     private static readonly TimeSpan DelaiPresenceActive = TimeSpan.FromMinutes(10);
-    private static readonly string CheminJournalRichPresence = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-richpresence.log"
-    );
+    private static readonly string CheminJournalRichPresence =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-richpresence.log");
 
     /*
      * Réinitialise le journal de session du Rich Presence.

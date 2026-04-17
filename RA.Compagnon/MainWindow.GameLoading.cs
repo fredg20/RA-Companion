@@ -414,7 +414,10 @@ public partial class MainWindow
         {
             await _serviceConfigurationLocale.SauvegarderAsync(_configurationConnexion);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("enrichissement_communaute_jeu", exception);
+        }
     }
 
     /*

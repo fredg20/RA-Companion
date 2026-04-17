@@ -15,11 +15,8 @@ namespace RA.Compagnon.Services;
  */
 public sealed class ServiceDetectionSuccesJeu
 {
-    private static readonly string CheminJournalDetectionSucces = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-detection-succes.log"
-    );
+    private static readonly string CheminJournalDetectionSucces =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-detection-succes.log");
 
     /*
      * Réinitialise le journal de session dédié à la détection des succès.

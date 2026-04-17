@@ -21,11 +21,8 @@ public sealed partial class ServiceResolutionJeuLocal
 {
     private const double SeuilConfianceJeuxRecents = 0.84;
     private const double SeuilConfianceCatalogue = 0.92;
-    private static readonly string CheminJournalResolutionLocale = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-resolution-locale.log"
-    );
+    private static readonly string CheminJournalResolutionLocale =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-resolution-locale.log");
 
     /*
      * Réinitialise le journal de session dédié à la résolution locale.

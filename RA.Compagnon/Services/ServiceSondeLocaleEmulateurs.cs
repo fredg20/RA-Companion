@@ -78,11 +78,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     private static readonly IReadOnlyList<DefinitionEmulateurLocal> Definitions =
         ServiceCatalogueEmulateursLocaux.Definitions;
 
-    private static readonly string CheminJournalSondeLocale = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-sonde-locale.log"
-    );
+    private static readonly string CheminJournalSondeLocale =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-sonde-locale.log");
     private static readonly HttpClient HttpClientSkyEmu = new()
     {
         Timeout = TimeSpan.FromMilliseconds(250),

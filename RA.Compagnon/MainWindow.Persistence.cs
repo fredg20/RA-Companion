@@ -125,7 +125,10 @@ public partial class MainWindow
                 await AppliquerPremierSuccesNonDebloqueSauvegardeAsync(identifiantJeu);
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("restauration_succes_sauvegardes", exception);
+        }
     }
 
     /*

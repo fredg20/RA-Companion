@@ -15,11 +15,8 @@ namespace RA.Compagnon.Services;
  */
 public sealed partial class ServiceSurveillanceSuccesLocaux : IDisposable
 {
-    private static readonly string CheminJournalSurveillanceSucces = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "RA-Compagnon",
-        "journal-surveillance-succes-locaux.log"
-    );
+    private static readonly string CheminJournalSurveillanceSucces =
+        ServiceModeDiagnostic.ConstruireCheminJournal("journal-surveillance-succes-locaux.log");
     private static readonly TimeSpan DureeDebounceSignal = TimeSpan.FromMilliseconds(700);
     private static readonly TimeSpan DelaiSignalInitialRetroArch = TimeSpan.FromMilliseconds(850);
     private static readonly TimeSpan DelaiSuiviRACacheLog = TimeSpan.FromMilliseconds(2500);
