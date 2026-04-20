@@ -16,4 +16,6 @@ public sealed class ResultatAnalyseDescriptionsSucces
     public GroupeSuccesPotentiel? GroupePrincipal { get; init; }
 
     public List<GroupeSuccesPotentiel> Groupes { get; init; } = [];
+
+    public List<string> DiagnosticsGroupes { get; init; } = [];
 }

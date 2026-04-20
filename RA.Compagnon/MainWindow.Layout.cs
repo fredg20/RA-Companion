@@ -910,6 +910,9 @@ public partial class MainWindow
 
             SystemControls.Grid.SetColumn(capsule, colonne);
             SystemControls.Grid.SetRow(capsule, rangee);
+            capsule.Width = double.NaN;
+            capsule.MinWidth = 0;
+            capsule.MaxWidth = double.PositiveInfinity;
             capsule.HorizontalAlignment = HorizontalAlignment.Stretch;
             capsule.Margin = new Thickness(
                 0,

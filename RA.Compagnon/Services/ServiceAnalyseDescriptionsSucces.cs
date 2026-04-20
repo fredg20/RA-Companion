@@ -53,6 +53,26 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         "the",
         "to",
     };
+    private static readonly HashSet<string> TermesGeneriquesAliasNommes =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "act",
+            "area",
+            "chapter",
+            "course",
+            "episode",
+            "floor",
+            "lap",
+            "level",
+            "map",
+            "mission",
+            "part",
+            "room",
+            "round",
+            "stage",
+            "world",
+            "zone",
+        };
     private static readonly HashSet<string> AncresNonNiveau = new(StringComparer.OrdinalIgnoreCase)
     {
         "constrainte d'actions",
@@ -65,6 +85,27 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         "sans perdre de vie",
         "time attack",
     };
+    private static readonly HashSet<string> TermesCollectionNonNiveau =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "badge",
+            "coin",
+            "coins",
+            "icon",
+            "icons",
+            "jar",
+            "jars",
+            "letter",
+            "letters",
+            "medal",
+            "medals",
+            "piece",
+            "pieces",
+            "token",
+            "tokens",
+            "toy",
+            "toys",
+        };
     private static readonly HashSet<string> MotsVides = new(StringComparer.OrdinalIgnoreCase)
     {
         "a",
@@ -109,7 +150,8 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      */
     public static ResultatAnalyseDescriptionsSucces Analyser(
         GameAchievementV2 succesReference,
-        IReadOnlyList<GameAchievementV2> succesJeu
+        IReadOnlyList<GameAchievementV2> succesJeu,
+        AnalyseZoneRichPresence? analyseZoneCourante = null
     )
     {
         if (succesReference is null)
@@ -218,9 +260,12 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         groupes =
         [
             .. groupes
-                .GroupBy(groupe => $"{groupe.TypeGroupe}|{NormaliserCle(groupe.Ancre)}")
+                .GroupBy(groupe =>
+                    $"{groupe.TypeGroupe}|{NormaliserCleAlias(groupe.TypeGroupe, groupe.Ancre)}"
+                )
                 .Select(group => group.OrderByDescending(item => item.ScoreConfiance).First())
-                .OrderByDescending(CalculerScoreSelection)
+                .Select(groupe => EnrichirScoreSelection(groupe, analyseZoneCourante))
+                .OrderByDescending(groupe => groupe.ScoreSelection)
                 .ThenByDescending(groupe => groupe.ScoreConfiance)
                 .ThenByDescending(groupe => ObtenirPrioriteType(groupe.TypeGroupe))
                 .ThenByDescending(groupe => groupe.IdentifiantsSucces.Count)
@@ -234,7 +279,8 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             IdentifiantSuccesReference = succesReference.Id,
             DescriptionReference = succesReference.Description?.Trim() ?? string.Empty,
             GroupePrincipal = groupePrincipal,
-            Groupes = groupePrincipal is null ? [] : [groupePrincipal],
+            Groupes = groupePrincipal is null ? [] : groupes,
+            DiagnosticsGroupes = ConstruireDiagnosticsGroupes(groupes),
         };
     }
 
@@ -281,11 +327,14 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         {
             foreach (
                 IndiceStructurel indice in description
-                    .Indices.GroupBy(item => $"{item.TypeGroupe}|{NormaliserCle(item.Ancre)}")
+                    .Indices.GroupBy(item =>
+                        $"{item.TypeGroupe}|{NormaliserCleAlias(item.TypeGroupe, item.Ancre)}"
+                    )
                     .Select(group => group.OrderByDescending(item => item.PoidsBase).First())
             )
             {
-                string cle = $"{indice.TypeGroupe}|{NormaliserCle(indice.Ancre)}";
+                string cle =
+                    $"{indice.TypeGroupe}|{NormaliserCleAlias(indice.TypeGroupe, indice.Ancre)}";
 
                 if (!familles.TryGetValue(cle, out FamilleCandidate? famille))
                 {
@@ -325,7 +374,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                 .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Niveau)
                 .Select(indice => NettoyerAncre(indice.Ancre))
                 .Where(AncreSembleValidePourNiveau)
-                .GroupBy(NormaliserCle)
+                .GroupBy(ancre => NormaliserCleAlias(TypeGroupeSuccesPotentiel.Niveau, ancre))
                 .Select(group => group.OrderByDescending(item => item.Length).First())
                 .OrderByDescending(ancre =>
                     ancre.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length
@@ -334,6 +383,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         )
         {
             List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                TypeGroupeSuccesPotentiel.Niveau,
                 descriptionsAnalysees,
                 ancreNiveau
             );
@@ -392,12 +442,13 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                 .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Monde)
                 .Select(indice => NettoyerAncre(indice.Ancre))
                 .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
-                .GroupBy(NormaliserCle)
+                .GroupBy(ancre => NormaliserCleAlias(TypeGroupeSuccesPotentiel.Monde, ancre))
                 .Select(group => group.OrderByDescending(item => item.Length).First())
                 .OrderByDescending(ancre => ancre.Length)
         )
         {
             List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                TypeGroupeSuccesPotentiel.Monde,
                 descriptionsAnalysees,
                 ancreMonde
             );
@@ -454,12 +505,15 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                 .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Collection)
                 .Select(indice => NettoyerAncre(indice.Ancre))
                 .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
-                .GroupBy(NormaliserCle)
+                .GroupBy(ancre =>
+                    NormaliserCleAlias(TypeGroupeSuccesPotentiel.Collection, ancre)
+                )
                 .Select(group => group.OrderByDescending(item => item.Length).First())
                 .OrderByDescending(ancre => ancre.Length)
         )
         {
             List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                TypeGroupeSuccesPotentiel.Collection,
                 descriptionsAnalysees,
                 ancreCollection
             );
@@ -517,12 +571,13 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                 .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Mode)
                 .Select(indice => NettoyerAncre(indice.Ancre))
                 .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
-                .GroupBy(NormaliserCle)
+                .GroupBy(ancre => NormaliserCleAlias(TypeGroupeSuccesPotentiel.Mode, ancre))
                 .Select(group => group.OrderByDescending(item => item.Length).First())
                 .OrderByDescending(ancre => ancre.Length)
         )
         {
             List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+                TypeGroupeSuccesPotentiel.Mode,
                 descriptionsAnalysees,
                 ancreMode
             );
@@ -585,6 +640,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         }
 
         List<int> identifiantsSucces = ConstruireIdentifiantsSuccesPourAncre(
+            TypeGroupeSuccesPotentiel.Boss,
             descriptionsAnalysees,
             ancreBoss
         );
@@ -735,6 +791,11 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             score -= 14;
         }
 
+        score -= CalculerPenaliteFauxPositifDefi(
+            famille,
+            TypeGroupeSuccesPotentiel.Niveau
+        );
+
         return Math.Clamp(score, 0, 98);
     }
 
@@ -752,6 +813,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 46;
         score += famille.Regles.Contains("PatronMonde") ? 12 : 0;
         score += famille.IdentifiantsSucces.Count >= 2 ? 8 : 0;
+        score -= CalculerPenaliteFauxPositifDefi(
+            famille,
+            TypeGroupeSuccesPotentiel.Monde
+        );
         return Math.Clamp(score, 0, 92);
     }
 
@@ -770,6 +835,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         score += famille.Actions.Count >= 2 ? 10 : 0;
         score += famille.Regles.Count >= 2 ? 8 : 0;
         score += famille.IdentifiantsSucces.Count >= 3 ? 6 : 0;
+        score -= CalculerPenaliteFauxPositifDefi(
+            famille,
+            TypeGroupeSuccesPotentiel.Boss
+        );
         return Math.Clamp(score, 0, 88);
     }
 
@@ -786,6 +855,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 34;
         score += famille.Actions.Count >= 2 ? 6 : 0;
         score += famille.Regles.Count >= 2 ? 6 : 0;
+        score -= CalculerPenaliteFauxPositifDefi(
+            famille,
+            TypeGroupeSuccesPotentiel.Collection
+        );
         return Math.Clamp(score, 0, 80);
     }
 
@@ -802,6 +875,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 28;
         score += famille.Regles.Contains("PatronModeTimeAttack") ? 14 : 0;
         score += famille.Regles.Contains("PatronActivationMode") ? 10 : 0;
+        score -= CalculerPenaliteFauxPositifDefi(
+            famille,
+            TypeGroupeSuccesPotentiel.Mode
+        );
         return Math.Clamp(score, 0, 74);
     }
 
@@ -1093,8 +1170,26 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         }
 
         if (
+            description.Contains("single life", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("one life", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("without dying", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            indices.Add(
+                new IndiceStructurel(
+                    TypeGroupeSuccesPotentiel.DefiTechnique,
+                    "Contrainte de survie",
+                    "DefiSurvie",
+                    18
+                )
+            );
+        }
+
+        if (
             description.Contains("or less", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("less than", StringComparison.OrdinalIgnoreCase)
             || description.Contains("more than", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("under ", StringComparison.OrdinalIgnoreCase)
         )
         {
             indices.Add(
@@ -1102,6 +1197,21 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                     TypeGroupeSuccesPotentiel.DefiTechnique,
                     "Contrainte d'actions",
                     "DefiContrainteActions",
+                    18
+                )
+            );
+        }
+
+        if (
+            description.Contains("or higher", StringComparison.OrdinalIgnoreCase)
+            || RegexSignalDefiDifficulte().IsMatch(description)
+        )
+        {
+            indices.Add(
+                new IndiceStructurel(
+                    TypeGroupeSuccesPotentiel.DefiTechnique,
+                    "Contrainte de difficulté",
+                    "DefiDifficulte",
                     18
                 )
             );
@@ -1504,6 +1614,13 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             return true;
         }
 
+        string[] mots = cle.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (mots.Length > 0 && TermesCollectionNonNiveau.Contains(mots[^1]))
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -1512,7 +1629,9 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      */
     private static string NettoyerAncre(string valeur)
     {
-        return RegexEspacesMultiples().Replace((valeur ?? string.Empty).Trim(), " ");
+        string ancre = (valeur ?? string.Empty).Replace('’', '\'').Replace('`', '\'').Trim();
+
+        return RegexEspacesMultiples().Replace(ancre, " ").Trim(' ', '.', ',', ';', ':', '-');
     }
 
     /*
@@ -1530,20 +1649,52 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      * ancre textuelle complète.
      */
     private static List<int> ConstruireIdentifiantsSuccesPourAncre(
+        TypeGroupeSuccesPotentiel typeGroupe,
         IReadOnlyList<DescriptionAnalysee> descriptionsAnalysees,
         string ancre
     )
     {
+        string cleAlias = NormaliserCleAlias(typeGroupe, ancre);
+
         return
         [
             .. descriptionsAnalysees
                 .Where(description =>
-                    DescriptionMentionneAncreComplete(description.Description, ancre)
+                    DescriptionEstLieeAAncre(typeGroupe, description, ancre, cleAlias)
                 )
                 .Select(description => description.Succes.Id)
                 .Distinct()
                 .OrderBy(identifiant => identifiant),
         ];
+    }
+
+    /*
+     * Détermine si une description appartient à une ancre donnée soit par une
+     * détection structurelle aliasée, soit par une mention textuelle complète.
+     */
+    private static bool DescriptionEstLieeAAncre(
+        TypeGroupeSuccesPotentiel typeGroupe,
+        DescriptionAnalysee description,
+        string ancre,
+        string cleAlias
+    )
+    {
+        if (
+            !string.IsNullOrWhiteSpace(cleAlias)
+            && description.Indices.Any(indice =>
+                indice.TypeGroupe == typeGroupe
+                && string.Equals(
+                    NormaliserCleAlias(typeGroupe, indice.Ancre),
+                    cleAlias,
+                    StringComparison.Ordinal
+                )
+            )
+        )
+        {
+            return true;
+        }
+
+        return DescriptionMentionneAncreComplete(description.Description, ancre);
     }
 
     /*
@@ -1612,7 +1763,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             indexRecherche = fin;
         }
 
-        return false;
+        string descriptionComparable = NormaliserTexteComparaison(description);
+        string ancreComparable = NormaliserTexteComparaison(ancre);
+
+        return ContientSuiteMots(descriptionComparable, ancreComparable);
     }
 
     /*
@@ -1620,7 +1774,299 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      */
     private static string NormaliserCle(string valeur)
     {
-        return NettoyerAncre(valeur).ToLowerInvariant();
+        return NormaliserTexteComparaison(valeur);
+    }
+
+    /*
+     * Uniformise une clé de groupe avec une logique d'alias adaptée au type
+     * d'ancre afin de faire converger les formulations proches.
+     */
+    private static string NormaliserCleAlias(
+        TypeGroupeSuccesPotentiel typeGroupe,
+        string valeur
+    )
+    {
+        string normalisee = NormaliserTexteComparaison(valeur);
+
+        if (string.IsNullOrWhiteSpace(normalisee))
+        {
+            return string.Empty;
+        }
+
+        return typeGroupe switch
+        {
+            TypeGroupeSuccesPotentiel.Niveau => NormaliserAliasZone(normalisee),
+            TypeGroupeSuccesPotentiel.Monde => NormaliserAliasZone(normalisee),
+            TypeGroupeSuccesPotentiel.Boss => NormaliserAliasBoss(normalisee),
+            _ => normalisee,
+        };
+    }
+
+    /*
+     * Rapproche les alias de zones et de niveaux en retirant les préfixes
+     * génériques puis en stabilisant les suites numériques.
+     */
+    private static string NormaliserAliasZone(string valeur)
+    {
+        string normalisee = RegexPrefixeAliasZone().Replace(valeur, string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(normalisee))
+        {
+            return string.Empty;
+        }
+
+        normalisee = RegexEspacesMultiples().Replace(normalisee, " ").Trim();
+        normalisee = UniformiserSuiteNumerique(normalisee);
+
+        string signatureNommee = ConstruireSignatureAliasNommee(normalisee);
+        return string.IsNullOrWhiteSpace(signatureNommee) ? normalisee : signatureNommee;
+    }
+
+    /*
+     * Retire les mots d'introduction trop génériques autour d'un boss afin de
+     * mieux fusionner les descriptions portant sur le même adversaire.
+     */
+    private static string NormaliserAliasBoss(string valeur)
+    {
+        string normalisee = RegexPrefixeAliasBoss().Replace(valeur, string.Empty).Trim();
+        normalisee = RegexEspacesMultiples().Replace(normalisee, " ").Trim();
+
+        string signatureNommee = ConstruireSignatureAliasNommee(normalisee);
+        return string.IsNullOrWhiteSpace(signatureNommee) ? normalisee : signatureNommee;
+    }
+
+    /*
+     * Stabilise les suites numériques pour rapprocher des variantes comme
+     * 01, 1, 1 1 et 1-1 sur une même représentation interne.
+     */
+    private static string UniformiserSuiteNumerique(string valeur)
+    {
+        string[] segments = valeur.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (segments.Length == 0 || !segments.All(segment => segment.All(char.IsDigit)))
+        {
+            return valeur;
+        }
+
+        return string.Join("-", segments.Select(NormaliserSegmentNumerique));
+    }
+
+    /*
+     * Supprime les zéros initiaux d'un segment numérique sans perdre le cas 0.
+     */
+    private static string NormaliserSegmentNumerique(string valeur)
+    {
+        string normalisee = valeur.TrimStart('0');
+        return string.IsNullOrWhiteSpace(normalisee) ? "0" : normalisee;
+    }
+
+    /*
+     * Réduit la confiance d'une famille lorsque plusieurs descriptions
+     * ressemblent davantage à des défis qu'à une vraie zone ou un vrai groupe.
+     */
+    private static int CalculerPenaliteFauxPositifDefi(
+        FamilleCandidate famille,
+        TypeGroupeSuccesPotentiel typeCible
+    )
+    {
+        if (typeCible == TypeGroupeSuccesPotentiel.DefiTechnique)
+        {
+            return 0;
+        }
+
+        int penalite = 0;
+
+        if (EstAncreManifestementDeDefi(famille.Ancre))
+        {
+            penalite += 18;
+        }
+
+        if (famille.DescriptionsAvecSignalDefi >= 2)
+        {
+            penalite += 8;
+        }
+
+        if (
+            famille.DescriptionsAvecSignalDefi == famille.IdentifiantsSucces.Count
+            && famille.IdentifiantsSucces.Count >= 2
+        )
+        {
+            penalite += 8;
+        }
+
+        if (famille.OccurrencesSignauxDefi >= Math.Max(3, famille.IdentifiantsSucces.Count * 2))
+        {
+            penalite += 6;
+        }
+
+        if (
+            famille.DescriptionsAvecSignalDefi > 0
+            && famille.Actions.Count <= 1
+            && famille.Regles.Count <= 1
+        )
+        {
+            penalite += 6;
+        }
+
+        if (
+            typeCible == TypeGroupeSuccesPotentiel.Niveau
+            && !famille.AncreContientMotCleNiveau
+            && !famille.AncreSembleStructuree
+            && famille.DescriptionsAvecSignalDefi > 0
+        )
+        {
+            penalite += 8;
+        }
+
+        return penalite;
+    }
+
+    /*
+     * Détecte si une ancre elle-même ressemble davantage à un défi qu'à une
+     * zone, un monde ou un boss.
+     */
+    private static bool EstAncreManifestementDeDefi(string ancre)
+    {
+        string normalisee = NormaliserTexteComparaison(ancre);
+
+        if (string.IsNullOrWhiteSpace(normalisee))
+        {
+            return false;
+        }
+
+        return normalisee.Contains("sans degat", StringComparison.Ordinal)
+            || normalisee.Contains("sans perdre de vie", StringComparison.Ordinal)
+            || normalisee.Contains("time attack", StringComparison.Ordinal)
+            || normalisee.Contains("hard mode", StringComparison.Ordinal)
+            || normalisee.Contains("softcore", StringComparison.Ordinal)
+            || normalisee.Contains("hardcore", StringComparison.Ordinal)
+            || normalisee.Contains("difficulty", StringComparison.Ordinal)
+            || normalisee.Contains("contrainte", StringComparison.Ordinal);
+    }
+
+    /*
+     * Produit un résumé interne des meilleurs groupes pour faciliter les
+     * futurs diagnostics sans encore modifier l'interface.
+     */
+    private static List<string> ConstruireDiagnosticsGroupes(
+        IReadOnlyList<GroupeSuccesPotentiel> groupes
+    )
+    {
+        return
+        [
+            .. groupes
+                .Take(3)
+                .Select(groupe =>
+                    $"type={groupe.TypeGroupe};ancre={groupe.Ancre};score={groupe.ScoreConfiance};bonusType={groupe.BonusSelectionType};bonusZone={groupe.BonusAlignementZone};selection={groupe.ScoreSelection};source={groupe.RegleSource};taille={groupe.IdentifiantsSucces.Count}"
+                ),
+        ];
+    }
+
+    /*
+     * Compte les marqueurs de descriptions qui signalent plus probablement un
+     * défi qu'un emplacement ou un regroupement structurel.
+     */
+    private static int CompterSignauxDefiDescription(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return 0;
+        }
+
+        int score = 0;
+
+        if (description.Contains("without", StringComparison.OrdinalIgnoreCase))
+        {
+            score += 2;
+        }
+
+        if (
+            description.Contains("without taking any damage", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("no damage", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            score += 3;
+        }
+
+        if (
+            description.Contains("losing a life", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("single life", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("one life", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("without dying", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            score += 2;
+        }
+
+        if (
+            description.Contains("or less", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("less than", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("more than", StringComparison.OrdinalIgnoreCase)
+            || description.Contains("under ", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            score += 2;
+        }
+
+        if (
+            description.Contains("or higher", StringComparison.OrdinalIgnoreCase)
+            || RegexSignalDefiDifficulte().IsMatch(description)
+        )
+        {
+            score += 2;
+        }
+
+        return score;
+    }
+
+    /*
+     * Construit une signature stable pour les ancres nommées en retirant les
+     * connecteurs et les termes génériques qui n'apportent pas d'identité.
+     */
+    private static string ConstruireSignatureAliasNommee(string valeur)
+    {
+        string[] tokens = valeur.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (tokens.Length < 2 || tokens.Any(token => token.Any(char.IsDigit)))
+        {
+            return string.Empty;
+        }
+
+        List<string> tokensSignificatifs =
+        [
+            .. tokens
+                .Select(NettoyerTokenAliasNommee)
+                .Where(token => !string.IsNullOrWhiteSpace(token))
+                .Where(token => !ConnecteursTitre.Contains(token))
+                .Where(token => !TermesGeneriquesAliasNommes.Contains(token)),
+        ];
+
+        if (tokensSignificatifs.Count < 2)
+        {
+            return string.Empty;
+        }
+
+        return string.Join(" ", tokensSignificatifs);
+    }
+
+    /*
+     * Nettoie un mot d'ancre nommée pour rapprocher les variantes possessives
+     * et supprimer les ponctuations résiduelles.
+     */
+    private static string NettoyerTokenAliasNommee(string valeur)
+    {
+        string token = valeur.Trim('\'', '"', '.', ',', ';', ':', '-', '_');
+
+        if (token.EndsWith("'s", StringComparison.Ordinal))
+        {
+            token = token[..^2];
+        }
+        else if (token.EndsWith("s'", StringComparison.Ordinal))
+        {
+            token = token[..^1];
+        }
+
+        return token.Trim('\'', '"', '.', ',', ';', ':', '-', '_');
     }
 
     /*
@@ -1648,9 +2094,150 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      * afin qu'un groupe très solide puisse dépasser un groupe seulement
      * prioritaire par défaut.
      */
-    private static int CalculerScoreSelection(GroupeSuccesPotentiel groupe)
+    private static int CalculerScoreSelection(
+        GroupeSuccesPotentiel groupe,
+        AnalyseZoneRichPresence? analyseZoneCourante
+    )
     {
-        return groupe.ScoreConfiance + ObtenirBonusSelectionType(groupe.TypeGroupe);
+        int bonusType = ObtenirBonusSelectionType(groupe.TypeGroupe);
+        int bonusZone = ObtenirBonusAlignementZone(groupe, analyseZoneCourante);
+        return groupe.ScoreConfiance + bonusType + bonusZone;
+    }
+
+    /*
+     * Fige le score de sélection sur chaque groupe pour éviter de recalculer
+     * plusieurs fois les mêmes comparaisons pendant l'affichage.
+     */
+    private static GroupeSuccesPotentiel EnrichirScoreSelection(
+        GroupeSuccesPotentiel groupe,
+        AnalyseZoneRichPresence? analyseZoneCourante
+    )
+    {
+        int bonusType = ObtenirBonusSelectionType(groupe.TypeGroupe);
+        int bonusZone = ObtenirBonusAlignementZone(groupe, analyseZoneCourante);
+
+        return new GroupeSuccesPotentiel
+        {
+            TypeGroupe = groupe.TypeGroupe,
+            Ancre = groupe.Ancre,
+            RegleSource = groupe.RegleSource,
+            ScoreConfiance = groupe.ScoreConfiance,
+            ScoreSelection = groupe.ScoreConfiance + bonusType + bonusZone,
+            BonusSelectionType = bonusType,
+            BonusAlignementZone = bonusZone,
+            LibelleConfiance = groupe.LibelleConfiance,
+            IdentifiantsSucces = [.. groupe.IdentifiantsSucces],
+        };
+    }
+
+    /*
+     * Ajoute un bonus de sélection lorsqu'un groupe décrit manifestement la
+     * même zone que celle déjà détectée par le Rich Presence courant.
+     */
+    private static int ObtenirBonusAlignementZone(
+        GroupeSuccesPotentiel groupe,
+        AnalyseZoneRichPresence? analyseZoneCourante
+    )
+    {
+        if (
+            analyseZoneCourante is null
+            || !analyseZoneCourante.EstFiable
+            || string.IsNullOrWhiteSpace(analyseZoneCourante.ZoneDetectee)
+        )
+        {
+            return 0;
+        }
+
+        string ancreGroupe = NormaliserTexteComparaison(groupe.Ancre);
+        string ancreZone = NormaliserTexteComparaison(analyseZoneCourante.ZoneDetectee);
+
+        if (string.IsNullOrWhiteSpace(ancreGroupe) || string.IsNullOrWhiteSpace(ancreZone))
+        {
+            return 0;
+        }
+
+        bool typeCompatible = TypeZoneCompatibleAvecGroupe(
+            analyseZoneCourante.TypeZone,
+            groupe.TypeGroupe
+        );
+
+        if (string.Equals(ancreGroupe, ancreZone, StringComparison.OrdinalIgnoreCase))
+        {
+            return typeCompatible ? 18 : 12;
+        }
+
+        bool inclusionForte =
+            ancreGroupe.Length >= 5
+            && ancreZone.Length >= 5
+            && (
+                ContientSuiteMots(ancreGroupe, ancreZone)
+                || ContientSuiteMots(ancreZone, ancreGroupe)
+            );
+
+        if (inclusionForte)
+        {
+            return typeCompatible ? 12 : 7;
+        }
+
+        return 0;
+    }
+
+    /*
+     * Indique si le type de zone issu du Rich Presence est cohérent avec la
+     * famille de groupe proposée par l'analyse de descriptions.
+     */
+    private static bool TypeZoneCompatibleAvecGroupe(
+        TypeZoneRichPresence typeZone,
+        TypeGroupeSuccesPotentiel typeGroupe
+    )
+    {
+        return (typeZone, typeGroupe) switch
+        {
+            (TypeZoneRichPresence.Niveau, TypeGroupeSuccesPotentiel.Niveau) => true,
+            (TypeZoneRichPresence.Chapitre, TypeGroupeSuccesPotentiel.Niveau) => true,
+            (TypeZoneRichPresence.Zone, TypeGroupeSuccesPotentiel.Niveau) => true,
+            (TypeZoneRichPresence.Donjon, TypeGroupeSuccesPotentiel.Niveau) => true,
+            (TypeZoneRichPresence.Monde, TypeGroupeSuccesPotentiel.Monde) => true,
+            (TypeZoneRichPresence.Boss, TypeGroupeSuccesPotentiel.Boss) => true,
+            _ => false,
+        };
+    }
+
+    /*
+     * Normalise un texte d'ancre pour rapprocher des formulations proches sans
+     * perdre complètement leur structure utile.
+     */
+    private static string NormaliserTexteComparaison(string valeur)
+    {
+        string normalisee = NettoyerAncre(valeur).ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(normalisee))
+        {
+            return string.Empty;
+        }
+
+        normalisee = RegexSeparateursAncre().Replace(normalisee, " ");
+        normalisee = RegexArticlesInitiaux().Replace(normalisee, string.Empty);
+        normalisee = RegexZerosInitiauxNombres().Replace(normalisee, "${nombre}");
+        normalisee = RegexSuffixeGeneriqueAncre().Replace(normalisee, string.Empty);
+
+        return RegexEspacesMultiples().Replace(normalisee, " ").Trim();
+    }
+
+    /*
+     * Vérifie si une suite de mots normalisés est contenue telle quelle dans
+     * un autre texte lui aussi déjà normalisé.
+     */
+    private static bool ContientSuiteMots(string texte, string ancre)
+    {
+        if (string.IsNullOrWhiteSpace(texte) || string.IsNullOrWhiteSpace(ancre))
+        {
+            return false;
+        }
+
+        string texteBorne = $" {texte.Trim()} ";
+        string ancreBorne = $" {ancre.Trim()} ";
+        return texteBorne.Contains(ancreBorne, StringComparison.Ordinal);
     }
 
     /*
@@ -1783,6 +2370,10 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
 
         public bool AncreContientMotCleNiveau { get; private set; }
 
+        public int OccurrencesSignauxDefi { get; private set; }
+
+        public int DescriptionsAvecSignalDefi { get; private set; }
+
         public void Ajouter(DescriptionAnalysee description, IndiceStructurel indice)
         {
             IdentifiantsSucces.Add(description.Succes.Id);
@@ -1793,6 +2384,14 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             }
 
             Regles.Add(indice.RegleSource);
+
+            int signauxDefi = CompterSignauxDefiDescription(description.Description);
+
+            if (signauxDefi > 0)
+            {
+                OccurrencesSignauxDefi += signauxDefi;
+                DescriptionsAvecSignalDefi += 1;
+            }
 
             string[] mots = indice.Ancre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             AncreSembleStructuree |=
@@ -1824,4 +2423,34 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
 
     [GeneratedRegex(@"^\d+\s+")]
     private static partial Regex RegexCompteurInitial();
+
+    [GeneratedRegex(@"[\-:/,;()\[\]]+")]
+    private static partial Regex RegexSeparateursAncre();
+
+    [GeneratedRegex(
+        @"^(?:(?:world|level|stage|act|mission|chapter|episode|round|course|lap|room|floor|area|zone|map|part)\s+)+",
+        RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RegexPrefixeAliasZone();
+
+    [GeneratedRegex(@"^(?:boss|the boss)\s+", RegexOptions.IgnoreCase)]
+    private static partial Regex RegexPrefixeAliasBoss();
+
+    [GeneratedRegex(@"^(?:the|a|an)\s+", RegexOptions.IgnoreCase)]
+    private static partial Regex RegexArticlesInitiaux();
+
+    [GeneratedRegex(@"\b0+(?<nombre>\d+)\b")]
+    private static partial Regex RegexZerosInitiauxNombres();
+
+    [GeneratedRegex(
+        @"\s+(?:zone|area|stage|level|mission|chapter|episode|room|floor)\s*$",
+        RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RegexSuffixeGeneriqueAncre();
+
+    [GeneratedRegex(
+        @"\b(?:easy|medium|hard|expert|nightmare)\s+difficulty\b",
+        RegexOptions.IgnoreCase
+    )]
+    private static partial Regex RegexSignalDefiDifficulte();
 }

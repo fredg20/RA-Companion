@@ -155,21 +155,21 @@ public partial class MainWindow
     {
         SystemControls.TextBlock texteVersionLocale = new()
         {
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 3 : 4),
             Opacity = 0.84,
             TextWrapping = TextWrapping.Wrap,
         };
 
         SystemControls.TextBlock texteEtat = new()
         {
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 3 : 4),
             FontWeight = FontWeights.SemiBold,
             TextWrapping = TextWrapping.Wrap,
         };
 
         SystemControls.TextBlock texteDate = new()
         {
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 3 : 4),
             Opacity = 0.72,
             Visibility = Visibility.Collapsed,
             TextWrapping = TextWrapping.Wrap,
@@ -177,7 +177,7 @@ public partial class MainWindow
 
         SystemControls.TextBlock texteNotes = new()
         {
-            Margin = new Thickness(0, 0, 0, 8),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 6 : 8),
             Opacity = 0.76,
             Visibility = Visibility.Collapsed,
             TextWrapping = TextWrapping.Wrap,
@@ -185,7 +185,7 @@ public partial class MainWindow
 
         SystemControls.TextBlock textePackage = new()
         {
-            Margin = new Thickness(0, 0, 0, 8),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 6 : 8),
             Opacity = 0.76,
             Visibility = Visibility.Collapsed,
             TextWrapping = TextWrapping.Wrap,
@@ -197,7 +197,7 @@ public partial class MainWindow
             Padding = _modaleAideCompacteCourante
                 ? ConstantesDesign.PaddingBoutonActionCompact
                 : new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 8, 8),
+            Margin = new Thickness(0, 0, 8, _modaleAideCompacteCourante ? 6 : 8),
         };
 
         UiControls.Button boutonAction = new()
@@ -206,7 +206,7 @@ public partial class MainWindow
             Padding = _modaleAideCompacteCourante
                 ? ConstantesDesign.PaddingBoutonActionCompact
                 : new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 8, 8),
+            Margin = new Thickness(0, 0, 8, _modaleAideCompacteCourante ? 6 : 8),
             Visibility = Visibility.Collapsed,
         };
 
@@ -216,7 +216,7 @@ public partial class MainWindow
             Padding = _modaleAideCompacteCourante
                 ? ConstantesDesign.PaddingBoutonActionCompact
                 : new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 8, 8),
+            Margin = new Thickness(0, 0, 8, _modaleAideCompacteCourante ? 6 : 8),
             Visibility = Visibility.Collapsed,
         };
 
@@ -226,7 +226,7 @@ public partial class MainWindow
             Padding = _modaleAideCompacteCourante
                 ? ConstantesDesign.PaddingBoutonActionCompact
                 : new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 8, 8),
+            Margin = new Thickness(0, 0, 8, _modaleAideCompacteCourante ? 6 : 8),
             Visibility = Visibility.Collapsed,
         };
 

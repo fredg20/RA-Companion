@@ -284,21 +284,33 @@ public partial class MainWindow
             dernierJeuJoue?.Title
         );
 
-        if (
+        bool afficherDernierJeuDepuisProfil =
             !EtatLocalJeuEstActif()
-            && string.Equals(
-                etatRichPresence.StatutAffiche,
-                "Dernier jeu",
-                StringComparison.OrdinalIgnoreCase
-            )
-            && _configurationConnexion.DernierJeuAffiche?.Id > 0
-        )
-        {
-            identifiantJeuEffectif = _configurationConnexion.DernierJeuAffiche.Id;
+            && RichPresenceConfirmeDernierJeu(etatRichPresence, identifiantJeuEffectif);
+        EtatJeuAfficheLocal? dernierJeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
 
-            if (!string.IsNullOrWhiteSpace(_configurationConnexion.DernierJeuAffiche.Title))
+        if (afficherDernierJeuDepuisProfil && dernierJeuSauvegarde?.Id > 0)
+        {
+            bool dernierJeuSauvegardeCorrespondApi = DernierJeuApiCorrespondAuJeuSauvegarde(
+                identifiantJeuEffectif,
+                titreJeuProvisoire
+            );
+
+            if (dernierJeuSauvegardeCorrespondApi)
             {
-                titreJeuProvisoire = _configurationConnexion.DernierJeuAffiche.Title;
+                identifiantJeuEffectif = dernierJeuSauvegarde.Id;
+
+                if (!string.IsNullOrWhiteSpace(dernierJeuSauvegarde.Title))
+                {
+                    titreJeuProvisoire = dernierJeuSauvegarde.Title;
+                }
+            }
+            else
+            {
+                JournaliserDiagnosticChangementJeu(
+                    "dernier_jeu_realignement_site",
+                    $"api={identifiantJeuEffectif}:{titreJeuProvisoire};local={dernierJeuSauvegarde.Id}:{dernierJeuSauvegarde.Title}"
+                );
             }
         }
 

@@ -1,4 +1,4 @@
-﻿<ui:FluentWindow
+<ui:FluentWindow
   x:Class="RA.Compagnon.MainWindow"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:compagnon="clr-namespace:RA.Compagnon"
@@ -578,16 +578,18 @@
                                   CornerRadius="{StaticResource RayonCoinsPetit}"
                                   Visibility="{Binding JeuCourant.ConsoleVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                                 >
-                                  <StackPanel
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                  >
+                                  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                      <ColumnDefinition Width="Auto" />
+                                      <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
                                     <Image
                                       x:Name="ImageConsoleJeuEnCours"
+                                      Grid.Column="0"
                                       Width="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
                                       Height="{x:Static compagnon:ConstantesDesign.TailleIconeStandard}"
                                       Margin="{x:Static compagnon:ConstantesDesign.MargeCapsuleDroite}"
+                                      HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Stretch="Uniform"
                                       Source="{Binding JeuCourant.ImageConsole}"
@@ -595,16 +597,18 @@
                                     />
                                     <TextBlock
                                       x:Name="TexteConsoleJeuEnCours"
+                                      Grid.Column="1"
                                       VerticalAlignment="Center"
-                                      HorizontalAlignment="Center"
+                                      HorizontalAlignment="Stretch"
                                       FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
                                       FontWeight="SemiBold"
                                       Opacity="0.86"
                                       Text="{Binding JeuCourant.Console, Mode=OneWay}"
                                       TextAlignment="Center"
                                       TextWrapping="Wrap"
+                                      TextTrimming="CharacterEllipsis"
                                     />
-                                  </StackPanel>
+                                  </Grid>
                                 </Border>
 
                                 <Border
@@ -626,6 +630,7 @@
                                     Text="{Binding JeuCourant.Genre, Mode=OneWay}"
                                     TextAlignment="Center"
                                     TextWrapping="Wrap"
+                                    TextTrimming="CharacterEllipsis"
                                   />
                                 </Border>
 
@@ -648,6 +653,7 @@
                                     Text="{Binding JeuCourant.DateSortie, Mode=OneWay}"
                                     TextAlignment="Center"
                                     TextWrapping="Wrap"
+                                    TextTrimming="CharacterEllipsis"
                                   />
                                 </Border>
 
@@ -670,6 +676,7 @@
                                     Text="{Binding JeuCourant.Credits, Mode=OneWay}"
                                     TextAlignment="Center"
                                     TextWrapping="Wrap"
+                                    TextTrimming="CharacterEllipsis"
                                   />
                                 </Border>
                               </Grid>
@@ -1763,3 +1770,4 @@
     />
   </Grid>
 </ui:FluentWindow>
+

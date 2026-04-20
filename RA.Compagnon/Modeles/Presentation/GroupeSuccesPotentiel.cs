@@ -18,6 +18,12 @@ public sealed class GroupeSuccesPotentiel
 
     public int ScoreConfiance { get; init; }
 
+    public int ScoreSelection { get; init; }
+
+    public int BonusSelectionType { get; init; }
+
+    public int BonusAlignementZone { get; init; }
+
     public string LibelleConfiance { get; init; } = string.Empty;
 
     public List<int> IdentifiantsSucces { get; init; } = [];

@@ -25,7 +25,8 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
-    private const int SeuilAffichageGroupeSucces = 70;
+    private const int SeuilAffichageGroupeSucces = 68;
+    private const int SeuilAmbiguiteGroupeSucces = 6;
 
     /*
      * Réinitialise totalement la carte du succès mis en avant afin de repartir
@@ -92,6 +93,11 @@ public partial class MainWindow
             !_vueModele.SuccesEnCours.DescriptionVisible
             || string.IsNullOrWhiteSpace(_vueModele.SuccesEnCours.Description)
         )
+        {
+            return true;
+        }
+
+        if (nombreSuccesJeu > 0 && _analyseSuccesEnCours is null)
         {
             return true;
         }
@@ -568,9 +574,21 @@ public partial class MainWindow
      */
     private void MettreAJourAnalyseSuccesEnCours(GameAchievementV2 succesSelectionne)
     {
+        AnalyseZoneRichPresence analyseZoneCourante = ServiceSondeRichPresence
+            .Sonder(
+                new DonneesCompteUtilisateur
+                {
+                    Profil = _dernierProfilUtilisateurCharge,
+                    Resume = _dernierResumeUtilisateurCharge,
+                },
+                journaliser: false
+            )
+            .AnalyseZone;
+
         _analyseSuccesEnCours = ServiceAnalyseDescriptionsSucces.Analyser(
             succesSelectionne,
-            _succesJeuCourant
+            _succesJeuCourant,
+            analyseZoneCourante
         );
 
         AppliquerPresentationGroupeSuccesEnCours();
@@ -584,18 +602,14 @@ public partial class MainWindow
             return;
         }
 
-        string details = string.Join(
-            " | ",
-            _analyseSuccesEnCours
-                .Groupes.Take(3)
-                .Select(groupe =>
-                    $"{groupe.TypeGroupe}:{groupe.Ancre};score={groupe.ScoreConfiance};nb={groupe.IdentifiantsSucces.Count}"
-                )
+        string details = string.Join(" | ", _analyseSuccesEnCours.DiagnosticsGroupes);
+        DiagnosticDecisionAffichageGroupeSucces diagnosticAffichage = EvaluerAffichageGroupeSucces(
+            _analyseSuccesEnCours.GroupePrincipal
         );
 
         JournaliserDiagnosticAffichageJeu(
             "analyse_succes",
-            $"succes={succesSelectionne.Id};groupes={_analyseSuccesEnCours.Groupes.Count};top={details}"
+            $"succes={succesSelectionne.Id};groupes={_analyseSuccesEnCours.Groupes.Count};top={details};decision={ConstruireResumeDiagnosticAffichageGroupe(diagnosticAffichage)}"
         );
     }
 
@@ -607,7 +621,7 @@ public partial class MainWindow
     {
         GroupeSuccesPotentiel? groupe = _analyseSuccesEnCours?.GroupePrincipal;
 
-        if (groupe is null || groupe.ScoreConfiance < SeuilAffichageGroupeSucces)
+        if (!GroupeSuccesDoitEtreAffiche(groupe))
         {
             _vueModele.SuccesEnCours.GroupeDetecteType = string.Empty;
             _vueModele.SuccesEnCours.GroupeDetecteAncre = string.Empty;
@@ -618,7 +632,7 @@ public partial class MainWindow
             return;
         }
 
-        string type = TraduireTypeGroupeSucces(groupe.TypeGroupe);
+        string type = TraduireTypeGroupeSucces(groupe!.TypeGroupe);
         string libelleSucces = groupe.IdentifiantsSucces.Count > 1 ? "succès liés" : "succès lié";
 
         _vueModele.SuccesEnCours.GroupeDetecteType = type;
@@ -634,6 +648,356 @@ public partial class MainWindow
      * Recharge les badges du groupe détecté afin de redonner un repère visuel
      * immédiat autour du succès actuellement affiché.
      */
+    private bool GroupeSuccesDoitEtreAffiche(GroupeSuccesPotentiel? groupe)
+    {
+        return EvaluerAffichageGroupeSucces(groupe).DoitAfficher;
+    }
+
+    /*
+     * Décrit précisément la décision d'affichage du groupe principal afin de
+     * rendre les réglages empiriques beaucoup plus lisibles dans les journaux.
+     */
+    private DiagnosticDecisionAffichageGroupeSucces EvaluerAffichageGroupeSucces(
+        GroupeSuccesPotentiel? groupe
+    )
+    {
+        if (groupe is null)
+        {
+            return new DiagnosticDecisionAffichageGroupeSucces(
+                false,
+                "aucun_groupe",
+                0,
+                0,
+                0,
+                string.Empty,
+                0,
+                0
+            );
+        }
+
+        if (groupe.IdentifiantsSucces.Count < 2)
+        {
+            return new DiagnosticDecisionAffichageGroupeSucces(
+                false,
+                "groupe_trop_petit",
+                0,
+                0,
+                0,
+                string.Empty,
+                0,
+                0
+            );
+        }
+
+        int seuilAffichage = ObtenirSeuilAffichageGroupe(
+            groupe.TypeGroupe,
+            groupe.IdentifiantsSucces.Count
+        );
+
+        if (groupe.ScoreSelection < seuilAffichage)
+        {
+            return new DiagnosticDecisionAffichageGroupeSucces(
+                false,
+                "score_selection_insuffisant",
+                seuilAffichage,
+                0,
+                0,
+                string.Empty,
+                0,
+                0
+            );
+        }
+
+        GroupeSuccesPotentiel? secondGroupe = _analyseSuccesEnCours
+            ?.Groupes.Skip(1)
+            .FirstOrDefault();
+
+        if (secondGroupe is null)
+        {
+            return new DiagnosticDecisionAffichageGroupeSucces(
+                true,
+                "aucun_second_candidat",
+                seuilAffichage,
+                0,
+                0,
+                string.Empty,
+                0,
+                0
+            );
+        }
+
+        int ecartSelection = groupe.ScoreSelection - secondGroupe.ScoreSelection;
+        int seuilAmbiguite = ObtenirSeuilAmbiguiteGroupe(
+            groupe.IdentifiantsSucces.Count,
+            groupe,
+            groupe.TypeGroupe,
+            secondGroupe
+        );
+        (double tauxRecouvrement, double tauxUnion) = CalculerRecouvrementGroupes(
+            groupe,
+            secondGroupe
+        );
+        string secondResume =
+            $"{secondGroupe.TypeGroupe}:{secondGroupe.Ancre}:{secondGroupe.ScoreSelection}";
+
+        if (ecartSelection >= seuilAmbiguite)
+        {
+            return new DiagnosticDecisionAffichageGroupeSucces(
+                true,
+                "ecart_selection_suffisant",
+                seuilAffichage,
+                ecartSelection,
+                seuilAmbiguite,
+                secondResume,
+                tauxRecouvrement,
+                tauxUnion
+            );
+        }
+
+        return new DiagnosticDecisionAffichageGroupeSucces(
+            false,
+            "ambiguite_trop_forte",
+            seuilAffichage,
+            ecartSelection,
+            seuilAmbiguite,
+            secondResume,
+            tauxRecouvrement,
+            tauxUnion
+        );
+    }
+
+    /*
+     * Calcule le seuil d'affichage final à partir du type de groupe puis de la
+     * taille réelle du regroupement détecté.
+     */
+    private static int ObtenirSeuilAffichageGroupe(
+        TypeGroupeSuccesPotentiel typeGroupe,
+        int tailleGroupe
+    )
+    {
+        int seuilBase = typeGroupe switch
+        {
+            TypeGroupeSuccesPotentiel.Niveau => SeuilAffichageGroupeSucces,
+            TypeGroupeSuccesPotentiel.Boss => SeuilAffichageGroupeSucces + 1,
+            TypeGroupeSuccesPotentiel.Monde => SeuilAffichageGroupeSucces + 1,
+            TypeGroupeSuccesPotentiel.Collection => SeuilAffichageGroupeSucces + 3,
+            TypeGroupeSuccesPotentiel.Mode => SeuilAffichageGroupeSucces + 4,
+            TypeGroupeSuccesPotentiel.Objet => SeuilAffichageGroupeSucces + 5,
+            TypeGroupeSuccesPotentiel.NonRelie => SeuilAffichageGroupeSucces + 7,
+            TypeGroupeSuccesPotentiel.Lexical => SeuilAffichageGroupeSucces + 8,
+            _ => SeuilAffichageGroupeSucces + 8,
+        };
+
+        int ajustementTaille = tailleGroupe switch
+        {
+            <= 2 => 2,
+            3 => 1,
+            4 => 0,
+            5 => -1,
+            >= 6 => -2,
+        };
+
+        return Math.Clamp(seuilBase + ajustementTaille, SeuilAffichageGroupeSucces - 1, 92);
+    }
+
+    /*
+     * Exige un écart plus net avec le second candidat quand le groupe détecté
+     * est petit ou quand le second groupe ressemble à un vrai concurrent
+     * structurel plutôt qu'à un simple repli lexical.
+     */
+    private static int ObtenirSeuilAmbiguiteGroupe(
+        int tailleGroupe,
+        GroupeSuccesPotentiel groupePrincipal,
+        TypeGroupeSuccesPotentiel typeGroupePrincipal,
+        GroupeSuccesPotentiel secondGroupe
+    )
+    {
+        int ajustementTaille = tailleGroupe switch
+        {
+            <= 2 => 3,
+            3 => 2,
+            4 => 1,
+            5 => 0,
+            >= 6 => -1,
+        };
+
+        int ajustementSecond = ObtenirAjustementAmbiguiteSecondGroupe(
+            typeGroupePrincipal,
+            secondGroupe
+        );
+        int ajustementRecouvrement = ObtenirAjustementAmbiguiteRecouvrement(
+            groupePrincipal,
+            secondGroupe
+        );
+
+        return Math.Clamp(
+            SeuilAmbiguiteGroupeSucces
+                + ajustementTaille
+                + ajustementSecond
+                + ajustementRecouvrement,
+            2,
+            16
+        );
+    }
+
+    /*
+     * Donne plus de poids à un second candidat structurel et moins à un
+     * second candidat de repli, afin de mieux refléter sa dangerosité réelle.
+     */
+    private static int ObtenirAjustementAmbiguiteSecondGroupe(
+        TypeGroupeSuccesPotentiel typeGroupePrincipal,
+        GroupeSuccesPotentiel secondGroupe
+    )
+    {
+        int ajustement = secondGroupe.TypeGroupe switch
+        {
+            TypeGroupeSuccesPotentiel.NonRelie => -4,
+            TypeGroupeSuccesPotentiel.Lexical => -3,
+            TypeGroupeSuccesPotentiel.Objet => 0,
+            TypeGroupeSuccesPotentiel.DefiTechnique => 0,
+            TypeGroupeSuccesPotentiel.Collection => 1,
+            TypeGroupeSuccesPotentiel.Mode => 1,
+            TypeGroupeSuccesPotentiel.Monde => 2,
+            TypeGroupeSuccesPotentiel.Boss => 3,
+            TypeGroupeSuccesPotentiel.Niveau => 3,
+            _ => 1,
+        };
+
+        if (secondGroupe.IdentifiantsSucces.Count < 2)
+        {
+            ajustement -= 2;
+        }
+
+        if (secondGroupe.ScoreConfiance < SeuilAffichageGroupeSucces)
+        {
+            ajustement -= 1;
+        }
+
+        if (secondGroupe.TypeGroupe == typeGroupePrincipal)
+        {
+            ajustement += 2;
+        }
+
+        if (
+            typeGroupePrincipal == TypeGroupeSuccesPotentiel.Niveau
+            && secondGroupe.TypeGroupe == TypeGroupeSuccesPotentiel.Mode
+        )
+        {
+            ajustement -= 2;
+        }
+
+        if (
+            typeGroupePrincipal == TypeGroupeSuccesPotentiel.Monde
+            && secondGroupe.TypeGroupe == TypeGroupeSuccesPotentiel.Mode
+        )
+        {
+            ajustement -= 1;
+        }
+
+        if (
+            typeGroupePrincipal == TypeGroupeSuccesPotentiel.Niveau
+            && secondGroupe.TypeGroupe == TypeGroupeSuccesPotentiel.Collection
+        )
+        {
+            ajustement -= 2;
+        }
+
+        if (
+            typeGroupePrincipal == TypeGroupeSuccesPotentiel.Monde
+            && secondGroupe.TypeGroupe == TypeGroupeSuccesPotentiel.Collection
+        )
+        {
+            ajustement -= 1;
+        }
+
+        return ajustement;
+    }
+
+    /*
+     * Ajuste l'ambiguïté selon le recouvrement réel entre le premier et le
+     * second groupe, afin de distinguer un quasi-duplicate d'un vrai rival.
+     */
+    private static int ObtenirAjustementAmbiguiteRecouvrement(
+        GroupeSuccesPotentiel? groupePrincipal,
+        GroupeSuccesPotentiel secondGroupe
+    )
+    {
+        if (groupePrincipal is null)
+        {
+            return 0;
+        }
+
+        (double tauxRecouvrement, double tauxUnion) = CalculerRecouvrementGroupes(
+            groupePrincipal,
+            secondGroupe
+        );
+
+        if (tauxRecouvrement >= 0.85 || tauxUnion >= 0.7)
+        {
+            return -4;
+        }
+
+        if (tauxRecouvrement >= 0.6 || tauxUnion >= 0.5)
+        {
+            return -2;
+        }
+
+        if (tauxRecouvrement <= 0.2 && tauxUnion <= 0.15)
+        {
+            return 3;
+        }
+
+        if (tauxRecouvrement <= 0.35 && tauxUnion <= 0.25)
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /*
+     * Calcule deux visions complémentaires du recouvrement: la part commune
+     * rapportée au plus petit groupe, puis la part commune sur l'union totale.
+     */
+    private static (double TauxRecouvrement, double TauxUnion) CalculerRecouvrementGroupes(
+        GroupeSuccesPotentiel groupePrincipal,
+        GroupeSuccesPotentiel secondGroupe
+    )
+    {
+        HashSet<int> identifiantsPrincipal = [.. groupePrincipal.IdentifiantsSucces];
+        HashSet<int> identifiantsSecond = [.. secondGroupe.IdentifiantsSucces];
+
+        if (identifiantsPrincipal.Count == 0 || identifiantsSecond.Count == 0)
+        {
+            return (0, 0);
+        }
+
+        int communs = identifiantsPrincipal.Intersect(identifiantsSecond).Count();
+
+        if (communs == 0)
+        {
+            return (0, 0);
+        }
+
+        int plusPetit = Math.Min(identifiantsPrincipal.Count, identifiantsSecond.Count);
+
+        identifiantsPrincipal.UnionWith(identifiantsSecond);
+        int union = identifiantsPrincipal.Count;
+
+        return ((double)communs / plusPetit, (double)communs / union);
+    }
+
+    /*
+     * Formate la décision d'affichage sous une forme compacte et stable pour
+     * faciliter les lectures comparatives dans les journaux.
+     */
+    private static string ConstruireResumeDiagnosticAffichageGroupe(
+        DiagnosticDecisionAffichageGroupeSucces diagnostic
+    )
+    {
+        return $"affiche={(diagnostic.DoitAfficher ? "oui" : "non")};raison={diagnostic.Raison};seuil={diagnostic.SeuilAffichage};ecart={diagnostic.EcartSelection};ambiguite={diagnostic.SeuilAmbiguite};second={diagnostic.SecondResume};recouvrement={diagnostic.TauxRecouvrement:0.00};union={diagnostic.TauxUnion:0.00}";
+    }
+
     private async Task ChargerBadgesGroupeSuccesEnCoursAsync(
         int identifiantJeu,
         int versionAffichage
@@ -642,12 +1006,12 @@ public partial class MainWindow
         GroupeSuccesPotentiel? groupe = _analyseSuccesEnCours?.GroupePrincipal;
         _vueModele.SuccesEnCours.BadgesGroupeDetecte.Clear();
 
-        if (groupe is null || groupe.ScoreConfiance < SeuilAffichageGroupeSucces)
+        if (!GroupeSuccesDoitEtreAffiche(groupe))
         {
             return;
         }
 
-        HashSet<int> identifiantsGroupe = [.. groupe.IdentifiantsSucces];
+        HashSet<int> identifiantsGroupe = [.. groupe!.IdentifiantsSucces];
         List<GameAchievementV2> succesDuGroupe =
         [
             .. _succesJeuCourant.Where(item => identifiantsGroupe.Contains(item.Id)),
@@ -713,6 +1077,21 @@ public partial class MainWindow
             catch { }
         }
     }
+
+    /*
+     * Transporte la décision finale d'affichage du groupe afin de la réutiliser
+     * à la fois pour l'UI et pour la journalisation diagnostique.
+     */
+    private readonly record struct DiagnosticDecisionAffichageGroupeSucces(
+        bool DoitAfficher,
+        string Raison,
+        int SeuilAffichage,
+        int EcartSelection,
+        int SeuilAmbiguite,
+        string SecondResume,
+        double TauxRecouvrement,
+        double TauxUnion
+    );
 
     /*
      * Arrondit les coins d'un badge rendu dans le groupe du succès courant

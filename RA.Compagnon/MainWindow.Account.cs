@@ -614,23 +614,109 @@ public partial class MainWindow
     /*
      * Ouvre la modale d'aide et de diagnostic local de l'application.
      */
-    private async Task AfficherModaleAideAsync()
+    private Task AfficherModaleAideAsync()
     {
         _ = VerifierMiseAJourApplicationSiNecessaireAsync();
         double largeurContenuAide = CalculerLargeurContenuModale(
             ConstantesDesign.LargeurContenuModaleAide,
             ConstantesDesign.EspaceFenetreStandard
         );
+        double hauteurMaximaleAide = CalculerHauteurMaximaleContenuModale();
         bool modaleAideCompacte = EstModaleCompacte(
             largeurContenuAide,
             ConstantesDesign.SeuilCompactModaleAide
         );
+        Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
+        Point origineFenetre = ConvertirPointElementEnEcranWpf(this, new Point(0, 0));
+        Rect zoneFenetreVisible =
+            ActualWidth > 0 && ActualHeight > 0
+                ? new Rect(origineFenetre.X, origineFenetre.Y, ActualWidth, ActualHeight)
+                : zoneTravail;
+        double hauteurEnteteEtPiedAide = modaleAideCompacte ? 132 : 148;
+        double largeurFenetreAideCible = CalculerLargeurExterieureModale(largeurContenuAide);
+        double hauteurFenetreAideCible =
+            hauteurMaximaleAide + (MargeInterieureModaleConnexion * 2) + hauteurEnteteEtPiedAide;
+        double largeurFenetreAide = Math.Min(
+            largeurFenetreAideCible,
+            Math.Min(zoneTravail.Width - 32, zoneFenetreVisible.Width - 24)
+        );
+        double hauteurFenetreAide = Math.Min(
+            hauteurFenetreAideCible,
+            Math.Min(zoneTravail.Height - 32, zoneFenetreVisible.Height - 24)
+        );
+        double positionGaucheFenetreAide =
+            zoneFenetreVisible.Left
+            + Math.Max(0, (zoneFenetreVisible.Width - largeurFenetreAide) / 2);
+        double positionHautFenetreAide =
+            zoneFenetreVisible.Top
+            + Math.Max(0, (zoneFenetreVisible.Height - hauteurFenetreAide) / 2);
+
+        if (
+            CadreZonePrincipale.IsLoaded
+            && BarreEtatApplication.IsLoaded
+            && CadreZonePrincipale.ActualHeight > 0
+        )
+        {
+            Point origineZoneContenu = ConvertirPointElementEnEcranWpf(
+                CadreZonePrincipale,
+                new Point(0, 0)
+            );
+            Point origineBarreEtat = ConvertirPointElementEnEcranWpf(
+                BarreEtatApplication,
+                new Point(0, 0)
+            );
+            double hauteurDisponibleDansFenetre = origineBarreEtat.Y - origineZoneContenu.Y - 12;
+
+            if (hauteurDisponibleDansFenetre > 0)
+            {
+                double hauteurDisponibleEcran = Math.Min(
+                    hauteurDisponibleDansFenetre,
+                    zoneTravail.Height - 32
+                );
+                hauteurFenetreAide = Math.Min(hauteurFenetreAide, hauteurDisponibleEcran);
+                positionHautFenetreAide = origineZoneContenu.Y;
+            }
+        }
+
+        positionGaucheFenetreAide = Math.Clamp(
+            positionGaucheFenetreAide,
+            Math.Max(zoneTravail.Left, zoneFenetreVisible.Left),
+            Math.Min(zoneTravail.Right, zoneFenetreVisible.Right) - largeurFenetreAide
+        );
+        positionHautFenetreAide = Math.Clamp(
+            positionHautFenetreAide,
+            Math.Max(zoneTravail.Top, zoneFenetreVisible.Top),
+            Math.Min(zoneTravail.Bottom, zoneFenetreVisible.Bottom) - hauteurFenetreAide
+        );
+
+        double hauteurZoneDefilementAide = Math.Max(
+            ConstantesDesign.EspaceFenetreStandard,
+            hauteurFenetreAide - (MargeInterieureModaleConnexion * 2) - hauteurEnteteEtPiedAide
+        );
         _modaleAideCompacteCourante = modaleAideCompacte;
+        SolidColorBrush fondFenetre = Brushes.Transparent;
+        SolidColorBrush fondCarte = new(Color.FromRgb(36, 36, 40));
+        SolidColorBrush bordure = ObtenirPinceauTheme(
+            "CardStrokeColorDefaultBrush",
+            Color.FromRgb(78, 78, 86)
+        );
+        SolidColorBrush textePrincipal = ObtenirPinceauTheme(
+            "TextFillColorPrimaryBrush",
+            Color.FromRgb(243, 244, 246)
+        );
+        SolidColorBrush texteSecondaire = ObtenirPinceauTheme(
+            "TextFillColorSecondaryBrush",
+            Color.FromRgb(191, 197, 206)
+        );
+        CornerRadius rayonCoins = ObtenirRayonCoins(
+            "RayonCoinsStandard",
+            ConstantesDesign.EspaceStandard
+        );
         List<SystemControls.Expander> sectionsAide = [];
 
         SystemControls.StackPanel contenu = new()
         {
-            MaxWidth = largeurContenuAide,
+            Width = largeurContenuAide,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Margin = ConstantesDesign.AucuneMarge,
             Children =
@@ -674,33 +760,128 @@ public partial class MainWindow
             },
         };
 
-        SystemControls.Border conteneurContenu = new()
+        SystemControls.Button boutonFermer = new()
         {
-            Padding = ConstantesDesign.AucuneMarge,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            CornerRadius = ObtenirRayonCoins("RayonCoinsStandard", ConstantesDesign.EspaceStandard),
-            Child = contenu,
+            Content = "Fermer",
+            MinWidth = 120,
+            IsCancel = true,
+            Padding = new Thickness(14, 6, 14, 6),
+            Background = fondCarte,
+            Foreground = textePrincipal,
+            BorderBrush = bordure,
         };
 
-        UiControls.ContentDialog dialogueAide = new(RacineModales)
+        Window fenetreAide = new()
         {
-            Title = "Aide",
-            Content = conteneurContenu,
-            MaxWidth = CalculerLargeurExterieureModale(largeurContenuAide),
-            CloseButtonText = "Fermer",
-            DefaultButton = UiControls.ContentDialogButton.Close,
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            ResizeMode = ResizeMode.NoResize,
+            SizeToContent = SizeToContent.Manual,
+            ShowInTaskbar = false,
+            ShowActivated = true,
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = fondFenetre,
+            Foreground = textePrincipal,
+            Left = positionGaucheFenetreAide,
+            Top = positionHautFenetreAide,
+            Width = largeurFenetreAide,
+            Height = hauteurFenetreAide,
+            MinWidth = largeurFenetreAide,
+            MaxWidth = largeurFenetreAide,
+            MinHeight = hauteurFenetreAide,
+            MaxHeight = hauteurFenetreAide,
+            Content = new SystemControls.Border
+            {
+                Padding = ConstantesDesign.PaddingCarteSecondaire,
+                Background = fondCarte,
+                BorderBrush = bordure,
+                BorderThickness = new Thickness(1),
+                CornerRadius = rayonCoins,
+                SnapsToDevicePixels = true,
+                Child = new SystemControls.Grid
+                {
+                    RowDefinitions =
+                    {
+                        new SystemControls.RowDefinition { Height = GridLength.Auto },
+                        new SystemControls.RowDefinition
+                        {
+                            Height = new GridLength(hauteurZoneDefilementAide),
+                        },
+                        new SystemControls.RowDefinition { Height = GridLength.Auto },
+                    },
+                },
+            },
         };
-        AppliquerTypographieResponsiveSurObjet(dialogueAide);
+        SystemControls.Grid grilleFenetreAide = (SystemControls.Grid)
+            ((SystemControls.Border)fenetreAide.Content).Child;
+
+        grilleFenetreAide.Children.Add(
+            new SystemControls.StackPanel
+            {
+                Width = largeurContenuAide,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, modaleAideCompacte ? 10 : 14),
+                Children =
+                {
+                    new SystemControls.TextBlock
+                    {
+                        FontSize = ConstantesDesign.TaillePoliceTitreSection,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = textePrincipal,
+                        Text = "Aide",
+                        Margin = new Thickness(0, 0, 0, modaleAideCompacte ? 6 : 8),
+                    },
+                    new SystemControls.TextBlock
+                    {
+                        Opacity = 0.82,
+                        Foreground = texteSecondaire,
+                        Text =
+                            "Retrouve ici les repères essentiels, les actions utiles et les chemins surveillés par Compagnon.",
+                        TextWrapping = TextWrapping.Wrap,
+                    },
+                },
+            }
+        );
+
+        SystemControls.ScrollViewer scrollViewerAide = new()
+        {
+            VerticalScrollBarVisibility = SystemControls.ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = SystemControls.ScrollBarVisibility.Disabled,
+            Height = hauteurZoneDefilementAide,
+            Content = contenu,
+        };
+        SystemControls.Grid.SetRow(scrollViewerAide, 1);
+        grilleFenetreAide.Children.Add(scrollViewerAide);
+
+        SystemControls.WrapPanel piedFenetreAide = new()
+        {
+            Orientation = SystemControls.Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, modaleAideCompacte ? 12 : 18, 0, 0),
+            Children = { boutonFermer },
+        };
+        SystemControls.Grid.SetRow(piedFenetreAide, 2);
+        grilleFenetreAide.Children.Add(piedFenetreAide);
+        AppliquerTypographieResponsiveSurObjet(fenetreAide);
+
+        boutonFermer.Click += (_, _) =>
+        {
+            fenetreAide.DialogResult = false;
+            fenetreAide.Close();
+        };
 
         try
         {
             DefinirEtatModalesActif(true);
-            await dialogueAide.ShowAsync();
+            fenetreAide.ShowDialog();
         }
         finally
         {
             DefinirEtatModalesActif(false);
         }
+
+        return Task.CompletedTask;
     }
 
     /*
@@ -968,7 +1149,9 @@ public partial class MainWindow
             pile.Children.Add(
                 new SystemControls.TextBlock
                 {
-                    Margin = new Thickness(0, 0, 0, 8),
+                    Margin = _modaleAideCompacteCourante
+                        ? new Thickness(0, 0, 0, 6)
+                        : new Thickness(0, 0, 0, 8),
                     Opacity = 0.84,
                     Text = $"- {ligne}",
                     TextWrapping = TextWrapping.Wrap,
@@ -982,7 +1165,8 @@ public partial class MainWindow
             resume,
             estOuvertParDefaut,
             null,
-            sectionsAide
+            sectionsAide,
+            _modaleAideCompacteCourante
         );
     }
 
@@ -1020,7 +1204,9 @@ public partial class MainWindow
             entete.Children.Add(
                 new SystemControls.TextBlock
                 {
-                    Margin = new Thickness(0, 4, 0, 0),
+                    Margin = dispositionCompacte
+                        ? new Thickness(0, 3, 0, 0)
+                        : new Thickness(0, 4, 0, 0),
                     Opacity = 0.7,
                     Text = resume,
                     TextWrapping = TextWrapping.Wrap,
@@ -1047,7 +1233,9 @@ public partial class MainWindow
             IsExpanded = estOuvertParDefaut,
             Content = new SystemControls.Border
             {
-                Padding = new Thickness(0, 10, 0, 2),
+                Padding = dispositionCompacte
+                    ? new Thickness(0, 8, 0, 0)
+                    : new Thickness(0, 10, 0, 2),
                 Child = contenu,
             },
         };
@@ -1057,6 +1245,7 @@ public partial class MainWindow
 
             if (sectionsAide is null)
             {
+                RafraichirDefilementModaleAide(expander);
                 return;
             }
 
@@ -1069,18 +1258,24 @@ public partial class MainWindow
 
                 autreSection.IsExpanded = false;
             }
+
+            RafraichirDefilementModaleAide(expander);
         };
+        expander.Collapsed += (_, _) => RafraichirDefilementModaleAide(expander);
         sectionsAide?.Add(expander);
 
         if (estOuvertParDefaut)
         {
             AssurerContenuInitialise();
+            RafraichirDefilementModaleAide(expander);
         }
 
         return new SystemControls.Border
         {
-            Padding = new Thickness(13, 11, 13, 11),
-            Margin = new Thickness(0, 0, 0, 10),
+            Padding = dispositionCompacte
+                ? new Thickness(10, 8, 10, 8)
+                : new Thickness(13, 11, 13, 11),
+            Margin = dispositionCompacte ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 0, 10),
             CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
             Background = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255)),
             BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
@@ -1102,7 +1297,7 @@ public partial class MainWindow
         pile.Children.Add(
             new SystemControls.TextBlock
             {
-                Margin = new Thickness(0, 0, 0, 10),
+                Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 8 : 10),
                 Opacity = 0.78,
                 Text =
                     "Cette section montre le fichier, le dossier ou l'exécutable que Compagnon attend réellement pour chaque émulateur.",
@@ -1112,22 +1307,29 @@ public partial class MainWindow
         pile.Children.Add(
             new SystemControls.TextBlock
             {
-                Margin = new Thickness(0, 0, 0, 10),
+                Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 8 : 10),
                 Opacity = 0.72,
                 Text =
                     "Commence par le journal local, puis ouvre la carte de l'émulateur concerné. Si besoin, définis un exécutable manuel.",
                 TextWrapping = TextWrapping.Wrap,
             }
         );
-        pile.Children.Add(ConstruireLibelleChampAide("Journal local de Compagnon"));
         pile.Children.Add(
-            ConstruireZoneTexteCopiableAide(ServiceSondeLocaleEmulateurs.ObtenirCheminJournal())
+            ConstruireLibelleChampAide("Journal local de Compagnon", _modaleAideCompacteCourante)
+        );
+        pile.Children.Add(
+            ConstruireZoneTexteCopiableAide(
+                ServiceSondeLocaleEmulateurs.ObtenirCheminJournal(),
+                _modaleAideCompacteCourante
+            )
         );
         UiControls.Button boutonOuvrirJournal = new()
         {
             Content = "Ouvrir le journal",
-            Padding = new Thickness(12, 4, 12, 4),
-            Margin = new Thickness(0, 0, 0, 10),
+            Padding = _modaleAideCompacteCourante
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(12, 4, 12, 4),
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 8 : 10),
         };
         boutonOuvrirJournal.Click += (_, _) =>
         {
@@ -1160,7 +1362,11 @@ public partial class MainWindow
             )
             {
                 contenu.Children.Add(
-                    ConstruireCarteIndicatifLogsEmulateur(definition, sectionsEmulateurs)
+                    ConstruireCarteIndicatifLogsEmulateur(
+                        definition,
+                        sectionsEmulateurs,
+                        _modaleAideCompacteCourante
+                    )
                 );
             }
 
@@ -1175,7 +1381,8 @@ public partial class MainWindow
             "Chemins surveillés, exécutable visé et actions directes.",
             false,
             ChargerContenu,
-            sectionsAide
+            sectionsAide,
+            _modaleAideCompacteCourante
         );
     }
 
@@ -1185,7 +1392,8 @@ public partial class MainWindow
      */
     private SystemControls.Border ConstruireCarteIndicatifLogsEmulateur(
         DefinitionEmulateurLocal definition,
-        IList<SystemControls.Expander>? sectionsAide = null
+        IList<SystemControls.Expander>? sectionsAide = null,
+        bool dispositionCompacte = false
     )
     {
         string source = ConstruireLibelleSourceLocaleEmulateur(definition);
@@ -1214,53 +1422,61 @@ public partial class MainWindow
             : "Détecté sur ce PC";
         SystemControls.TextBlock texteStatutEmplacement = new()
         {
-            Margin = new Thickness(0, 6, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 4 : 6, 0, 0),
             FontWeight = FontWeights.SemiBold,
             Opacity = 0.72,
             TextWrapping = TextWrapping.Wrap,
         };
         SystemControls.TextBox texteEmplacement = new()
         {
-            Margin = new Thickness(0, 4, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 3 : 4, 0, 0),
             Style = (Style)FindResource("StyleTexteCopiable"),
             TextWrapping = TextWrapping.Wrap,
         };
         SystemControls.TextBlock texteAideEmplacementManuel = new()
         {
-            Margin = new Thickness(0, 6, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 4 : 6, 0, 0),
             Opacity = 0.66,
             TextWrapping = TextWrapping.Wrap,
         };
         SystemControls.Button boutonChoisirEmplacement = new()
         {
-            Margin = new Thickness(0, 8, 8, 0),
-            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, dispositionCompacte ? 6 : 8, 8, 0),
+            Padding = dispositionCompacte
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(10, 4, 10, 4),
             MinWidth = 0,
         };
         SystemControls.Button boutonRetirerEmplacement = new()
         {
-            Margin = new Thickness(0, 8, 0, 0),
-            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, dispositionCompacte ? 6 : 8, 0, 0),
+            Padding = dispositionCompacte
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Retirer le choix manuel",
         };
         SystemControls.Button boutonOuvrirEmplacement = new()
         {
-            Margin = new Thickness(0, 8, 8, 0),
-            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, dispositionCompacte ? 6 : 8, 8, 0),
+            Padding = dispositionCompacte
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Ouvrir l'emplacement",
         };
         SystemControls.Button boutonOuvrirSource = new()
         {
-            Margin = new Thickness(0, 8, 0, 0),
-            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, dispositionCompacte ? 6 : 8, 0, 0),
+            Padding = dispositionCompacte
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Ouvrir la source",
         };
         SystemControls.TextBlock texteStatutDetectionCourante = new()
         {
-            Margin = new Thickness(0, 6, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 4 : 6, 0, 0),
             FontWeight = FontWeights.SemiBold,
             Opacity = 0.72,
             TextWrapping = TextWrapping.Wrap,
@@ -1278,22 +1494,24 @@ public partial class MainWindow
         };
         SystemControls.Button boutonTesterHttpSkyEmu = new()
         {
-            Margin = new Thickness(0, 8, 0, 0),
-            Padding = new Thickness(10, 4, 10, 4),
+            Margin = new Thickness(0, dispositionCompacte ? 6 : 8, 0, 0),
+            Padding = dispositionCompacte
+                ? ConstantesDesign.PaddingBoutonActionCompact
+                : new Thickness(10, 4, 10, 4),
             MinWidth = 0,
             Content = "Tester HTTP",
             Visibility = Visibility.Collapsed,
         };
         SystemControls.TextBlock texteResultatHttpSkyEmu = new()
         {
-            Margin = new Thickness(0, 6, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 4 : 6, 0, 0),
             Opacity = 0.72,
             TextWrapping = TextWrapping.Wrap,
             Visibility = Visibility.Collapsed,
         };
         SystemControls.TextBox texteDiagnosticBrut = new()
         {
-            Margin = new Thickness(0, 4, 0, 0),
+            Margin = new Thickness(0, dispositionCompacte ? 3 : 4, 0, 0),
             Style = (Style)FindResource("StyleTexteCopiable"),
             TextWrapping = TextWrapping.Wrap,
             Visibility = Visibility.Collapsed,
@@ -1432,12 +1650,13 @@ public partial class MainWindow
         {
             Children =
             {
-                ConstruireLibelleChampAide("Source locale suivie"),
-                ConstruireTexteDetailAide(source, 0.78),
-                ConstruireLibelleChampAide("Niveau de confiance"),
+                ConstruireLibelleChampAide("Source locale suivie", dispositionCompacte),
+                ConstruireTexteDetailAide(source, 0.78, compact: dispositionCompacte),
+                ConstruireLibelleChampAide("Niveau de confiance", dispositionCompacte),
                 ConstruireTexteDetailAide(
                     ConstruireTexteConfianceDetectionEmulateur(definition),
-                    0.72
+                    0.72,
+                    compact: dispositionCompacte
                 ),
                 ConstruireTexteDetailAide(
                     ConstruireTexteValidationEmulateur(definition),
@@ -1445,16 +1664,17 @@ public partial class MainWindow
                     FontWeights.SemiBold,
                     string.IsNullOrWhiteSpace(ConstruireTexteValidationEmulateur(definition))
                         ? Visibility.Collapsed
-                        : Visibility.Visible
+                        : Visibility.Visible,
+                    dispositionCompacte
                 ),
-                ConstruireLibelleChampAide("Diagnostic en direct"),
+                ConstruireLibelleChampAide("Diagnostic en direct", dispositionCompacte),
                 texteStatutDetectionCourante,
                 texteDetailDetectionCourante,
                 texteConfigurationHttpSkyEmu,
                 boutonTesterHttpSkyEmu,
                 texteResultatHttpSkyEmu,
                 texteDiagnosticBrut,
-                ConstruireLibelleChampAide("Exécutable de l'émulateur"),
+                ConstruireLibelleChampAide("Exécutable de l'émulateur", dispositionCompacte),
                 texteStatutEmplacement,
                 texteEmplacement,
                 texteAideEmplacementManuel,
@@ -1465,7 +1685,8 @@ public partial class MainWindow
                         ConstruireTexteProfilInstallationEmulateur(definition)
                     )
                         ? Visibility.Collapsed
-                        : Visibility.Visible
+                        : Visibility.Visible,
+                    compact: dispositionCompacte
                 ),
                 new SystemControls.WrapPanel
                 {
@@ -1477,16 +1698,25 @@ public partial class MainWindow
                         boutonOuvrirEmplacement,
                     },
                 },
-                ConstruireLibelleChampAide("Fichier ou dossier surveillé"),
-                ConstruireTexteDetailAide(statutChemin, 0.72, FontWeights.SemiBold),
-                ConstruireZoneTexteCopiableAide(cheminAttendu),
+                ConstruireLibelleChampAide("Fichier ou dossier surveillé", dispositionCompacte),
+                ConstruireTexteDetailAide(
+                    statutChemin,
+                    0.72,
+                    FontWeights.SemiBold,
+                    compact: dispositionCompacte
+                ),
+                ConstruireZoneTexteCopiableAide(cheminAttendu, dispositionCompacte),
                 new SystemControls.WrapPanel
                 {
                     Orientation = SystemControls.Orientation.Horizontal,
                     Children = { boutonOuvrirSource },
                 },
-                ConstruireLibelleChampAide("À vérifier dans l'émulateur"),
-                ConstruireTexteDetailAide(ConstruireTexteActivationSourceLocale(definition), 0.66),
+                ConstruireLibelleChampAide("À vérifier dans l'émulateur", dispositionCompacte),
+                ConstruireTexteDetailAide(
+                    ConstruireTexteActivationSourceLocale(definition),
+                    0.66,
+                    compact: dispositionCompacte
+                ),
             },
         };
 
@@ -1526,7 +1756,8 @@ public partial class MainWindow
             ConstruireResumeSectionLogsEmulateur(definition, source),
             false,
             null,
-            sectionsAide
+            sectionsAide,
+            dispositionCompacte
         );
     }
 
@@ -1534,11 +1765,14 @@ public partial class MainWindow
      * Construit un libellé de champ homogène pour les cartes de diagnostic
      * affichées dans la modale d'aide.
      */
-    private static SystemControls.TextBlock ConstruireLibelleChampAide(string texte)
+    private static SystemControls.TextBlock ConstruireLibelleChampAide(
+        string texte,
+        bool compact = false
+    )
     {
         return new SystemControls.TextBlock
         {
-            Margin = new Thickness(0, 8, 0, 2),
+            Margin = compact ? new Thickness(0, 6, 0, 1) : new Thickness(0, 8, 0, 2),
             FontWeight = FontWeights.SemiBold,
             Opacity = 0.8,
             Text = texte,
@@ -1554,12 +1788,13 @@ public partial class MainWindow
         string texte,
         double opacite,
         FontWeight? graisse = null,
-        Visibility visibility = Visibility.Visible
+        Visibility visibility = Visibility.Visible,
+        bool compact = false
     )
     {
         return new SystemControls.TextBlock
         {
-            Margin = new Thickness(0, 0, 0, 0),
+            Margin = compact ? new Thickness(0, 0, 0, 1) : new Thickness(0),
             FontWeight = graisse ?? FontWeights.Normal,
             Opacity = opacite,
             Text = texte,
@@ -1572,11 +1807,14 @@ public partial class MainWindow
      * Construit une zone de texte copiable homogène pour les chemins et
      * journaux affichés dans la modale d'aide.
      */
-    private SystemControls.TextBox ConstruireZoneTexteCopiableAide(string texte)
+    private SystemControls.TextBox ConstruireZoneTexteCopiableAide(
+        string texte,
+        bool compact = false
+    )
     {
         return new SystemControls.TextBox
         {
-            Margin = new Thickness(0, 4, 0, 0),
+            Margin = compact ? new Thickness(0, 3, 0, 0) : new Thickness(0, 4, 0, 0),
             Style = (Style)FindResource("StyleTexteCopiable"),
             Text = texte,
             TextWrapping = TextWrapping.Wrap,
@@ -3115,5 +3353,99 @@ public partial class MainWindow
                 yield return descendant;
             }
         }
+    }
+
+    /*
+     * Recherche le premier ancêtre visuel ou logique correspondant au type
+     * demandé à partir d'un élément de l'arbre WPF.
+     */
+    private Point ConvertirPointElementEnEcranWpf(Visual element, Point pointLocal)
+    {
+        Point pointEcranDevice = element.PointToScreen(pointLocal);
+        PresentationSource? sourcePresentation = PresentationSource.FromVisual(this);
+
+        if (sourcePresentation?.CompositionTarget is null)
+        {
+            return pointEcranDevice;
+        }
+
+        return sourcePresentation.CompositionTarget.TransformFromDevice.Transform(pointEcranDevice);
+    }
+
+    private static TElement? TrouverAncetre<TElement>(DependencyObject? element)
+        where TElement : DependencyObject
+    {
+        DependencyObject? courant = element;
+
+        while (courant is not null)
+        {
+            if (courant is TElement ancetre)
+            {
+                return ancetre;
+            }
+
+            courant =
+                VisualTreeHelper.GetParent(courant)
+                ?? (courant as FrameworkElement)?.Parent
+                ?? LogicalTreeHelper.GetParent(courant);
+        }
+
+        return null;
+    }
+
+    /*
+     * Force la modale d'aide à recalculer son hôte de défilement après
+     * l'ouverture ou la fermeture d'une section rabattable.
+     */
+    private static void RafraichirDefilementModaleAide(DependencyObject? source)
+    {
+        if (source is not DispatcherObject objetDistribue || objetDistribue.Dispatcher is null)
+        {
+            return;
+        }
+
+        void Rafraichir()
+        {
+            if (source is not UIElement elementSource)
+            {
+                return;
+            }
+
+            UiControls.ContentDialog? dialogue = TrouverAncetre<UiControls.ContentDialog>(
+                elementSource
+            );
+
+            elementSource.InvalidateMeasure();
+            elementSource.InvalidateArrange();
+            elementSource.UpdateLayout();
+
+            if (dialogue is not null)
+            {
+                dialogue.InvalidateMeasure();
+                dialogue.InvalidateArrange();
+                dialogue.UpdateLayout();
+
+                foreach (
+                    SystemControls.ScrollViewer scrollViewer in TrouverDescendants<SystemControls.ScrollViewer>(
+                        dialogue
+                    )
+                )
+                {
+                    scrollViewer.InvalidateMeasure();
+                    scrollViewer.InvalidateArrange();
+                    scrollViewer.UpdateLayout();
+                    scrollViewer.ScrollToVerticalOffset(scrollViewer.VerticalOffset);
+                }
+            }
+        }
+
+        objetDistribue.Dispatcher.BeginInvoke((Action)Rafraichir, DispatcherPriority.Loaded);
+        objetDistribue.Dispatcher.BeginInvoke(
+            () =>
+            {
+                Rafraichir();
+            },
+            DispatcherPriority.ContextIdle
+        );
     }
 }

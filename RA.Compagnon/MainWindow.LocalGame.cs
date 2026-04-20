@@ -19,6 +19,53 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /*
+     * Compare le dernier jeu fourni par l'API au dernier jeu sauvegardé
+     * localement pour savoir si les deux sources décrivent bien le même jeu.
+     */
+    private bool DernierJeuApiCorrespondAuJeuSauvegarde(int identifiantJeuApi, string? titreJeuApi)
+    {
+        EtatJeuAfficheLocal? jeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
+
+        if (jeuSauvegarde is null)
+        {
+            return false;
+        }
+
+        if (identifiantJeuApi > 0 && jeuSauvegarde.Id > 0 && identifiantJeuApi != jeuSauvegarde.Id)
+        {
+            return false;
+        }
+
+        string titreApiNormalise = NormaliserTitreComparaisonJeu(titreJeuApi);
+        string titreSauvegardeNormalise = NormaliserTitreComparaisonJeu(jeuSauvegarde.Title);
+
+        if (
+            !string.IsNullOrWhiteSpace(titreApiNormalise)
+            && !string.IsNullOrWhiteSpace(titreSauvegardeNormalise)
+        )
+        {
+            return string.Equals(
+                titreApiNormalise,
+                titreSauvegardeNormalise,
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+
+        return identifiantJeuApi > 0
+            && jeuSauvegarde.Id > 0
+            && identifiantJeuApi == jeuSauvegarde.Id;
+    }
+
+    /*
+     * Nettoie un titre de jeu avant comparaison afin d'éviter les écarts
+     * purement visuels liés aux espaces.
+     */
+    private static string NormaliserTitreComparaisonJeu(string? titre)
+    {
+        return string.IsNullOrWhiteSpace(titre) ? string.Empty : titre.Trim();
+    }
+
+    /*
      * Récupère le dernier jeu joué depuis le profil RetroAchievements.
      */
     private async Task<RecentlyPlayedGameV2?> ObtenirDernierJeuJoueAsync()
@@ -62,12 +109,43 @@ public partial class MainWindow
     }
 
     /*
+     * Indique si le Rich Presence confirme bien que l'affichage doit se
+     * positionner sur un dernier jeu précis plutôt que sur un autre état.
+     */
+    private static bool RichPresenceConfirmeDernierJeu(
+        EtatRichPresence etatRichPresence,
+        int identifiantJeuAttendu
+    )
+    {
+        if (
+            !string.Equals(
+                etatRichPresence.StatutAffiche,
+                "Dernier jeu",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return false;
+        }
+
+        if (identifiantJeuAttendu <= 0)
+        {
+            return etatRichPresence.IdentifiantDernierJeu > 0;
+        }
+
+        return etatRichPresence.IdentifiantDernierJeu > 0
+            && etatRichPresence.IdentifiantDernierJeu == identifiantJeuAttendu;
+    }
+
+    /*
      * Indique si l'affichage doit rester verrouillé sur le dernier jeu actif
      * récemment plutôt que d'être réinitialisé.
      */
     private bool DoitVerrouillerAffichageSurDernierJeuActifRecemment()
     {
-        if (EtatLocalJeuEstActif() || _configurationConnexion.DernierJeuAffiche?.Id <= 0)
+        EtatJeuAfficheLocal? dernierJeuSauvegarde = _configurationConnexion.DernierJeuAffiche;
+
+        if (EtatLocalJeuEstActif() || dernierJeuSauvegarde is null || dernierJeuSauvegarde.Id <= 0)
         {
             return false;
         }
@@ -81,11 +159,7 @@ public partial class MainWindow
             journaliser: false
         );
 
-        return string.Equals(
-            etatRichPresence.StatutAffiche,
-            "Dernier jeu",
-            StringComparison.OrdinalIgnoreCase
-        );
+        return RichPresenceConfirmeDernierJeu(etatRichPresence, dernierJeuSauvegarde.Id);
     }
 
     /*
