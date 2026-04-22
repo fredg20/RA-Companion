@@ -24,6 +24,8 @@ public sealed class GroupeSuccesPotentiel
 
     public int BonusAlignementZone { get; init; }
 
+    public int BonusContexteReference { get; init; }
+
     public string LibelleConfiance { get; init; } = string.Empty;
 
     public List<int> IdentifiantsSucces { get; init; } = [];

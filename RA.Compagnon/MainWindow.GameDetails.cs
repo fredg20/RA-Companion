@@ -6,6 +6,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
@@ -26,6 +27,78 @@ public partial class MainWindow
 {
     private static readonly string CheminJournalRejouer =
         ServiceModeDiagnostic.ConstruireCheminJournal("journal-rejouer.log");
+    private const int SwRestore = 9;
+    private const uint InputKeyboard = 1;
+    private const uint KeyEventFKeyUp = 0x0002;
+    private const uint MessageToucheBas = 0x0100;
+    private const uint MessageToucheHaut = 0x0101;
+    private const ushort ToucheControle = 0x11;
+    private const ushort ToucheO = 0x4F;
+    private const int ScanCodeControle = 0x1D;
+    private const int ScanCodeO = 0x18;
+
+    private sealed record ContexteJouerBizHawk(
+        int IdentifiantJeu,
+        string TitreJeu,
+        string CheminExecutable,
+        string CheminJeu
+    );
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct EntreeClavierNative
+    {
+        public uint Type;
+        public DonneesEntreeClavierNative Donnees;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct DonneesEntreeClavierNative
+    {
+        [FieldOffset(0)]
+        public DetailEntreeClavierNative Clavier;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DetailEntreeClavierNative
+    {
+        public ushort ToucheVirtuelle;
+        public ushort ScanCode;
+        public uint Indicateurs;
+        public uint Temps;
+        public nuint InformationSupplementaire;
+    }
+
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll")]
+    private static partial bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll")]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, EntreeClavierNative[] pInputs, int cbSize);
+
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll")]
+    private static partial bool PostMessageW(IntPtr hWnd, uint msg, nuint wParam, nint lParam);
+
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr SetFocus(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [LibraryImport("kernel32.dll")]
+    private static partial uint GetCurrentThreadId();
+
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll")]
+    private static partial bool AttachThreadInput(
+        uint idAttach,
+        uint idAttachTo,
+        [MarshalAs(UnmanagedType.Bool)] bool fAttach
+    );
 
     /*
      * Réinitialise les actions détaillées du jeu courant pour repartir d'un
@@ -101,6 +174,11 @@ public partial class MainWindow
             || !File.Exists(jeuSauvegarde.CheminJeuLocal)
         )
         {
+            if (MettreAJourActionJouerBizHawk(jeuSauvegarde))
+            {
+                return;
+            }
+
             _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
             _vueModele.JeuCourant.ActionRejouerActivee = false;
             _vueModele.JeuCourant.ActionRejouerVisible = false;
@@ -110,6 +188,11 @@ public partial class MainWindow
         string cheminExecutable = DeterminerCheminExecutableRelance(jeuSauvegarde);
         _vueModele.JeuCourant.LibelleActionRejouer = "Rejouer";
         bool actionDisponible = !string.IsNullOrWhiteSpace(cheminExecutable);
+
+        if (!actionDisponible && MettreAJourActionJouerBizHawk(jeuSauvegarde))
+        {
+            return;
+        }
 
         if (DoitMasquerActionRejouerPendantJeu())
         {
@@ -126,6 +209,139 @@ public partial class MainWindow
         _vueModele.JeuCourant.ToolTipActionRejouer = actionDisponible
             ? "Relancer ce jeu"
             : string.Empty;
+    }
+
+    /*
+     * Propose un lancement BizHawk dès qu'un jeu affiché est connu; le clic
+     * valide ensuite que le fichier local du jeu est disponible.
+     */
+    private bool MettreAJourActionJouerBizHawk(EtatJeuAfficheLocal? jeuSauvegarde)
+    {
+        ContexteJouerBizHawk? contexte = ObtenirContexteJouerBizHawk(
+            jeuSauvegarde,
+            exigerCheminJeu: false,
+            exigerExecutable: false
+        );
+
+        if (contexte is null)
+        {
+            return false;
+        }
+
+        bool actionActivee = !DoitMasquerActionRejouerPendantJeu();
+        _vueModele.JeuCourant.LibelleActionRejouer = "Jouer";
+        _vueModele.JeuCourant.ActionRejouerActivee = actionActivee;
+        _vueModele.JeuCourant.ActionRejouerVisible = true;
+        _vueModele.JeuCourant.ToolTipActionRejouer = actionActivee
+            ? "Jouer à ce jeu avec BizHawk"
+            : "Disponible quand Dernier jeu réapparaît";
+        return true;
+    }
+
+    /*
+     * Retrouve l'exécutable BizHawk et le chemin du jeu affiché afin de
+     * préparer un lancement fiable depuis le bouton Jouer.
+     */
+    private ContexteJouerBizHawk? ObtenirContexteJouerBizHawk(
+        EtatJeuAfficheLocal? jeuSauvegarde,
+        bool exigerCheminJeu = true,
+        bool exigerExecutable = true
+    )
+    {
+        EtatJeuAfficheLocal? jeuCible = jeuSauvegarde ?? _configurationConnexion.DernierJeuAffiche;
+        int identifiantJeu =
+            jeuCible?.Id ?? _dernieresDonneesJeuAffichees?.Jeu.Id ?? _dernierIdentifiantJeuApi;
+        string titreJeu =
+            jeuCible?.Title ?? _dernieresDonneesJeuAffichees?.Jeu.Title ?? string.Empty;
+
+        if (identifiantJeu <= 0 || string.IsNullOrWhiteSpace(titreJeu))
+        {
+            return null;
+        }
+
+        string cheminExecutable = ServiceSourcesLocalesEmulateurs.TrouverCheminExecutableBizHawk();
+
+        if (
+            exigerExecutable
+            && (string.IsNullOrWhiteSpace(cheminExecutable) || !File.Exists(cheminExecutable))
+        )
+        {
+            return null;
+        }
+
+        string cheminJeu = ObtenirCheminJeuBizHawkPourJeuAffiche(
+            jeuCible,
+            identifiantJeu,
+            titreJeu,
+            ref cheminExecutable
+        );
+
+        if (exigerCheminJeu && (string.IsNullOrWhiteSpace(cheminJeu) || !File.Exists(cheminJeu)))
+        {
+            return null;
+        }
+
+        return new ContexteJouerBizHawk(identifiantJeu, titreJeu, cheminExecutable, cheminJeu);
+    }
+
+    /*
+     * Priorise les sources les plus sûres pour rattacher le jeu affiché à une
+     * ROM jouable par BizHawk.
+     */
+    private static string ObtenirCheminJeuBizHawkPourJeuAffiche(
+        EtatJeuAfficheLocal? jeuCible,
+        int identifiantJeu,
+        string titreJeu,
+        ref string cheminExecutable
+    )
+    {
+        if (
+            jeuCible is not null
+            && !string.IsNullOrWhiteSpace(jeuCible.CheminJeuLocal)
+            && File.Exists(jeuCible.CheminJeuLocal)
+        )
+        {
+            return jeuCible.CheminJeuLocal;
+        }
+
+        if (
+            ServiceSondeLocaleEmulateurs.EssayerObtenirContexteRejouerDepuisSources(
+                "BizHawk",
+                out int identifiantJeuDetecte,
+                out _,
+                out string cheminExecutableDetecte,
+                out string cheminJeuDetecte
+            )
+            && identifiantJeuDetecte == identifiantJeu
+            && File.Exists(cheminJeuDetecte)
+        )
+        {
+            if (File.Exists(cheminExecutableDetecte))
+            {
+                cheminExecutable = cheminExecutableDetecte;
+            }
+
+            return cheminJeuDetecte;
+        }
+
+        if (
+            ServiceSondeLocaleEmulateurs.EssayerObtenirContexteRejouerDepuisTitre(
+                "BizHawk",
+                titreJeu,
+                out string cheminExecutableTitre,
+                out string cheminJeuTitre
+            ) && File.Exists(cheminJeuTitre)
+        )
+        {
+            if (File.Exists(cheminExecutableTitre))
+            {
+                cheminExecutable = cheminExecutableTitre;
+            }
+
+            return cheminJeuTitre;
+        }
+
+        return string.Empty;
     }
 
     /*
@@ -454,8 +670,17 @@ public partial class MainWindow
             _configurationConnexion.DernierJeuAffiche
         );
 
-        if (jeuSauvegarde is null || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal))
+        if (
+            jeuSauvegarde is null
+            || string.IsNullOrWhiteSpace(jeuSauvegarde.CheminJeuLocal)
+            || !File.Exists(jeuSauvegarde.CheminJeuLocal)
+        )
         {
+            if (ExecuterActionJouerBizHawk(jeuSauvegarde))
+            {
+                return;
+            }
+
             JournaliserRejouer("ignore", "raison=jeu_absent_ou_chemin_absent");
             MessageBox.Show(
                 "Aucun dernier jeu local relancable n'est disponible pour le moment.",
@@ -470,6 +695,11 @@ public partial class MainWindow
 
         if (string.IsNullOrWhiteSpace(cheminExecutable) || !File.Exists(cheminExecutable))
         {
+            if (ExecuterActionJouerBizHawk(jeuSauvegarde))
+            {
+                return;
+            }
+
             JournaliserRejouer(
                 "ignore",
                 $"raison=emulateur_introuvable;emulateur={jeuSauvegarde.NomEmulateurRelance};cheminExecutable={cheminExecutable}"
@@ -559,6 +789,429 @@ public partial class MainWindow
                 MessageBoxImage.Error
             );
         }
+    }
+
+    /*
+     * Lance BizHawk avec la ROM associée au jeu affiché lorsque le contexte
+     * de relance classique n'est pas disponible.
+     */
+    private bool ExecuterActionJouerBizHawk(EtatJeuAfficheLocal? jeuSauvegarde)
+    {
+        ContexteJouerBizHawk? contexte = ObtenirContexteJouerBizHawk(
+            jeuSauvegarde,
+            exigerCheminJeu: false,
+            exigerExecutable: false
+        );
+
+        if (contexte is null)
+        {
+            return false;
+        }
+
+        if (
+            string.IsNullOrWhiteSpace(contexte.CheminExecutable)
+            || !File.Exists(contexte.CheminExecutable)
+        )
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_ignore",
+                $"raison=bizhawk_introuvable;jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu}"
+            );
+            MessageBox.Show(
+                "BizHawk n'a pas été retrouvé. Ouvre-le une fois ou indique son emplacement dans l'aide.",
+                "Jouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning
+            );
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(contexte.CheminJeu) || !File.Exists(contexte.CheminJeu))
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_tentative",
+                $"raison=jeu_introuvable;jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu};executable={contexte.CheminExecutable}"
+            );
+            return OuvrirBizHawkAvecSelectionJeu(contexte);
+        }
+
+        try
+        {
+            string arguments = $"\"{contexte.CheminJeu}\"";
+            SuccesDebloqueDetecte? succesDirectExistant =
+                ServiceSondeLocaleEmulateurs.LireDernierSuccesDebloqueDepuisSourceLocale(
+                    "BizHawk",
+                    contexte.IdentifiantJeu,
+                    contexte.TitreJeu,
+                    _succesJeuCourant
+                );
+
+            _signatureSuccesLocalDirectIgnoreeAuRejeu = succesDirectExistant is null
+                ? string.Empty
+                : ConstruireSignatureSuccesLocalDirect(succesDirectExistant);
+            JournaliserRejouer(
+                "jouer_bizhawk_tentative",
+                $"jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu};executable={contexte.CheminExecutable};arguments={arguments};shell=false;baselineSucces={_signatureSuccesLocalDirectIgnoreeAuRejeu}"
+            );
+
+            Process? processus = Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = contexte.CheminExecutable,
+                    Arguments = arguments,
+                    WorkingDirectory =
+                        Path.GetDirectoryName(contexte.CheminExecutable) ?? string.Empty,
+                    UseShellExecute = false,
+                }
+            );
+
+            if (processus is null)
+            {
+                JournaliserRejouer("jouer_bizhawk_echec", "raison=processus_null");
+                MessageBox.Show(
+                    "BizHawk n'a pas pu être démarré.",
+                    "Jouer",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return true;
+            }
+
+            JournaliserRejouer(
+                "jouer_bizhawk_demarre",
+                $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName}"
+            );
+            _rejeuDemarreEnAttenteChargement = true;
+            ChargerJeuResolutLocal(contexte.IdentifiantJeu, contexte.TitreJeu);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_exception",
+                $"type={exception.GetType().Name};message={exception.Message}"
+            );
+            MessageBox.Show(
+                "Impossible de démarrer BizHawk pour le moment.",
+                "Jouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+            return true;
+        }
+    }
+
+    /*
+     * Ouvre BizHawk sans ROM connue puis déclenche la fenêtre de sélection de
+     * jeu afin que l'utilisateur choisisse lui-même le fichier à lancer.
+     */
+    private bool OuvrirBizHawkAvecSelectionJeu(ContexteJouerBizHawk contexte)
+    {
+        try
+        {
+            Process? processus = Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = contexte.CheminExecutable,
+                    WorkingDirectory =
+                        Path.GetDirectoryName(contexte.CheminExecutable) ?? string.Empty,
+                    UseShellExecute = false,
+                }
+            );
+
+            if (processus is null)
+            {
+                JournaliserRejouer("jouer_bizhawk_selection_echec", "raison=processus_null");
+                MessageBox.Show(
+                    "BizHawk n'a pas pu être démarré.",
+                    "Jouer",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return true;
+            }
+
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_demarre",
+                $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)}"
+            );
+            _ = OuvrirFenetreSelectionJeuBizHawkAsync(processus, contexte);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_exception",
+                $"type={exception.GetType().Name};message={exception.Message}"
+            );
+            MessageBox.Show(
+                "Impossible de démarrer BizHawk pour ouvrir la sélection de jeu.",
+                "Jouer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+            return true;
+        }
+    }
+
+    /*
+     * Attend que la fenêtre BizHawk soit prête, puis envoie Ctrl+O pour ouvrir
+     * la boîte de recherche de ROM.
+     */
+    private static async Task OuvrirFenetreSelectionJeuBizHawkAsync(
+        Process processus,
+        ContexteJouerBizHawk contexte
+    )
+    {
+        try
+        {
+            for (int tentative = 1; tentative <= 24; tentative++)
+            {
+                if (processus.HasExited)
+                {
+                    JournaliserRejouer(
+                        "jouer_bizhawk_selection_abandon",
+                        $"raison=processus_termine;jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)}"
+                    );
+                    return;
+                }
+
+                IntPtr poigneeFenetre = TrouverPoigneeFenetreBizHawk(
+                    processus,
+                    contexte.CheminExecutable
+                );
+
+                if (poigneeFenetre != IntPtr.Zero)
+                {
+                    bool focusApplique = ActiverFenetreBizHawk(poigneeFenetre);
+                    await Task.Delay(500);
+                    bool raccourciEnvoye = EnvoyerRaccourciOuvrirRomBizHawk(poigneeFenetre);
+                    JournaliserRejouer(
+                        "jouer_bizhawk_selection_ouverte",
+                        $"tentative={tentative.ToString(CultureInfo.InvariantCulture)};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu};focus={focusApplique.ToString(CultureInfo.InvariantCulture)};raccourci={raccourciEnvoye.ToString(CultureInfo.InvariantCulture)}"
+                    );
+                    return;
+                }
+
+                await Task.Delay(250);
+            }
+
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_abandon",
+                $"raison=fenetre_introuvable;jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)}"
+            );
+        }
+        catch (Exception exception)
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_exception_async",
+                $"type={exception.GetType().Name};message={exception.Message}"
+            );
+        }
+    }
+
+    /*
+     * Retrouve la poignée de la fenêtre BizHawk, même quand le processus lancé
+     * délègue à une instance déjà active.
+     */
+    private static IntPtr TrouverPoigneeFenetreBizHawk(
+        Process processusLance,
+        string cheminExecutable
+    )
+    {
+        try
+        {
+            if (!processusLance.HasExited)
+            {
+                processusLance.Refresh();
+
+                if (processusLance.MainWindowHandle != IntPtr.Zero)
+                {
+                    return processusLance.MainWindowHandle;
+                }
+            }
+        }
+        catch { }
+
+        string nomProcessusAttendu = Path.GetFileNameWithoutExtension(cheminExecutable);
+        IEnumerable<string> nomsProcessus = new[] { nomProcessusAttendu, "EmuHawk", "BizHawk" }
+            .Where(nom => !string.IsNullOrWhiteSpace(nom))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (string nomProcessus in nomsProcessus)
+        {
+            foreach (Process processus in Process.GetProcessesByName(nomProcessus))
+            {
+                using (processus)
+                {
+                    try
+                    {
+                        if (processus.HasExited)
+                        {
+                            continue;
+                        }
+
+                        processus.Refresh();
+
+                        if (processus.MainWindowHandle == IntPtr.Zero)
+                        {
+                            continue;
+                        }
+
+                        string cheminProcessus = LireCheminExecutableProcessus(processus);
+
+                        if (
+                            string.IsNullOrWhiteSpace(cheminProcessus)
+                            || string.Equals(
+                                cheminProcessus,
+                                cheminExecutable,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                            || ServiceSourcesLocalesEmulateurs.CheminExecutableCorrespondEmulateur(
+                                "BizHawk",
+                                cheminProcessus
+                            )
+                        )
+                        {
+                            return processus.MainWindowHandle;
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
+    /*
+     * Lit prudemment le chemin d'un processus, car Windows peut refuser l'accès
+     * selon le niveau d'intégrité de l'application cible.
+     */
+    private static string LireCheminExecutableProcessus(Process processus)
+    {
+        try
+        {
+            return processus.MainModule?.FileName?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /*
+     * Ramène BizHawk au premier plan en attachant temporairement les files
+     * d'entrée clavier lorsque Windows refuse un simple SetForegroundWindow.
+     */
+    private static bool ActiverFenetreBizHawk(IntPtr poigneeFenetre)
+    {
+        ShowWindowAsync(poigneeFenetre, SwRestore);
+
+        uint threadFenetre = GetWindowThreadProcessId(poigneeFenetre, out _);
+        uint threadCourant = GetCurrentThreadId();
+        bool attache =
+            threadFenetre != 0
+            && threadFenetre != threadCourant
+            && AttachThreadInput(threadCourant, threadFenetre, true);
+
+        try
+        {
+            SetFocus(poigneeFenetre);
+            return SetForegroundWindow(poigneeFenetre);
+        }
+        finally
+        {
+            if (attache)
+            {
+                AttachThreadInput(threadCourant, threadFenetre, false);
+            }
+        }
+    }
+
+    /*
+     * Simule Ctrl+O, le raccourci standard de BizHawk pour File > Open ROM.
+     */
+    private static bool EnvoyerRaccourciOuvrirRomBizHawk(IntPtr poigneeFenetre)
+    {
+        EntreeClavierNative[] entrees =
+        [
+            CreerEntreeClavier(ToucheControle, 0),
+            CreerEntreeClavier(ToucheO, 0),
+            CreerEntreeClavier(ToucheO, KeyEventFKeyUp),
+            CreerEntreeClavier(ToucheControle, KeyEventFKeyUp),
+        ];
+
+        uint touchesEnvoyees = SendInput(
+            (uint)entrees.Length,
+            entrees,
+            Marshal.SizeOf<EntreeClavierNative>()
+        );
+
+        bool clavierGlobalEnvoye = touchesEnvoyees == entrees.Length;
+        bool messageCibleEnvoye =
+            PostMessageW(
+                poigneeFenetre,
+                MessageToucheBas,
+                ToucheControle,
+                ConstruireParametreTouche(ScanCodeControle, toucheRelachee: false)
+            )
+            && PostMessageW(
+                poigneeFenetre,
+                MessageToucheBas,
+                ToucheO,
+                ConstruireParametreTouche(ScanCodeO, toucheRelachee: false)
+            )
+            && PostMessageW(
+                poigneeFenetre,
+                MessageToucheHaut,
+                ToucheO,
+                ConstruireParametreTouche(ScanCodeO, toucheRelachee: true)
+            )
+            && PostMessageW(
+                poigneeFenetre,
+                MessageToucheHaut,
+                ToucheControle,
+                ConstruireParametreTouche(ScanCodeControle, toucheRelachee: true)
+            );
+
+        return clavierGlobalEnvoye || messageCibleEnvoye;
+    }
+
+    /*
+     * Construit une entrée clavier native pour SendInput.
+     */
+    private static EntreeClavierNative CreerEntreeClavier(ushort toucheVirtuelle, uint indicateurs)
+    {
+        return new EntreeClavierNative
+        {
+            Type = InputKeyboard,
+            Donnees = new DonneesEntreeClavierNative
+            {
+                Clavier = new DetailEntreeClavierNative
+                {
+                    ToucheVirtuelle = toucheVirtuelle,
+                    Indicateurs = indicateurs,
+                },
+            },
+        };
+    }
+
+    /*
+     * Construit le paramètre lParam minimal attendu par les messages clavier
+     * Win32 envoyés directement à la fenêtre BizHawk.
+     */
+    private static nint ConstruireParametreTouche(int scanCode, bool toucheRelachee)
+    {
+        int valeur = 1 | (scanCode << 16);
+
+        if (toucheRelachee)
+        {
+            valeur |= 1 << 30;
+            valeur |= 1 << 31;
+        }
+
+        return valeur;
     }
 
     /*

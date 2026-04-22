@@ -245,6 +245,8 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
         cheminJeu = definition.StrategieRenseignementJeu switch
         {
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                LireCheminJeuBizHawkDepuisConfiguration(titreJeuAttendu),
             StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
                 LireCheminJeuSkyEmuDepuisRecentGames(titreJeuAttendu),
             _ => string.Empty,
@@ -3612,10 +3614,11 @@ public sealed partial class ServiceSondeLocaleEmulateurs
      */
     private static int LirePortServeurHttpSkyEmuDepuisConfiguration()
     {
-        return ServiceSourcesLocalesEmulateurs.EssayerLireConfigurationHttpSkyEmu(
-            out bool serveurActive,
-            out int port
-        ) && serveurActive
+        return
+            ServiceSourcesLocalesEmulateurs.EssayerLireConfigurationHttpSkyEmu(
+                out bool serveurActive,
+                out int port
+            ) && serveurActive
             ? port
             : 0;
     }
@@ -4782,7 +4785,7 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     /*
      * Lit le chemin du jeu BizHawk depuis sa configuration locale.
      */
-    private static string LireCheminJeuBizHawkDepuisConfiguration()
+    private static string LireCheminJeuBizHawkDepuisConfiguration(string titreJeuAttendu = "")
     {
         string cheminConfiguration =
             ServiceSourcesLocalesEmulateurs.TrouverCheminConfigurationBizHawk();
@@ -4828,7 +4831,21 @@ public sealed partial class ServiceSondeLocaleEmulateurs
 
                     cheminNormalise = NormaliserCheminJeuProbable(cheminNormalise);
 
-                    if (!string.IsNullOrWhiteSpace(cheminNormalise) && File.Exists(cheminNormalise))
+                    if (string.IsNullOrWhiteSpace(cheminNormalise) || !File.Exists(cheminNormalise))
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(titreJeuAttendu))
+                    {
+                        return cheminNormalise;
+                    }
+
+                    string titreObserve = NettoyerNomFichierJeu(
+                        Path.GetFileNameWithoutExtension(cheminNormalise)
+                    );
+
+                    if (TitresSemblables(titreJeuAttendu, titreObserve))
                     {
                         return cheminNormalise;
                     }

@@ -273,9 +273,8 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
                 TrouverCheminExecutableRetroArch(),
-            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig => TrouverRepertoireFichier(
-                TrouverCheminConfigurationBizHawk()
-            ),
+            StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
+                TrouverCheminExecutableBizHawk(),
             StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
                 TrouverCheminExecutableDolphin(),
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
@@ -354,6 +353,45 @@ public static class ServiceSourcesLocalesEmulateurs
         {
             return false;
         }
+    }
+
+    /*
+     * Retourne l'exécutable BizHawk le plus probable à partir des chemins
+     * manuels, détectés ou dérivés de la configuration locale.
+     */
+    public static string TrouverCheminExecutableBizHawk()
+    {
+        string emplacementManuel = ObtenirEmplacementEmulateurManuel("BizHawk");
+        string emplacementDetecte = ObtenirEmplacementEmulateurDetecte("BizHawk");
+        string cheminConfiguration = TrouverCheminConfigurationBizHawk();
+
+        string[] candidats =
+        [
+            TrouverExecutableBizHawkDepuisEmplacement(emplacementManuel),
+            TrouverExecutableBizHawkDepuisEmplacement(emplacementDetecte),
+            TrouverExecutableBizHawkDepuisEmplacement(cheminConfiguration),
+            TrouverExecutableBizHawkDepuisEmplacement(
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "emulation",
+                    "BizHawk"
+                )
+            ),
+            TrouverExecutableBizHawkDepuisEmplacement(
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "BizHawk"
+                )
+            ),
+        ];
+
+        return candidats
+                .Where(candidat => !string.IsNullOrWhiteSpace(candidat))
+                .FirstOrDefault(candidat =>
+                    File.Exists(candidat)
+                    && CheminExecutableCorrespondEmulateur("BizHawk", candidat)
+                )
+            ?? string.Empty;
     }
 
     /*
@@ -1796,6 +1834,50 @@ public static class ServiceSourcesLocalesEmulateurs
 
             string cheminConfiguration = Path.Combine(repertoireBase, nomFichier);
             return File.Exists(cheminConfiguration) ? cheminConfiguration : string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
+
+    /*
+     * Résout EmuHawk.exe depuis un fichier, un dossier ou un emplacement
+     * utilisateur pointant vers l'installation portable de BizHawk.
+     */
+    private static string TrouverExecutableBizHawkDepuisEmplacement(string emplacement)
+    {
+        if (string.IsNullOrWhiteSpace(emplacement))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            if (File.Exists(emplacement))
+            {
+                return CheminExecutableCorrespondEmulateur("BizHawk", emplacement)
+                    ? Path.GetFullPath(emplacement)
+                    : TrouverFichierBizHawkDepuisEmplacement(emplacement, "EmuHawk.exe");
+            }
+
+            if (!Directory.Exists(emplacement))
+            {
+                return string.Empty;
+            }
+
+            string[] candidats =
+            [
+                Path.Combine(emplacement, "EmuHawk.exe"),
+                Path.Combine(emplacement, "BizHawk.exe"),
+            ];
+
+            return candidats
+                    .Where(File.Exists)
+                    .FirstOrDefault(candidat =>
+                        CheminExecutableCorrespondEmulateur("BizHawk", candidat)
+                    )
+                ?? string.Empty;
         }
         catch
         {

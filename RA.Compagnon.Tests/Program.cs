@@ -95,6 +95,10 @@ static class TestRunner
             AnalyseHybrideCollectionForteDepasseNiveauFaible
         );
         ExecuterTest(
+            "Analyse hybride priorise le contexte de niveau sur une collection partagee",
+            AnalyseHybridePrioriseContexteNiveauSurCollectionPartagee
+        );
+        ExecuterTest(
             "Analyse hybride priorise le niveau sur un mode recurrent",
             AnalyseHybridePrioriseNiveauSurModeRecurrent
         );
@@ -107,11 +111,11 @@ static class TestRunner
             TraductionIgnoreDebutInstructionBanal
         );
         ExecuterTest(
-            "Analyse hybride priorise boss sur monde aprÃ¨s niveau",
+            "Analyse hybride priorise boss sur monde après niveau",
             AnalyseHybridePrioriseBossSurMonde
         );
         ExecuterTest(
-            "Analyse hybride regroupe ensemble les succÃ¨s non reliÃ©s",
+            "Analyse hybride regroupe ensemble les succès non reliés",
             AnalyseHybrideRegroupeSuccesNonRelies
         );
         Console.WriteLine();
@@ -803,6 +807,43 @@ static class TestRunner
             3,
             resultat.GroupePrincipal.IdentifiantsSucces.Count,
             "Le groupe principal devrait contenir les trois succes lies a cet objet."
+        );
+    }
+
+    private static void AnalyseHybridePrioriseContexteNiveauSurCollectionPartagee()
+    {
+        List<GameAchievementV2> succes =
+        [
+            CreerSucces(92, "Complete Level 2 on normal mode."),
+            CreerSucces(93, "Collect all chests in Level 2."),
+            CreerSucces(94, "Defeat the guardian in Level 2."),
+            CreerSucces(95, "Collect all chests in Level 3."),
+            CreerSucces(96, "Collect all chests in Level 4."),
+        ];
+
+        ResultatAnalyseDescriptionsSucces resultat = ServiceAnalyseDescriptionsSucces.Analyser(
+            succes[1],
+            succes
+        );
+
+        Assert.NotNull(
+            resultat.GroupePrincipal,
+            "Un succes de collection dans un niveau clair devrait produire un groupe."
+        );
+        Assert.Equal(
+            TypeGroupeSuccesPotentiel.Niveau,
+            resultat.GroupePrincipal!.TypeGroupe,
+            "Le contexte de niveau devrait rester prioritaire sur l'objet partage."
+        );
+        Assert.Equal(
+            "Level 2",
+            resultat.GroupePrincipal.Ancre,
+            "L'ancre retenue devrait etre le niveau courant."
+        );
+        Assert.Equal(
+            3,
+            resultat.GroupePrincipal.IdentifiantsSucces.Count,
+            "Les succes du meme niveau devraient etre regroupes."
         );
     }
 

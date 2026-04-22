@@ -53,26 +53,27 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         "the",
         "to",
     };
-    private static readonly HashSet<string> TermesGeneriquesAliasNommes =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "act",
-            "area",
-            "chapter",
-            "course",
-            "episode",
-            "floor",
-            "lap",
-            "level",
-            "map",
-            "mission",
-            "part",
-            "room",
-            "round",
-            "stage",
-            "world",
-            "zone",
-        };
+    private static readonly HashSet<string> TermesGeneriquesAliasNommes = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "act",
+        "area",
+        "chapter",
+        "course",
+        "episode",
+        "floor",
+        "lap",
+        "level",
+        "map",
+        "mission",
+        "part",
+        "room",
+        "round",
+        "stage",
+        "world",
+        "zone",
+    };
     private static readonly HashSet<string> AncresNonNiveau = new(StringComparer.OrdinalIgnoreCase)
     {
         "constrainte d'actions",
@@ -85,27 +86,28 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         "sans perdre de vie",
         "time attack",
     };
-    private static readonly HashSet<string> TermesCollectionNonNiveau =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "badge",
-            "coin",
-            "coins",
-            "icon",
-            "icons",
-            "jar",
-            "jars",
-            "letter",
-            "letters",
-            "medal",
-            "medals",
-            "piece",
-            "pieces",
-            "token",
-            "tokens",
-            "toy",
-            "toys",
-        };
+    private static readonly HashSet<string> TermesCollectionNonNiveau = new(
+        StringComparer.OrdinalIgnoreCase
+    )
+    {
+        "badge",
+        "coin",
+        "coins",
+        "icon",
+        "icons",
+        "jar",
+        "jars",
+        "letter",
+        "letters",
+        "medal",
+        "medals",
+        "piece",
+        "pieces",
+        "token",
+        "tokens",
+        "toy",
+        "toys",
+    };
     private static readonly HashSet<string> MotsVides = new(StringComparer.OrdinalIgnoreCase)
     {
         "a",
@@ -264,7 +266,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                     $"{groupe.TypeGroupe}|{NormaliserCleAlias(groupe.TypeGroupe, groupe.Ancre)}"
                 )
                 .Select(group => group.OrderByDescending(item => item.ScoreConfiance).First())
-                .Select(groupe => EnrichirScoreSelection(groupe, analyseZoneCourante))
+                .Select(groupe => EnrichirScoreSelection(groupe, analyseZoneCourante, reference))
                 .OrderByDescending(groupe => groupe.ScoreSelection)
                 .ThenByDescending(groupe => groupe.ScoreConfiance)
                 .ThenByDescending(groupe => ObtenirPrioriteType(groupe.TypeGroupe))
@@ -505,9 +507,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
                 .Indices.Where(indice => indice.TypeGroupe == TypeGroupeSuccesPotentiel.Collection)
                 .Select(indice => NettoyerAncre(indice.Ancre))
                 .Where(ancre => !string.IsNullOrWhiteSpace(ancre))
-                .GroupBy(ancre =>
-                    NormaliserCleAlias(TypeGroupeSuccesPotentiel.Collection, ancre)
-                )
+                .GroupBy(ancre => NormaliserCleAlias(TypeGroupeSuccesPotentiel.Collection, ancre))
                 .Select(group => group.OrderByDescending(item => item.Length).First())
                 .OrderByDescending(ancre => ancre.Length)
         )
@@ -791,10 +791,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             score -= 14;
         }
 
-        score -= CalculerPenaliteFauxPositifDefi(
-            famille,
-            TypeGroupeSuccesPotentiel.Niveau
-        );
+        score -= CalculerPenaliteFauxPositifDefi(famille, TypeGroupeSuccesPotentiel.Niveau);
 
         return Math.Clamp(score, 0, 98);
     }
@@ -813,10 +810,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 46;
         score += famille.Regles.Contains("PatronMonde") ? 12 : 0;
         score += famille.IdentifiantsSucces.Count >= 2 ? 8 : 0;
-        score -= CalculerPenaliteFauxPositifDefi(
-            famille,
-            TypeGroupeSuccesPotentiel.Monde
-        );
+        score -= CalculerPenaliteFauxPositifDefi(famille, TypeGroupeSuccesPotentiel.Monde);
         return Math.Clamp(score, 0, 92);
     }
 
@@ -835,10 +829,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         score += famille.Actions.Count >= 2 ? 10 : 0;
         score += famille.Regles.Count >= 2 ? 8 : 0;
         score += famille.IdentifiantsSucces.Count >= 3 ? 6 : 0;
-        score -= CalculerPenaliteFauxPositifDefi(
-            famille,
-            TypeGroupeSuccesPotentiel.Boss
-        );
+        score -= CalculerPenaliteFauxPositifDefi(famille, TypeGroupeSuccesPotentiel.Boss);
         return Math.Clamp(score, 0, 88);
     }
 
@@ -855,10 +846,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 34;
         score += famille.Actions.Count >= 2 ? 6 : 0;
         score += famille.Regles.Count >= 2 ? 6 : 0;
-        score -= CalculerPenaliteFauxPositifDefi(
-            famille,
-            TypeGroupeSuccesPotentiel.Collection
-        );
+        score -= CalculerPenaliteFauxPositifDefi(famille, TypeGroupeSuccesPotentiel.Collection);
         return Math.Clamp(score, 0, 80);
     }
 
@@ -875,10 +863,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
         int score = 28;
         score += famille.Regles.Contains("PatronModeTimeAttack") ? 14 : 0;
         score += famille.Regles.Contains("PatronActivationMode") ? 10 : 0;
-        score -= CalculerPenaliteFauxPositifDefi(
-            famille,
-            TypeGroupeSuccesPotentiel.Mode
-        );
+        score -= CalculerPenaliteFauxPositifDefi(famille, TypeGroupeSuccesPotentiel.Mode);
         return Math.Clamp(score, 0, 74);
     }
 
@@ -1781,10 +1766,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      * Uniformise une clé de groupe avec une logique d'alias adaptée au type
      * d'ancre afin de faire converger les formulations proches.
      */
-    private static string NormaliserCleAlias(
-        TypeGroupeSuccesPotentiel typeGroupe,
-        string valeur
-    )
+    private static string NormaliserCleAlias(TypeGroupeSuccesPotentiel typeGroupe, string valeur)
     {
         string normalisee = NormaliserTexteComparaison(valeur);
 
@@ -1957,7 +1939,7 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             .. groupes
                 .Take(3)
                 .Select(groupe =>
-                    $"type={groupe.TypeGroupe};ancre={groupe.Ancre};score={groupe.ScoreConfiance};bonusType={groupe.BonusSelectionType};bonusZone={groupe.BonusAlignementZone};selection={groupe.ScoreSelection};source={groupe.RegleSource};taille={groupe.IdentifiantsSucces.Count}"
+                    $"type={groupe.TypeGroupe};ancre={groupe.Ancre};score={groupe.ScoreConfiance};bonusType={groupe.BonusSelectionType};bonusZone={groupe.BonusAlignementZone};bonusContexte={groupe.BonusContexteReference};selection={groupe.ScoreSelection};source={groupe.RegleSource};taille={groupe.IdentifiantsSucces.Count}"
                 ),
         ];
     }
@@ -2096,12 +2078,14 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      */
     private static int CalculerScoreSelection(
         GroupeSuccesPotentiel groupe,
-        AnalyseZoneRichPresence? analyseZoneCourante
+        AnalyseZoneRichPresence? analyseZoneCourante,
+        DescriptionAnalysee reference
     )
     {
         int bonusType = ObtenirBonusSelectionType(groupe.TypeGroupe);
         int bonusZone = ObtenirBonusAlignementZone(groupe, analyseZoneCourante);
-        return groupe.ScoreConfiance + bonusType + bonusZone;
+        int bonusContexte = ObtenirBonusContexteReference(groupe, reference);
+        return groupe.ScoreConfiance + bonusType + bonusZone + bonusContexte;
     }
 
     /*
@@ -2110,11 +2094,13 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
      */
     private static GroupeSuccesPotentiel EnrichirScoreSelection(
         GroupeSuccesPotentiel groupe,
-        AnalyseZoneRichPresence? analyseZoneCourante
+        AnalyseZoneRichPresence? analyseZoneCourante,
+        DescriptionAnalysee reference
     )
     {
         int bonusType = ObtenirBonusSelectionType(groupe.TypeGroupe);
         int bonusZone = ObtenirBonusAlignementZone(groupe, analyseZoneCourante);
+        int bonusContexte = ObtenirBonusContexteReference(groupe, reference);
 
         return new GroupeSuccesPotentiel
         {
@@ -2122,12 +2108,53 @@ public sealed partial class ServiceAnalyseDescriptionsSucces
             Ancre = groupe.Ancre,
             RegleSource = groupe.RegleSource,
             ScoreConfiance = groupe.ScoreConfiance,
-            ScoreSelection = groupe.ScoreConfiance + bonusType + bonusZone,
+            ScoreSelection = groupe.ScoreConfiance + bonusType + bonusZone + bonusContexte,
             BonusSelectionType = bonusType,
             BonusAlignementZone = bonusZone,
+            BonusContexteReference = bonusContexte,
             LibelleConfiance = groupe.LibelleConfiance,
             IdentifiantsSucces = [.. groupe.IdentifiantsSucces],
         };
+    }
+
+    /*
+     * Favorise le niveau comme contexte lorsque le succès courant combine un
+     * objectif de collection et un emplacement explicite.
+     */
+    private static int ObtenirBonusContexteReference(
+        GroupeSuccesPotentiel groupe,
+        DescriptionAnalysee reference
+    )
+    {
+        bool referenceContientNiveau = reference.Indices.Any(indice =>
+            indice.TypeGroupe == TypeGroupeSuccesPotentiel.Niveau
+        );
+        bool referenceContientCollection = reference.Indices.Any(indice =>
+            indice.TypeGroupe == TypeGroupeSuccesPotentiel.Collection
+        );
+
+        if (!referenceContientNiveau || !referenceContientCollection)
+        {
+            return 0;
+        }
+
+        if (
+            groupe.TypeGroupe == TypeGroupeSuccesPotentiel.Niveau
+            && groupe.IdentifiantsSucces.Count >= 3
+        )
+        {
+            return 5;
+        }
+
+        if (
+            groupe.TypeGroupe == TypeGroupeSuccesPotentiel.Collection
+            && groupe.IdentifiantsSucces.Count <= 3
+        )
+        {
+            return -1;
+        }
+
+        return 0;
     }
 
     /*
