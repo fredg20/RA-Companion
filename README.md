@@ -45,6 +45,8 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - distinction visuelle `Softcore` / `Hardcore` dans la grille et dans le rétrosuccès mis en avant
 - bouton `Recharger` pour forcer un rechargement du jeu courant
 - bouton `Rejouer` pour relancer le jeu courant quand le contexte local le permet
+- bouton `Jouer` pour ouvrir `BizHawk` quand aucun chemin local fiable n'est encore disponible
+- affichage des noms de fichiers compatibles avec le jeu courant lorsque `Jouer` est proposé
 - bouton `Passer` pour repousser localement un rétrosuccès non débloqué et afficher le suivant
 - estimation simple de faisabilité d'un rétrosuccès à partir du ratio `déblocages / joueurs distincts`
 - succès récents du compte
@@ -54,6 +56,7 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 - retour automatique sur le premier rétrosuccès non débloqué au redémarrage
 - indicateur discret de synchronisation quand l'état local restauré est en cours de rafraîchissement
 - aide intégrée dans l'application, avec mise en avant du bouton `Aide` à la première utilisation
+- modale `Aide` simplifiée avec accordéons et défilement unique
 
 ## Validation émulateurs
 

@@ -12,6 +12,7 @@ Elle permet notamment de :
 - parcourir la grille complète des rétrosuccès
 - recharger les données du jeu courant
 - relancer un jeu avec `Rejouer` lorsque le contexte local le permet
+- ouvrir `BizHawk` avec `Jouer` lorsque le jeu est connu, mais que le chemin local exact n'est pas encore fiable
 - suivre certains changements de jeu détectés localement par émulateur
 
 ## 2. Premier démarrage
@@ -57,6 +58,8 @@ Cette zone affiche :
 - le pourcentage de progression
 - le résumé de progression
 - le bouton `Rejouer`
+- le bouton `Jouer`, si `Compagnon` peut proposer `BizHawk` au lieu de `Rejouer`
+- les noms de fichiers compatibles, si `Jouer` est affiché
 - le bouton `Détails`
 
 ### Rétrosuccès en cours
@@ -103,6 +106,12 @@ Le bouton peut être :
 - visible et actif
 - visible mais grisé si le jeu est déjà `En jeu`
 - masqué si aucun contexte de relance fiable n'est disponible
+
+### `Jouer`
+
+Ouvre `BizHawk` pour aider à lancer le jeu affiché quand `Compagnon` connaît le jeu RetroAchievements, mais ne possède pas encore de chemin local fiable pour `Rejouer`.
+
+Lorsque ce bouton apparaît, `Compagnon` affiche aussi les noms de fichiers compatibles connus pour le jeu courant.
 
 ### `Détails`
 

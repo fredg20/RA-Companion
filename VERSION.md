@@ -7,7 +7,7 @@
 - Plateforme cible : `Windows x64`
 - Interface active : `WPF`
 - Livrable généré : `dist/RA.Compagnon-win-x64`
-- Dernière archive de release publiée : `dist/RA.Compagnon-win-x64-1.0.8.zip`
+- Dernière archive de release préparée : `dist/RA.Compagnon-win-x64-1.0.9.zip`
 
 ## Contenu fonctionnel livré
 
@@ -37,9 +37,19 @@
 
 ### 1.0.9
 
-- cycle de développement ouvert pour la prochaine version
 - version applicative du projet passée à `1.0.9`
-- manifeste `update.json` conservé sur `1.0.8` tant que la nouvelle release n'est pas publiée
+- manifeste `update.json` préparé pour la release `1.0.9`
+- amélioration de la modale `Aide` : contenu simplifié, accordéons stabilisés, défilement unique et hauteur mieux adaptée à la carte principale
+- ajout du bouton `Jouer` pour ouvrir `BizHawk` quand `Rejouer` n'a pas encore de chemin de jeu local fiable
+- affichage des noms de fichiers compatibles entre `Jouer` et `Détails`
+- retrait du module de fichiers compatibles dans la modale `Détails`
+- amélioration de la détection et de l'affichage des groupes de rétrosuccès liés au succès courant
+- ajustement de la barre de progression avec l'accent information vert `#43a82a`
+- remplacement progressif des couleurs codées en dur par des ressources de thème centralisées
+- ajustements visuels des boutons, des onglets, de la modale `Aide` et de la carte `Jeu en cours`
+- correction de mojibakés et amélioration continue du français visible
+- stabilité accrue après synchronisation et après déblocage local simulé d'un rétrosuccès
+- archive de release `dist/RA.Compagnon-win-x64-1.0.9.zip` générée
 
 ### 1.0.8
 
