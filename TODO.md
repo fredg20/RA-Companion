@@ -6,9 +6,9 @@ Ce fichier regroupe les évolutions possibles du projet, les améliorations de c
 
 ## Priorité immédiate
 
-- [ ] Stabiliser définitivement la modale `Aide` sur toutes les largeurs de fenêtre
-- [ ] Vérifier que tous les comportements d'accordéon sont cohérents dans `Aide`
-- [ ] Repasser sur les zones de défilement pour éviter tout double `ScrollViewer`
+- [ ] Valider la modale `Aide` sur toutes les largeurs de fenêtre
+- [ ] Vérifier que tous les comportements d'accordéon restent cohérents dans `Aide`
+- [ ] Repasser sur les zones de défilement pour éviter toute régression de double `ScrollViewer`
 - [ ] Continuer le nettoyage de `MainWindow` en petits blocs plus lisibles
 - [ ] Revoir les points de fragilité liés aux builds WPF temporaires
 - [ ] Relire les signatures de méthodes UI pour éviter les incohérences entre fichiers partiels
@@ -204,12 +204,54 @@ Ce fichier regroupe les évolutions possibles du projet, les améliorations de c
 - [ ] Ajouter une option pour réduire certaines animations
 - [ ] Ajouter une option pour désactiver certains effets visuels
 
+## Préparatifs d'intégration OBS
+
+- [ ] Définir les informations utiles à afficher dans OBS : jeu courant, progression, succès en cours, dernier succès obtenu
+- [ ] Étudier une sortie locale simple pour OBS, par exemple fichier JSON, fichier texte ou page HTML locale
+- [ ] Choisir le format principal de sortie : `overlay.html`, `state.json`, fichiers `.txt`, images locales ou combinaison de ces formats
+- [ ] Définir le dossier stable des fichiers OBS, par exemple `%AppData%\RA-Compagnon\OBS`
+- [ ] Définir le modèle de données minimal : jeu, console, progression, badge, succès, description, points, mode `Softcore` / `Hardcore`
+- [ ] Prévoir un mode overlay compact distinct de l'interface principale
+- [ ] Prévoir plusieurs modes OBS : overlay complet, bandeau compact, succès courant seulement, dernier succès obtenu, progression seule
+- [ ] Prévoir un mode `intermission` ou pause avec seulement le jeu, la progression et le prochain objectif
+- [ ] Prévoir un thème OBS séparé : police, tailles, couleurs, transparence, marges et dimensions de capture
+- [ ] Ajouter une personnalisation minimale : thème clair ou sombre, couleur d'accent, taille de police, transparence et animations
+- [ ] Définir un style visuel lisible en capture vidéo, avec contraste élevé et peu de bruit visuel
+- [ ] Prévoir les états vides : aucun jeu chargé, aucune progression, aucun succès en cours, synchronisation en attente
+- [ ] Prévoir les états d'erreur : API indisponible, émulateur fermé, jeu inconnu, image manquante, succès non chargé
+- [ ] Ajouter une option d'activation ou de désactivation de l'export OBS dans `Compagnon`
+- [ ] Ajouter une option pour masquer les informations sensibles du compte dans les sorties OBS
+- [ ] Ajouter un mode `streamer` qui masque le pseudo, les données de compte et toute information personnelle non nécessaire
+- [ ] Étudier la fréquence de mise à jour idéale pour éviter les écritures inutiles et les saccades
+- [ ] Écrire les fichiers OBS de façon atomique pour éviter qu'OBS lise un fichier incomplet
+- [ ] Prévoir des fichiers séparés pour les sources OBS : titre du jeu, progression, badge, description, état de synchronisation
+- [ ] Prévoir la copie locale des images utiles, comme badge du succès courant et image du jeu, pour éviter les dépendances réseau en capture
+- [ ] Prévoir un cache local des images OBS avec nettoyage contrôlé
+- [ ] Ajouter un bouton pour ouvrir le dossier OBS depuis `Compagnon`
+- [ ] Ajouter un bouton pour copier le chemin de `overlay.html`
+- [ ] Ajouter un bouton pour copier le chemin de `state.json`
+- [ ] Ajouter un aperçu OBS directement dans `Compagnon`
+- [ ] Ajouter un bouton de test pour générer un état OBS fictif
+- [ ] Définir une résolution recommandée pour l'overlay, par exemple 1920x1080 et variantes compactes
+- [ ] Documenter l'ordre conseillé des calques OBS
+- [ ] Documenter comment ajouter une source navigateur OBS pointant vers `overlay.html`
+- [ ] Documenter comment ajouter des sources texte OBS pointant vers les fichiers `.txt`
+- [ ] Étudier une intégration future avec OBS WebSocket pour déclencher des scènes ou des animations
+- [ ] Étudier une animation temporaire lors d'un succès obtenu
+- [ ] Prévoir une stratégie pour ne pas télécharger d'images pendant une scène active
+- [ ] Tester le comportement quand OBS est ouvert pendant les écritures
+- [ ] Tester le comportement quand OBS est fermé puis rouvert après plusieurs mises à jour
+- [ ] Vérifier qu'aucune clé API, donnée sensible ou information privée non désirée n'est exportée
+- [ ] Documenter un premier flux d'utilisation OBS dans `INSTRUCTION.md` lorsque l'intégration sera prête
+- [ ] Ajouter une checklist de test avec OBS Studio avant toute publication de cette fonctionnalité
+
 ## Documentation et release
 
 - [ ] Maintenir `README.md` à jour à chaque évolution visible
 - [ ] Maintenir `INSTRUCTION.md` à jour à chaque changement de flux utilisateur
 - [ ] Maintenir `VERSION.md` à jour à chaque étape importante
-- [ ] Préparer une note de release propre pour `1.0.9`
+- [ ] Préparer une note de release propre pour `1.1`
+- [ ] Garder `update.json` sur la dernière release prête tant que `1.1` n'est pas validée
 - [ ] Vérifier ensemble la cohérence entre `VERSION`, `update.json` et l'archive publiée
 - [ ] Ajouter une procédure de packaging plus explicite pour les releases portables
 - [ ] Ajouter une checklist de publication du runtime .NET séparé
