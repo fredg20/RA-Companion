@@ -485,6 +485,15 @@ public static class ConstantesDesign
     /*
      * Définit la taille des sous-titres de section.
      */
+    /*
+     * Définit la hauteur minimale de la zone de noms de fichiers compatibles
+     * afin qu'elle puisse afficher au moins deux rangées de texte.
+     */
+    public static readonly double HauteurMinZoneFichiersCompatibles = Math.Round(
+        (TaillePoliceMicro * 2) + EspaceCompact,
+        MidpointRounding.AwayFromZero
+    );
+
     public static readonly double TaillePoliceSousTitre = Math.Round(
         TaillePoliceTexte * Math.Sqrt(NombreOr),
         MidpointRounding.AwayFromZero

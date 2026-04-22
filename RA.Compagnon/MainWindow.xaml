@@ -438,6 +438,10 @@
                       >
                         <Grid>
                           <Grid>
+                            <Grid.RowDefinitions>
+                              <RowDefinition Height="*" />
+                              <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="{StaticResource EspaceColonnesPrincipal}" />
@@ -446,13 +450,13 @@
 
                             <Grid
                               x:Name="ColonneImageJeuEnCours"
+                              Grid.Row="0"
                               Grid.Column="0"
                               VerticalAlignment="Stretch"
                             >
                               <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
                               </Grid.RowDefinitions>
                               <Border
                                 Grid.Row="0"
@@ -509,29 +513,13 @@
                                   />
                                 </Grid>
                               </Border>
-                              <ui:Button
-                                x:Name="BoutonRejouerJeuEnCours"
-                                Grid.Row="2"
-                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                                Margin="{StaticResource MargeBlocCompacte}"
-                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Bottom"
-                                Appearance="Secondary"
-                                Command="{Binding JeuCourant.CommandeActionRejouer}"
-                                Content="{Binding JeuCourant.LibelleActionRejouer}"
-                                IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
-                                ToolTip="{Binding JeuCourant.ToolTipActionRejouer}"
-                                Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                              />
                             </Grid>
 
-                            <Grid Grid.Column="2" VerticalAlignment="Stretch">
+                            <Grid Grid.Row="0" Grid.Column="2" VerticalAlignment="Stretch">
                               <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
                               </Grid.RowDefinitions>
                               <Grid Grid.Row="0" HorizontalAlignment="Stretch">
                                 <Border
@@ -681,29 +669,73 @@
                                 </Border>
                               </Grid>
 
-                              <Grid
-                                Grid.Row="3"
-                                Margin="{StaticResource MargeBlocStandard}"
-                                HorizontalAlignment="Stretch"
+                            </Grid>
+
+                            <Grid
+                              Grid.Row="1"
+                              Grid.ColumnSpan="3"
+                              Margin="{StaticResource MargeBlocStandard}"
+                              HorizontalAlignment="Stretch"
+                            >
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <ui:Button
+                                x:Name="BoutonRejouerJeuEnCours"
+                                Grid.Column="0"
+                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom"
+                                Appearance="Secondary"
+                                Command="{Binding JeuCourant.CommandeActionRejouer}"
+                                Content="{Binding JeuCourant.LibelleActionRejouer}"
+                                IsEnabled="{Binding JeuCourant.ActionRejouerActivee}"
+                                ToolTip="{Binding JeuCourant.ToolTipActionRejouer}"
+                                Visibility="{Binding JeuCourant.ActionRejouerVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                              />
+                              <Border
+                                Grid.Column="1"
+                                Margin="10,0"
+                                MinHeight="{x:Static compagnon:ConstantesDesign.HauteurMinZoneFichiersCompatibles}"
+                                Padding="{x:Static compagnon:ConstantesDesign.PaddingCapsule}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Bottom"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                BorderThickness="0"
+                                CornerRadius="{StaticResource RayonCoinsPetit}"
+                                ToolTip="{Binding JeuCourant.ToolTipNomsFichiersCompatiblesJouer}"
+                                Visibility="{Binding JeuCourant.NomsFichiersCompatiblesJouerVisibles, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               >
-                                <Grid.ColumnDefinitions>
-                                  <ColumnDefinition Width="*" />
-                                  <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <ui:Button
-                                  x:Name="BoutonVueDetailleeJeuEnCours"
-                                  Grid.Column="1"
-                                  Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
-                                  Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
-                                  HorizontalAlignment="Right"
-                                  Appearance="Secondary"
-                                  Command="{Binding JeuCourant.CommandeActionDetails}"
-                                  Content="{Binding JeuCourant.LibelleActionDetails}"
-                                  IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
-                                  ToolTip="{Binding JeuCourant.ToolTipActionDetails}"
-                                  Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
-                                />
-                              </Grid>
+                                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                  <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="{x:Static compagnon:ConstantesDesign.TaillePoliceSecondaire}"
+                                    FontWeight="SemiBold"
+                                    Opacity="0.84"
+                                    Text="{Binding JeuCourant.NomsFichiersCompatiblesJouer}"
+                                    TextAlignment="Center"
+                                    TextWrapping="NoWrap"
+                                  />
+                                </Grid>
+                              </Border>
+                              <ui:Button
+                                x:Name="BoutonVueDetailleeJeuEnCours"
+                                Grid.Column="2"
+                                Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
+                                Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Appearance="Secondary"
+                                Command="{Binding JeuCourant.CommandeActionDetails}"
+                                Content="{Binding JeuCourant.LibelleActionDetails}"
+                                IsEnabled="{Binding JeuCourant.ActionDetailsActivee}"
+                                ToolTip="{Binding JeuCourant.ToolTipActionDetails}"
+                                Visibility="{Binding JeuCourant.ActionDetailsVisible, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
+                              />
                             </Grid>
                           </Grid>
                         </Grid>

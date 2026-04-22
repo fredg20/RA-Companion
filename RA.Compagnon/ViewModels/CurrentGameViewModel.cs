@@ -28,10 +28,13 @@ public sealed class CurrentGameViewModel : ViewModelBase
     private string _toolTipActionRejouer = string.Empty;
     private string _libelleActionDetails = "Détails";
     private string _toolTipActionDetails = string.Empty;
+    private string _nomsFichiersCompatiblesJouer = string.Empty;
+    private string _toolTipNomsFichiersCompatiblesJouer = string.Empty;
     private bool _actionRejouerVisible;
     private bool _actionRejouerActivee;
     private bool _actionDetailsVisible;
     private bool _actionDetailsActivee;
+    private bool _nomsFichiersCompatiblesJouerVisibles;
     private bool _informationsVisibles;
     private bool _consoleVisible;
     private bool _imageConsoleVisible;
@@ -193,6 +196,24 @@ public sealed class CurrentGameViewModel : ViewModelBase
                 CommandeActionDetails.NotifierPeutExecuterChange();
             }
         }
+    }
+
+    public string NomsFichiersCompatiblesJouer
+    {
+        get => _nomsFichiersCompatiblesJouer;
+        set => SetProperty(ref _nomsFichiersCompatiblesJouer, value);
+    }
+
+    public string ToolTipNomsFichiersCompatiblesJouer
+    {
+        get => _toolTipNomsFichiersCompatiblesJouer;
+        set => SetProperty(ref _toolTipNomsFichiersCompatiblesJouer, value);
+    }
+
+    public bool NomsFichiersCompatiblesJouerVisibles
+    {
+        get => _nomsFichiersCompatiblesJouerVisibles;
+        set => SetProperty(ref _nomsFichiersCompatiblesJouerVisibles, value);
     }
 
     public bool InformationsVisibles

@@ -9,7 +9,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Media;
+using Microsoft.Win32;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Presentation;
@@ -27,14 +29,22 @@ public partial class MainWindow
 {
     private static readonly string CheminJournalRejouer =
         ServiceModeDiagnostic.ConstruireCheminJournal("journal-rejouer.log");
+    private int _versionChargementNomsFichiersCompatiblesJouer;
+    private int _identifiantJeuNomsFichiersCompatiblesJouer;
     private const int SwRestore = 9;
     private const uint InputKeyboard = 1;
     private const uint KeyEventFKeyUp = 0x0002;
     private const uint MessageToucheBas = 0x0100;
     private const uint MessageToucheHaut = 0x0101;
+    private const ushort ToucheEchappement = 0x1B;
     private const ushort ToucheControle = 0x11;
+    private const ushort ToucheAlt = 0x12;
+    private const ushort ToucheF = 0x46;
     private const ushort ToucheO = 0x4F;
+    private const int ScanCodeEchappement = 0x01;
     private const int ScanCodeControle = 0x1D;
+    private const int ScanCodeAlt = 0x38;
+    private const int ScanCodeF = 0x21;
     private const int ScanCodeO = 0x18;
 
     private sealed record ContexteJouerBizHawk(
@@ -55,7 +65,24 @@ public partial class MainWindow
     private struct DonneesEntreeClavierNative
     {
         [FieldOffset(0)]
+        public DetailEntreeSourisNative Souris;
+
+        [FieldOffset(0)]
         public DetailEntreeClavierNative Clavier;
+
+        [FieldOffset(0)]
+        public DetailEntreeMaterielNative Materiel;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DetailEntreeSourisNative
+    {
+        public int DeltaX;
+        public int DeltaY;
+        public uint DonneeSouris;
+        public uint Indicateurs;
+        public uint Temps;
+        public nuint InformationSupplementaire;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -68,6 +95,14 @@ public partial class MainWindow
         public nuint InformationSupplementaire;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DetailEntreeMaterielNative
+    {
+        public uint Message;
+        public ushort ParametreBas;
+        public ushort ParametreHaut;
+    }
+
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]
     private static partial bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
@@ -76,8 +111,12 @@ public partial class MainWindow
     [LibraryImport("user32.dll")]
     private static partial bool SetForegroundWindow(IntPtr hWnd);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint SendInput(uint nInputs, EntreeClavierNative[] pInputs, int cbSize);
+    [LibraryImport("user32.dll", SetLastError = true)]
+    private static partial uint SendInput(
+        uint nInputs,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] EntreeClavierNative[] pInputs,
+        int cbSize
+    );
 
     [return: MarshalAs(UnmanagedType.Bool)]
     [LibraryImport("user32.dll")]
@@ -114,6 +153,7 @@ public partial class MainWindow
         _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
         _vueModele.JeuCourant.ActionRejouerActivee = false;
         _vueModele.JeuCourant.ActionRejouerVisible = false;
+        MasquerNomsFichiersCompatiblesJouer();
         MettreAJourActionRechargerJeuEnCours();
     }
 
@@ -182,6 +222,7 @@ public partial class MainWindow
             _vueModele.JeuCourant.ToolTipActionRejouer = string.Empty;
             _vueModele.JeuCourant.ActionRejouerActivee = false;
             _vueModele.JeuCourant.ActionRejouerVisible = false;
+            MasquerNomsFichiersCompatiblesJouer();
             return;
         }
 
@@ -193,6 +234,8 @@ public partial class MainWindow
         {
             return;
         }
+
+        MasquerNomsFichiersCompatiblesJouer();
 
         if (DoitMasquerActionRejouerPendantJeu())
         {
@@ -235,7 +278,192 @@ public partial class MainWindow
         _vueModele.JeuCourant.ToolTipActionRejouer = actionActivee
             ? "Jouer à ce jeu avec BizHawk"
             : "Disponible quand Dernier jeu réapparaît";
+        ActualiserNomsFichiersCompatiblesJouer(contexte.IdentifiantJeu);
         return true;
+    }
+
+    /*
+     * Masque la zone des noms de fichiers compatibles quand l'action
+     * courante est Rejouer ou qu'aucun jeu cible n'est disponible.
+     */
+    private void MasquerNomsFichiersCompatiblesJouer()
+    {
+        _versionChargementNomsFichiersCompatiblesJouer++;
+        _identifiantJeuNomsFichiersCompatiblesJouer = 0;
+        _vueModele.JeuCourant.NomsFichiersCompatiblesJouer = string.Empty;
+        _vueModele.JeuCourant.ToolTipNomsFichiersCompatiblesJouer = string.Empty;
+        _vueModele.JeuCourant.NomsFichiersCompatiblesJouerVisibles = false;
+    }
+
+    /*
+     * Lance le chargement des noms de fichiers compatibles à afficher entre
+     * Jouer et Détails lorsque Compagnon ne connaît pas encore la ROM locale.
+     */
+    private void ActualiserNomsFichiersCompatiblesJouer(int identifiantJeu)
+    {
+        if (identifiantJeu <= 0)
+        {
+            MasquerNomsFichiersCompatiblesJouer();
+            return;
+        }
+
+        if (
+            _identifiantJeuNomsFichiersCompatiblesJouer == identifiantJeu
+            && _vueModele.JeuCourant.NomsFichiersCompatiblesJouerVisibles
+            && !_vueModele.JeuCourant.NomsFichiersCompatiblesJouer.Contains(
+                "chargement",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return;
+        }
+
+        _identifiantJeuNomsFichiersCompatiblesJouer = identifiantJeu;
+        int versionChargement = ++_versionChargementNomsFichiersCompatiblesJouer;
+
+        DefinirNomsFichiersCompatiblesJouer(
+            "Fichiers compatibles : chargement...",
+            "Chargement des noms de fichiers compatibles depuis RetroAchievements.",
+            visible: true
+        );
+
+        if (string.IsNullOrWhiteSpace(_configurationConnexion.CleApiWeb))
+        {
+            DefinirNomsFichiersCompatiblesJouer(
+                "Fichiers compatibles indisponibles",
+                "La clé API RetroAchievements est requise pour afficher les noms de fichiers compatibles.",
+                visible: true
+            );
+            return;
+        }
+
+        _ = ChargerNomsFichiersCompatiblesJouerAsync(identifiantJeu, versionChargement);
+    }
+
+    /*
+     * Charge les noms de fichiers compatibles sans bloquer l'interface, puis
+     * ignore le résultat si l'utilisateur a changé de jeu entre-temps.
+     */
+    private async Task ChargerNomsFichiersCompatiblesJouerAsync(
+        int identifiantJeu,
+        int versionChargement
+    )
+    {
+        try
+        {
+            IReadOnlyList<GameHashV2> hashes = await ClientRetroAchievements.ObtenirHashesJeuAsync(
+                _configurationConnexion.CleApiWeb,
+                identifiantJeu
+            );
+
+            if (!NomsFichiersCompatiblesJouerToujoursCourants(identifiantJeu, versionChargement))
+            {
+                return;
+            }
+
+            List<string> noms =
+            [
+                .. hashes
+                    .Select(hash => hash.NomFichier)
+                    .Where(nom => !string.IsNullOrWhiteSpace(nom))
+                    .Select(nom => nom.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Order(StringComparer.CurrentCultureIgnoreCase),
+            ];
+
+            if (noms.Count == 0)
+            {
+                DefinirNomsFichiersCompatiblesJouer(
+                    "Aucun nom compatible listé",
+                    "RetroAchievements ne liste aucun nom de fichier compatible pour ce jeu.",
+                    visible: true
+                );
+                return;
+            }
+
+            DefinirNomsFichiersCompatiblesJouer(
+                ConstruireResumeNomsFichiersCompatiblesJouer(noms),
+                ConstruireInfobulleNomsFichiersCompatiblesJouer(noms),
+                visible: true
+            );
+
+            JournaliserRejouer(
+                "noms_fichiers_compatibles_jouer_charge",
+                $"jeu={identifiantJeu.ToString(CultureInfo.InvariantCulture)};nombre={noms.Count.ToString(CultureInfo.InvariantCulture)};premier={NettoyerDetailHashJournal(noms.FirstOrDefault())}"
+            );
+        }
+        catch (Exception exception)
+        {
+            if (!NomsFichiersCompatiblesJouerToujoursCourants(identifiantJeu, versionChargement))
+            {
+                return;
+            }
+
+            JournaliserRejouer(
+                "noms_fichiers_compatibles_jouer_exception",
+                $"jeu={identifiantJeu.ToString(CultureInfo.InvariantCulture)};type={exception.GetType().Name};message={exception.Message}"
+            );
+            DefinirNomsFichiersCompatiblesJouer(
+                "Fichiers compatibles indisponibles",
+                "Impossible de charger les noms de fichiers compatibles depuis RetroAchievements.",
+                visible: true
+            );
+        }
+    }
+
+    /*
+     * Indique si le résultat asynchrone appartient encore au jeu affiché.
+     */
+    private bool NomsFichiersCompatiblesJouerToujoursCourants(
+        int identifiantJeu,
+        int versionChargement
+    )
+    {
+        return _identifiantJeuNomsFichiersCompatiblesJouer == identifiantJeu
+            && _versionChargementNomsFichiersCompatiblesJouer == versionChargement;
+    }
+
+    /*
+     * Applique le texte et l'infobulle de la zone des fichiers compatibles.
+     */
+    private void DefinirNomsFichiersCompatiblesJouer(string texte, string infobulle, bool visible)
+    {
+        _vueModele.JeuCourant.NomsFichiersCompatiblesJouer = texte;
+        _vueModele.JeuCourant.ToolTipNomsFichiersCompatiblesJouer = infobulle;
+        _vueModele.JeuCourant.NomsFichiersCompatiblesJouerVisibles = visible;
+    }
+
+    /*
+     * Construit un résumé court pour la ligne d'action sans faire déborder
+     * la carte lorsque plusieurs fichiers sont compatibles.
+     */
+    private static string ConstruireResumeNomsFichiersCompatiblesJouer(List<string> noms)
+    {
+        const int NombreMaximumNomsAffiches = 3;
+
+        string resume = string.Join(Environment.NewLine, noms.Take(NombreMaximumNomsAffiches));
+
+        if (noms.Count > NombreMaximumNomsAffiches)
+        {
+            int nombreRestant = noms.Count - NombreMaximumNomsAffiches;
+            resume =
+                $"{resume}{Environment.NewLine}(+{nombreRestant.ToString(CultureInfo.CurrentCulture)})";
+        }
+
+        return $"Fichiers compatibles :{Environment.NewLine}{resume}";
+    }
+
+    /*
+     * Construit l'infobulle complète contenant tous les noms de fichiers
+     * compatibles retournés par RetroAchievements.
+     */
+    private static string ConstruireInfobulleNomsFichiersCompatiblesJouer(List<string> noms)
+    {
+        return string.Join(
+            Environment.NewLine,
+            ["Fichiers compatibles RetroAchievements :", .. noms]
+        );
     }
 
     /*
@@ -909,10 +1137,32 @@ public partial class MainWindow
     {
         try
         {
+            OpenFileDialog dialogue = new()
+            {
+                Title = $"Choisir le fichier du jeu à ouvrir avec BizHawk - {contexte.TitreJeu}",
+                CheckFileExists = true,
+                Multiselect = false,
+                Filter =
+                    "Jeux compatibles|*.nes;*.fds;*.sms;*.gg;*.sg;*.pce;*.cue;*.iso;*.bin;*.gb;*.gbc;*.gba;*.sfc;*.smc;*.n64;*.z64;*.v64;*.zip;*.7z|Tous les fichiers|*.*",
+            };
+
+            bool? resultat = dialogue.ShowDialog(this);
+
+            if (resultat != true || string.IsNullOrWhiteSpace(dialogue.FileName))
+            {
+                JournaliserRejouer(
+                    "jouer_bizhawk_selection_annulee",
+                    $"jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu}"
+                );
+                return true;
+            }
+
+            string cheminJeu = dialogue.FileName;
             Process? processus = Process.Start(
                 new ProcessStartInfo
                 {
                     FileName = contexte.CheminExecutable,
+                    Arguments = $"\"{cheminJeu}\"",
                     WorkingDirectory =
                         Path.GetDirectoryName(contexte.CheminExecutable) ?? string.Empty,
                     UseShellExecute = false,
@@ -933,9 +1183,11 @@ public partial class MainWindow
 
             JournaliserRejouer(
                 "jouer_bizhawk_selection_demarre",
-                $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)}"
+                $"pid={processus.Id.ToString(CultureInfo.InvariantCulture)};nom={processus.ProcessName};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};rom={cheminJeu}"
             );
-            _ = OuvrirFenetreSelectionJeuBizHawkAsync(processus, contexte);
+            MemoriserCheminJeuBizHawk(contexte, cheminJeu);
+            _rejeuDemarreEnAttenteChargement = true;
+            ChargerJeuResolutLocal(contexte.IdentifiantJeu, contexte.TitreJeu);
             return true;
         }
         catch (Exception exception)
@@ -952,6 +1204,26 @@ public partial class MainWindow
             );
             return true;
         }
+    }
+
+    /*
+     * Mémorise le chemin choisi manuellement afin que les prochains lancements
+     * puissent utiliser BizHawk directement sans redemander le fichier.
+     */
+    private void MemoriserCheminJeuBizHawk(ContexteJouerBizHawk contexte, string cheminJeu)
+    {
+        EtatJeuAfficheLocal? jeuAffiche = _configurationConnexion.DernierJeuAffiche;
+
+        if (jeuAffiche is null || jeuAffiche.Id != contexte.IdentifiantJeu)
+        {
+            return;
+        }
+
+        jeuAffiche.NomEmulateurRelance = "BizHawk";
+        jeuAffiche.CheminExecutableEmulateur = contexte.CheminExecutable;
+        jeuAffiche.CheminJeuLocal = cheminJeu;
+        _dernierJeuAfficheModifie = true;
+        _ = PersisterDernierJeuAfficheSiNecessaireAsync();
     }
 
     /*
@@ -985,10 +1257,21 @@ public partial class MainWindow
                 {
                     bool focusApplique = ActiverFenetreBizHawk(poigneeFenetre);
                     await Task.Delay(500);
-                    bool raccourciEnvoye = EnvoyerRaccourciOuvrirRomBizHawk(poigneeFenetre);
+                    bool automatisationMenu = await TenterOuvrirSelectionRomBizHawkParMenuAsync(
+                        poigneeFenetre
+                    );
+                    bool dialogueApresMenu =
+                        automatisationMenu && await AttendreDialogueSelectionRomBizHawkAsync();
+                    (bool raccourciEnvoye, bool dialogueApresRaccourci) = dialogueApresMenu
+                        ? (false, false)
+                        : await TenterOuvrirSelectionRomBizHawkParRaccourcisAsync(poigneeFenetre);
+
+                    bool dialogueDetecte = dialogueApresMenu || dialogueApresRaccourci;
                     JournaliserRejouer(
-                        "jouer_bizhawk_selection_ouverte",
-                        $"tentative={tentative.ToString(CultureInfo.InvariantCulture)};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu};focus={focusApplique.ToString(CultureInfo.InvariantCulture)};raccourci={raccourciEnvoye.ToString(CultureInfo.InvariantCulture)}"
+                        dialogueDetecte
+                            ? "jouer_bizhawk_selection_ouverte"
+                            : "jouer_bizhawk_selection_non_confirmee",
+                        $"tentative={tentative.ToString(CultureInfo.InvariantCulture)};jeu={contexte.IdentifiantJeu.ToString(CultureInfo.InvariantCulture)};titre={contexte.TitreJeu};focus={focusApplique.ToString(CultureInfo.InvariantCulture)};menu={automatisationMenu.ToString(CultureInfo.InvariantCulture)};dialogueMenu={dialogueApresMenu.ToString(CultureInfo.InvariantCulture)};raccourci={raccourciEnvoye.ToString(CultureInfo.InvariantCulture)};dialogueRaccourci={dialogueApresRaccourci.ToString(CultureInfo.InvariantCulture)}"
                     );
                     return;
                 }
@@ -1130,6 +1413,284 @@ public partial class MainWindow
     }
 
     /*
+     * Tente d'ouvrir la sélection de ROM par le menu natif BizHawk avant de
+     * retomber sur une simulation clavier plus fragile.
+     */
+    private static async Task<bool> TenterOuvrirSelectionRomBizHawkParMenuAsync(
+        IntPtr poigneeFenetre
+    )
+    {
+        try
+        {
+            AutomationElement fenetre = AutomationElement.FromHandle(poigneeFenetre);
+
+            if (TenterInvoquerElementMenu(fenetre, EstMenuOuvrirRomBizHawk))
+            {
+                return true;
+            }
+
+            if (TenterOuvrirMenuFichierBizHawk(fenetre))
+            {
+                await Task.Delay(250);
+
+                if (TenterInvoquerElementMenu(fenetre, EstMenuOuvrirRomBizHawk))
+                {
+                    return true;
+                }
+
+                if (
+                    TenterInvoquerElementMenu(
+                        AutomationElement.RootElement,
+                        EstMenuOuvrirRomBizHawk
+                    )
+                )
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_menu_exception",
+                $"type={exception.GetType().Name};message={exception.Message}"
+            );
+        }
+
+        return false;
+    }
+
+    /*
+     * Déplie le menu Fichier de BizHawk afin que ses sous-actions deviennent
+     * accessibles à UI Automation.
+     */
+    private static bool TenterOuvrirMenuFichierBizHawk(AutomationElement racine)
+    {
+        return TenterInvoquerElementMenu(racine, EstMenuFichierBizHawk, autoriserExpansion: true);
+    }
+
+    /*
+     * Cherche un élément de menu correspondant à un prédicat, puis tente de
+     * l'invoquer ou de le déplier selon ses patrons UI Automation disponibles.
+     */
+    private static bool TenterInvoquerElementMenu(
+        AutomationElement racine,
+        Func<AutomationElement, bool> correspond,
+        bool autoriserExpansion = false
+    )
+    {
+        AutomationElementCollection elements = racine.FindAll(
+            TreeScope.Descendants,
+            System.Windows.Automation.Condition.TrueCondition
+        );
+
+        foreach (AutomationElement element in elements.Cast<AutomationElement>())
+        {
+            if (!correspond(element))
+            {
+                continue;
+            }
+
+            if (
+                autoriserExpansion
+                && element.TryGetCurrentPattern(
+                    ExpandCollapsePattern.Pattern,
+                    out object? motifExpansion
+                )
+                && motifExpansion is ExpandCollapsePattern expansion
+            )
+            {
+                expansion.Expand();
+                return true;
+            }
+
+            if (
+                element.TryGetCurrentPattern(InvokePattern.Pattern, out object? motifInvocation)
+                && motifInvocation is InvokePattern invocation
+            )
+            {
+                invocation.Invoke();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /*
+     * Reconnaît le menu Fichier de BizHawk, avec tolérance pour les libellés
+     * qui contiennent un accélérateur clavier.
+     */
+    private static bool EstMenuFichierBizHawk(AutomationElement element)
+    {
+        if (element.Current.ControlType != ControlType.MenuItem)
+        {
+            return false;
+        }
+
+        string nom = NormaliserLibelleMenuBizHawk(element.Current.Name);
+        return string.Equals(nom, "file", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /*
+     * Reconnaît l'action Open ROM de BizHawk, peu importe la présence de
+     * points de suspension ou du raccourci dans le libellé UI Automation.
+     */
+    private static bool EstMenuOuvrirRomBizHawk(AutomationElement element)
+    {
+        if (element.Current.ControlType != ControlType.MenuItem)
+        {
+            return false;
+        }
+
+        string nom = NormaliserLibelleMenuBizHawk(element.Current.Name);
+        return nom.Contains("open rom", StringComparison.OrdinalIgnoreCase)
+            || nom.Contains("open a rom", StringComparison.OrdinalIgnoreCase)
+            || nom.Contains("open game", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /*
+     * Attend brièvement qu'une boîte de sélection de fichier apparaisse après
+     * une tentative d'ouverture de ROM.
+     */
+    private static async Task<bool> AttendreDialogueSelectionRomBizHawkAsync()
+    {
+        for (int tentative = 1; tentative <= 12; tentative++)
+        {
+            if (DialogueSelectionRomBizHawkEstVisible())
+            {
+                return true;
+            }
+
+            await Task.Delay(250);
+        }
+
+        return false;
+    }
+
+    /*
+     * Inspecte les fenêtres de premier niveau pour confirmer qu'une boîte de
+     * sélection de fichier est réellement visible.
+     */
+    private static bool DialogueSelectionRomBizHawkEstVisible()
+    {
+        try
+        {
+            AutomationElementCollection fenetres = AutomationElement.RootElement.FindAll(
+                TreeScope.Children,
+                System.Windows.Automation.Condition.TrueCondition
+            );
+
+            foreach (AutomationElement fenetre in fenetres.Cast<AutomationElement>())
+            {
+                if (fenetre.Current.ControlType != ControlType.Window)
+                {
+                    continue;
+                }
+
+                if (EstDialogueSelectionRomBizHawk(fenetre))
+                {
+                    return true;
+                }
+            }
+        }
+        catch { }
+
+        return false;
+    }
+
+    /*
+     * Reconnaît les titres usuels d'une boîte d'ouverture de fichier associée
+     * à BizHawk ou à Windows.
+     */
+    private static bool EstDialogueSelectionRomBizHawk(AutomationElement fenetre)
+    {
+        string nom = NormaliserLibelleMenuBizHawk(fenetre.Current.Name);
+
+        if (string.IsNullOrWhiteSpace(nom))
+        {
+            return false;
+        }
+
+        return nom.Contains("open rom", StringComparison.OrdinalIgnoreCase)
+            || nom.Contains("open a rom", StringComparison.OrdinalIgnoreCase)
+            || nom.Contains("open file", StringComparison.OrdinalIgnoreCase)
+            || nom.Contains("select rom", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(nom, "open", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(nom, "ouvrir", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /*
+     * Nettoie un libellé de menu pour comparer les actions BizHawk sans être
+     * gêné par les accélérateurs, les points de suspension ou les raccourcis.
+     */
+    private static string NormaliserLibelleMenuBizHawk(string? libelle)
+    {
+        if (string.IsNullOrWhiteSpace(libelle))
+        {
+            return string.Empty;
+        }
+
+        string valeur = libelle.Replace("&", string.Empty, StringComparison.Ordinal);
+        int positionTabulation = valeur.IndexOf('\t', StringComparison.Ordinal);
+
+        if (positionTabulation >= 0)
+        {
+            valeur = valeur[..positionTabulation];
+        }
+
+        return valeur.Replace("...", string.Empty, StringComparison.Ordinal).Trim();
+    }
+
+    /*
+     * Tente plusieurs raccourcis clavier et confirme après chaque tentative
+     * qu'une boîte de sélection de ROM est réellement apparue.
+     */
+    private static async Task<(
+        bool Envoye,
+        bool DialogueDetecte
+    )> TenterOuvrirSelectionRomBizHawkParRaccourcisAsync(IntPtr poigneeFenetre)
+    {
+        bool raccourciEnvoye = false;
+
+        for (int tentative = 1; tentative <= 3; tentative++)
+        {
+            ActiverFenetreBizHawk(poigneeFenetre);
+            await Task.Delay(150);
+            EnvoyerToucheSimple(ToucheEchappement);
+            await Task.Delay(150);
+
+            bool ctrlOEnvoye = EnvoyerRaccourciOuvrirRomBizHawk(poigneeFenetre);
+            raccourciEnvoye |= ctrlOEnvoye;
+
+            if (ctrlOEnvoye && await AttendreDialogueSelectionRomBizHawkAsync())
+            {
+                JournaliserRejouer(
+                    "jouer_bizhawk_selection_raccourci",
+                    $"methode=ctrl_o;tentative={tentative.ToString(CultureInfo.InvariantCulture)}"
+                );
+                return (true, true);
+            }
+
+            ActiverFenetreBizHawk(poigneeFenetre);
+            await Task.Delay(150);
+            bool menuClavierEnvoye = EnvoyerRaccourciMenuFichierOuvrirRomBizHawk();
+            raccourciEnvoye |= menuClavierEnvoye;
+
+            if (menuClavierEnvoye && await AttendreDialogueSelectionRomBizHawkAsync())
+            {
+                JournaliserRejouer(
+                    "jouer_bizhawk_selection_raccourci",
+                    $"methode=alt_f_o;tentative={tentative.ToString(CultureInfo.InvariantCulture)}"
+                );
+                return (true, true);
+            }
+        }
+
+        return (raccourciEnvoye, false);
+    }
+
+    /*
      * Simule Ctrl+O, le raccourci standard de BizHawk pour File > Open ROM.
      */
     private static bool EnvoyerRaccourciOuvrirRomBizHawk(IntPtr poigneeFenetre)
@@ -1142,13 +1703,7 @@ public partial class MainWindow
             CreerEntreeClavier(ToucheControle, KeyEventFKeyUp),
         ];
 
-        uint touchesEnvoyees = SendInput(
-            (uint)entrees.Length,
-            entrees,
-            Marshal.SizeOf<EntreeClavierNative>()
-        );
-
-        bool clavierGlobalEnvoye = touchesEnvoyees == entrees.Length;
+        bool clavierGlobalEnvoye = EnvoyerSequenceClavier(entrees);
         bool messageCibleEnvoye =
             PostMessageW(
                 poigneeFenetre,
@@ -1176,6 +1731,63 @@ public partial class MainWindow
             );
 
         return clavierGlobalEnvoye || messageCibleEnvoye;
+    }
+
+    /*
+     * Simule Alt+F puis O pour ouvrir le menu Fichier et déclencher Open ROM
+     * lorsque le raccourci direct n'est pas capté.
+     */
+    private static bool EnvoyerRaccourciMenuFichierOuvrirRomBizHawk()
+    {
+        bool menuFichierEnvoye = EnvoyerSequenceClavier([
+            CreerEntreeClavier(ToucheAlt, 0),
+            CreerEntreeClavier(ToucheF, 0),
+            CreerEntreeClavier(ToucheF, KeyEventFKeyUp),
+            CreerEntreeClavier(ToucheAlt, KeyEventFKeyUp),
+        ]);
+
+        Thread.Sleep(200);
+        bool ouvrirRomEnvoye = EnvoyerSequenceClavier([
+            CreerEntreeClavier(ToucheO, 0),
+            CreerEntreeClavier(ToucheO, KeyEventFKeyUp),
+        ]);
+
+        return menuFichierEnvoye && ouvrirRomEnvoye;
+    }
+
+    /*
+     * Envoie une touche isolée pour fermer un menu ouvert ou nettoyer l'état
+     * clavier avant une nouvelle tentative.
+     */
+    private static bool EnvoyerToucheSimple(ushort toucheVirtuelle)
+    {
+        return EnvoyerSequenceClavier([
+            CreerEntreeClavier(toucheVirtuelle, 0),
+            CreerEntreeClavier(toucheVirtuelle, KeyEventFKeyUp),
+        ]);
+    }
+
+    /*
+     * Envoie une séquence clavier native et confirme que Windows a accepté
+     * chaque entrée.
+     */
+    private static bool EnvoyerSequenceClavier(EntreeClavierNative[] entrees)
+    {
+        uint touchesEnvoyees = SendInput(
+            (uint)entrees.Length,
+            entrees,
+            Marshal.SizeOf<EntreeClavierNative>()
+        );
+
+        if (touchesEnvoyees != entrees.Length)
+        {
+            JournaliserRejouer(
+                "jouer_bizhawk_selection_sendinput_echec",
+                $"attendu={entrees.Length.ToString(CultureInfo.InvariantCulture)};envoye={touchesEnvoyees.ToString(CultureInfo.InvariantCulture)};erreur={Marshal.GetLastWin32Error().ToString(CultureInfo.InvariantCulture)};taille={Marshal.SizeOf<EntreeClavierNative>().ToString(CultureInfo.InvariantCulture)}"
+            );
+        }
+
+        return touchesEnvoyees == entrees.Length;
     }
 
     /*
@@ -1459,6 +2071,40 @@ public partial class MainWindow
         }
 
         return grille;
+    }
+
+    /*
+     * Affiche les fichiers compatibles RetroAchievements connus pour le jeu
+     * courant sans exposer la clé API de l'utilisateur.
+     */
+    /*
+     * Remplace le bloc de hashes déjà affiché afin qu'un nouveau clic
+     * recharge le contenu sans empiler plusieurs résultats.
+     */
+    /*
+     * Construit le bloc résultat des fichiers compatibles avec une zone
+     * copiable pour faciliter la validation d'un hash ou d'un nom de fichier.
+     */
+    /*
+     * Construit un bloc de message simple pour l'état de chargement ou
+     * d'erreur des fichiers compatibles.
+     */
+    /*
+     * Construit le texte détaillé des fichiers compatibles afin de permettre
+     * une copie facile depuis la modale.
+     */
+    /*
+     * Nettoie un libellé de hash avant journalisation afin de garder chaque
+     * entrée sur une seule ligne.
+     */
+    private static string NettoyerDetailHashJournal(string? valeur)
+    {
+        return string.IsNullOrWhiteSpace(valeur)
+            ? string.Empty
+            : valeur
+                .Replace("\r", " ", StringComparison.Ordinal)
+                .Replace("\n", " ", StringComparison.Ordinal)
+                .Trim();
     }
 
     /*
