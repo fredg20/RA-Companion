@@ -119,7 +119,7 @@
             Value="True"
           >
             <Setter Property="Background" Value="{DynamicResource ControlFillColorTertiaryBrush}" />
-            <Setter Property="BorderBrush" Value="#78C8FF" />
+            <Setter Property="BorderBrush" Value="{StaticResource PinceauAccentInformation}" />
           </DataTrigger>
         </Style.Triggers>
       </Style>
@@ -668,7 +668,6 @@
                                   />
                                 </Border>
                               </Grid>
-
                             </Grid>
 
                             <Grid
@@ -688,7 +687,9 @@
                                 Height="{x:Static compagnon:ConstantesDesign.HauteurBoutonAction}"
                                 Padding="{x:Static compagnon:ConstantesDesign.PaddingBoutonActionCompact}"
                                 HorizontalAlignment="Left"
+                                HorizontalContentAlignment="Center"
                                 VerticalAlignment="Bottom"
+                                VerticalContentAlignment="Center"
                                 Appearance="Secondary"
                                 Command="{Binding JeuCourant.CommandeActionRejouer}"
                                 Content="{Binding JeuCourant.LibelleActionRejouer}"
@@ -941,14 +942,20 @@
                                       <Style TargetType="Border">
                                         <Style.Triggers>
                                           <DataTrigger Binding="{Binding EstHardcore}" Value="True">
-                                            <Setter Property="BorderBrush" Value="#F5C84C" />
+                                            <Setter
+                                              Property="BorderBrush"
+                                              Value="{StaticResource PinceauAccentHardcore}"
+                                            />
                                             <Setter Property="BorderThickness" Value="1" />
-                                            <Setter Property="Background" Value="#1CF5C84C" />
+                                            <Setter
+                                              Property="Background"
+                                              Value="{StaticResource PinceauFondHardcoreTransparent}"
+                                            />
                                             <Setter Property="Effect">
                                               <Setter.Value>
                                                 <DropShadowEffect
                                                   BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcore}"
-                                                  Color="#F5C84C"
+                                                  Color="{StaticResource CouleurAccentHardcore}"
                                                   Opacity="{x:Static compagnon:ConstantesDesign.OpaciteHaloHardcore}"
                                                   ShadowDepth="0"
                                                 />
@@ -1059,6 +1066,8 @@
                                 Grid.Row="0"
                                 Height="{x:Static compagnon:ConstantesDesign.HauteurBarreProgression}"
                                 Margin="0"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                Foreground="{StaticResource PinceauAccentInformation}"
                                 Minimum="0"
                                 Maximum="100"
                                 Value="{Binding JeuCourant.ProgressionValeur, Mode=OneWay}"
@@ -1183,9 +1192,18 @@
                                       <Rectangle Margin="1">
                                         <Rectangle.Fill>
                                           <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                            <GradientStop Color="#5878C9" Offset="0" />
-                                            <GradientStop Color="#3A5EA8" Offset="0.48" />
-                                            <GradientStop Color="#2B8C7B" Offset="1" />
+                                            <GradientStop
+                                              Color="{StaticResource CouleurLegendeSoftcoreDebut}"
+                                              Offset="0"
+                                            />
+                                            <GradientStop
+                                              Color="{StaticResource CouleurLegendeSoftcoreMilieu}"
+                                              Offset="0.48"
+                                            />
+                                            <GradientStop
+                                              Color="{StaticResource CouleurLegendeSoftcoreFin}"
+                                              Offset="1"
+                                            />
                                           </LinearGradientBrush>
                                         </Rectangle.Fill>
                                       </Rectangle>
@@ -1193,13 +1211,13 @@
                                         Margin="1"
                                         Height="6"
                                         VerticalAlignment="Bottom"
-                                        Fill="#66304A3A"
+                                        Fill="{StaticResource PinceauLegendeSoftcoreOmbre}"
                                       />
                                       <Rectangle
                                         Margin="1"
                                         Height="3"
                                         VerticalAlignment="Top"
-                                        Fill="#26FFFFFF"
+                                        Fill="{StaticResource PinceauLegendeSoftcoreReflet}"
                                       />
                                       <Ellipse
                                         Width="7"
@@ -1207,7 +1225,7 @@
                                         Margin="0,0,2,2"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Top"
-                                        Fill="#33FFF2B0"
+                                        Fill="{StaticResource PinceauLegendeSoftcoreLumiere}"
                                       />
                                       <Ellipse
                                         Width="6"
@@ -1215,7 +1233,7 @@
                                         Margin="0,0,0,1"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Fill="#66FFFFFF"
+                                        Fill="{StaticResource PinceauLegendeSoftcoreCentre}"
                                       />
                                       <Rectangle
                                         Width="9"
@@ -1223,7 +1241,7 @@
                                         Margin="0,5,0,0"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Top"
-                                        Fill="#55D7F7FF"
+                                        Fill="{StaticResource PinceauLegendeSoftcoreTrait}"
                                       />
                                     </Grid>
                                   </Border>
@@ -1249,8 +1267,8 @@
                                   <Border
                                     Width="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
                                     Height="{x:Static compagnon:ConstantesDesign.TailleBadgeLegende}"
-                                    Background="#1CF5C84C"
-                                    BorderBrush="#F5C84C"
+                                    Background="{StaticResource PinceauFondHardcoreTransparent}"
+                                    BorderBrush="{StaticResource PinceauAccentHardcore}"
                                     BorderThickness="{x:Static compagnon:ConstantesDesign.EpaisseurContourLegendeThickness}"
                                     CornerRadius="{x:Static compagnon:ConstantesDesign.RayonCoinsBadgeLegendeExterieur}"
                                   >
@@ -1259,7 +1277,7 @@
                                         BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcorePrioritaire}"
                                         ShadowDepth="0"
                                         Opacity="{x:Static compagnon:ConstantesDesign.OpaciteMicroLibelle}"
-                                        Color="#F5C84C"
+                                        Color="{StaticResource CouleurAccentHardcore}"
                                       />
                                     </Border.Effect>
                                     <Border
@@ -1272,9 +1290,18 @@
                                         <Rectangle Margin="1">
                                           <Rectangle.Fill>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                              <GradientStop Color="#AA6C2C" Offset="0" />
-                                              <GradientStop Color="#C58C38" Offset="0.42" />
-                                              <GradientStop Color="#5D3C16" Offset="1" />
+                                              <GradientStop
+                                                Color="{StaticResource CouleurLegendeHardcoreDebut}"
+                                                Offset="0"
+                                              />
+                                              <GradientStop
+                                                Color="{StaticResource CouleurLegendeHardcoreMilieu}"
+                                                Offset="0.42"
+                                              />
+                                              <GradientStop
+                                                Color="{StaticResource CouleurLegendeHardcoreFin}"
+                                                Offset="1"
+                                              />
                                             </LinearGradientBrush>
                                           </Rectangle.Fill>
                                         </Rectangle>
@@ -1282,13 +1309,13 @@
                                           Margin="1"
                                           Height="6"
                                           VerticalAlignment="Bottom"
-                                          Fill="#70422712"
+                                          Fill="{StaticResource PinceauLegendeHardcoreOmbre}"
                                         />
                                         <Rectangle
                                           Margin="1"
                                           Height="3"
                                           VerticalAlignment="Top"
-                                          Fill="#24FFF7D0"
+                                          Fill="{StaticResource PinceauLegendeHardcoreReflet}"
                                         />
                                         <Ellipse
                                           Width="7"
@@ -1296,7 +1323,7 @@
                                           Margin="0,0,2,2"
                                           HorizontalAlignment="Right"
                                           VerticalAlignment="Top"
-                                          Fill="#40FFF0A8"
+                                          Fill="{StaticResource PinceauLegendeHardcoreLumiere}"
                                         />
                                         <Ellipse
                                           Width="6"
@@ -1304,7 +1331,7 @@
                                           Margin="0,0,0,1"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center"
-                                          Fill="#78FFF6D6"
+                                          Fill="{StaticResource PinceauLegendeHardcoreCentre}"
                                         />
                                         <Rectangle
                                           Width="9"
@@ -1312,7 +1339,7 @@
                                           Margin="0,5,0,0"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Top"
-                                          Fill="#66FFE7A0"
+                                          Fill="{StaticResource PinceauLegendeHardcoreTrait}"
                                         />
                                       </Grid>
                                     </Border>
@@ -1490,7 +1517,7 @@
       Grid.RowSpan="5"
       Panel.ZIndex="10"
       Visibility="Collapsed"
-      Background="#88000000"
+      Background="{StaticResource PinceauVoileModal}"
       IsHitTestVisible="False"
     />
 
@@ -1499,7 +1526,7 @@
       Grid.RowSpan="5"
       Panel.ZIndex="20"
       Visibility="Collapsed"
-      Background="#88000000"
+      Background="{StaticResource PinceauVoileModal}"
       IsHitTestVisible="True"
       Focusable="True"
     >
@@ -1683,8 +1710,8 @@
             <Button.Style>
               <Style TargetType="Button">
                 <Setter Property="Foreground" Value="White" />
-                <Setter Property="Background" Value="#15512C" />
-                <Setter Property="BorderBrush" Value="#15512C" />
+                <Setter Property="Background" Value="{StaticResource PinceauMiseAJourFond}" />
+                <Setter Property="BorderBrush" Value="{StaticResource PinceauMiseAJourFond}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Template">
@@ -1704,12 +1731,24 @@
                       </Border>
                       <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                          <Setter Property="Background" Value="#2A6B41" />
-                          <Setter Property="BorderBrush" Value="#2A6B41" />
+                          <Setter
+                            Property="Background"
+                            Value="{StaticResource PinceauMiseAJourSurvol}"
+                          />
+                          <Setter
+                            Property="BorderBrush"
+                            Value="{StaticResource PinceauMiseAJourSurvol}"
+                          />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                          <Setter Property="Background" Value="#114524" />
-                          <Setter Property="BorderBrush" Value="#114524" />
+                          <Setter
+                            Property="Background"
+                            Value="{StaticResource PinceauMiseAJourPresse}"
+                          />
+                          <Setter
+                            Property="BorderBrush"
+                            Value="{StaticResource PinceauMiseAJourPresse}"
+                          />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                           <Setter Property="Opacity" Value="0.55" />
@@ -1775,7 +1814,7 @@
             </Button.Style>
             <Viewbox Stretch="Uniform">
               <Path
-                Fill="#E6E6E6"
+                Fill="{StaticResource PinceauIconeGithub}"
                 Opacity="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Opacity}"
                 Data="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
                     0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
@@ -1802,4 +1841,3 @@
     />
   </Grid>
 </ui:FluentWindow>
-

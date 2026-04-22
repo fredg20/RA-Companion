@@ -217,14 +217,14 @@
                       <Style TargetType="Border">
                         <Style.Triggers>
                           <DataTrigger Binding="{Binding EstHardcore}" Value="True">
-                            <Setter Property="BorderBrush" Value="#F5C84C" />
+                            <Setter Property="BorderBrush" Value="{StaticResource PinceauAccentHardcore}" />
                             <Setter Property="BorderThickness" Value="1" />
-                            <Setter Property="Background" Value="#1CF5C84C" />
+                            <Setter Property="Background" Value="{StaticResource PinceauFondHardcoreTransparent}" />
                             <Setter Property="Effect">
                               <Setter.Value>
                                 <DropShadowEffect
                                   BlurRadius="{x:Static compagnon:ConstantesDesign.FlouHaloHardcore}"
-                                  Color="#F5C84C"
+                                  Color="{StaticResource CouleurAccentHardcore}"
                                   Opacity="{x:Static compagnon:ConstantesDesign.OpaciteHaloHardcore}"
                                   ShadowDepth="0"
                                 />

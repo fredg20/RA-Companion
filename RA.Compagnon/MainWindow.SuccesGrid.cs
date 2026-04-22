@@ -175,9 +175,18 @@ public partial class MainWindow
 
         _vueModele.LibelleOrdreSuccesGrille = libelle;
 
-        Brush contourActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-        Brush contourInactif = new SolidColorBrush(Color.FromArgb(140, 255, 255, 255));
-        Brush centreActif = new SolidColorBrush(Color.FromRgb(120, 200, 255));
+        Brush contourActif = ObtenirPinceauTheme(
+            "PinceauAccentInformation",
+            ConstantesDesign.CouleurRepliAccentInformation
+        );
+        Brush contourInactif = ObtenirPinceauTheme(
+            "PinceauContourInactif",
+            ConstantesDesign.CouleurRepliContourInactif
+        );
+        Brush centreActif = ObtenirPinceauTheme(
+            "PinceauAccentInformation",
+            ConstantesDesign.CouleurRepliAccentInformation
+        );
 
         bool modeNormal = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Normal;
         bool modeAleatoire = _etatListeSuccesUi.OrdreCourant == OrdreSuccesGrille.Aleatoire;
@@ -648,18 +657,30 @@ public partial class MainWindow
 
         if (estEpingle)
         {
-            badge.BorderBrush = new SolidColorBrush(Color.FromRgb(255, 196, 64));
+            badge.BorderBrush = ObtenirPinceauTheme(
+                "PinceauAccentEpingle",
+                ConstantesDesign.CouleurRepliAccentEpingle
+            );
             badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
-            badge.Background = new SolidColorBrush(Color.FromArgb(34, 255, 196, 64));
+            badge.Background = ObtenirPinceauTheme(
+                "PinceauAccentEpingleTransparent",
+                ConstantesDesign.CouleurRepliAccentEpingleTransparent
+            );
             AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
         }
 
         if (estTemporaire)
         {
-            badge.BorderBrush = new SolidColorBrush(Color.FromRgb(120, 200, 255));
+            badge.BorderBrush = ObtenirPinceauTheme(
+                "PinceauAccentInformation",
+                ConstantesDesign.CouleurRepliAccentInformation
+            );
             badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
-            badge.Background = new SolidColorBrush(Color.FromArgb(32, 120, 200, 255));
+            badge.Background = ObtenirPinceauTheme(
+                "PinceauAccentInformationTransparent",
+                ConstantesDesign.CouleurRepliAccentInformationTransparent
+            );
             AppliquerStyleBadgeHardcore(badge, contexte, prioritaire: true);
             return;
         }
@@ -671,7 +692,7 @@ public partial class MainWindow
      * Applique le halo et la bordure du mode hardcore, avec une intensité
      * plus forte lorsqu'un autre état prioritaire est actif.
      */
-    private static void AppliquerStyleBadgeHardcore(
+    private void AppliquerStyleBadgeHardcore(
         SystemControls.Border badge,
         BadgeSuccesGrilleContexte contexte,
         bool prioritaire
@@ -687,14 +708,23 @@ public partial class MainWindow
 
         if (!prioritaire)
         {
-            badge.BorderBrush = new SolidColorBrush(Color.FromRgb(245, 200, 76));
+            badge.BorderBrush = ObtenirPinceauTheme(
+                "PinceauAccentHardcore",
+                ConstantesDesign.CouleurRepliAccentHardcore
+            );
             badge.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
-            badge.Background = new SolidColorBrush(Color.FromArgb(28, 245, 200, 76));
+            badge.Background = ObtenirPinceauTheme(
+                "PinceauFondHardcoreTransparent",
+                ConstantesDesign.CouleurRepliAccentHardcoreTransparent
+            );
         }
 
         badge.Effect = new DropShadowEffect
         {
-            Color = Color.FromRgb(245, 200, 76),
+            Color = ObtenirCouleurTheme(
+                "CouleurAccentHardcore",
+                ConstantesDesign.CouleurRepliAccentHardcore
+            ),
             BlurRadius = prioritaire
                 ? ConstantesDesign.FlouHaloHardcorePrioritaire
                 : ConstantesDesign.FlouHaloHardcore,

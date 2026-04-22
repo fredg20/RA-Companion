@@ -3,6 +3,7 @@
  * et les vues XAML de l'application.
  */
 using System.Windows;
+using System.Windows.Media;
 
 namespace RA.Compagnon;
 
@@ -12,6 +13,63 @@ namespace RA.Compagnon;
  */
 public static class ConstantesDesign
 {
+    /*
+     * Fournit les couleurs de repli utilisées lorsque les ressources du thème
+     * ne sont pas encore disponibles.
+     */
+    public static readonly Color CouleurRepliCartePrincipale = Color.FromRgb(36, 36, 40);
+    public static readonly Color CouleurRepliChamp = Color.FromRgb(24, 24, 27);
+    public static readonly Color CouleurRepliBordure = Color.FromRgb(78, 78, 86);
+    public static readonly Color CouleurRepliTextePrincipal = Color.FromRgb(243, 244, 246);
+    public static readonly Color CouleurRepliTexteSecondaire = Color.FromRgb(191, 197, 206);
+    public static readonly Color CouleurRepliAccentPrimaire = Color.FromRgb(28, 100, 242);
+    public static readonly Color CouleurRepliAccentInformation = Color.FromRgb(120, 200, 255);
+    public static readonly Color CouleurRepliAccentInformationTransparent = Color.FromArgb(
+        32,
+        120,
+        200,
+        255
+    );
+    public static readonly Color CouleurRepliAccentHardcore = Color.FromRgb(245, 200, 76);
+    public static readonly Color CouleurRepliAccentHardcoreTransparent = Color.FromArgb(
+        28,
+        245,
+        200,
+        76
+    );
+    public static readonly Color CouleurRepliAccentEpingle = Color.FromRgb(255, 196, 64);
+    public static readonly Color CouleurRepliAccentEpingleTransparent = Color.FromArgb(
+        34,
+        255,
+        196,
+        64
+    );
+    public static readonly Color CouleurRepliContourInactif = Color.FromArgb(140, 255, 255, 255);
+    public static readonly Color CouleurRepliLigneAlternee = Color.FromArgb(40, 0, 0, 0);
+    public static readonly Color CouleurRepliSurfaceTranslucide = Color.FromArgb(28, 255, 255, 255);
+    public static readonly Color CouleurRepliBordureSurfaceTranslucide = Color.FromArgb(
+        42,
+        255,
+        255,
+        255
+    );
+    public static readonly Color CouleurRepliSurfaceLegere = Color.FromArgb(26, 255, 255, 255);
+    public static readonly Color CouleurRepliSurfaceTresLegere = Color.FromArgb(24, 255, 255, 255);
+    public static readonly Color CouleurRepliBordureSurfaceLegere = Color.FromArgb(
+        34,
+        255,
+        255,
+        255
+    );
+    public static readonly Color CouleurRepliFondNoticeSucces = Color.FromArgb(96, 58, 188, 116);
+    public static readonly Color CouleurRepliFondNoticeInformation = Color.FromArgb(
+        56,
+        120,
+        200,
+        255
+    );
+    public static readonly Color CouleurRepliFondNoticeNeutre = Color.FromArgb(56, 160, 160, 160);
+
     /*
      * Représente le nombre d'or arrondi à trois décimales pour le projet.
      */

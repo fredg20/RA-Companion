@@ -51,15 +51,21 @@ public partial class MainWindow
         _vueModele.OrdreSuccesAleatoireActif = false;
         _vueModele.OrdreSuccesFacileActif = false;
         _vueModele.OrdreSuccesDifficileActif = false;
-        _vueModele.ContourOrdreSuccesNormal = new SolidColorBrush(Color.FromRgb(120, 200, 255));
-        _vueModele.ContourOrdreSuccesAleatoire = new SolidColorBrush(
-            Color.FromArgb(140, 255, 255, 255)
+        _vueModele.ContourOrdreSuccesNormal = ObtenirPinceauTheme(
+            "PinceauAccentInformation",
+            ConstantesDesign.CouleurRepliAccentInformation
         );
-        _vueModele.ContourOrdreSuccesFacile = new SolidColorBrush(
-            Color.FromArgb(140, 255, 255, 255)
+        _vueModele.ContourOrdreSuccesAleatoire = ObtenirPinceauTheme(
+            "PinceauContourInactif",
+            ConstantesDesign.CouleurRepliContourInactif
         );
-        _vueModele.ContourOrdreSuccesDifficile = new SolidColorBrush(
-            Color.FromArgb(140, 255, 255, 255)
+        _vueModele.ContourOrdreSuccesFacile = ObtenirPinceauTheme(
+            "PinceauContourInactif",
+            ConstantesDesign.CouleurRepliContourInactif
+        );
+        _vueModele.ContourOrdreSuccesDifficile = ObtenirPinceauTheme(
+            "PinceauContourInactif",
+            ConstantesDesign.CouleurRepliContourInactif
         );
         _vueModele.SuccesEnCours.NavigationVisible = false;
         _vueModele.SuccesEnCours.PrecedentActif = false;

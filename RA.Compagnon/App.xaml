@@ -36,6 +36,159 @@
         Member="compagnon:ConstantesDesign.EspaceRangeesPrincipal"
       />
 
+      <Color x:Key="CouleurAccentInformation">#43a82a</Color>
+      <Color x:Key="CouleurAccentInformationTransparent">#2043a82a</Color>
+      <Color x:Key="CouleurAccentHardcore">#F5C84C</Color>
+      <Color x:Key="CouleurFondHardcoreTransparent">#1CF5C84C</Color>
+      <Color x:Key="CouleurAccentEpingle">#FFC440</Color>
+      <Color x:Key="CouleurAccentEpingleTransparent">#22FFC440</Color>
+      <Color x:Key="CouleurContourInactif">#8CFFFFFF</Color>
+      <Color x:Key="CouleurFondLigneAlternee">#28000000</Color>
+      <Color x:Key="CouleurFondSurfaceTranslucide">#1CFFFFFF</Color>
+      <Color x:Key="CouleurBordureSurfaceTranslucide">#2AFFFFFF</Color>
+      <Color x:Key="CouleurFondSurfaceLegere">#1AFFFFFF</Color>
+      <Color x:Key="CouleurBordureSurfaceLegere">#22FFFFFF</Color>
+      <Color x:Key="CouleurFondNoticeSucces">#603ABC74</Color>
+      <Color x:Key="CouleurFondNoticeInformation">#3843a82a</Color>
+      <Color x:Key="CouleurFondNoticeNeutre">#38A0A0A0</Color>
+      <Color x:Key="CouleurVoileModal">#88000000</Color>
+      <Color x:Key="CouleurCartePrincipale">#363636</Color>
+      <Color x:Key="CouleurSousCarte">#2C2C2C</Color>
+      <Color x:Key="CouleurMiseAJourFond">#15512C</Color>
+      <Color x:Key="CouleurMiseAJourSurvol">#2A6B41</Color>
+      <Color x:Key="CouleurMiseAJourPresse">#114524</Color>
+      <Color x:Key="CouleurIconeGithub">#E6E6E6</Color>
+      <Color x:Key="CouleurLegendeSoftcoreDebut">#5878C9</Color>
+      <Color x:Key="CouleurLegendeSoftcoreMilieu">#3A5EA8</Color>
+      <Color x:Key="CouleurLegendeSoftcoreFin">#2B8C7B</Color>
+      <Color x:Key="CouleurLegendeSoftcoreOmbre">#66304A3A</Color>
+      <Color x:Key="CouleurLegendeSoftcoreReflet">#26FFFFFF</Color>
+      <Color x:Key="CouleurLegendeSoftcoreLumiere">#33FFF2B0</Color>
+      <Color x:Key="CouleurLegendeSoftcoreCentre">#66FFFFFF</Color>
+      <Color x:Key="CouleurLegendeSoftcoreTrait">#55D7F7FF</Color>
+      <Color x:Key="CouleurLegendeHardcoreDebut">#AA6C2C</Color>
+      <Color x:Key="CouleurLegendeHardcoreMilieu">#C58C38</Color>
+      <Color x:Key="CouleurLegendeHardcoreFin">#5D3C16</Color>
+      <Color x:Key="CouleurLegendeHardcoreOmbre">#70422712</Color>
+      <Color x:Key="CouleurLegendeHardcoreReflet">#24FFF7D0</Color>
+      <Color x:Key="CouleurLegendeHardcoreLumiere">#40FFF0A8</Color>
+      <Color x:Key="CouleurLegendeHardcoreCentre">#78FFF6D6</Color>
+      <Color x:Key="CouleurLegendeHardcoreTrait">#66FFE7A0</Color>
+
+      <SolidColorBrush
+        x:Key="PinceauLegendeSoftcoreOmbre"
+        Color="{StaticResource CouleurLegendeSoftcoreOmbre}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeSoftcoreReflet"
+        Color="{StaticResource CouleurLegendeSoftcoreReflet}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeSoftcoreLumiere"
+        Color="{StaticResource CouleurLegendeSoftcoreLumiere}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeSoftcoreCentre"
+        Color="{StaticResource CouleurLegendeSoftcoreCentre}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeSoftcoreTrait"
+        Color="{StaticResource CouleurLegendeSoftcoreTrait}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeHardcoreOmbre"
+        Color="{StaticResource CouleurLegendeHardcoreOmbre}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeHardcoreReflet"
+        Color="{StaticResource CouleurLegendeHardcoreReflet}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeHardcoreLumiere"
+        Color="{StaticResource CouleurLegendeHardcoreLumiere}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeHardcoreCentre"
+        Color="{StaticResource CouleurLegendeHardcoreCentre}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauLegendeHardcoreTrait"
+        Color="{StaticResource CouleurLegendeHardcoreTrait}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauCartePrincipale"
+        Color="{StaticResource CouleurCartePrincipale}"
+      />
+      <SolidColorBrush x:Key="PinceauSousCarte" Color="{StaticResource CouleurSousCarte}" />
+      <SolidColorBrush
+        x:Key="PinceauAccentInformation"
+        Color="{StaticResource CouleurAccentInformation}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauAccentInformationTransparent"
+        Color="{StaticResource CouleurAccentInformationTransparent}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauAccentHardcore"
+        Color="{StaticResource CouleurAccentHardcore}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondHardcoreTransparent"
+        Color="{StaticResource CouleurFondHardcoreTransparent}"
+      />
+      <SolidColorBrush x:Key="PinceauAccentEpingle" Color="{StaticResource CouleurAccentEpingle}" />
+      <SolidColorBrush
+        x:Key="PinceauAccentEpingleTransparent"
+        Color="{StaticResource CouleurAccentEpingleTransparent}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauContourInactif"
+        Color="{StaticResource CouleurContourInactif}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondLigneAlternee"
+        Color="{StaticResource CouleurFondLigneAlternee}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondSurfaceTranslucide"
+        Color="{StaticResource CouleurFondSurfaceTranslucide}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauBordureSurfaceTranslucide"
+        Color="{StaticResource CouleurBordureSurfaceTranslucide}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondSurfaceLegere"
+        Color="{StaticResource CouleurFondSurfaceLegere}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauBordureSurfaceLegere"
+        Color="{StaticResource CouleurBordureSurfaceLegere}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondNoticeSucces"
+        Color="{StaticResource CouleurFondNoticeSucces}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondNoticeInformation"
+        Color="{StaticResource CouleurFondNoticeInformation}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauFondNoticeNeutre"
+        Color="{StaticResource CouleurFondNoticeNeutre}"
+      />
+      <SolidColorBrush x:Key="PinceauVoileModal" Color="{StaticResource CouleurVoileModal}" />
+      <SolidColorBrush x:Key="PinceauMiseAJourFond" Color="{StaticResource CouleurMiseAJourFond}" />
+      <SolidColorBrush
+        x:Key="PinceauMiseAJourSurvol"
+        Color="{StaticResource CouleurMiseAJourSurvol}"
+      />
+      <SolidColorBrush
+        x:Key="PinceauMiseAJourPresse"
+        Color="{StaticResource CouleurMiseAJourPresse}"
+      />
+      <SolidColorBrush x:Key="PinceauIconeGithub" Color="{StaticResource CouleurIconeGithub}" />
+
       <Style x:Key="StyleSectionArrondie" TargetType="{x:Type Border}">
         <Setter
           Property="Padding"
@@ -47,7 +200,7 @@
           Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}"
         />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Background" Value="#363636" />
+        <Setter Property="Background" Value="{DynamicResource PinceauCartePrincipale}" />
       </Style>
 
       <Style x:Key="StylePastilleArrondie" TargetType="{x:Type Border}">
@@ -76,7 +229,7 @@
           Value="{x:Static compagnon:ConstantesDesign.EpaisseurAucune}"
         />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Background" Value="#2C2C2C" />
+        <Setter Property="Background" Value="{DynamicResource PinceauSousCarte}" />
       </Style>
 
       <Style x:Key="StyleLibelleJeu" TargetType="{x:Type TextBlock}">

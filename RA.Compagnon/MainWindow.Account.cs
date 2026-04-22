@@ -50,6 +50,35 @@ public partial class MainWindow
     }
 
     /*
+     * Retourne une couleur issue du thème courant ou une couleur de repli
+     * pour les effets WPF qui attendent directement un Color.
+     */
+    private Color ObtenirCouleurTheme(string cleRessource, Color couleurParDefaut)
+    {
+        if (TryFindResource(cleRessource) is Color couleurLocale)
+        {
+            return couleurLocale;
+        }
+
+        if (Application.Current.TryFindResource(cleRessource) is Color couleurApp)
+        {
+            return couleurApp;
+        }
+
+        if (TryFindResource(cleRessource) is SolidColorBrush pinceauLocal)
+        {
+            return pinceauLocal.Color;
+        }
+
+        if (Application.Current.TryFindResource(cleRessource) is SolidColorBrush pinceauApp)
+        {
+            return pinceauApp.Color;
+        }
+
+        return couleurParDefaut;
+    }
+
+    /*
      * Active ou désactive la racine visuelle qui porte les modales.
      */
     private void DefinirEtatModalesActif(bool actif)
@@ -112,6 +141,58 @@ public partial class MainWindow
     }
 
     /*
+     * Indique si une dimension mesurée peut servir de référence visuelle
+     * fiable pour aligner une modale sur un élément déjà rendu.
+     */
+    private static bool DimensionVisuelleEstUtilisable(double dimension)
+    {
+        return dimension > 0 && !double.IsNaN(dimension) && !double.IsInfinity(dimension);
+    }
+
+    /*
+     * Retourne le rectangle visible de la carte principale afin que la modale
+     * d'aide puisse s'aligner sur sa hauteur et sur son axe vertical.
+     */
+    private Rect ObtenirRectangleCartePrincipalePourModaleAide()
+    {
+        FrameworkElement? elementReference = null;
+
+        if (
+            CadreCarteJeuEnCours.IsLoaded
+            && DimensionVisuelleEstUtilisable(CadreCarteJeuEnCours.ActualHeight)
+        )
+        {
+            elementReference = CadreCarteJeuEnCours;
+        }
+        else if (
+            CarteJeuEnCours.IsLoaded && DimensionVisuelleEstUtilisable(CarteJeuEnCours.ActualHeight)
+        )
+        {
+            elementReference = CarteJeuEnCours;
+        }
+        else if (
+            GrilleCarteJeuEnCours.IsLoaded
+            && DimensionVisuelleEstUtilisable(GrilleCarteJeuEnCours.ActualHeight)
+        )
+        {
+            elementReference = GrilleCarteJeuEnCours;
+        }
+
+        if (elementReference is null)
+        {
+            return Rect.Empty;
+        }
+
+        Point origineCarte = ConvertirPointElementEnEcranWpf(elementReference, new Point(0, 0));
+        return new Rect(
+            origineCarte.X,
+            origineCarte.Y,
+            elementReference.ActualWidth,
+            elementReference.ActualHeight
+        );
+    }
+
+    /*
      * Calcule une hauteur maximale de contenu de modale cohérente avec la
      * hauteur disponible de la fenêtre courante.
      */
@@ -156,23 +237,29 @@ public partial class MainWindow
         string pseudoValide = string.Empty;
         string cleApiValide = string.Empty;
         SolidColorBrush fondFenetre = Brushes.Transparent;
-        SolidColorBrush fondCarte = new(Color.FromRgb(36, 36, 40));
-        SolidColorBrush fondChamp = new(Color.FromRgb(24, 24, 27));
+        SolidColorBrush fondCarte = ObtenirPinceauTheme(
+            "PinceauCartePrincipale",
+            ConstantesDesign.CouleurRepliCartePrincipale
+        );
+        SolidColorBrush fondChamp = ObtenirPinceauTheme(
+            "ControlFillColorInputActiveBrush",
+            ConstantesDesign.CouleurRepliChamp
+        );
         SolidColorBrush bordure = ObtenirPinceauTheme(
             "CardStrokeColorDefaultBrush",
-            Color.FromRgb(78, 78, 86)
+            ConstantesDesign.CouleurRepliBordure
         );
         SolidColorBrush textePrincipal = ObtenirPinceauTheme(
             "TextFillColorPrimaryBrush",
-            Color.FromRgb(243, 244, 246)
+            ConstantesDesign.CouleurRepliTextePrincipal
         );
         SolidColorBrush texteSecondaire = ObtenirPinceauTheme(
             "TextFillColorSecondaryBrush",
-            Color.FromRgb(191, 197, 206)
+            ConstantesDesign.CouleurRepliTexteSecondaire
         );
         SolidColorBrush fondBoutonPrimaire = ObtenirPinceauTheme(
             "SystemAccentColorBrush",
-            Color.FromRgb(28, 100, 242)
+            ConstantesDesign.CouleurRepliAccentPrimaire
         );
         CornerRadius rayonCoins = ObtenirRayonCoins(
             "RayonCoinsStandard",
@@ -214,7 +301,7 @@ public partial class MainWindow
             Margin = new Thickness(0, 12, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Visibility = Visibility.Collapsed,
-            Foreground = Brushes.IndianRed,
+            Foreground = ObtenirPinceauTheme("SystemFillColorCriticalBrush", Colors.IndianRed),
             TextWrapping = TextWrapping.Wrap,
         };
 
@@ -225,7 +312,7 @@ public partial class MainWindow
             IsDefault = true,
             Padding = new Thickness(14, 6, 14, 6),
             Background = fondBoutonPrimaire,
-            Foreground = Brushes.White,
+            Foreground = ObtenirPinceauTheme("TextOnAccentFillColorPrimaryBrush", Colors.White),
             BorderBrush = fondBoutonPrimaire,
         };
 
@@ -617,29 +704,37 @@ public partial class MainWindow
     private Task AfficherModaleAideAsync()
     {
         _ = VerifierMiseAJourApplicationSiNecessaireAsync();
-        double largeurContenuAide = CalculerLargeurContenuModale(
-            ConstantesDesign.LargeurContenuModaleAide,
-            ConstantesDesign.EspaceFenetreStandard
-        );
         double hauteurMaximaleAide = CalculerHauteurMaximaleContenuModale();
-        bool modaleAideCompacte = EstModaleCompacte(
-            largeurContenuAide,
-            ConstantesDesign.SeuilCompactModaleAide
-        );
+        Rect rectangleCartePrincipale = ObtenirRectangleCartePrincipalePourModaleAide();
         Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
         Point origineFenetre = ConvertirPointElementEnEcranWpf(this, new Point(0, 0));
         Rect zoneFenetreVisible =
             ActualWidth > 0 && ActualHeight > 0
                 ? new Rect(origineFenetre.X, origineFenetre.Y, ActualWidth, ActualHeight)
                 : zoneTravail;
-        double hauteurEnteteEtPiedAide = modaleAideCompacte ? 132 : 148;
+        double largeurContenuAide = CalculerLargeurContenuModale(
+            ConstantesDesign.LargeurContenuModaleAide,
+            ConstantesDesign.EspaceFenetreStandard
+        );
         double largeurFenetreAideCible = CalculerLargeurExterieureModale(largeurContenuAide);
-        double hauteurFenetreAideCible =
-            hauteurMaximaleAide + (MargeInterieureModaleConnexion * 2) + hauteurEnteteEtPiedAide;
         double largeurFenetreAide = Math.Min(
             largeurFenetreAideCible,
             Math.Min(zoneTravail.Width - 32, zoneFenetreVisible.Width - 24)
         );
+        largeurContenuAide = Math.Max(
+            ConstantesDesign.EspaceColonneLarge,
+            largeurFenetreAide - (MargeInterieureModaleConnexion * 2)
+        );
+        bool modaleAideCompacte = EstModaleCompacte(
+            largeurContenuAide,
+            ConstantesDesign.SeuilCompactModaleAide
+        );
+        double hauteurEnteteEtPiedAide = modaleAideCompacte ? 132 : 148;
+        double hauteurFenetreAideCible = DimensionVisuelleEstUtilisable(
+            rectangleCartePrincipale.Height
+        )
+            ? rectangleCartePrincipale.Height
+            : hauteurMaximaleAide + (MargeInterieureModaleConnexion * 2) + hauteurEnteteEtPiedAide;
         double hauteurFenetreAide = Math.Min(
             hauteurFenetreAideCible,
             Math.Min(zoneTravail.Height - 32, zoneFenetreVisible.Height - 24)
@@ -647,12 +742,16 @@ public partial class MainWindow
         double positionGaucheFenetreAide =
             zoneFenetreVisible.Left
             + Math.Max(0, (zoneFenetreVisible.Width - largeurFenetreAide) / 2);
-        double positionHautFenetreAide =
-            zoneFenetreVisible.Top
-            + Math.Max(0, (zoneFenetreVisible.Height - hauteurFenetreAide) / 2);
+        double positionHautFenetreAide = DimensionVisuelleEstUtilisable(
+            rectangleCartePrincipale.Height
+        )
+            ? rectangleCartePrincipale.Top
+            : zoneFenetreVisible.Top
+                + Math.Max(0, (zoneFenetreVisible.Height - hauteurFenetreAide) / 2);
 
         if (
-            CadreZonePrincipale.IsLoaded
+            !DimensionVisuelleEstUtilisable(rectangleCartePrincipale.Height)
+            && CadreZonePrincipale.IsLoaded
             && BarreEtatApplication.IsLoaded
             && CadreZonePrincipale.ActualHeight > 0
         )
@@ -695,18 +794,21 @@ public partial class MainWindow
         );
         _modaleAideCompacteCourante = modaleAideCompacte;
         SolidColorBrush fondFenetre = Brushes.Transparent;
-        SolidColorBrush fondCarte = new(Color.FromRgb(36, 36, 40));
+        SolidColorBrush fondCarte = ObtenirPinceauTheme(
+            "PinceauCartePrincipale",
+            ConstantesDesign.CouleurRepliCartePrincipale
+        );
         SolidColorBrush bordure = ObtenirPinceauTheme(
             "CardStrokeColorDefaultBrush",
-            Color.FromRgb(78, 78, 86)
+            ConstantesDesign.CouleurRepliBordure
         );
         SolidColorBrush textePrincipal = ObtenirPinceauTheme(
             "TextFillColorPrimaryBrush",
-            Color.FromRgb(243, 244, 246)
+            ConstantesDesign.CouleurRepliTextePrincipal
         );
         SolidColorBrush texteSecondaire = ObtenirPinceauTheme(
             "TextFillColorSecondaryBrush",
-            Color.FromRgb(191, 197, 206)
+            ConstantesDesign.CouleurRepliTexteSecondaire
         );
         CornerRadius rayonCoins = ObtenirRayonCoins(
             "RayonCoinsStandard",
@@ -1033,7 +1135,10 @@ public partial class MainWindow
             {
                 SystemControls.Border fondLigne = new()
                 {
-                    Background = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)),
+                    Background = ObtenirPinceauTheme(
+                        "PinceauFondLigneAlternee",
+                        ConstantesDesign.CouleurRepliLigneAlternee
+                    ),
                     CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
                     Padding = new Thickness(10, 8, 10, 8),
                 };
@@ -1072,7 +1177,7 @@ public partial class MainWindow
     /*
      * Construit l'en-tête du compte avec avatar, pseudo et statut.
      */
-    private static SystemControls.Border ConstruireEnTeteAvatarCompte(CompteAffiche compte)
+    private SystemControls.Border ConstruireEnTeteAvatarCompte(CompteAffiche compte)
     {
         SystemControls.Border conteneur = new()
         {
@@ -1081,8 +1186,14 @@ public partial class MainWindow
             Padding = new Thickness(8),
             HorizontalAlignment = HorizontalAlignment.Center,
             CornerRadius = new CornerRadius(48),
-            Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(42, 255, 255, 255)),
+            Background = ObtenirPinceauTheme(
+                "PinceauFondSurfaceTranslucide",
+                ConstantesDesign.CouleurRepliSurfaceTranslucide
+            ),
+            BorderBrush = ObtenirPinceauTheme(
+                "PinceauBordureSurfaceTranslucide",
+                ConstantesDesign.CouleurRepliBordureSurfaceTranslucide
+            ),
             BorderThickness = new Thickness(1),
         };
 
@@ -1105,8 +1216,14 @@ public partial class MainWindow
             Height = 96,
             HorizontalAlignment = HorizontalAlignment.Center,
             CornerRadius = new CornerRadius(48),
-            Background = new SolidColorBrush(Color.FromArgb(28, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(42, 255, 255, 255)),
+            Background = ObtenirPinceauTheme(
+                "PinceauFondSurfaceTranslucide",
+                ConstantesDesign.CouleurRepliSurfaceTranslucide
+            ),
+            BorderBrush = ObtenirPinceauTheme(
+                "PinceauBordureSurfaceTranslucide",
+                ConstantesDesign.CouleurRepliBordureSurfaceTranslucide
+            ),
             BorderThickness = new Thickness(1),
             Child = new SystemControls.TextBlock
             {
@@ -1277,8 +1394,14 @@ public partial class MainWindow
                 : new Thickness(13, 11, 13, 11),
             Margin = dispositionCompacte ? new Thickness(0, 0, 0, 8) : new Thickness(0, 0, 0, 10),
             CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-            Background = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255)),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255)),
+            Background = ObtenirPinceauTheme(
+                "PinceauFondSurfaceLegere",
+                ConstantesDesign.CouleurRepliSurfaceLegere
+            ),
+            BorderBrush = ObtenirPinceauTheme(
+                "PinceauBordureSurfaceLegere",
+                ConstantesDesign.CouleurRepliBordureSurfaceLegere
+            ),
             BorderThickness = ConstantesDesign.EpaisseurContourFin,
             Child = expander,
         };
@@ -2536,7 +2659,10 @@ public partial class MainWindow
                     Margin = new Thickness(0, 0, 0, 8),
                     Padding = new Thickness(10, 8, 10, 8),
                     CornerRadius = ObtenirRayonCoins("RayonCoinsPetit", 8),
-                    Background = new SolidColorBrush(Color.FromArgb(24, 255, 255, 255)),
+                    Background = ObtenirPinceauTheme(
+                        "PinceauFondSurfaceLegere",
+                        ConstantesDesign.CouleurRepliSurfaceTresLegere
+                    ),
                     Child = new SystemControls.StackPanel
                     {
                         Children =
@@ -2947,11 +3073,17 @@ public partial class MainWindow
             return;
         }
 
-        BoutonAide.BorderBrush = new SolidColorBrush(Color.FromRgb(245, 200, 76));
+        BoutonAide.BorderBrush = ObtenirPinceauTheme(
+            "PinceauAccentHardcore",
+            ConstantesDesign.CouleurRepliAccentHardcore
+        );
         BoutonAide.BorderThickness = new Thickness(ConstantesDesign.EpaisseurContourAccent);
         BoutonAide.Effect = new DropShadowEffect
         {
-            Color = Color.FromRgb(245, 200, 76),
+            Color = ObtenirCouleurTheme(
+                "CouleurAccentHardcore",
+                ConstantesDesign.CouleurRepliAccentHardcore
+            ),
             BlurRadius = ConstantesDesign.FlouHaloHardcore,
             ShadowDepth = 0,
             Opacity = ConstantesDesign.OpaciteHaloHardcore,
@@ -3218,24 +3350,48 @@ public partial class MainWindow
      * Retourne les couleurs associées au statut visible dans la notice
      * de compte.
      */
-    private static (Brush Fond, Brush Bordure) ObtenirCouleursNoticeCompteEntete(string statut)
+    private (Brush Fond, Brush Bordure) ObtenirCouleursNoticeCompteEntete(string statut)
     {
         if (statut.Contains("En jeu", StringComparison.OrdinalIgnoreCase))
         {
-            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(96, 58, 188, 116)));
+            return (
+                Brushes.Transparent,
+                ObtenirPinceauTheme(
+                    "PinceauFondNoticeSucces",
+                    ConstantesDesign.CouleurRepliFondNoticeSucces
+                )
+            );
         }
 
         if (statut.Contains("Actif", StringComparison.OrdinalIgnoreCase))
         {
-            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 120, 200, 255)));
+            return (
+                Brushes.Transparent,
+                ObtenirPinceauTheme(
+                    "PinceauFondNoticeInformation",
+                    ConstantesDesign.CouleurRepliFondNoticeInformation
+                )
+            );
         }
 
         if (statut.Contains("Inactif", StringComparison.OrdinalIgnoreCase))
         {
-            return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 160, 160, 160)));
+            return (
+                Brushes.Transparent,
+                ObtenirPinceauTheme(
+                    "PinceauFondNoticeNeutre",
+                    ConstantesDesign.CouleurRepliFondNoticeNeutre
+                )
+            );
         }
 
-        return (Brushes.Transparent, new SolidColorBrush(Color.FromArgb(56, 120, 200, 255)));
+        return (
+            Brushes.Transparent,
+            ObtenirPinceauTheme(
+                "PinceauFondNoticeInformation",
+                ConstantesDesign.CouleurRepliFondNoticeInformation
+            )
+        );
     }
 
     /*

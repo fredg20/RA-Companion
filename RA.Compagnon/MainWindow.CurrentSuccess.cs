@@ -120,18 +120,23 @@ public partial class MainWindow
             return;
         }
 
-        CartePremierSuccesNonDebloqueVisuel.BorderBrush = new SolidColorBrush(
-            Color.FromRgb(245, 200, 76)
+        CartePremierSuccesNonDebloqueVisuel.BorderBrush = ObtenirPinceauTheme(
+            "PinceauAccentHardcore",
+            ConstantesDesign.CouleurRepliAccentHardcore
         );
         CartePremierSuccesNonDebloqueVisuel.BorderThickness = new Thickness(
             ConstantesDesign.EpaisseurContourAccent
         );
-        CartePremierSuccesNonDebloqueVisuel.Background = new SolidColorBrush(
-            Color.FromArgb(28, 245, 200, 76)
+        CartePremierSuccesNonDebloqueVisuel.Background = ObtenirPinceauTheme(
+            "PinceauFondHardcoreTransparent",
+            ConstantesDesign.CouleurRepliAccentHardcoreTransparent
         );
         CartePremierSuccesNonDebloqueVisuel.Effect = new DropShadowEffect
         {
-            Color = Color.FromRgb(245, 200, 76),
+            Color = ObtenirCouleurTheme(
+                "CouleurAccentHardcore",
+                ConstantesDesign.CouleurRepliAccentHardcore
+            ),
             BlurRadius = ConstantesDesign.FlouHaloHardcore,
             ShadowDepth = 0,
             Opacity = ConstantesDesign.OpaciteHaloHardcore,
