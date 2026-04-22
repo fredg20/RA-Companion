@@ -27,6 +27,9 @@ public partial class MainWindow
     private readonly DispatcherTimer _minuteurAffichageTemporaireSuccesGrille = new();
     private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
     private readonly DispatcherTimer _minuteurSauvegardeGeometrieFenetre = new();
+    private readonly DispatcherTimer _minuteurMiseAJourApplication = new(
+        DispatcherPriority.Background
+    );
 
     /*
      * Configure tous les minuteurs utilisés par l'application et leurs callbacks.
@@ -63,6 +66,9 @@ public partial class MainWindow
 
         _minuteurSauvegardeGeometrieFenetre.Interval = IntervalleSauvegardeGeometrieFenetre;
         _minuteurSauvegardeGeometrieFenetre.Tick += MinuteurSauvegardeGeometrieFenetre_Tick;
+
+        _minuteurMiseAJourApplication.Interval = IntervalleRafraichissementMiseAJourApplication;
+        _minuteurMiseAJourApplication.Tick += MinuteurMiseAJourApplication_Tick;
     }
 
     /*
@@ -70,6 +76,11 @@ public partial class MainWindow
      */
     private void DemarrerActualisationAutomatique()
     {
+        if (!_minuteurMiseAJourApplication.IsEnabled)
+        {
+            _minuteurMiseAJourApplication.Start();
+        }
+
         if (!ConfigurationConnexionEstComplete())
         {
             return;
@@ -107,5 +118,6 @@ public partial class MainWindow
         _minuteurSondeLocaleEmulateurs.Stop();
         _minuteurRotationVisuelsJeuEnCours.Stop();
         _minuteurSauvegardeGeometrieFenetre.Stop();
+        _minuteurMiseAJourApplication.Stop();
     }
 }

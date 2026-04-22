@@ -1287,6 +1287,7 @@ public partial class MainWindow
         RafraichirSuccesEtProgressionApresDeblocageLocal();
 
         await AppliquerSuccesEnCoursAsync(_identifiantJeuSuccesCourant, succes, false, false);
+        await ExporterEtatObsAsync(succesDetecte);
         ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
             "succes_ui_affiche",
             $"jeu={succesDetecte.IdentifiantJeu};succes={succesDetecte.IdentifiantSucces};titre={succesDetecte.TitreSucces}"

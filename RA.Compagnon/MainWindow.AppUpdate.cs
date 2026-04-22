@@ -19,6 +19,15 @@ namespace RA.Compagnon;
 public partial class MainWindow
 {
     /*
+     * Relance périodiquement la vérification distante pour faire apparaître le
+     * bouton de mise à jour pendant que Compagnon reste ouvert.
+     */
+    private async void MinuteurMiseAJourApplication_Tick(object? sender, EventArgs e)
+    {
+        await VerifierMiseAJourApplicationSiNecessaireAsync();
+    }
+
+    /*
      * Vérifie si une mise à jour doit être recherchée maintenant puis aligne
      * l'état de l'interface avec le résultat.
      */

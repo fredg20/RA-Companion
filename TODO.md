@@ -206,44 +206,68 @@ Ce fichier regroupe les évolutions possibles du projet, les améliorations de c
 
 ## Préparatifs d'intégration OBS
 
-- [ ] Définir les informations utiles à afficher dans OBS : jeu courant, progression, succès en cours, dernier succès obtenu
-- [ ] Étudier une sortie locale simple pour OBS, par exemple fichier JSON, fichier texte ou page HTML locale
-- [ ] Choisir le format principal de sortie : `overlay.html`, `state.json`, fichiers `.txt`, images locales ou combinaison de ces formats
-- [ ] Définir le dossier stable des fichiers OBS, par exemple `%AppData%\RA-Compagnon\OBS`
-- [ ] Définir le modèle de données minimal : jeu, console, progression, badge, succès, description, points, mode `Softcore` / `Hardcore`
+### Fondation technique OBS
+
+- [x] Définir les informations utiles à afficher dans OBS : jeu courant, progression, succès en cours, dernier succès obtenu
+- [x] Étudier une sortie locale simple pour OBS, par exemple fichier JSON, fichier texte ou page HTML locale
+- [x] Choisir le format principal de sortie : `overlay.html`, `state.json`, fichiers `.txt`, images locales ou combinaison de ces formats
+- [x] Définir le dossier stable des fichiers OBS, par exemple `%AppData%\RA-Compagnon\OBS`
+- [x] Définir le modèle de données minimal : jeu, console, progression, badge, succès, description, points, mode `Softcore` / `Hardcore`
+- [x] Écrire les fichiers OBS de façon atomique pour éviter qu'OBS lise un fichier incomplet
+- [x] Prévoir des fichiers séparés pour les sources OBS : titre du jeu, progression, badge, description, état de synchronisation
+- [x] Servir `overlay.html` et `state.json` par une URL locale pour éviter les blocages de lecture de fichiers locaux dans OBS
+
+### Contrôle utilisateur et confidentialité
+
+- [x] Ajouter une option d'activation ou de désactivation de l'export OBS dans `Compagnon`
+- [ ] Ajouter une option pour masquer les informations sensibles du compte dans les sorties OBS
+- [ ] Ajouter un mode `streamer` qui masque le pseudo, les données de compte et toute information personnelle non nécessaire
+
+### Robustesse et états limites
+
+- [ ] Prévoir les états vides : aucun jeu chargé, aucune progression, aucun succès en cours, synchronisation en attente
+- [ ] Prévoir les états d'erreur : API indisponible, émulateur fermé, jeu inconnu, image manquante, succès non chargé
+- [ ] Étudier la fréquence de mise à jour idéale pour éviter les écritures inutiles et les saccades
+
+### Images et cache local
+
+- [ ] Prévoir la copie locale des images utiles, comme badge du succès courant et image du jeu, pour éviter les dépendances réseau en capture
+- [ ] Prévoir un cache local des images OBS avec nettoyage contrôlé
+
+### Design des overlays
+
 - [ ] Prévoir un mode overlay compact distinct de l'interface principale
 - [ ] Prévoir plusieurs modes OBS : overlay complet, bandeau compact, succès courant seulement, dernier succès obtenu, progression seule
 - [ ] Prévoir un mode `intermission` ou pause avec seulement le jeu, la progression et le prochain objectif
 - [ ] Prévoir un thème OBS séparé : police, tailles, couleurs, transparence, marges et dimensions de capture
 - [ ] Ajouter une personnalisation minimale : thème clair ou sombre, couleur d'accent, taille de police, transparence et animations
 - [ ] Définir un style visuel lisible en capture vidéo, avec contraste élevé et peu de bruit visuel
-- [ ] Prévoir les états vides : aucun jeu chargé, aucune progression, aucun succès en cours, synchronisation en attente
-- [ ] Prévoir les états d'erreur : API indisponible, émulateur fermé, jeu inconnu, image manquante, succès non chargé
-- [ ] Ajouter une option d'activation ou de désactivation de l'export OBS dans `Compagnon`
-- [ ] Ajouter une option pour masquer les informations sensibles du compte dans les sorties OBS
-- [ ] Ajouter un mode `streamer` qui masque le pseudo, les données de compte et toute information personnelle non nécessaire
-- [ ] Étudier la fréquence de mise à jour idéale pour éviter les écritures inutiles et les saccades
-- [ ] Écrire les fichiers OBS de façon atomique pour éviter qu'OBS lise un fichier incomplet
-- [ ] Prévoir des fichiers séparés pour les sources OBS : titre du jeu, progression, badge, description, état de synchronisation
-- [ ] Prévoir la copie locale des images utiles, comme badge du succès courant et image du jeu, pour éviter les dépendances réseau en capture
-- [ ] Prévoir un cache local des images OBS avec nettoyage contrôlé
-- [ ] Ajouter un bouton pour ouvrir le dossier OBS depuis `Compagnon`
-- [ ] Ajouter un bouton pour copier le chemin de `overlay.html`
-- [ ] Ajouter un bouton pour copier le chemin de `state.json`
+- [ ] Étudier une animation temporaire lors d'un succès obtenu
+
+### Interface dans Compagnon
+
+- [x] Ajouter un bouton pour ouvrir le dossier OBS depuis `Compagnon`
+- [x] Ajouter un bouton pour copier l'URL locale de `overlay.html`
+- [x] Ajouter un bouton pour copier le chemin de `state.json`
 - [ ] Ajouter un aperçu OBS directement dans `Compagnon`
-- [ ] Ajouter un bouton de test pour générer un état OBS fictif
-- [ ] Définir une résolution recommandée pour l'overlay, par exemple 1920x1080 et variantes compactes
+- [x] Ajouter un bouton de test pour générer un état OBS fictif
+
+### Documentation et validation OBS
+
+- [x] Définir une résolution recommandée pour l'overlay, par exemple 1920x1080 et variantes compactes
 - [ ] Documenter l'ordre conseillé des calques OBS
 - [ ] Documenter comment ajouter une source navigateur OBS pointant vers `overlay.html`
 - [ ] Documenter comment ajouter des sources texte OBS pointant vers les fichiers `.txt`
-- [ ] Étudier une intégration future avec OBS WebSocket pour déclencher des scènes ou des animations
-- [ ] Étudier une animation temporaire lors d'un succès obtenu
-- [ ] Prévoir une stratégie pour ne pas télécharger d'images pendant une scène active
 - [ ] Tester le comportement quand OBS est ouvert pendant les écritures
 - [ ] Tester le comportement quand OBS est fermé puis rouvert après plusieurs mises à jour
 - [ ] Vérifier qu'aucune clé API, donnée sensible ou information privée non désirée n'est exportée
 - [ ] Documenter un premier flux d'utilisation OBS dans `INSTRUCTION.md` lorsque l'intégration sera prête
 - [ ] Ajouter une checklist de test avec OBS Studio avant toute publication de cette fonctionnalité
+
+### Évolutions futures OBS
+
+- [ ] Prévoir une stratégie pour ne pas télécharger d'images pendant une scène active
+- [ ] Étudier une intégration future avec OBS WebSocket pour déclencher des scènes ou des animations
 
 ## Documentation et release
 

@@ -66,7 +66,7 @@ public partial class MainWindow : FluentWindow
     private static readonly TimeSpan IntervalleDebounceSynchronisationEtatJeu =
         TimeSpan.FromSeconds(2);
     private static readonly TimeSpan IntervalleRafraichissementMiseAJourApplication =
-        TimeSpan.FromHours(6);
+        TimeSpan.FromMinutes(5);
     private static readonly HttpClient HttpClientImages = new();
 
     private const double LargeurContenuModaleConnexion =

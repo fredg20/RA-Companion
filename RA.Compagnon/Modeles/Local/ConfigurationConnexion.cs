@@ -30,6 +30,8 @@ public sealed class ConfigurationConnexion
 
     public bool HaloBoutonAidePremiereUtilisationDejaAffiche { get; set; }
 
+    public bool ExportObsActif { get; set; } = true;
+
     [JsonIgnore]
     public EtatJeuAfficheLocal? DernierJeuAffiche { get; set; }
 

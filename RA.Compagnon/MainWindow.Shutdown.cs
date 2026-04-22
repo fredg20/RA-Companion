@@ -27,6 +27,7 @@ public partial class MainWindow
     {
         ArreterActualisationAutomatique();
         _serviceSurveillanceSuccesLocaux.Dispose();
+        _serviceServeurObsLocal.Dispose();
         MemoriserGeometrieFenetre();
 
         try

@@ -652,6 +652,7 @@ public partial class MainWindow
             await _serviceConfigurationLocale.SauvegarderEtatApplicationAsync(
                 _configurationConnexion
             );
+            await ExporterEtatObsAsync();
         }
         catch
         {

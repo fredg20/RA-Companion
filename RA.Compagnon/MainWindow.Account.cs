@@ -857,6 +857,7 @@ public partial class MainWindow
                     false,
                     sectionsAide
                 ),
+                ConstruireBlocAideObs(sectionsAide),
                 ConstruireBlocAideMiseAJourApplication(sectionsAide),
                 ConstruireBlocAideLogsEmulateurs(sectionsAide),
             },
@@ -1281,6 +1282,171 @@ public partial class MainWindow
             pile,
             resume,
             estOuvertParDefaut,
+            null,
+            sectionsAide,
+            _modaleAideCompacteCourante
+        );
+    }
+
+    /*
+     * Construit la section d'aide qui expose les premiers outils d'intégration
+     * OBS : chemins de sources, ouverture du dossier et état de test.
+     */
+    private SystemControls.Border ConstruireBlocAideObs(
+        IList<SystemControls.Expander>? sectionsAide = null
+    )
+    {
+        SystemControls.StackPanel pile = new() { Margin = new Thickness(0) };
+
+        SystemControls.TextBlock texteEtat = ConstruireTexteDetailAide(
+            "Les fichiers OBS sont mis à jour automatiquement quand Compagnon change d'état.",
+            0.78,
+            compact: _modaleAideCompacteCourante
+        );
+        SystemControls.CheckBox caseExportActif = new()
+        {
+            Content = "Activer l'export OBS automatique",
+            IsChecked = _configurationConnexion.ExportObsActif,
+            Margin = new Thickness(0, 0, 0, _modaleAideCompacteCourante ? 8 : 10),
+        };
+
+        UiControls.Button ConstruireBoutonActionObs(string libelle)
+        {
+            return new UiControls.Button
+            {
+                Content = libelle,
+                Padding = _modaleAideCompacteCourante
+                    ? ConstantesDesign.PaddingBoutonActionCompact
+                    : new Thickness(12, 4, 12, 4),
+                Margin = new Thickness(0, 0, 8, _modaleAideCompacteCourante ? 6 : 8),
+            };
+        }
+
+        caseExportActif.Checked += async (_, _) =>
+        {
+            await DefinirExportObsActifAsync(true);
+            texteEtat.Text = "Export OBS automatique activé.";
+        };
+        caseExportActif.Unchecked += async (_, _) =>
+        {
+            await DefinirExportObsActifAsync(false);
+            texteEtat.Text = "Export OBS automatique désactivé.";
+        };
+
+        UiControls.Button boutonOuvrirDossier = ConstruireBoutonActionObs("Ouvrir le dossier OBS");
+        UiControls.Button boutonCopierEtat = ConstruireBoutonActionObs("Copier state.json");
+        UiControls.Button boutonCopierOverlay = ConstruireBoutonActionObs("Copier l'URL overlay");
+        UiControls.Button boutonEtatTest = ConstruireBoutonActionObs("Générer un test OBS");
+
+        boutonOuvrirDossier.Click += (_, _) =>
+        {
+            Directory.CreateDirectory(ServiceExportObs.DossierExportObs);
+            OuvrirCheminDiagnosticAide(ServiceExportObs.DossierExportObs);
+        };
+
+        boutonCopierEtat.Click += (_, _) =>
+        {
+            CopierTexteDansPressePapiers(ServiceExportObs.CheminEtatJson);
+            texteEtat.Text = "Chemin state.json copié.";
+        };
+
+        boutonCopierOverlay.Click += (_, _) =>
+        {
+            _serviceServeurObsLocal.Demarrer();
+            CopierTexteDansPressePapiers(_serviceServeurObsLocal.UrlOverlay);
+            texteEtat.Text = "URL overlay copiée.";
+        };
+
+        boutonEtatTest.Click += async (_, _) =>
+        {
+            boutonEtatTest.IsEnabled = false;
+            texteEtat.Text = "Génération du test OBS...";
+
+            try
+            {
+                await ExporterEtatObsTestAsync();
+                texteEtat.Text = "État de test OBS généré.";
+            }
+            catch
+            {
+                texteEtat.Text = "Impossible de générer l'état de test OBS pour le moment.";
+            }
+            finally
+            {
+                boutonEtatTest.IsEnabled = true;
+            }
+        };
+
+        pile.Children.Add(
+            ConstruireTexteDetailAide(
+                "OBS peut utiliser une source navigateur pointant vers l'URL locale de l'overlay, ou des sources texte pointant vers les fichiers .txt. L'overlay lit directement state.json.",
+                0.82,
+                compact: _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            ConstruireTexteDetailAide(
+                "Taille recommandée pour la source navigateur : 760 x 260. Le bloc HTML s'ajuste ensuite à son contenu dans cette zone.",
+                0.72,
+                compact: _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(caseExportActif);
+        pile.Children.Add(
+            ConstruireLibelleChampAide("Dossier d'export", _modaleAideCompacteCourante)
+        );
+        pile.Children.Add(
+            ConstruireZoneTexteCopiableAide(
+                ServiceExportObs.DossierExportObs,
+                _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            ConstruireLibelleChampAide("URL source navigateur", _modaleAideCompacteCourante)
+        );
+        pile.Children.Add(
+            ConstruireZoneTexteCopiableAide(
+                _serviceServeurObsLocal.UrlOverlay,
+                _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            ConstruireLibelleChampAide("Fichier overlay", _modaleAideCompacteCourante)
+        );
+        pile.Children.Add(
+            ConstruireZoneTexteCopiableAide(
+                ServiceExportObs.CheminOverlayHtml,
+                _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(ConstruireLibelleChampAide("État JSON", _modaleAideCompacteCourante));
+        pile.Children.Add(
+            ConstruireZoneTexteCopiableAide(
+                ServiceExportObs.CheminEtatJson,
+                _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            new SystemControls.WrapPanel
+            {
+                Orientation = SystemControls.Orientation.Horizontal,
+                Margin = new Thickness(0, _modaleAideCompacteCourante ? 8 : 10, 0, 0),
+                Children =
+                {
+                    boutonOuvrirDossier,
+                    boutonCopierEtat,
+                    boutonCopierOverlay,
+                    boutonEtatTest,
+                },
+            }
+        );
+        pile.Children.Add(texteEtat);
+
+        return ConstruireSectionAideRabattable(
+            "OBS",
+            pile,
+            "Chemins locaux, source navigateur et génération d'un état de test.",
+            false,
             null,
             sectionsAide,
             _modaleAideCompacteCourante
@@ -1942,6 +2108,24 @@ public partial class MainWindow
             Text = texte,
             TextWrapping = TextWrapping.Wrap,
         };
+    }
+
+    /*
+     * Copie un texte dans le presse-papiers en ignorant les indisponibilités
+     * temporaires du système.
+     */
+    private static void CopierTexteDansPressePapiers(string texte)
+    {
+        if (string.IsNullOrWhiteSpace(texte))
+        {
+            return;
+        }
+
+        try
+        {
+            Clipboard.SetText(texte);
+        }
+        catch { }
     }
 
     /*

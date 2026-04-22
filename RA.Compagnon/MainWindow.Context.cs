@@ -39,6 +39,8 @@ public partial class MainWindow
         new();
     private readonly ServiceOrchestrateurEtatJeu _serviceOrchestrateurEtatJeu = new();
     private readonly ServiceMiseAJourApplication _serviceMiseAJourApplication = new();
+    private readonly ServiceExportObs _serviceExportObs = new();
+    private readonly ServiceServeurObsLocal _serviceServeurObsLocal = new();
 #if DEBUG
     private readonly ServiceTestSuccesDebug _serviceTestSuccesDebug = new();
 #endif
