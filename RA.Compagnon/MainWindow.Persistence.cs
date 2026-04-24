@@ -292,6 +292,7 @@ public partial class MainWindow
         RafraichirStyleBadgesGrilleSucces();
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
+        _ = ExporterEtatObsAsync();
         return Task.CompletedTask;
     }
 
@@ -400,6 +401,11 @@ public partial class MainWindow
             TempsJeuSousImage = detailsTempsJeu,
             EtatJeu = detailsEtatJeu,
             CheminImageBoite = jeu.ImageBoxArt,
+            CheminImageIcone = ObtenirCheminImageIconePourEtatLocal(jeu.Id, precedent?.ImageIcon),
+            CheminImageConsole = ObtenirCheminImageConsolePourEtatLocal(
+                jeu.ConsoleId,
+                precedent?.ImageConsole
+            ),
             IdentifiantConsole = jeu.ConsoleId,
             DateSortie = jeu.Released,
             Genre = jeu.Genre,
@@ -426,6 +432,56 @@ public partial class MainWindow
         GarantirCoherenceEtatPersistantJeu(jeu.Id);
         _dernierJeuAfficheModifie = true;
         return Task.CompletedTask;
+    }
+
+    /*
+     * Mémorise l'icône du jeu lorsqu'elle est disponible afin de la restaurer
+     * plus tard pour l'overlay OBS et l'état local.
+     */
+    private string ObtenirCheminImageIconePourEtatLocal(
+        int identifiantJeu,
+        string? cheminIconePrecedent
+    )
+    {
+        if (_dernieresDonneesJeuAffichees?.Jeu.Id == identifiantJeu)
+        {
+            if (!string.IsNullOrWhiteSpace(_dernieresDonneesJeuAffichees.DetailsEtendus?.ImageIcon))
+            {
+                return _dernieresDonneesJeuAffichees.DetailsEtendus.ImageIcon.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(_dernieresDonneesJeuAffichees.Progression?.ImageIcon))
+            {
+                return _dernieresDonneesJeuAffichees.Progression.ImageIcon.Trim();
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(cheminIconePrecedent)
+            ? string.Empty
+            : cheminIconePrecedent.Trim();
+    }
+
+    /*
+     * Mémorise l'icône de la console à partir du cache de catalogue lorsqu'il
+     * est déjà disponible, avec repli sur la valeur persistée précédente.
+     */
+    private string ObtenirCheminImageConsolePourEtatLocal(
+        int identifiantConsole,
+        string? cheminIconePrecedent
+    )
+    {
+        string imageConsole = _serviceCatalogueRetroAchievements.ObtenirUrlIconeConsoleDepuisCache(
+            identifiantConsole
+        );
+
+        if (!string.IsNullOrWhiteSpace(imageConsole))
+        {
+            return imageConsole.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(cheminIconePrecedent)
+            ? string.Empty
+            : cheminIconePrecedent.Trim();
     }
 
     /*

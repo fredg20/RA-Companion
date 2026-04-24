@@ -32,6 +32,10 @@ public sealed class EtatJeuAfficheLocal
 
     public string CheminImageBoite { get; set; } = string.Empty;
 
+    public string CheminImageIcone { get; set; } = string.Empty;
+
+    public string CheminImageConsole { get; set; } = string.Empty;
+
     public int IdentifiantConsole { get; set; }
 
     public string DateSortie { get; set; } = string.Empty;
@@ -62,6 +66,18 @@ public sealed class EtatJeuAfficheLocal
     {
         get => CheminImageBoite;
         set => CheminImageBoite = value;
+    }
+
+    public string ImageIcon
+    {
+        get => CheminImageIcone;
+        set => CheminImageIcone = value;
+    }
+
+    public string ImageConsole
+    {
+        get => CheminImageConsole;
+        set => CheminImageConsole = value;
     }
 
     public int ConsoleId

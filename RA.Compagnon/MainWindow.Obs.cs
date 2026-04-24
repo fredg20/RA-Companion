@@ -1,5 +1,9 @@
+using System.Diagnostics;
+using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Obs;
+using RA.Compagnon.Modeles.Presentation;
+using RA.Compagnon.Services;
 
 /*
  * Regroupe la préparation des données publiques exportées vers OBS Studio.
@@ -12,6 +16,20 @@ namespace RA.Compagnon;
  */
 public partial class MainWindow
 {
+    /*
+     * Déclenche un export OBS en arrière-plan dès qu'un changement visible
+     * mérite de réécrire state.json sans bloquer l'interface.
+     */
+    private void DemanderExportObs()
+    {
+        if (!_configurationConnexion.ExportObsActif)
+        {
+            return;
+        }
+
+        _ = ExporterEtatObsAsync();
+    }
+
     /*
      * Exporte l'état courant vers OBS sans bloquer l'interface si l'écriture
      * échoue temporairement.
@@ -110,6 +128,37 @@ public partial class MainWindow
                 DetailsPoints = "10 pts softcore / hardcore",
                 DetailsFaisabilite = "Faisabilité : test",
             },
+            GrilleSuccesJeu =
+            [
+                new SuccesBadgeExportObs
+                {
+                    IdentifiantSucces = 1001,
+                    Titre = "Succès OBS de démonstration",
+                    Description = "Cet état sert à tester une source OBS sans session active.",
+                    Badge = "https://i.retroachievements.org/Badge/00000.png",
+                    EstDebloque = true,
+                    EstHardcore = true,
+                    EstSelectionne = true,
+                },
+                new SuccesBadgeExportObs
+                {
+                    IdentifiantSucces = 1002,
+                    Titre = "Succès du groupe 2",
+                    Description = "Exemple de badge contextuel encore verrouillé.",
+                    Badge = "https://i.retroachievements.org/Badge/00000_lock.png",
+                    EstDebloque = false,
+                    EstHardcore = false,
+                },
+                new SuccesBadgeExportObs
+                {
+                    IdentifiantSucces = 1003,
+                    Titre = "Succès du groupe 3",
+                    Description = "Exemple de badge débloqué en softcore.",
+                    Badge = "https://i.retroachievements.org/Badge/00000.png",
+                    EstDebloque = true,
+                    EstHardcore = false,
+                },
+            ],
             DernierSuccesObtenu = new SuccesDebloqueExportObs
             {
                 IdentifiantJeu = 1,
@@ -127,6 +176,55 @@ public partial class MainWindow
     }
 
     /*
+     * Ouvre l'overlay dans une fenêtre de navigateur minimale afin de pouvoir
+     * valider rapidement le rendu sans passer immédiatement par OBS Studio.
+     */
+    private void OuvrirOverlayObsMinimal()
+    {
+        string urlOverlay =
+            $"{_serviceServeurObsLocal.UrlOverlay}?preview={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+
+        if (EssayerOuvrirOverlayObsMinimalAvecNavigateur("msedge.exe", urlOverlay))
+        {
+            return;
+        }
+
+        if (EssayerOuvrirOverlayObsMinimalAvecNavigateur("chrome.exe", urlOverlay))
+        {
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo { FileName = urlOverlay, UseShellExecute = true });
+    }
+
+    /*
+     * Lance un navigateur compatible en mode application, ce qui retire les
+     * onglets et barres inutiles pour offrir une fenêtre de prévisualisation.
+     */
+    private static bool EssayerOuvrirOverlayObsMinimalAvecNavigateur(
+        string executable,
+        string urlOverlay
+    )
+    {
+        try
+        {
+            Process.Start(
+                new ProcessStartInfo
+                {
+                    FileName = executable,
+                    Arguments = $"--app=\"{urlOverlay}\" --window-size=760,260",
+                    UseShellExecute = true,
+                }
+            );
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /*
      * Construit le modèle sérialisable à partir de la configuration persistée
      * et des champs visibles du ViewModel.
      */
@@ -141,6 +239,7 @@ public partial class MainWindow
             Jeu = ConstruireJeuObs(jeu),
             Progression = ConstruireProgressionObs(jeu),
             SuccesCourant = ConstruireSuccesObs(succes),
+            GrilleSuccesJeu = ConstruireGrilleSuccesJeuObs(succes),
             DernierSuccesObtenu = ConstruireDernierSuccesObs(dernierSuccesObtenu),
             EtatSynchronisation = _vueModele.EtatSynchronisationJeu,
             ModeAffichageSucces = _configurationConnexion.ModeAffichageSucces,
@@ -150,12 +249,18 @@ public partial class MainWindow
     /*
      * Convertit le jeu courant ou sauvegardé vers la forme publique OBS.
      */
-    private static JeuExportObs ConstruireJeuObs(EtatJeuAfficheLocal? jeu)
+    private JeuExportObs ConstruireJeuObs(EtatJeuAfficheLocal? jeu)
     {
         if (jeu is null)
         {
             return new JeuExportObs();
         }
+
+        string imageIcone = ObtenirCheminImageIconePourObs(jeu);
+        string imageFond = string.IsNullOrWhiteSpace(jeu.ImageBoxArt)
+            ? imageIcone
+            : jeu.ImageBoxArt;
+        string imageConsole = ObtenirCheminImageConsolePourObs(jeu);
 
         return new JeuExportObs
         {
@@ -166,8 +271,50 @@ public partial class MainWindow
             IdentifiantConsole = jeu.ConsoleId,
             Genre = jeu.Genre,
             Developpeur = jeu.Developer,
-            Image = jeu.ImageBoxArt,
+            Image = imageFond,
+            ImageIcone = imageIcone,
+            ImageConsole = imageConsole,
         };
+    }
+
+    /*
+     * Retourne l'icône du jeu à privilégier pour OBS, en se basant d'abord
+     * sur les données fraîches en mémoire puis sur l'état local sauvegardé.
+     */
+    private string ObtenirCheminImageIconePourObs(EtatJeuAfficheLocal jeu)
+    {
+        if (_dernieresDonneesJeuAffichees?.Jeu.Id == jeu.Id)
+        {
+            if (!string.IsNullOrWhiteSpace(_dernieresDonneesJeuAffichees.DetailsEtendus?.ImageIcon))
+            {
+                return _dernieresDonneesJeuAffichees.DetailsEtendus.ImageIcon.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(_dernieresDonneesJeuAffichees.Progression?.ImageIcon))
+            {
+                return _dernieresDonneesJeuAffichees.Progression.ImageIcon.Trim();
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(jeu.ImageIcon) ? string.Empty : jeu.ImageIcon.Trim();
+    }
+
+    /*
+     * Retourne l'icône de console exportée vers OBS depuis l'état local ou le
+     * cache catalogue quand celui-ci est déjà présent.
+     */
+    private string ObtenirCheminImageConsolePourObs(EtatJeuAfficheLocal jeu)
+    {
+        if (!string.IsNullOrWhiteSpace(jeu.ImageConsole))
+        {
+            return jeu.ImageConsole.Trim();
+        }
+
+        string imageConsole = _serviceCatalogueRetroAchievements.ObtenirUrlIconeConsoleDepuisCache(
+            jeu.ConsoleId
+        );
+
+        return string.IsNullOrWhiteSpace(imageConsole) ? string.Empty : imageConsole.Trim();
     }
 
     /*
@@ -208,6 +355,91 @@ public partial class MainWindow
             DetailsFaisabilite = succes.DetailsFaisabilite,
             Badge = succes.CheminImageBadge,
         };
+    }
+
+    /*
+     * Convertit le groupe de rétrosuccès actuellement retenu par Compagnon en
+     * liste légère de badges directement réutilisable dans l'overlay OBS.
+     */
+    private List<SuccesBadgeExportObs> ConstruireGrilleSuccesJeuObs(EtatSuccesAfficheLocal? succes)
+    {
+        int identifiantSuccesSelectionne = succes?.IdentifiantSucces ?? 0;
+        int identifiantJeuCourant =
+            _configurationConnexion.DernierJeuAffiche?.Id > 0
+                ? _configurationConnexion.DernierJeuAffiche.Id
+                : _identifiantJeuSuccesCourant;
+
+        Dictionary<int, GameAchievementV2> succesParIdentifiant = _succesJeuCourant.ToDictionary(
+            item => item.Id,
+            item => item
+        );
+
+        if (
+            _configurationConnexion.DerniereListeSuccesAffichee is { } listeSauvegardee
+            && listeSauvegardee.Id == identifiantJeuCourant
+            && listeSauvegardee.Achievements.Count > 0
+        )
+        {
+            return
+            [
+                .. listeSauvegardee.Achievements.Select(item =>
+                {
+                    bool estDebloque = !item.CheminImageBadge.Contains(
+                        "_lock",
+                        StringComparison.OrdinalIgnoreCase
+                    );
+                    bool estHardcore =
+                        succesParIdentifiant.TryGetValue(
+                            item.IdentifiantSucces,
+                            out GameAchievementV2? succesBrut
+                        ) && !string.IsNullOrWhiteSpace(succesBrut.DateEarnedHardcore);
+                    string description = succesBrut?.Description?.Trim() ?? string.Empty;
+
+                    return new SuccesBadgeExportObs
+                    {
+                        IdentifiantSucces = item.IdentifiantSucces,
+                        Titre = item.Titre,
+                        Description = description,
+                        Badge = item.CheminImageBadge,
+                        EstDebloque = estDebloque,
+                        EstHardcore = estHardcore,
+                        EstSelectionne = item.IdentifiantSucces == identifiantSuccesSelectionne,
+                    };
+                }),
+            ];
+        }
+
+        if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
+        {
+            return [];
+        }
+
+        List<GameAchievementV2> succesOrdonnes = OrdonnerSuccesPourGrilleSelonMode(
+            _identifiantJeuSuccesCourant,
+            _succesJeuCourant
+        );
+
+        return
+        [
+            .. succesOrdonnes.Select(succesJeu =>
+            {
+                SuccesGrilleAffiche succesAffiche = ServicePresentationSucces.ConstruirePourGrille(
+                    succesJeu
+                );
+
+                return new SuccesBadgeExportObs
+                {
+                    IdentifiantSucces = succesAffiche.IdentifiantSucces,
+                    Titre = succesAffiche.Titre,
+                    Description = succesJeu.Description?.Trim() ?? string.Empty,
+                    Badge = succesAffiche.UrlBadge,
+                    EstDebloque = succesAffiche.EstDebloque,
+                    EstHardcore = succesAffiche.EstHardcore,
+                    EstSelectionne =
+                        succesAffiche.IdentifiantSucces == identifiantSuccesSelectionne,
+                };
+            }),
+        ];
     }
 
     /*

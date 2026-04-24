@@ -1336,6 +1336,9 @@ public partial class MainWindow
         UiControls.Button boutonOuvrirDossier = ConstruireBoutonActionObs("Ouvrir le dossier OBS");
         UiControls.Button boutonCopierEtat = ConstruireBoutonActionObs("Copier state.json");
         UiControls.Button boutonCopierOverlay = ConstruireBoutonActionObs("Copier l'URL overlay");
+        UiControls.Button boutonPrevisualiserOverlay = ConstruireBoutonActionObs(
+            "Prévisualiser l'overlay"
+        );
         UiControls.Button boutonEtatTest = ConstruireBoutonActionObs("Générer un test OBS");
 
         boutonOuvrirDossier.Click += (_, _) =>
@@ -1355,6 +1358,37 @@ public partial class MainWindow
             _serviceServeurObsLocal.Demarrer();
             CopierTexteDansPressePapiers(_serviceServeurObsLocal.UrlOverlay);
             texteEtat.Text = "URL overlay copiée.";
+        };
+
+        boutonPrevisualiserOverlay.Click += async (_, _) =>
+        {
+            boutonPrevisualiserOverlay.IsEnabled = false;
+            texteEtat.Text = "Ouverture de l'overlay OBS...";
+
+            try
+            {
+                _serviceServeurObsLocal.Demarrer();
+
+                if (_configurationConnexion.ExportObsActif)
+                {
+                    await ExporterEtatObsAsync();
+                }
+                else
+                {
+                    await ExporterEtatObsDesactiveAsync();
+                }
+
+                OuvrirOverlayObsMinimal();
+                texteEtat.Text = "Overlay OBS ouvert dans une fenêtre de prévisualisation.";
+            }
+            catch
+            {
+                texteEtat.Text = "Impossible d'ouvrir l'overlay OBS pour le moment.";
+            }
+            finally
+            {
+                boutonPrevisualiserOverlay.IsEnabled = true;
+            }
         };
 
         boutonEtatTest.Click += async (_, _) =>
@@ -1436,6 +1470,7 @@ public partial class MainWindow
                     boutonOuvrirDossier,
                     boutonCopierEtat,
                     boutonCopierOverlay,
+                    boutonPrevisualiserOverlay,
                     boutonEtatTest,
                 },
             }

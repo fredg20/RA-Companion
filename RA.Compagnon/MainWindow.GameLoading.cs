@@ -28,10 +28,20 @@ public partial class MainWindow
      */
     private void DefinirEtatSynchronisationJeu(string texte)
     {
+        bool etatChange = !string.Equals(
+            _vueModele.EtatSynchronisationJeu,
+            texte,
+            StringComparison.Ordinal
+        );
         _vueModele.EtatSynchronisationJeu = texte;
         _vueModele.VisibiliteSynchronisationJeu = string.IsNullOrWhiteSpace(texte)
             ? Visibility.Hidden
             : Visibility.Visible;
+
+        if (etatChange)
+        {
+            DemanderExportObs();
+        }
     }
 
     /*

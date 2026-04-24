@@ -102,4 +102,19 @@ public sealed class ServiceCatalogueRetroAchievements
             _verrouJeuxSysteme.Release();
         }
     }
+
+    /*
+     * Retourne l'URL d'icône d'une console depuis le cache déjà chargé, sans
+     * déclencher de nouvelle requête réseau.
+     */
+    public string ObtenirUrlIconeConsoleDepuisCache(int identifiantConsole)
+    {
+        if (_consolesCache is null || identifiantConsole <= 0)
+        {
+            return string.Empty;
+        }
+
+        return _consolesCache.FirstOrDefault(item => item.ConsoleId == identifiantConsole)?.IconUrl
+            ?? string.Empty;
+    }
 }

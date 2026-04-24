@@ -161,6 +161,12 @@ public partial class MainWindow
 
                 if (console is not null && !string.IsNullOrWhiteSpace(console.IconUrl))
                 {
+                    if (_configurationConnexion.DernierJeuAffiche?.Id == jeu.Id)
+                    {
+                        _configurationConnexion.DernierJeuAffiche.ImageConsole =
+                            console.IconUrl.Trim();
+                    }
+
                     imageConsole = await ChargerImageDistanteAsync(console.IconUrl);
                 }
             }

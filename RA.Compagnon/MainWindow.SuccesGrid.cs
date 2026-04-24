@@ -446,6 +446,7 @@ public partial class MainWindow
         if (succesOrdonnes.Count == 0)
         {
             SauvegarderDerniereListeSuccesAffichee(identifiantJeu, []);
+            await ExporterEtatObsAsync();
             JournaliserDiagnosticListeSucces(
                 "grille_vide",
                 $"jeu={identifiantJeu};version={versionGrille}"
@@ -518,6 +519,7 @@ public partial class MainWindow
 
         ConteneurGrilleTousSuccesJeuEnCours.ScrollToVerticalOffset(0);
         SauvegarderDerniereListeSuccesAffichee(identifiantJeu, etatsBadges);
+        await ExporterEtatObsAsync();
         MettreAJourDispositionGrilleTousSucces();
         GrilleTousSuccesJeuEnCours.UpdateLayout();
         ConteneurGrilleTousSuccesJeuEnCours.UpdateLayout();

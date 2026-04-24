@@ -32,6 +32,13 @@ public sealed class ServiceExportObs
 
     public static string CheminOverlayHtml => Path.Combine(DossierExportObs, "overlay.html");
 
+    public static string CheminOverlayCss => Path.Combine(DossierExportObs, "overlay.css");
+
+    public static string CheminOverlayJs => Path.Combine(DossierExportObs, "overlay.js");
+
+    private static string DossierModelesOverlay =>
+        Path.Combine(AppContext.BaseDirectory, "ObsOverlay");
+
     /*
      * Publie l'état OBS complet en gardant chaque écriture atomique pour
      * éviter qu'OBS lise un fichier partiellement écrit.
@@ -44,7 +51,7 @@ public sealed class ServiceExportObs
         {
             Directory.CreateDirectory(DossierExportObs);
             await EcrireJsonAsync(CheminEtatJson, etat, jetonAnnulation);
-            await EcrireTexteAsync(CheminOverlayHtml, ConstruireOverlayHtml(), jetonAnnulation);
+            await EcrireOverlayAsync(jetonAnnulation);
             await EcrireSourcesTexteAsync(etat, jetonAnnulation);
         }
         finally
@@ -134,6 +141,40 @@ public sealed class ServiceExportObs
     }
 
     /*
+     * Copie les modèles HTML, CSS et JS de l'overlay dans le dossier OBS afin
+     * de garder une structure lisible et modifiable en dehors du code C#.
+     */
+    private static async Task EcrireOverlayAsync(CancellationToken jetonAnnulation)
+    {
+        await EcrireTexteAsync(
+            CheminOverlayHtml,
+            LireModeleOverlay("overlay.html"),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(CheminOverlayCss, LireModeleOverlay("overlay.css"), jetonAnnulation);
+        await EcrireTexteAsync(CheminOverlayJs, LireModeleOverlay("overlay.js"), jetonAnnulation);
+    }
+
+    /*
+     * Lit un fichier source de l'overlay embarqué à côté de l'application afin
+     * de pouvoir le réécrire tel quel dans le dossier OBS.
+     */
+    private static string LireModeleOverlay(string nomFichier)
+    {
+        string cheminModele = Path.Combine(DossierModelesOverlay, nomFichier);
+
+        if (!File.Exists(cheminModele))
+        {
+            throw new FileNotFoundException(
+                $"Le modèle OBS '{nomFichier}' est introuvable.",
+                cheminModele
+            );
+        }
+
+        return File.ReadAllText(cheminModele);
+    }
+
+    /*
      * Construit une version compacte de la progression utilisable directement
      * comme source texte OBS.
      */
@@ -181,172 +222,5 @@ public sealed class ServiceExportObs
         return string.IsNullOrWhiteSpace(valeur)
             ? string.Empty
             : string.Join(' ', valeur.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-    }
-
-    /*
-     * Fournit un overlay qui dépend explicitement de state.json pour séparer
-     * l'affichage HTML des données exportées par Compagnon.
-     */
-    private static string ConstruireOverlayHtml()
-    {
-        return """
-            <!doctype html>
-            <html lang="fr">
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1">
-              <title>RA-Compagnon OBS</title>
-              <style>
-                :root {
-                  color-scheme: dark;
-                  --fond: rgba(18, 18, 20, 0.82);
-                  --texte: #f3f3f3;
-                  --secondaire: #c7c7c7;
-                  --accent: #43a82a;
-                }
-                * { box-sizing: border-box; }
-                html,
-                body {
-                  margin: 0;
-                  width: fit-content;
-                  height: fit-content;
-                  overflow: hidden;
-                  background: transparent;
-                  color: var(--texte);
-                  font-family: "Segoe UI", sans-serif;
-                }
-                main {
-                  display: inline-block;
-                  width: fit-content;
-                  min-width: 360px;
-                  max-width: 720px;
-                  margin: 0;
-                  padding: 22px 26px;
-                  border-radius: 18px;
-                  background: var(--fond);
-                  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
-                }
-                .statut {
-                  color: var(--accent);
-                  font-size: 15px;
-                  font-weight: 700;
-                  letter-spacing: 0.08em;
-                  text-transform: uppercase;
-                }
-                h1 {
-                  margin: 6px 0 10px;
-                  font-size: 34px;
-                  line-height: 1.08;
-                }
-                .progression,
-                .succes {
-                  color: var(--secondaire);
-                  font-size: 18px;
-                  line-height: 1.35;
-                }
-                .erreur {
-                  margin-top: 10px;
-                  color: #ffb4ab;
-                  font-size: 14px;
-                  line-height: 1.35;
-                }
-                .barre {
-                  width: 100%;
-                  height: 10px;
-                  margin: 16px 0;
-                  overflow: hidden;
-                  border-radius: 999px;
-                  background: rgba(255, 255, 255, 0.14);
-                }
-                .barre span {
-                  display: block;
-                  height: 100%;
-                  width: 0%;
-                  border-radius: inherit;
-                  background: var(--accent);
-                  transition: width 350ms ease;
-                }
-              </style>
-            </head>
-            <body>
-              <main>
-                <div id="statut" class="statut">RA-Compagnon</div>
-                <h1 id="jeu">Aucun jeu</h1>
-                <div id="progression" class="progression"></div>
-                <div class="barre"><span id="barre"></span></div>
-                <div id="succes" class="succes"></div>
-                <div id="erreur" class="erreur"></div>
-              </main>
-              <script>
-                function appliquerEtat(etat) {
-                  document.getElementById('statut').textContent = etat?.jeu?.statut || 'RA-Compagnon';
-                  document.getElementById('jeu').textContent = etat?.jeu?.titre || 'Aucun jeu';
-                  document.getElementById('progression').textContent = [etat?.progression?.resume, etat?.progression?.pourcentage].filter(Boolean).join(' - ');
-                  document.getElementById('barre').style.width = Math.max(0, Math.min(100, etat?.progression?.valeur || 0)) + '%';
-                  document.getElementById('succes').textContent = etat?.succesCourant?.titre || '';
-                  document.getElementById('erreur').textContent = '';
-                }
-
-                function afficherErreur(message) {
-                  document.getElementById('statut').textContent = 'RA-Compagnon';
-                  document.getElementById('jeu').textContent = 'Données OBS indisponibles';
-                  document.getElementById('progression').textContent = '';
-                  document.getElementById('barre').style.width = '0%';
-                  document.getElementById('succes').textContent = '';
-                  document.getElementById('erreur').textContent = message;
-                }
-
-                async function lireEtatJsonAvecFetch() {
-                  const reponse = await fetch('state.json?cache=' + Date.now(), { cache: 'no-store' });
-                  if (!reponse.ok) {
-                    throw new Error('state.json introuvable');
-                  }
-
-                  return await reponse.json();
-                }
-
-                function lireEtatJsonAvecXhr() {
-                  return new Promise((resolve, reject) => {
-                    const requete = new XMLHttpRequest();
-                    requete.open('GET', 'state.json?cache=' + Date.now(), true);
-                    requete.onreadystatechange = () => {
-                      if (requete.readyState !== 4) {
-                        return;
-                      }
-
-                      if (requete.status === 0 || (requete.status >= 200 && requete.status < 300)) {
-                        try {
-                          resolve(JSON.parse(requete.responseText));
-                        } catch (erreur) {
-                          reject(erreur);
-                        }
-                        return;
-                      }
-
-                      reject(new Error('state.json introuvable'));
-                    };
-                    requete.onerror = () => reject(new Error('Lecture locale de state.json bloquée'));
-                    requete.send();
-                  });
-                }
-
-                async function rafraichir() {
-                  try {
-                    appliquerEtat(await lireEtatJsonAvecFetch());
-                  } catch {
-                    try {
-                      appliquerEtat(await lireEtatJsonAvecXhr());
-                    } catch {
-                      afficherErreur('Impossible de lire state.json. Vérifie que overlay.html et state.json sont dans le même dossier OBS.');
-                    }
-                  }
-                }
-
-                rafraichir();
-                setInterval(rafraichir, 1000);
-              </script>
-            </body>
-            </html>
-            """;
     }
 }

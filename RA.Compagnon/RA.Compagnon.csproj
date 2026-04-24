@@ -29,4 +29,16 @@
   <ItemGroup>
     <Resource Include="..\rac.ico" Link="rac.ico" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ObsOverlay\overlay.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ObsOverlay\overlay.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ObsOverlay\overlay.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

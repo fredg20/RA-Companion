@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RA-Compagnon OBS</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+  <main>
+    <div class="colonne-gauche">
+      <section id="entete-bloc" class="entete entete-bloc">
+        <div class="entete-principal">
+          <div class="titre-zone">
+            <img id="image-console" class="icone-console" alt="Console">
+            <h1 id="jeu">Aucun jeu</h1>
+          </div>
+        </div>
+      </section>
+      <section class="bloc progression-bloc">
+        <div class="bloc-titre">Progression</div>
+        <div class="progression-ligne">
+          <div id="progression" class="progression"></div>
+          <div id="pourcentage" class="pourcentage"></div>
+        </div>
+        <div class="barre"><span id="barre"></span></div>
+      </section>
+    </div>
+    <div class="colonne-droite">
+      <section class="bloc">
+        <div class="bloc-titre">Rétrosuccès en cours</div>
+        <div id="succes" class="succes"></div>
+        <div id="description" class="description"></div>
+      </section>
+    </div>
+    <section id="grille-zone" class="bloc grille-zone">
+      <div class="grille-entete">
+        <div class="bloc-titre">Rétrosuccès du jeu</div>
+        <div id="grille-info" class="grille-info"></div>
+      </div>
+      <div id="grille" class="grille"></div>
+    </section>
+  </main>
+  <div id="toolbar-edition" class="toolbar-edition">
+    <button id="quitter-edition" type="button">Quitter</button>
+    <button id="reinitialiser-layout" type="button">Réinitialiser</button>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>

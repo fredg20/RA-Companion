@@ -20,6 +20,8 @@ public sealed class EtatExportObs
 
     public SuccesExportObs SuccesCourant { get; init; } = new();
 
+    public List<SuccesBadgeExportObs> GrilleSuccesJeu { get; init; } = [];
+
     public SuccesDebloqueExportObs DernierSuccesObtenu { get; init; } = new();
 
     public string EtatSynchronisation { get; init; } = string.Empty;
@@ -48,6 +50,10 @@ public sealed class JeuExportObs
     public string Developpeur { get; init; } = string.Empty;
 
     public string Image { get; init; } = string.Empty;
+
+    public string ImageIcone { get; init; } = string.Empty;
+
+    public string ImageConsole { get; init; } = string.Empty;
 }
 
 /*
@@ -81,6 +87,27 @@ public sealed class SuccesExportObs
     public string DetailsFaisabilite { get; init; } = string.Empty;
 
     public string Badge { get; init; } = string.Empty;
+}
+
+/*
+ * Décrit un badge léger exporté pour la grille contextuelle affichée dans
+ * l'overlay OBS.
+ */
+public sealed class SuccesBadgeExportObs
+{
+    public int IdentifiantSucces { get; init; }
+
+    public string Titre { get; init; } = string.Empty;
+
+    public string Description { get; init; } = string.Empty;
+
+    public string Badge { get; init; } = string.Empty;
+
+    public bool EstDebloque { get; init; }
+
+    public bool EstHardcore { get; init; }
+
+    public bool EstSelectionne { get; init; }
 }
 
 /*

@@ -700,6 +700,14 @@ public partial class MainWindow
             TempsJeuSousImage = jeuAffiche.TempsJeu,
             EtatJeu = jeuAffiche.Statut,
             CheminImageBoite = jeu.ImageBoxArt,
+            CheminImageIcone = ObtenirCheminImageIconePourEtatLocal(
+                jeu.Id,
+                _configurationConnexion.DernierJeuAffiche?.ImageIcon
+            ),
+            CheminImageConsole = ObtenirCheminImageConsolePourEtatLocal(
+                jeu.ConsoleId,
+                _configurationConnexion.DernierJeuAffiche?.ImageConsole
+            ),
             IdentifiantConsole = jeu.ConsoleId,
             DateSortie = jeu.Released,
             Genre = jeu.Genre,

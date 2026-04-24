@@ -505,6 +505,7 @@ public partial class MainWindow
                     TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
+            DemanderExportObs();
             return Task.CompletedTask;
         }
 
@@ -561,6 +562,8 @@ public partial class MainWindow
                 }
             );
         }
+
+        DemanderExportObs();
 
         _ = EnrichirSuccesEnCoursAffichageAsync(
             identifiantJeu,
@@ -1221,6 +1224,8 @@ public partial class MainWindow
                     }
                 );
             }
+
+            DemanderExportObs();
         }
         catch { }
     }

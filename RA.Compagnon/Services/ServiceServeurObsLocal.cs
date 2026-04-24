@@ -168,6 +168,8 @@ public sealed class ServiceServeurObsLocal : IDisposable
         return Path.GetExtension(cheminFichier).ToLowerInvariant() switch
         {
             ".html" => "text/html; charset=utf-8",
+            ".css" => "text/css; charset=utf-8",
+            ".js" => "application/javascript; charset=utf-8",
             ".json" => "application/json; charset=utf-8",
             ".txt" => "text/plain; charset=utf-8",
             _ => "application/octet-stream",
