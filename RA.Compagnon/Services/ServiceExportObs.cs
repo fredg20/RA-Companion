@@ -30,11 +30,13 @@ public sealed class ServiceExportObs
 
     public static string CheminEtatJson => Path.Combine(DossierExportObs, "state.json");
 
-    public static string CheminOverlayHtml => Path.Combine(DossierExportObs, "overlay.html");
+    public static string CheminOverlayHtml => Path.Combine(DossierExportObs, "index.html");
 
     public static string CheminOverlayCss => Path.Combine(DossierExportObs, "overlay.css");
 
     public static string CheminOverlayJs => Path.Combine(DossierExportObs, "overlay.js");
+
+    public static string CheminLayoutJson => Path.Combine(DossierExportObs, "layout.json");
 
     private static string DossierModelesOverlay =>
         Path.Combine(AppContext.BaseDirectory, "ObsOverlay");
@@ -52,6 +54,7 @@ public sealed class ServiceExportObs
             Directory.CreateDirectory(DossierExportObs);
             await EcrireJsonAsync(CheminEtatJson, etat, jetonAnnulation);
             await EcrireOverlayAsync(jetonAnnulation);
+            await GarantirLayoutJsonAsync(jetonAnnulation);
             await EcrireSourcesTexteAsync(etat, jetonAnnulation);
         }
         finally
@@ -146,13 +149,30 @@ public sealed class ServiceExportObs
      */
     private static async Task EcrireOverlayAsync(CancellationToken jetonAnnulation)
     {
+        await EcrireTexteAsync(CheminOverlayHtml, LireModeleOverlay("index.html"), jetonAnnulation);
         await EcrireTexteAsync(
-            CheminOverlayHtml,
-            LireModeleOverlay("overlay.html"),
+            CheminOverlayCss,
+            CompilerScssOverlayVersCss(
+                LireModeleOverlay("normalize.scss"),
+                LireModeleOverlay("overlay.scss")
+            ),
             jetonAnnulation
         );
-        await EcrireTexteAsync(CheminOverlayCss, LireModeleOverlay("overlay.css"), jetonAnnulation);
         await EcrireTexteAsync(CheminOverlayJs, LireModeleOverlay("overlay.js"), jetonAnnulation);
+    }
+
+    /*
+     * Garantit la présence d'un fichier layout.json afin que l'overlay puisse
+     * charger une disposition persistée même avant la première édition.
+     */
+    private static async Task GarantirLayoutJsonAsync(CancellationToken jetonAnnulation)
+    {
+        if (File.Exists(CheminLayoutJson))
+        {
+            return;
+        }
+
+        await EcrireTexteAsync(CheminLayoutJson, "{}", jetonAnnulation);
     }
 
     /*
@@ -172,6 +192,23 @@ public sealed class ServiceExportObs
         }
 
         return File.ReadAllText(cheminModele);
+    }
+
+    /*
+     * Utilise le fichier SCSS comme source unique du style OBS, puis produit
+     * le CSS servi au navigateur. Le style actuel reste volontairement dans un
+     * sous-ensemble SCSS directement compatible avec le CSS final.
+     */
+    private static string CompilerScssOverlayVersCss(
+        string contenuNormalizeScss,
+        string contenuOverlayScss
+    )
+    {
+        return string.Join(
+            Environment.NewLine + Environment.NewLine,
+            contenuNormalizeScss.Trim(),
+            contenuOverlayScss.Trim()
+        );
     }
 
     /*

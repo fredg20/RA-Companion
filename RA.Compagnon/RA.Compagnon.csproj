@@ -31,10 +31,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="ObsOverlay\overlay.html">
+    <Content Include="ObsOverlay\index.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="ObsOverlay\overlay.css">
+    <Content Include="ObsOverlay\normalize.scss">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ObsOverlay\overlay.scss">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="ObsOverlay\overlay.js">

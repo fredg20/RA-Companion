@@ -3,8 +3,11 @@ let dernierMessageErreur = "";
 let modeEdition = false;
 let interactionEdition = null;
 let observateurRedimensionnement = null;
+let minuterieSauvegardeLayout = null;
+let ecritureLayoutEnCours = Promise.resolve();
 
 const CLE_LAYOUT = "ra-compagnon-overlay-layout-v1";
+const URL_LAYOUT = "layout.json";
 const IDS_BLOCS_EDITABLES = [
   "entete-bloc",
   "progression-bloc",
@@ -175,11 +178,44 @@ function lireLayoutSauvegarde() {
   }
 }
 
-function sauvegarderLayout(layout) {
+function sauvegarderLayoutLocal(layout) {
   try {
     localStorage.setItem(CLE_LAYOUT, JSON.stringify(layout));
   } catch {
   }
+}
+
+async function lireLayoutDistant() {
+  const reponse = await fetch(`${URL_LAYOUT}?cache=${Date.now()}`, { cache: "no-store" });
+  if (!reponse.ok) {
+    throw new Error("layout.json introuvable");
+  }
+
+  return await reponse.json();
+}
+
+function programmerSauvegardeLayoutDistant(layout) {
+  if (minuterieSauvegardeLayout) {
+    clearTimeout(minuterieSauvegardeLayout);
+  }
+
+  minuterieSauvegardeLayout = setTimeout(() => {
+    const contenu = JSON.stringify(layout);
+
+    ecritureLayoutEnCours = ecritureLayoutEnCours
+      .catch(() => {})
+      .then(() =>
+        fetch(URL_LAYOUT, {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          body: contenu,
+        }),
+      )
+      .catch(() => {});
+  }, 180);
 }
 
 function supprimerLayoutSauvegarde() {
@@ -267,7 +303,8 @@ function appliquerLayoutPersonnalise(layout) {
 
 function sauvegarderLayoutDepuisDom() {
   const layout = capturerLayoutDepuisDom();
-  sauvegarderLayout(layout);
+  sauvegarderLayoutLocal(layout);
+  programmerSauvegardeLayoutDistant(layout);
   appliquerLayoutPersonnalise(layout);
 }
 
@@ -313,7 +350,8 @@ function activerModeEdition() {
 
   if (!layout) {
     layout = capturerLayoutDepuisDom();
-    sauvegarderLayout(layout);
+    sauvegarderLayoutLocal(layout);
+    programmerSauvegardeLayoutDistant(layout);
   }
 
   appliquerLayoutPersonnalise(layout);
@@ -336,7 +374,8 @@ function reinitialiserLayoutPersonnalise() {
   if (modeEdition) {
     requestAnimationFrame(() => {
       const layout = capturerLayoutDepuisDom();
-      sauvegarderLayout(layout);
+      sauvegarderLayoutLocal(layout);
+      programmerSauvegardeLayoutDistant(layout);
       appliquerLayoutPersonnalise(layout);
     });
   }
@@ -346,11 +385,6 @@ function initialiserEdition() {
   const main = obtenirMain();
   normaliserStructureOverlay();
   initialiserObservateurRedimensionnement();
-
-  const layout = lireLayoutSauvegarde();
-  if (layout) {
-    appliquerLayoutPersonnalise(layout);
-  }
 
   document.getElementById("quitter-edition").addEventListener("click", quitterModeEdition);
   document
@@ -382,8 +416,8 @@ function initialiserEdition() {
     const rect = bloc.getBoundingClientRect();
     const margeRedimensionnement = lireNombreCss("--poignee-edition-taille", 18);
     const procheCoinBasDroite =
-      rect.right - evenement.clientX <= margeRedimensionnement &&
-      rect.bottom - evenement.clientY <= margeRedimensionnement;
+      rect.right - evenement.clientX <= margeRedimensionnement
+      && rect.bottom - evenement.clientY <= margeRedimensionnement;
 
     if (procheCoinBasDroite) {
       return;
@@ -418,6 +452,7 @@ function initialiserEdition() {
       if (interactionEdition.bloc.hasPointerCapture?.(evenement.pointerId)) {
         interactionEdition.bloc.releasePointerCapture(evenement.pointerId);
       }
+
       interactionEdition = null;
     }
 
@@ -425,6 +460,7 @@ function initialiserEdition() {
       for (const bloc of obtenirBlocsEditables()) {
         garantirContraintesBloc(bloc);
       }
+
       sauvegarderLayoutDepuisDom();
     }
   });
@@ -511,6 +547,7 @@ function lireEtatJsonAvecXhr() {
         } catch (erreur) {
           reject(erreur);
         }
+
         return;
       }
 
@@ -519,6 +556,19 @@ function lireEtatJsonAvecXhr() {
     requete.onerror = () => reject(new Error("Lecture locale de state.json bloquée"));
     requete.send();
   });
+}
+
+async function chargerLayoutInitial() {
+  try {
+    const layout = await lireLayoutDistant();
+    if (layout && typeof layout === "object" && Object.keys(layout).length > 0) {
+      sauvegarderLayoutLocal(layout);
+      return layout;
+    }
+  } catch {
+  }
+
+  return lireLayoutSauvegarde();
 }
 
 async function rafraichir() {
@@ -541,12 +591,22 @@ async function rafraichir() {
       }
     } catch {
       afficherErreur(
-        "Impossible de lire state.json. Vérifie que overlay.html et state.json sont dans le même dossier OBS.",
+        "Impossible de lire state.json. Vérifie que index.html et state.json sont dans le même dossier OBS.",
       );
     }
   }
 }
 
-initialiserEdition();
-rafraichir();
-setInterval(rafraichir, 1000);
+async function initialiserOverlay() {
+  initialiserEdition();
+
+  const layout = await chargerLayoutInitial();
+  if (layout) {
+    appliquerLayoutPersonnalise(layout);
+  }
+
+  await rafraichir();
+  setInterval(rafraichir, 1000);
+}
+
+initialiserOverlay();

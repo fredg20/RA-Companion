@@ -14,6 +14,7 @@ third_party/
 # User and IDE files
 .vs/
 .vscode/
+.prettierrc
 *.user
 *.rsuser
 *.suo
@@ -48,3 +49,6 @@ Desktop.ini
 # PowerShell scripts
 *.ps1
 !build.ps1
+
+# OBS overlay generated assets
+RA.Compagnon/ObsOverlay/*.css.map

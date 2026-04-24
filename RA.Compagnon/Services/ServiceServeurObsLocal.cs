@@ -10,7 +10,7 @@ using System.Text;
 namespace RA.Compagnon.Services;
 
 /*
- * Sert overlay.html, state.json et les fichiers texte depuis le dossier OBS
+ * Sert index.html, state.json et les fichiers texte depuis le dossier OBS
  * sur une adresse locale stable de type http://127.0.0.1:28718/.
  */
 public sealed class ServiceServeurObsLocal : IDisposable
@@ -25,7 +25,7 @@ public sealed class ServiceServeurObsLocal : IDisposable
 
     public string UrlRacine => $"http://127.0.0.1:{Port}/";
 
-    public string UrlOverlay => $"{UrlRacine}overlay.html";
+    public string UrlOverlay => $"{UrlRacine}index.html";
 
     /*
      * Démarre l'écoute locale si elle n'est pas déjà active.
@@ -106,9 +106,16 @@ public sealed class ServiceServeurObsLocal : IDisposable
             return;
         }
 
-        while (!string.IsNullOrEmpty(await lecteur.ReadLineAsync(jetonAnnulation))) { }
-
+        string methode = ExtraireMethode(ligneRequete);
         string cheminRelatif = ExtraireCheminRelatif(ligneRequete);
+        Dictionary<string, string> enTetes = await LireEntetesAsync(lecteur, jetonAnnulation);
+
+        if (string.Equals(methode, "POST", StringComparison.OrdinalIgnoreCase))
+        {
+            await TraiterEcritureAsync(flux, lecteur, cheminRelatif, enTetes, jetonAnnulation);
+            return;
+        }
+
         string cheminFichier = ConstruireCheminFichier(cheminRelatif);
 
         if (string.IsNullOrWhiteSpace(cheminFichier) || !File.Exists(cheminFichier))
@@ -135,6 +142,45 @@ public sealed class ServiceServeurObsLocal : IDisposable
     }
 
     /*
+     * Lit les en-têtes HTTP jusqu'à la ligne vide finale.
+     */
+    private static async Task<Dictionary<string, string>> LireEntetesAsync(
+        StreamReader lecteur,
+        CancellationToken jetonAnnulation
+    )
+    {
+        Dictionary<string, string> enTetes = new(StringComparer.OrdinalIgnoreCase);
+
+        while (true)
+        {
+            string? ligne = await lecteur.ReadLineAsync(jetonAnnulation);
+            if (string.IsNullOrEmpty(ligne))
+            {
+                return enTetes;
+            }
+
+            int separateur = ligne.IndexOf(':');
+            if (separateur <= 0)
+            {
+                continue;
+            }
+
+            string nom = ligne[..separateur].Trim();
+            string valeur = ligne[(separateur + 1)..].Trim();
+            enTetes[nom] = valeur;
+        }
+    }
+
+    /*
+     * Retourne la méthode HTTP extraite de la ligne de requête.
+     */
+    private static string ExtraireMethode(string ligneRequete)
+    {
+        string[] morceaux = ligneRequete.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return morceaux.Length > 0 ? morceaux[0] : "GET";
+    }
+
+    /*
      * Extrait le chemin demandé par la requête HTTP.
      */
     private static string ExtraireCheminRelatif(string ligneRequete)
@@ -142,11 +188,11 @@ public sealed class ServiceServeurObsLocal : IDisposable
         string[] morceaux = ligneRequete.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (morceaux.Length < 2)
         {
-            return "overlay.html";
+            return "index.html";
         }
 
         string chemin = morceaux[1].Split('?', 2)[0].Trim('/');
-        return string.IsNullOrWhiteSpace(chemin) ? "overlay.html" : chemin;
+        return string.IsNullOrWhiteSpace(chemin) ? "index.html" : chemin;
     }
 
     /*
@@ -158,6 +204,99 @@ public sealed class ServiceServeurObsLocal : IDisposable
         return string.IsNullOrWhiteSpace(nomFichier)
             ? string.Empty
             : Path.Combine(ServiceExportObs.DossierExportObs, nomFichier);
+    }
+
+    /*
+     * Accepte l'écriture du layout OBS persistant afin que l'overlay puisse
+     * sauvegarder ses sections directement dans le dossier OBS.
+     */
+    private static async Task TraiterEcritureAsync(
+        Stream flux,
+        StreamReader lecteur,
+        string cheminRelatif,
+        IReadOnlyDictionary<string, string> enTetes,
+        CancellationToken jetonAnnulation
+    )
+    {
+        string cheminFichier = ConstruireCheminFichier(cheminRelatif);
+        if (
+            string.IsNullOrWhiteSpace(cheminFichier)
+            || !string.Equals(
+                Path.GetFileName(cheminFichier),
+                Path.GetFileName(ServiceExportObs.CheminLayoutJson),
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            await EcrireReponseTexteAsync(
+                flux,
+                HttpStatusCode.Forbidden,
+                "text/plain; charset=utf-8",
+                "Écriture refusée.",
+                jetonAnnulation
+            );
+            return;
+        }
+
+        if (
+            !enTetes.TryGetValue("Content-Length", out string? valeurLongueur)
+            || !int.TryParse(valeurLongueur, out int longueur)
+            || longueur < 0
+        )
+        {
+            await EcrireReponseTexteAsync(
+                flux,
+                HttpStatusCode.BadRequest,
+                "text/plain; charset=utf-8",
+                "Longueur de contenu invalide.",
+                jetonAnnulation
+            );
+            return;
+        }
+
+        char[] tampon = new char[longueur];
+        int totalLu = 0;
+
+        while (totalLu < longueur)
+        {
+            int lu = await lecteur.ReadAsync(
+                tampon.AsMemory(totalLu, longueur - totalLu),
+                jetonAnnulation
+            );
+            if (lu <= 0)
+            {
+                break;
+            }
+
+            totalLu += lu;
+        }
+
+        if (totalLu != longueur)
+        {
+            await EcrireReponseTexteAsync(
+                flux,
+                HttpStatusCode.BadRequest,
+                "text/plain; charset=utf-8",
+                "Contenu incomplet.",
+                jetonAnnulation
+            );
+            return;
+        }
+
+        Directory.CreateDirectory(ServiceExportObs.DossierExportObs);
+        await File.WriteAllTextAsync(
+            cheminFichier,
+            new string(tampon, 0, totalLu),
+            jetonAnnulation
+        );
+
+        await EcrireReponseTexteAsync(
+            flux,
+            HttpStatusCode.OK,
+            "application/json; charset=utf-8",
+            "{\"success\":true}",
+            jetonAnnulation
+        );
     }
 
     /*
