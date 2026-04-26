@@ -6,6 +6,7 @@ let observateurRedimensionnement = null;
 let minuterieSauvegardeLayout = null;
 let ecritureLayoutEnCours = Promise.resolve();
 let miseAJourAnimationGrillePlanifiee = false;
+let ajustementTitrePlanifie = false;
 
 const etatAnimationGrille = {
   animationId: 0,
@@ -364,6 +365,131 @@ function normaliserUrlImageJeu(chemin) {
   return valeur;
 }
 
+function mesurerOccupationTitre(titre) {
+  const style = getComputedStyle(titre);
+  const taillePolice = Number.parseFloat(style.fontSize) || 0;
+  const lineHeight =
+    Number.parseFloat(style.lineHeight)
+    || (taillePolice > 0 ? taillePolice * 1.02 : 0);
+  const hauteur = titre.getBoundingClientRect().height;
+  const lignes = lineHeight > 0 ? Math.max(1, Math.round(hauteur / lineHeight)) : 1;
+  const estTronque = (titre.scrollHeight - titre.clientHeight) > 1;
+
+  return { lignes, estTronque };
+}
+
+function trouverTailleTitre(titre, tailleMax, tailleMin, lignesMax) {
+  for (let taille = tailleMax; taille >= tailleMin; taille -= 0.5) {
+    titre.style.fontSize = `${taille}px`;
+    const { lignes, estTronque } = mesurerOccupationTitre(titre);
+
+    if (!estTronque && lignes <= lignesMax) {
+      return taille;
+    }
+  }
+
+  return null;
+}
+
+function ajusterTitreJeu() {
+  ajustementTitrePlanifie = false;
+
+  const titre = document.getElementById("jeu");
+  if (!titre) {
+    return;
+  }
+
+  titre.style.removeProperty("font-size");
+
+  if (!titre.textContent?.trim()) {
+    return;
+  }
+
+  const tailleMax = Number.parseFloat(getComputedStyle(titre).fontSize) || 0;
+  const tailleMinUneLigne = lireNombreCss("--titre-jeu-taille-min-une-ligne", 20);
+  const tailleMinDeuxLignes = lireNombreCss("--titre-jeu-taille-min-deux-lignes", 18);
+
+  if (!(tailleMax > 0)) {
+    return;
+  }
+
+  const tailleUneLigne = trouverTailleTitre(
+    titre,
+    tailleMax,
+    Math.min(tailleMax, tailleMinUneLigne),
+    1,
+  );
+
+  if (tailleUneLigne !== null) {
+    titre.style.fontSize = `${tailleUneLigne}px`;
+    return;
+  }
+
+  const tailleDeuxLignes = trouverTailleTitre(
+    titre,
+    tailleMax,
+    Math.min(tailleMax, tailleMinDeuxLignes),
+    2,
+  );
+
+  if (tailleDeuxLignes !== null) {
+    titre.style.fontSize = `${tailleDeuxLignes}px`;
+    return;
+  }
+
+  titre.style.fontSize = `${Math.min(tailleMax, tailleMinDeuxLignes)}px`;
+}
+
+function programmerAjustementTitreJeu() {
+  if (ajustementTitrePlanifie) {
+    return;
+  }
+
+  ajustementTitrePlanifie = true;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(ajusterTitreJeu);
+  });
+}
+
+function ajusterContenuSuccesCourant() {
+  const blocSucces = document.getElementById("succes-bloc");
+  if (!blocSucces) {
+    return;
+  }
+
+  const largeur = blocSucces.clientWidth;
+  const hauteur = blocSucces.clientHeight;
+  if (!(largeur > 0) || !(hauteur > 0)) {
+    return;
+  }
+
+  const echelleLargeur = Math.min(1, Math.max(0.72, largeur / 420));
+  const echelleHauteur = Math.min(1, Math.max(0.72, hauteur / 150));
+  const echelle = Math.max(0.72, Math.min(1, echelleLargeur, echelleHauteur));
+
+  const tailleBadgeBase = lireNombreCss("--badge-succes-courant-taille", 72);
+  const tailleSuccesBase = lireNombreCss("--succes-taille", 22);
+  const tailleDescriptionBase = lireNombreCss("--description-taille", 15);
+  const largeurDescriptionBase = lireNombreCss("--description-largeur-max", 46);
+
+  blocSucces.style.setProperty(
+    "--badge-succes-courant-taille-actuelle",
+    `${Math.max(40, tailleBadgeBase * echelle).toFixed(2)}px`,
+  );
+  blocSucces.style.setProperty(
+    "--succes-taille-actuelle",
+    `${Math.max(15, tailleSuccesBase * echelle).toFixed(2)}px`,
+  );
+  blocSucces.style.setProperty(
+    "--description-taille-actuelle",
+    `${Math.max(11, tailleDescriptionBase * echelle).toFixed(2)}px`,
+  );
+  blocSucces.style.setProperty(
+    "--description-largeur-max-actuelle",
+    `${Math.max(24, largeurDescriptionBase * echelle).toFixed(2)}ch`,
+  );
+}
+
 function obtenirMain() {
   return document.querySelector("main");
 }
@@ -447,6 +573,17 @@ function lireNombreCss(nomVariable, valeurRepli) {
   const brut = getComputedStyle(document.documentElement).getPropertyValue(nomVariable).trim();
   const valeur = Number.parseFloat(brut);
   return Number.isFinite(valeur) ? valeur : valeurRepli;
+}
+
+function lireDimensionMinimumBloc(bloc, propriete, valeurRepli) {
+  const valeurInline = Number.parseFloat(bloc.style.getPropertyValue(propriete));
+  if (Number.isFinite(valeurInline)) {
+    return valeurInline;
+  }
+
+  const styleCalcule = getComputedStyle(bloc);
+  const valeurCalculee = Number.parseFloat(styleCalcule.getPropertyValue(propriete));
+  return Number.isFinite(valeurCalculee) ? valeurCalculee : valeurRepli;
 }
 
 function lireLayoutSauvegarde() {
@@ -567,6 +704,8 @@ function appliquerLayoutPersonnalise(layout) {
     }
 
     appliquerRayonsDynamiques();
+    programmerAjustementTitreJeu();
+    ajusterContenuSuccesCourant();
     programmerMiseAJourAnimationGrille();
     return;
   }
@@ -587,6 +726,8 @@ function appliquerLayoutPersonnalise(layout) {
 
   mettreAJourTailleMainDepuisLayout(layout);
   appliquerRayonsDynamiques();
+  programmerAjustementTitreJeu();
+  ajusterContenuSuccesCourant();
   programmerMiseAJourAnimationGrille();
 }
 
@@ -598,8 +739,8 @@ function sauvegarderLayoutDepuisDom() {
 }
 
 function garantirContraintesBloc(bloc) {
-  const largeurMin = Math.max(180, Number.parseFloat(bloc.style.minWidth) || 180);
-  const hauteurMin = Math.max(72, Number.parseFloat(bloc.style.minHeight) || 72);
+  const largeurMin = Math.max(180, lireDimensionMinimumBloc(bloc, "min-width", 180));
+  const hauteurMin = Math.max(72, lireDimensionMinimumBloc(bloc, "min-height", 72));
   const largeur = bloc.getBoundingClientRect().width;
   const hauteur = bloc.getBoundingClientRect().height;
 
@@ -619,6 +760,8 @@ function initialiserObservateurRedimensionnement() {
 
   observateurRedimensionnement = new ResizeObserver((entrees) => {
     appliquerRayonsDynamiques();
+    programmerAjustementTitreJeu();
+    ajusterContenuSuccesCourant();
     programmerMiseAJourAnimationGrille();
 
     if (!modeEdition) {
@@ -740,6 +883,11 @@ function initialiserEdition() {
   });
 
   quitterModeEdition();
+  programmerAjustementTitreJeu();
+  ajusterContenuSuccesCourant();
+
+  window.addEventListener("resize", programmerAjustementTitreJeu);
+  window.addEventListener("resize", ajusterContenuSuccesCourant);
 
   main.addEventListener("pointerdown", (evenement) => {
     if (!modeEdition) {
@@ -814,8 +962,8 @@ function initialiserEdition() {
 
     const mainRect = main.getBoundingClientRect();
     const bloc = interactionEdition.bloc;
-    const largeurMin = Math.max(180, Number.parseFloat(bloc.style.minWidth) || 180);
-    const hauteurMin = Math.max(72, Number.parseFloat(bloc.style.minHeight) || 72);
+    const largeurMin = Math.max(180, lireDimensionMinimumBloc(bloc, "min-width", 180));
+    const hauteurMin = Math.max(72, lireDimensionMinimumBloc(bloc, "min-height", 72));
 
     if (interactionEdition.type === "resize") {
       const deltaX = evenement.clientX - interactionEdition.origineX;
@@ -939,6 +1087,8 @@ function appliquerEtat(etat) {
   imageConsole.src = iconeConsole;
   imageConsole.classList.toggle("visible", !!iconeConsole);
   appliquerRayonsDynamiques();
+  programmerAjustementTitreJeu();
+  ajusterContenuSuccesCourant();
   programmerMiseAJourAnimationGrille();
   dernierMessageErreur = "";
 }
@@ -961,6 +1111,8 @@ function afficherErreur(message) {
   document.getElementById("badge-succes-courant").style.visibility = "hidden";
   appliquerGrilleSucces([]);
   appliquerRayonsDynamiques();
+  programmerAjustementTitreJeu();
+  ajusterContenuSuccesCourant();
   programmerMiseAJourAnimationGrille();
   dernierMessageErreur = message;
 }
