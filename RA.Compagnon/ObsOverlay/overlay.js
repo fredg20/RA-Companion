@@ -25,7 +25,10 @@ const CLE_LAYOUT = "ra-compagnon-overlay-layout-v1";
 const URL_LAYOUT = "layout.json";
 const PARAMETRES_URL = new URLSearchParams(window.location.search);
 const EST_MODE_PREVIEW = PARAMETRES_URL.has("preview");
+const EST_MODE_OBS = PARAMETRES_URL.get("obs") === "1";
 const SECTION_DEMANDEE = (PARAMETRES_URL.get("section") || "").trim().toLowerCase();
+const LARGEUR_SECTION_DEMANDEE = lireParametreDimensionUrl("width");
+const HAUTEUR_SECTION_DEMANDEE = lireParametreDimensionUrl("height");
 const IDS_BLOCS_EDITABLES = [
   "entete-bloc",
   "succes-bloc",
@@ -37,6 +40,11 @@ const DEFINITIONS_SECTIONS_OVERLAY = [
   { id: "grille-zone", cle: "grille-succes", libelle: "Rétrosuccès du jeu" },
 ];
 const referencesLiensPreview = new Map();
+
+function lireParametreDimensionUrl(nomParametre) {
+  const valeur = Number.parseFloat(PARAMETRES_URL.get(nomParametre) || "");
+  return Number.isFinite(valeur) && valeur > 0 ? valeur : null;
+}
 
 function obtenirCurseurRedimensionnement(zoneRedimensionnement) {
   const { haut, bas, gauche, droite } = zoneRedimensionnement;
@@ -80,6 +88,33 @@ function obtenirElementsAnimationGrille() {
     viewport: document.getElementById("grille-viewport"),
     grille: document.getElementById("grille"),
   };
+}
+
+function ajusterEcartGrille(viewport, grille) {
+  if (!viewport || !grille) {
+    return;
+  }
+
+  const largeurVisible = viewport.clientWidth;
+  const tailleBadge = lireNombreCss("--badge-taille", 34);
+  const ecartBase = lireNombreCss("--grille-ecart", 8);
+
+  if (!(largeurVisible > 0) || !(tailleBadge > 0)) {
+    grille.style.removeProperty("--grille-ecart-actuel");
+    return;
+  }
+
+  const colonnes = Math.max(1, Math.floor((largeurVisible + ecartBase) / (tailleBadge + ecartBase)));
+
+  if (colonnes <= 1) {
+    grille.style.setProperty("--grille-ecart-actuel", "0px");
+    return;
+  }
+
+  const espaceOccupeParBadges = colonnes * tailleBadge;
+  const espaceRestant = Math.max(0, largeurVisible - espaceOccupeParBadges);
+  const ecartCalcule = espaceRestant / (colonnes - 1);
+  grille.style.setProperty("--grille-ecart-actuel", `${ecartCalcule.toFixed(2)}px`);
 }
 
 function calculerHauteurVisibleCibleGrille(zone) {
@@ -250,6 +285,7 @@ function mettreAJourAnimationGrille() {
   }
 
   viewport.style.height = `${calculerHauteurVisibleCibleGrille(zone)}px`;
+  ajusterEcartGrille(viewport, grille);
 
   const seuil = lireNombreCss("--grille-seuil-animation", 4);
   const hauteurVisible = viewport.clientHeight;
@@ -472,30 +508,38 @@ function ajusterContenuSuccesCourant() {
     return;
   }
 
-  const echelleLargeur = Math.min(1, Math.max(0.72, largeur / 420));
-  const echelleHauteur = Math.min(1, Math.max(0.72, hauteur / 150));
-  const echelle = Math.max(0.72, Math.min(1, echelleLargeur, echelleHauteur));
+  const echelleMinimale = EST_MODE_OBS ? 0.94 : 0.84;
+  const largeurReference = EST_MODE_OBS ? 420 : 440;
+  const hauteurReference = EST_MODE_OBS ? 155 : 165;
+  const echelleLargeur = Math.min(1, Math.max(echelleMinimale, largeur / largeurReference));
+  const echelleHauteur = Math.min(1, Math.max(echelleMinimale, hauteur / hauteurReference));
+  const echelle = Math.max(echelleMinimale, Math.min(1, echelleLargeur, echelleHauteur));
+  const modeCompact = hauteur <= 110;
 
   const tailleBadgeBase = lireNombreCss("--badge-succes-courant-taille", 72);
   const tailleSuccesBase = lireNombreCss("--succes-taille", 22);
   const tailleDescriptionBase = lireNombreCss("--description-taille", 15);
   const largeurDescriptionBase = lireNombreCss("--description-largeur-max", 46);
+  const tailleBadgeMinimum = EST_MODE_OBS ? (modeCompact ? 42 : 60) : 48;
+  const tailleSuccesMinimum = EST_MODE_OBS ? (modeCompact ? 18 : 22) : 18;
+  const tailleDescriptionMinimum = EST_MODE_OBS ? (modeCompact ? 14 : 18) : 13;
+  const largeurDescriptionMinimum = EST_MODE_OBS ? (modeCompact ? 24 : 34) : 28;
 
   blocSucces.style.setProperty(
     "--badge-succes-courant-taille-actuelle",
-    `${Math.max(40, tailleBadgeBase * echelle).toFixed(2)}px`,
+    `${Math.max(tailleBadgeMinimum, tailleBadgeBase * echelle).toFixed(2)}px`,
   );
   blocSucces.style.setProperty(
     "--succes-taille-actuelle",
-    `${Math.max(15, tailleSuccesBase * echelle).toFixed(2)}px`,
+    `${Math.max(tailleSuccesMinimum, tailleSuccesBase * echelle).toFixed(2)}px`,
   );
   blocSucces.style.setProperty(
     "--description-taille-actuelle",
-    `${Math.max(11, tailleDescriptionBase * echelle).toFixed(2)}px`,
+    `${Math.max(tailleDescriptionMinimum, tailleDescriptionBase * echelle).toFixed(2)}px`,
   );
   blocSucces.style.setProperty(
     "--description-largeur-max-actuelle",
-    `${Math.max(24, largeurDescriptionBase * echelle).toFixed(2)}ch`,
+    `${Math.max(largeurDescriptionMinimum, largeurDescriptionBase * echelle).toFixed(2)}ch`,
   );
 }
 
@@ -556,6 +600,7 @@ function obtenirDefinitionsSectionsDisponibles() {
 function construireUrlOverlaySection(cleSection = "", largeur = null, hauteur = null) {
   const url = new URL(window.location.href);
   url.search = "";
+  url.searchParams.set("obs", "1");
 
   if (cleSection) {
     url.searchParams.set("section", cleSection);
@@ -570,6 +615,47 @@ function construireUrlOverlaySection(cleSection = "", largeur = null, hauteur = 
   }
 
   return url.toString();
+}
+
+function appliquerRedimensionnementSectionDepuisPreview(
+  definitionId,
+  largeurDemandee,
+  hauteurDemandee,
+) {
+  const bloc = definitionId ? document.getElementById(definitionId) : null;
+  if (!bloc) {
+    return;
+  }
+
+  const main = obtenirMain();
+  const mainRect = main.getBoundingClientRect();
+  const blocRect = bloc.getBoundingClientRect();
+  const largeurMin = Math.max(180, lireDimensionMinimumBloc(bloc, "min-width", 180));
+  const hauteurMin = Math.max(72, lireDimensionMinimumBloc(bloc, "min-height", 72));
+  const layout = lireLayoutSauvegarde() ?? capturerLayoutDepuisDom();
+  const item = layout[definitionId] ?? {
+    left: blocRect.left - mainRect.left,
+    top: blocRect.top - mainRect.top,
+    width: blocRect.width,
+    height: blocRect.height,
+    visible: getComputedStyle(bloc).display !== "none",
+  };
+
+  if (Number.isFinite(largeurDemandee) && largeurDemandee > 0) {
+    item.width = Math.max(largeurMin, Math.round(largeurDemandee));
+  }
+
+  if (Number.isFinite(hauteurDemandee) && hauteurDemandee > 0) {
+    item.height = Math.max(hauteurMin, Math.round(hauteurDemandee));
+  }
+
+  item.visible = true;
+  layout[definitionId] = item;
+
+  sauvegarderLayoutLocal(layout);
+  programmerSauvegardeLayoutDistant(layout);
+  appliquerLayoutPersonnalise(layout);
+  mettreAJourDimensionsLiensPreview();
 }
 
 function appliquerFiltreSectionSiNecessaire() {
@@ -594,6 +680,8 @@ function appliquerFiltreSectionSiNecessaire() {
   main.classList.remove("layout-personnalise", "mode-edition");
   main.style.removeProperty("width");
   main.style.removeProperty("height");
+  main.style.removeProperty("minWidth");
+  main.style.removeProperty("minHeight");
 
   for (const bloc of obtenirBlocsEditables()) {
     const estVisible = bloc.id === definitionCible.id;
@@ -607,6 +695,8 @@ function appliquerFiltreSectionSiNecessaire() {
     bloc.style.removeProperty("transform");
     bloc.style.removeProperty("position");
     bloc.style.removeProperty("cursor");
+    bloc.style.removeProperty("minWidth");
+    bloc.style.removeProperty("minHeight");
 
     if (estVisible) {
       bloc.style.removeProperty("display");
@@ -617,6 +707,20 @@ function appliquerFiltreSectionSiNecessaire() {
 
   definitionCible.element.hidden = false;
   definitionCible.element.style.removeProperty("display");
+
+  if (LARGEUR_SECTION_DEMANDEE) {
+    const largeur = Math.round(LARGEUR_SECTION_DEMANDEE);
+    main.style.width = `${largeur}px`;
+    definitionCible.element.style.setProperty("width", `${largeur}px`, "important");
+    definitionCible.element.style.setProperty("min-width", `${largeur}px`, "important");
+  }
+
+  if (HAUTEUR_SECTION_DEMANDEE) {
+    const hauteur = Math.round(HAUTEUR_SECTION_DEMANDEE);
+    main.style.height = `${hauteur}px`;
+    definitionCible.element.style.setProperty("height", `${hauteur}px`, "important");
+    definitionCible.element.style.setProperty("min-height", `${hauteur}px`, "important");
+  }
 
   if (toolbar) {
     toolbar.hidden = true;
@@ -646,6 +750,9 @@ function initialiserPanneauLiensPreview() {
   for (const lien of liens) {
     const ligne = document.createElement("div");
     ligne.className = "lien-preview-item";
+    const definition = obtenirDefinitionsSectionsDisponibles().find(
+      (item) => construireUrlOverlaySection(item.cle) === lien.url,
+    );
 
     const etiquette = document.createElement("div");
     etiquette.className = "lien-preview-item-label";
@@ -661,6 +768,48 @@ function initialiserPanneauLiensPreview() {
 
     const rangee = document.createElement("div");
     rangee.className = "lien-preview-item-rangee";
+
+    const controlesTaille = document.createElement("div");
+    controlesTaille.className = "lien-preview-item-taille";
+
+    const champLargeur = document.createElement("input");
+    champLargeur.className = "lien-preview-item-dimension";
+    champLargeur.type = "number";
+    champLargeur.min = "1";
+    champLargeur.step = "1";
+    champLargeur.inputMode = "numeric";
+    champLargeur.setAttribute("aria-label", `Largeur ${lien.libelle}`);
+    champLargeur.title = "Largeur";
+
+    const champHauteur = document.createElement("input");
+    champHauteur.className = "lien-preview-item-dimension";
+    champHauteur.type = "number";
+    champHauteur.min = "1";
+    champHauteur.step = "1";
+    champHauteur.inputMode = "numeric";
+    champHauteur.setAttribute("aria-label", `Hauteur ${lien.libelle}`);
+    champHauteur.title = "Hauteur";
+
+    const appliquerDimensions = () => {
+      appliquerRedimensionnementSectionDepuisPreview(
+        definition?.id || "",
+        Number.parseFloat(champLargeur.value),
+        Number.parseFloat(champHauteur.value),
+      );
+    };
+
+    champLargeur.addEventListener("change", appliquerDimensions);
+    champHauteur.addEventListener("change", appliquerDimensions);
+    champLargeur.addEventListener("keydown", (evenement) => {
+      if (evenement.key === "Enter") {
+        appliquerDimensions();
+      }
+    });
+    champHauteur.addEventListener("keydown", (evenement) => {
+      if (evenement.key === "Enter") {
+        appliquerDimensions();
+      }
+    });
 
     const boutonCopier = document.createElement("button");
     boutonCopier.className = "lien-preview-item-copier";
@@ -684,20 +833,21 @@ function initialiserPanneauLiensPreview() {
       }
     });
 
+    controlesTaille.appendChild(champLargeur);
+    controlesTaille.appendChild(champHauteur);
+    rangee.appendChild(controlesTaille);
     rangee.appendChild(champ);
     rangee.appendChild(boutonCopier);
     ligne.appendChild(etiquette);
     ligne.appendChild(rangee);
     liste.appendChild(ligne);
 
-    const definition = obtenirDefinitionsSectionsDisponibles().find(
-      (item) => construireUrlOverlaySection(item.cle) === lien.url,
-    );
-
     referencesLiensPreview.set(lien.url, {
       cle: lien.url,
       etiquette,
       champ,
+      champLargeur,
+      champHauteur,
       libelle: lien.libelle,
       definitionId: definition?.id || "",
       sectionCle: definition?.cle || "",
@@ -725,6 +875,13 @@ function mettreAJourDimensionsLiensPreview() {
     const largeur = Math.max(0, Math.round(rect.width));
     const hauteur = Math.max(0, Math.round(rect.height));
     reference.champ.value = construireUrlOverlaySection(reference.sectionCle, largeur, hauteur);
+    if (reference.champLargeur && document.activeElement !== reference.champLargeur) {
+      reference.champLargeur.value = String(largeur);
+    }
+
+    if (reference.champHauteur && document.activeElement !== reference.champHauteur) {
+      reference.champHauteur.value = String(hauteur);
+    }
     reference.etiquette.textContent = `${reference.libelle} · ${largeur} x ${hauteur}`;
   }
 }
@@ -737,8 +894,8 @@ function calculerRayonDynamiqueBloc(bloc) {
     return null;
   }
 
-  const rayonMin = lireNombreCss("--rayon-or-petit", 8);
-  const rayonMax = lireNombreCss("--rayon-or-grand", 21);
+  const rayonMin = lireNombreCss("--bloc-rayon-min", 4);
+  const rayonMax = lireNombreCss("--bloc-rayon-max", 10);
   const rayonProportionnel = coteCourt / 1.618;
 
   return Math.max(rayonMin, Math.min(rayonMax, rayonProportionnel));
@@ -1404,6 +1561,7 @@ async function rafraichir() {
 }
 
 async function initialiserOverlay() {
+  document.body.classList.toggle("obs-mode", EST_MODE_OBS);
   initialiserEdition();
 
   const layout = await chargerLayoutInitial();

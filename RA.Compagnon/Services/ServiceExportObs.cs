@@ -36,6 +36,9 @@ public sealed class ServiceExportObs
 
     public static string CheminOverlayJs => Path.Combine(DossierExportObs, "overlay.js");
 
+    public static string CheminOverlaySuccesEmblemePng =>
+        Path.Combine(DossierExportObs, "succes-embleme.png");
+
     public static string CheminLayoutJson => Path.Combine(DossierExportObs, "layout.json");
 
     private static string DossierModelesOverlay =>
@@ -159,6 +162,11 @@ public sealed class ServiceExportObs
             jetonAnnulation
         );
         await EcrireTexteAsync(CheminOverlayJs, LireModeleOverlay("overlay.js"), jetonAnnulation);
+        await EcrireOctetsAsync(
+            CheminOverlaySuccesEmblemePng,
+            LireModeleOverlayBinaire("succes-embleme.png"),
+            jetonAnnulation
+        );
     }
 
     /*
@@ -192,6 +200,40 @@ public sealed class ServiceExportObs
         }
 
         return File.ReadAllText(cheminModele);
+    }
+
+    /*
+     * Lit un asset binaire de l'overlay, comme une image PNG, pour le recopier
+     * tel quel dans le dossier OBS.
+     */
+    private static byte[] LireModeleOverlayBinaire(string nomFichier)
+    {
+        string cheminModele = Path.Combine(DossierModelesOverlay, nomFichier);
+
+        if (!File.Exists(cheminModele))
+        {
+            throw new FileNotFoundException(
+                $"Le modèle OBS binaire '{nomFichier}' est introuvable.",
+                cheminModele
+            );
+        }
+
+        return File.ReadAllBytes(cheminModele);
+    }
+
+    /*
+     * Écrit un fichier binaire par remplacement atomique via un fichier
+     * temporaire dans le même dossier.
+     */
+    private static async Task EcrireOctetsAsync(
+        string chemin,
+        byte[] contenu,
+        CancellationToken jetonAnnulation
+    )
+    {
+        string cheminTemporaire = chemin + ExtensionTemporaire;
+        await File.WriteAllBytesAsync(cheminTemporaire, contenu, jetonAnnulation);
+        File.Move(cheminTemporaire, chemin, overwrite: true);
     }
 
     /*
