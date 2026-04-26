@@ -1367,18 +1367,7 @@ public partial class MainWindow
 
             try
             {
-                _serviceServeurObsLocal.Demarrer();
-
-                if (_configurationConnexion.ExportObsActif)
-                {
-                    await ExporterEtatObsAsync();
-                }
-                else
-                {
-                    await ExporterEtatObsDesactiveAsync();
-                }
-
-                OuvrirOverlayObsMinimal();
+                await OuvrirPrevisualisationObsAsync();
                 texteEtat.Text = "Overlay OBS ouvert dans une fenêtre de prévisualisation.";
             }
             catch
@@ -2560,31 +2549,31 @@ public partial class MainWindow
         return definition.StrategieRenseignementJeu switch
         {
             StrategieRenseignementJeuEmulateurLocal.RetroArchLog =>
-                "Dans RetroArch : active `Show Advanced Settings`, puis `Log to File`. Désactive aussi les journaux horodatés pour garder un fichier stable `retroarch.log` dans `logs`.",
+                "Dans RetroArch : ouvre `Settings -> Achievements` pour activer RetroAchievements ; le Rich Presence suit automatiquement si le jeu le prend en charge. Active aussi `Show Advanced Settings`, puis `Log to File`. Désactive enfin les journaux horodatés pour garder un fichier stable `retroarch.log` dans `logs`.",
             StrategieRenseignementJeuEmulateurLocal.BizHawkConfig =>
-                "Dans BizHawk : garde `retroachievements-game-log.json` à la racine. Compagnon lit d'abord ce fichier, puis `config.ini` en secours pour retrouver la ROM.",
+                "Dans BizHawk : ouvre `Tools -> RetroAchievements` pour activer RetroAchievements ; le Rich Presence suit ensuite automatiquement si le jeu le prend en charge. Garde aussi `retroachievements-game-log.json` à la racine. Compagnon lit d'abord ce fichier, puis `config.ini` en secours pour retrouver la ROM.",
             StrategieRenseignementJeuEmulateurLocal.DolphinConfig =>
-                "Dans Dolphin : ouvre `View -> Show Log Configuration`, coche `Write to File`, garde `RetroAchievements` actif et une verbosité au moins sur `Info`.",
+                "Dans Dolphin : ouvre `Tools -> Achievements` pour activer RetroAchievements ; le Rich Presence suit automatiquement si le jeu le prend en charge. Ouvre aussi `View -> Show Log Configuration`, coche `Write to File`, garde `RetroAchievements` actif et une verbosité au moins sur `Info`.",
             StrategieRenseignementJeuEmulateurLocal.DuckStationLog =>
-                "Dans DuckStation : ouvre `Settings -> Advanced Settings`, règle `Log Level` sur `Debug`, puis active `Log To File`. Redémarre DuckStation si `duckstation.log` n'apparaît pas.",
+                "Dans DuckStation : ouvre `Tools -> Achievements` pour activer RetroAchievements ; le Rich Presence suit automatiquement si le jeu le prend en charge. Ouvre ensuite `Settings -> Advanced Settings`, règle `Log Level` sur `Debug`, puis active `Log To File`. Redémarre DuckStation si `duckstation.log` n'apparaît pas.",
             StrategieRenseignementJeuEmulateurLocal.PCSX2Log =>
-                "Dans PCSX2 : `emulog.txt` est normalement créé dans `logs`. S'il n'apparaît pas, vérifie les options de console ou de débogage de ta version.",
+                "Dans PCSX2 : cherche l'entrée `Achievements` ou `RetroAchievements` dans les menus de configuration ou d'outils pour activer RetroAchievements ; le Rich Presence suit ensuite automatiquement si le jeu le prend en charge. `emulog.txt` est normalement créé dans `logs`. S'il n'apparaît pas, vérifie aussi les options de console ou de débogage de ta version.",
             StrategieRenseignementJeuEmulateurLocal.PPSSPPLog =>
-                "Dans PPSSPP : ouvre `Tools -> Developer Tools`, puis active `Enable debug logging`. Si rien n'est écrit sur disque, lance PPSSPP avec une option du type `--log=...`.",
+                "Dans PPSSPP : ouvre `Settings -> Tools -> RetroAchievements` pour activer RetroAchievements ; sur certaines versions plus anciennes, l'entrée peut être sous `System`. Le Rich Presence suit ensuite automatiquement si le jeu le prend en charge. Pour le journal local, ouvre aussi `Tools -> Developer Tools`, puis active `Enable debug logging`. Si rien n'est écrit sur disque, lance PPSSPP avec une option du type `--log=...`.",
             StrategieRenseignementJeuEmulateurLocal.SkyEmuRecentGames =>
-                "Dans SkyEmu : aucun réglage spécial n'est requis pour la phase 1. Pour une détection plus robuste, active `Enable HTTP Control Server` dans les paramètres avancés. Compagnon lit alors `/status`, puis garde `recent_games.txt` dans le profil SDL de SkyEmu comme secours pour `Rejouer`.",
+                "Dans SkyEmu : active RetroAchievements si ta version l'expose ; le Rich Presence suit ensuite automatiquement si le jeu le prend en charge. Aucun réglage spécial n'est requis pour la phase 1. Pour une détection plus robuste, active aussi `Enable HTTP Control Server` dans les paramètres avancés. Compagnon lit alors `/status`, puis garde `recent_games.txt` dans le profil SDL de SkyEmu comme secours pour `Rejouer`.",
             StrategieRenseignementJeuEmulateurLocal.Project64RACache =>
-                "Dans RAP64 : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif pour mettre à jour `RACache` et `RALog.txt`.",
+                "Dans RAP64 : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif ; le Rich Presence suit automatiquement si le jeu le prend en charge. RAP64 doit alors mettre à jour `RACache` et `RALog.txt`.",
             StrategieRenseignementJeuEmulateurLocal.RALibretroRACache =>
-                "Dans RALibretro : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif pour mettre à jour `RACache` et `RALog.txt`.",
+                "Dans RALibretro : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif ; le Rich Presence suit automatiquement si le jeu le prend en charge. RALibretro doit alors mettre à jour `RACache` et `RALog.txt`.",
             StrategieRenseignementJeuEmulateurLocal.RANesRACache =>
-                "Dans RANes : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif pour mettre à jour `RACache` et `RALog.txt`.",
+                "Dans RANes : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif ; le Rich Presence suit automatiquement si le jeu le prend en charge. RANes doit alors mettre à jour `RACache` et `RALog.txt`.",
             StrategieRenseignementJeuEmulateurLocal.RAVBARACache =>
-                "Dans RAVBA : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif pour mettre à jour `RACache` et `RALog.txt`.",
+                "Dans RAVBA : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif ; le Rich Presence suit automatiquement si le jeu le prend en charge. RAVBA doit alors mettre à jour `RACache` et `RALog.txt`.",
             StrategieRenseignementJeuEmulateurLocal.RASnes9xRACache =>
-                "Dans RASnes9x : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif pour mettre à jour `RACache` et `RALog.txt`.",
+                "Dans RASnes9x : ce n'est pas un journal classique. Vérifie surtout que RetroAchievements est bien actif ; le Rich Presence suit automatiquement si le jeu le prend en charge. RASnes9x doit alors mettre à jour `RACache` et `RALog.txt`.",
             StrategieRenseignementJeuEmulateurLocal.FlycastConfig =>
-                "Dans Flycast : active l'écriture de `flycast.log` à la racine. Compagnon s'appuie d'abord sur ce journal, puis sur le chemin du jeu lancé si besoin.",
+                "Dans Flycast : active RetroAchievements si ta version l'expose ; le Rich Presence suit ensuite automatiquement si le jeu le prend en charge. Active aussi l'écriture de `flycast.log` à la racine. Compagnon s'appuie d'abord sur ce journal, puis sur le chemin du jeu lancé si besoin.",
             _ => string.Empty,
         };
     }
@@ -3225,6 +3214,14 @@ public partial class MainWindow
     }
 
     /*
+     * Ouvre la prévisualisation OBS depuis le bouton dédié.
+     */
+    private async void AfficherObs_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuterActionAfficherObsAsync();
+    }
+
+    /*
      * Affiche la connexion ou le compte selon l'état actuel
      * de la configuration.
      */
@@ -3246,6 +3243,34 @@ public partial class MainWindow
     {
         DefinirMiseEnAvantBoutonAide(active: false);
         await AfficherModaleAideAsync();
+    }
+
+    /*
+     * Centralise l'ouverture rapide de la prévisualisation OBS.
+     */
+    private async Task ExecuterActionAfficherObsAsync()
+    {
+        await OuvrirPrevisualisationObsAsync();
+    }
+
+    /*
+     * Démarre le serveur local OBS, régénère l'état utile puis ouvre la
+     * prévisualisation de l'overlay dans une fenêtre minimale.
+     */
+    private async Task OuvrirPrevisualisationObsAsync()
+    {
+        _serviceServeurObsLocal.Demarrer();
+
+        if (_configurationConnexion.ExportObsActif)
+        {
+            await ExporterEtatObsAsync();
+        }
+        else
+        {
+            await ExporterEtatObsDesactiveAsync();
+        }
+
+        OuvrirOverlayObsMinimal();
     }
 
     /*

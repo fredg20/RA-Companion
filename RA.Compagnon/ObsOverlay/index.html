@@ -10,7 +10,7 @@
 <body>
   <main data-overlay="ra-compagnon">
     <div class="colonne-gauche">
-      <section id="entete-bloc" class="entete entete-bloc" data-section="entete">
+      <section id="entete-bloc" class="entete entete-bloc" data-section="entete" data-section-label="En-tête">
         <div class="entete-principal">
           <div class="titre-zone">
             <h1 id="jeu">Aucun jeu</h1>
@@ -25,7 +25,7 @@
       </section>
     </div>
     <div class="colonne-droite">
-      <section class="bloc" data-section="succes-courant">
+      <section class="bloc" data-section="succes-courant" data-section-label="Rétrosuccès en cours">
         <div class="succes-courant-layout">
           <img id="badge-succes-courant" class="badge-succes-courant" alt="Badge du rétrosuccès">
           <div class="succes-courant-infos">
@@ -35,15 +35,19 @@
         </div>
       </section>
     </div>
-    <section id="grille-zone" class="bloc grille-zone" data-section="grille-succes">
+    <section id="grille-zone" class="bloc grille-zone" data-section="grille-succes" data-section-label="Rétrosuccès du jeu">
       <div id="grille-viewport" class="grille-viewport">
         <div id="grille" class="grille"></div>
       </div>
     </section>
   </main>
-  <div id="toolbar-edition" class="toolbar-edition" data-section="toolbar-edition">
+  <div id="toolbar-edition" class="toolbar-edition" data-section="toolbar-edition" data-section-label="Barre d'édition">
     <button id="quitter-edition" type="button">Modifier les sections</button>
     <button id="reinitialiser-layout" type="button">Réinitialiser</button>
   </div>
+  <aside id="panneau-liens-preview" class="panneau-liens-preview" hidden>
+    <div class="panneau-liens-preview-titre">Liens HTTP OBS</div>
+    <div id="liste-liens-preview" class="liste-liens-preview"></div>
+  </aside>
 </body>
 </html>

@@ -23,11 +23,20 @@ const etatAnimationGrille = {
 
 const CLE_LAYOUT = "ra-compagnon-overlay-layout-v1";
 const URL_LAYOUT = "layout.json";
+const PARAMETRES_URL = new URLSearchParams(window.location.search);
+const EST_MODE_PREVIEW = PARAMETRES_URL.has("preview");
+const SECTION_DEMANDEE = (PARAMETRES_URL.get("section") || "").trim().toLowerCase();
 const IDS_BLOCS_EDITABLES = [
   "entete-bloc",
   "succes-bloc",
   "grille-zone",
 ];
+const DEFINITIONS_SECTIONS_OVERLAY = [
+  { id: "entete-bloc", cle: "entete", libelle: "En-tête" },
+  { id: "succes-bloc", cle: "succes-courant", libelle: "Rétrosuccès en cours" },
+  { id: "grille-zone", cle: "grille-succes", libelle: "Rétrosuccès du jeu" },
+];
+const referencesLiensPreview = new Map();
 
 function obtenirCurseurRedimensionnement(zoneRedimensionnement) {
   const { haut, bas, gauche, droite } = zoneRedimensionnement;
@@ -537,6 +546,189 @@ function obtenirBlocsEditables() {
   return IDS_BLOCS_EDITABLES.map((id) => document.getElementById(id)).filter(Boolean);
 }
 
+function obtenirDefinitionsSectionsDisponibles() {
+  return DEFINITIONS_SECTIONS_OVERLAY.map((definition) => ({
+    ...definition,
+    element: document.getElementById(definition.id),
+  })).filter((definition) => definition.element);
+}
+
+function construireUrlOverlaySection(cleSection = "", largeur = null, hauteur = null) {
+  const url = new URL(window.location.href);
+  url.search = "";
+
+  if (cleSection) {
+    url.searchParams.set("section", cleSection);
+  }
+
+  if (Number.isFinite(largeur) && largeur > 0) {
+    url.searchParams.set("width", String(Math.round(largeur)));
+  }
+
+  if (Number.isFinite(hauteur) && hauteur > 0) {
+    url.searchParams.set("height", String(Math.round(hauteur)));
+  }
+
+  return url.toString();
+}
+
+function appliquerFiltreSectionSiNecessaire() {
+  if (!SECTION_DEMANDEE) {
+    return;
+  }
+
+  const main = obtenirMain();
+  const toolbar = document.getElementById("toolbar-edition");
+  const panneauPreview = document.getElementById("panneau-liens-preview");
+  const definitions = obtenirDefinitionsSectionsDisponibles();
+  const definitionCible = definitions.find((definition) => definition.cle === SECTION_DEMANDEE);
+
+  if (!definitionCible) {
+    return;
+  }
+
+  modeEdition = false;
+  interactionEdition = null;
+  document.body.classList.remove("mode-edition");
+  document.body.classList.add("section-isolee");
+  main.classList.remove("layout-personnalise", "mode-edition");
+  main.style.removeProperty("width");
+  main.style.removeProperty("height");
+
+  for (const bloc of obtenirBlocsEditables()) {
+    const estVisible = bloc.id === definitionCible.id;
+    bloc.hidden = !estVisible;
+    bloc.style.removeProperty("left");
+    bloc.style.removeProperty("top");
+    bloc.style.removeProperty("right");
+    bloc.style.removeProperty("bottom");
+    bloc.style.removeProperty("width");
+    bloc.style.removeProperty("height");
+    bloc.style.removeProperty("transform");
+    bloc.style.removeProperty("position");
+    bloc.style.removeProperty("cursor");
+
+    if (estVisible) {
+      bloc.style.removeProperty("display");
+    } else {
+      bloc.style.display = "none";
+    }
+  }
+
+  definitionCible.element.hidden = false;
+  definitionCible.element.style.removeProperty("display");
+
+  if (toolbar) {
+    toolbar.hidden = true;
+  }
+
+  if (panneauPreview) {
+    panneauPreview.hidden = true;
+  }
+}
+
+function initialiserPanneauLiensPreview() {
+  const panneau = document.getElementById("panneau-liens-preview");
+  const liste = document.getElementById("liste-liens-preview");
+
+  if (!panneau || !liste || !EST_MODE_PREVIEW || SECTION_DEMANDEE) {
+    return;
+  }
+
+  const liens = obtenirDefinitionsSectionsDisponibles().map((definition) => ({
+    libelle: definition.libelle,
+    url: construireUrlOverlaySection(definition.cle),
+  }));
+
+  liste.innerHTML = "";
+  referencesLiensPreview.clear();
+
+  for (const lien of liens) {
+    const ligne = document.createElement("div");
+    ligne.className = "lien-preview-item";
+
+    const etiquette = document.createElement("div");
+    etiquette.className = "lien-preview-item-label";
+    etiquette.textContent = lien.libelle;
+
+    const champ = document.createElement("input");
+    champ.className = "lien-preview-item-url";
+    champ.type = "text";
+    champ.readOnly = true;
+    champ.value = lien.url;
+    champ.addEventListener("focus", () => champ.select());
+    champ.addEventListener("click", () => champ.select());
+
+    const rangee = document.createElement("div");
+    rangee.className = "lien-preview-item-rangee";
+
+    const boutonCopier = document.createElement("button");
+    boutonCopier.className = "lien-preview-item-copier";
+    boutonCopier.type = "button";
+    boutonCopier.textContent = "Copier";
+    boutonCopier.addEventListener("click", async () => {
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(champ.value);
+        } else {
+          champ.select();
+          document.execCommand("copy");
+        }
+
+        boutonCopier.textContent = "Copié";
+        window.setTimeout(() => {
+          boutonCopier.textContent = "Copier";
+        }, 1200);
+      } catch {
+        champ.select();
+      }
+    });
+
+    rangee.appendChild(champ);
+    rangee.appendChild(boutonCopier);
+    ligne.appendChild(etiquette);
+    ligne.appendChild(rangee);
+    liste.appendChild(ligne);
+
+    const definition = obtenirDefinitionsSectionsDisponibles().find(
+      (item) => construireUrlOverlaySection(item.cle) === lien.url,
+    );
+
+    referencesLiensPreview.set(lien.url, {
+      cle: lien.url,
+      etiquette,
+      champ,
+      libelle: lien.libelle,
+      definitionId: definition?.id || "",
+      sectionCle: definition?.cle || "",
+    });
+  }
+
+  panneau.hidden = false;
+  mettreAJourDimensionsLiensPreview();
+}
+
+function mettreAJourDimensionsLiensPreview() {
+  if (!EST_MODE_PREVIEW || SECTION_DEMANDEE || referencesLiensPreview.size === 0) {
+    return;
+  }
+
+  for (const reference of referencesLiensPreview.values()) {
+    const element = reference.definitionId
+      ? document.getElementById(reference.definitionId)
+      : null;
+    if (!element || !reference.etiquette || !reference.champ) {
+      continue;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const largeur = Math.max(0, Math.round(rect.width));
+    const hauteur = Math.max(0, Math.round(rect.height));
+    reference.champ.value = construireUrlOverlaySection(reference.sectionCle, largeur, hauteur);
+    reference.etiquette.textContent = `${reference.libelle} · ${largeur} x ${hauteur}`;
+  }
+}
+
 function calculerRayonDynamiqueBloc(bloc) {
   const rect = bloc.getBoundingClientRect();
   const coteCourt = Math.min(rect.width, rect.height);
@@ -567,6 +759,8 @@ function appliquerRayonsDynamiques() {
   for (const bloc of obtenirBlocsEditables()) {
     appliquerRayonDynamiqueBloc(bloc);
   }
+
+  mettreAJourDimensionsLiensPreview();
 }
 
 function lireNombreCss(nomVariable, valeurRepli) {
@@ -888,6 +1082,7 @@ function initialiserEdition() {
 
   window.addEventListener("resize", programmerAjustementTitreJeu);
   window.addEventListener("resize", ajusterContenuSuccesCourant);
+  window.addEventListener("resize", mettreAJourDimensionsLiensPreview);
 
   main.addEventListener("pointerdown", (evenement) => {
     if (!modeEdition) {
@@ -1130,6 +1325,8 @@ function forcerRenduEtat(etat) {
     void racine.offsetHeight;
     racine.style.visibility = "visible";
   }
+
+  mettreAJourDimensionsLiensPreview();
 }
 
 async function lireEtatJsonAvecFetch() {
@@ -1213,6 +1410,9 @@ async function initialiserOverlay() {
   if (layout) {
     appliquerLayoutPersonnalise(layout);
   }
+
+  appliquerFiltreSectionSiNecessaire();
+  initialiserPanneauLiensPreview();
 
   await rafraichir();
   setInterval(rafraichir, 1000);
