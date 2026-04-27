@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Globalization;
 using RA.Compagnon.Modeles.Api.V2.Game;
+using RA.Compagnon.Modeles.Api.V2.User;
 using RA.Compagnon.Modeles.Local;
 using RA.Compagnon.Modeles.Obs;
 using RA.Compagnon.Modeles.Presentation;
@@ -118,6 +120,16 @@ public partial class MainWindow
                 Resume = "12 / 30 succès",
                 Pourcentage = "40 %",
                 Valeur = 40,
+            },
+            UserInfo = new UserInfoExportObs
+            {
+                LastGameId = 236,
+                TotalPoints = 24682,
+                TotalTruePoints = 80704,
+                Rank = 1864,
+                Awards = 16,
+                UserPic = "/UserPic/RetroS3xual.png",
+                RetroRatio = "3.27%",
             },
             SuccesCourant = new SuccesExportObs
             {
@@ -240,6 +252,7 @@ public partial class MainWindow
             MisAJourUtc = DateTimeOffset.UtcNow.ToString("O"),
             Jeu = ConstruireJeuObs(jeu),
             Progression = ConstruireProgressionObs(jeu),
+            UserInfo = ConstruireUserInfoObs(),
             SuccesCourant = ConstruireSuccesObs(succes),
             GrilleSuccesJeu = ConstruireGrilleSuccesJeuObs(succes),
             DernierSuccesObtenu = ConstruireDernierSuccesObs(dernierSuccesObtenu),
@@ -335,6 +348,57 @@ public partial class MainWindow
             Pourcentage = jeu.PourcentageProgression,
             Valeur = Math.Clamp(jeu.ValeurProgression, 0, 100),
         };
+    }
+
+    /*
+     * Convertit les données de compte déjà chargées en sources OBS séparées,
+     * sans relancer d'appel API pendant l'export.
+     */
+    private UserInfoExportObs ConstruireUserInfoObs()
+    {
+        UserSummaryV2? resume = _dernierResumeUtilisateurCharge;
+        UserProfileV2? profil = _dernierProfilUtilisateurCharge;
+        int totalPoints = resume?.TotalPoints ?? profil?.TotalPoints ?? 0;
+        int totalTruePoints = resume?.TotalTruePoints ?? profil?.TotalTruePoints ?? 0;
+
+        return new UserInfoExportObs
+        {
+            LastGameId = resume?.LastGameId > 0 ? resume.LastGameId : profil?.LastGameId ?? 0,
+            TotalPoints = totalPoints,
+            TotalTruePoints = totalTruePoints,
+            Rank = resume?.Rank ?? 0,
+            Awards = resume?.Awarded.Count ?? 0,
+            UserPic = DeterminerUserPicObs(resume, profil),
+            RetroRatio = CalculerRetroRatioObs(totalPoints, totalTruePoints),
+        };
+    }
+
+    /*
+     * Privilégie l'avatar du résumé enrichi, puis celui du profil simple.
+     */
+    private static string DeterminerUserPicObs(UserSummaryV2? resume, UserProfileV2? profil)
+    {
+        if (!string.IsNullOrWhiteSpace(resume?.UserPic))
+        {
+            return resume.UserPic.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(profil?.UserPic) ? string.Empty : profil.UserPic.Trim();
+    }
+
+    /*
+     * Reproduit le ratio RetroAchievements à partir des points pondérés et
+     * standards afin que la source texte reste indépendante du format API.
+     */
+    private static string CalculerRetroRatioObs(int totalPoints, int totalTruePoints)
+    {
+        if (totalPoints <= 0 || totalTruePoints <= 0)
+        {
+            return string.Empty;
+        }
+
+        double ratio = (double)totalTruePoints / totalPoints;
+        return string.Create(CultureInfo.InvariantCulture, $"{ratio:0.00}%");
     }
 
     /*

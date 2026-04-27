@@ -38,6 +38,47 @@ const DEFINITIONS_SECTIONS_OVERLAY = [
   { id: "entete-bloc", cle: "entete", libelle: "En-tête" },
   { id: "succes-bloc", cle: "succes-courant", libelle: "Rétrosuccès en cours" },
   { id: "grille-zone", cle: "grille-succes", libelle: "Rétrosuccès du jeu" },
+  { id: "game-info-titre-console", cle: "game-info-titre-console", libelle: "Game-info - titre et console" },
+  { id: "jeu", cle: "game-info-titre", libelle: "Game-info - titre" },
+  { id: "image-console", cle: "game-info-console", libelle: "Game-info - console" },
+  { id: "game-info-progression", cle: "game-info-progression", libelle: "Game-info - progression complète" },
+  { id: "progression", cle: "game-info-progression-texte", libelle: "Game-info - texte de progression" },
+  { id: "game-info-barre-progression", cle: "game-info-barre-progression", libelle: "Game-info - barre de progression" },
+  { id: "pourcentage", cle: "game-info-pourcentage", libelle: "Game-info - pourcentage" },
+  { id: "user-info-succes-courant", cle: "user-info-succes-courant", libelle: "User-info - succès courant complet" },
+  { id: "badge-succes-courant", cle: "user-info-badge-succes", libelle: "User-info - badge du succès" },
+  { id: "user-info-succes-infos", cle: "user-info-succes-infos", libelle: "User-info - informations du succès" },
+  { id: "succes", cle: "user-info-titre-succes", libelle: "User-info - titre du succès" },
+  { id: "description", cle: "user-info-description-succes", libelle: "User-info - description du succès" },
+];
+const DEFINITIONS_FICHIERS_TEXTE_PREVIEW = [
+  {
+    titre: "Game-info",
+    fichiers: [
+      ["Jeu", "game-info-titre.txt"],
+      ["Statut", "game-info-statut.txt"],
+      ["Détails", "game-info-details.txt"],
+      ["Genre", "game-info-genre.txt"],
+      ["Développeur", "game-info-developpeur.txt"],
+      ["Progression", "game-info-progression.txt"],
+      ["Pourcentage", "game-info-pourcentage.txt"],
+      ["Valeur", "game-info-valeur-progression.txt"],
+      ["Mode d'affichage", "game-info-mode-affichage.txt"],
+      ["Synchronisation", "game-info-synchronisation.txt"],
+    ],
+  },
+  {
+    titre: "User-info",
+    fichiers: [
+      ["lastGameID", "user-info-lastGameID.txt"],
+      ["totalPoints", "user-info-totalPoints.txt"],
+      ["totalTruePoints", "user-info-totalTruePoints.txt"],
+      ["rank", "user-info-rank.txt"],
+      ["awards", "user-info-awards.txt"],
+      ["userPic", "user-info-userPic.txt"],
+      ["retroRatio", "user-info-retroRatio.txt"],
+    ],
+  },
 ];
 const referencesLiensPreview = new Map();
 
@@ -392,6 +433,96 @@ function appliquerGrilleSucces(badges) {
   programmerMiseAJourAnimationGrille();
 }
 
+function formaterValeurExtraite(valeur) {
+  if (valeur === null || valeur === undefined || valeur === "") {
+    return "Non disponible";
+  }
+
+  if (typeof valeur === "boolean") {
+    return valeur ? "Oui" : "Non";
+  }
+
+  return String(valeur);
+}
+
+function creerRangeeDonneeExtraite(libelle, valeur, fichier = "") {
+  const rangee = document.createElement("div");
+  rangee.className = "donnee-extraite";
+
+  const etiquette = document.createElement("div");
+  etiquette.className = "donnee-extraite-libelle";
+  etiquette.textContent = libelle;
+
+  const contenu = document.createElement("div");
+  contenu.className = "donnee-extraite-valeur";
+  contenu.textContent = formaterValeurExtraite(valeur);
+
+  rangee.appendChild(etiquette);
+  rangee.appendChild(contenu);
+
+  if (fichier) {
+    const source = document.createElement("div");
+    source.className = "donnee-extraite-fichier";
+    source.textContent = fichier;
+    rangee.appendChild(source);
+  }
+
+  return rangee;
+}
+
+function creerGroupeDonneesExtraites(titre, donnees) {
+  const groupe = document.createElement("section");
+  groupe.className = "donnees-extraites-groupe";
+
+  const entete = document.createElement("div");
+  entete.className = "donnees-extraites-groupe-titre";
+  entete.textContent = titre;
+  groupe.appendChild(entete);
+
+  for (const [libelle, valeur, fichier] of donnees) {
+    groupe.appendChild(creerRangeeDonneeExtraite(libelle, valeur, fichier));
+  }
+
+  return groupe;
+}
+
+async function lireFichierTextePreview(fichier) {
+  try {
+    const reponse = await fetch(`${fichier}?cache=${Date.now()}`, { cache: "no-store" });
+    if (!reponse.ok) {
+      return "Fichier introuvable";
+    }
+
+    return (await reponse.text()).trim();
+  } catch {
+    return "Lecture impossible";
+  }
+}
+
+async function mettreAJourDonneesExtraitesPreview() {
+  if (!EST_MODE_PREVIEW || SECTION_DEMANDEE) {
+    return;
+  }
+
+  const conteneur = document.getElementById("donnees-extraites-preview");
+  if (!conteneur) {
+    return;
+  }
+
+  conteneur.innerHTML = "";
+
+  for (const groupe of DEFINITIONS_FICHIERS_TEXTE_PREVIEW) {
+    const donnees = await Promise.all(
+      groupe.fichiers.map(async ([libelle, fichier]) => [
+        libelle,
+        await lireFichierTextePreview(fichier),
+        fichier,
+      ]),
+    );
+    conteneur.appendChild(creerGroupeDonneesExtraites(groupe.titre, donnees));
+  }
+}
+
 function normaliserUrlImageJeu(chemin) {
   const valeur = (chemin || "").trim();
 
@@ -557,15 +688,18 @@ function normaliserStructureOverlay() {
 
   if (succes) {
     succes.id = "succes-bloc";
-    succes.dataset.section = "Rétrosuccès en cours";
+    succes.dataset.section = "succes-courant";
+    succes.dataset.sectionLabel = "Rétrosuccès en cours";
   }
 
   if (entete) {
-    entete.dataset.section = "En-tête";
+    entete.dataset.section = "entete";
+    entete.dataset.sectionLabel = "En-tête";
   }
 
   if (grille) {
-    grille.dataset.section = "Rétrosuccès du jeu";
+    grille.dataset.section = "grille-succes";
+    grille.dataset.sectionLabel = "Rétrosuccès du jeu";
   }
 
   for (const bloc of [entete, succes, grille]) {
@@ -588,6 +722,10 @@ function normaliserStructureOverlay() {
 
 function obtenirBlocsEditables() {
   return IDS_BLOCS_EDITABLES.map((id) => document.getElementById(id)).filter(Boolean);
+}
+
+function estBlocEditable(definitionId) {
+  return IDS_BLOCS_EDITABLES.includes(definitionId);
 }
 
 function obtenirDefinitionsSectionsDisponibles() {
@@ -624,6 +762,19 @@ function appliquerRedimensionnementSectionDepuisPreview(
 ) {
   const bloc = definitionId ? document.getElementById(definitionId) : null;
   if (!bloc) {
+    return;
+  }
+
+  if (!estBlocEditable(definitionId)) {
+    if (Number.isFinite(largeurDemandee) && largeurDemandee > 0) {
+      bloc.style.width = `${Math.round(largeurDemandee)}px`;
+    }
+
+    if (Number.isFinite(hauteurDemandee) && hauteurDemandee > 0) {
+      bloc.style.height = `${Math.round(hauteurDemandee)}px`;
+    }
+
+    mettreAJourDimensionsLiensPreview();
     return;
   }
 
@@ -673,6 +824,9 @@ function appliquerFiltreSectionSiNecessaire() {
     return;
   }
 
+  const cibleEstBlocEditable = estBlocEditable(definitionCible.id);
+  let elementDimensionne = definitionCible.element;
+
   modeEdition = false;
   interactionEdition = null;
   document.body.classList.remove("mode-edition");
@@ -705,21 +859,35 @@ function appliquerFiltreSectionSiNecessaire() {
     }
   }
 
-  definitionCible.element.hidden = false;
-  definitionCible.element.style.removeProperty("display");
+  if (cibleEstBlocEditable) {
+    definitionCible.element.hidden = false;
+    definitionCible.element.style.removeProperty("display");
+  } else {
+    const conteneurSource = document.createElement("section");
+    conteneurSource.id = "source-isolee-conteneur";
+    conteneurSource.className = "bloc source-isolee-conteneur";
+    conteneurSource.dataset.section = definitionCible.cle;
+    conteneurSource.dataset.sectionLabel = definitionCible.libelle;
+
+    definitionCible.element.hidden = false;
+    definitionCible.element.style.removeProperty("display");
+    conteneurSource.appendChild(definitionCible.element);
+    main.appendChild(conteneurSource);
+    elementDimensionne = conteneurSource;
+  }
 
   if (LARGEUR_SECTION_DEMANDEE) {
     const largeur = Math.round(LARGEUR_SECTION_DEMANDEE);
     main.style.width = `${largeur}px`;
-    definitionCible.element.style.setProperty("width", `${largeur}px`, "important");
-    definitionCible.element.style.setProperty("min-width", `${largeur}px`, "important");
+    elementDimensionne.style.setProperty("width", `${largeur}px`, "important");
+    elementDimensionne.style.setProperty("min-width", `${largeur}px`, "important");
   }
 
   if (HAUTEUR_SECTION_DEMANDEE) {
     const hauteur = Math.round(HAUTEUR_SECTION_DEMANDEE);
     main.style.height = `${hauteur}px`;
-    definitionCible.element.style.setProperty("height", `${hauteur}px`, "important");
-    definitionCible.element.style.setProperty("min-height", `${hauteur}px`, "important");
+    elementDimensionne.style.setProperty("height", `${hauteur}px`, "important");
+    elementDimensionne.style.setProperty("min-height", `${hauteur}px`, "important");
   }
 
   if (toolbar) {
@@ -734,127 +902,159 @@ function appliquerFiltreSectionSiNecessaire() {
 function initialiserPanneauLiensPreview() {
   const panneau = document.getElementById("panneau-liens-preview");
   const liste = document.getElementById("liste-liens-preview");
+  const panneauInfos = document.getElementById("panneau-liens-infos-preview");
+  const listeInfos = document.getElementById("liste-liens-infos-preview");
 
-  if (!panneau || !liste || !EST_MODE_PREVIEW || SECTION_DEMANDEE) {
+  if (!panneau || !liste || !panneauInfos || !listeInfos || !EST_MODE_PREVIEW || SECTION_DEMANDEE) {
     return;
   }
 
-  const liens = obtenirDefinitionsSectionsDisponibles().map((definition) => ({
-    libelle: definition.libelle,
-    url: construireUrlOverlaySection(definition.cle),
-  }));
+  const definitions = obtenirDefinitionsSectionsDisponibles();
+  const groupesLiens = [
+    {
+      titre: "Sections principales",
+      cible: liste,
+      definitions: definitions.filter((definition) => estBlocEditable(definition.id)),
+    },
+    {
+      titre: "Game-info",
+      cible: listeInfos,
+      definitions: definitions.filter((definition) => definition.cle.startsWith("game-info-")),
+    },
+    {
+      titre: "User-info",
+      cible: listeInfos,
+      definitions: definitions.filter((definition) => definition.cle.startsWith("user-info-")),
+    },
+  ];
 
   liste.innerHTML = "";
+  listeInfos.innerHTML = "";
   referencesLiensPreview.clear();
 
-  for (const lien of liens) {
-    const ligne = document.createElement("div");
-    ligne.className = "lien-preview-item";
-    const definition = obtenirDefinitionsSectionsDisponibles().find(
-      (item) => construireUrlOverlaySection(item.cle) === lien.url,
-    );
+  for (const groupe of groupesLiens) {
+    if (groupe.definitions.length === 0) {
+      continue;
+    }
 
-    const etiquette = document.createElement("div");
-    etiquette.className = "lien-preview-item-label";
-    etiquette.textContent = lien.libelle;
+    const zone = document.createElement("section");
+    zone.className = "liens-preview-groupe";
 
-    const champ = document.createElement("input");
-    champ.className = "lien-preview-item-url";
-    champ.type = "text";
-    champ.readOnly = true;
-    champ.value = lien.url;
-    champ.addEventListener("focus", () => champ.select());
-    champ.addEventListener("click", () => champ.select());
+    const titre = document.createElement("div");
+    titre.className = "liens-preview-groupe-titre";
+    titre.textContent = groupe.titre;
+    zone.appendChild(titre);
 
-    const rangee = document.createElement("div");
-    rangee.className = "lien-preview-item-rangee";
+    for (const definition of groupe.definitions) {
+      const url = construireUrlOverlaySection(definition.cle);
+      const ligne = document.createElement("div");
+      ligne.className = "lien-preview-item";
 
-    const controlesTaille = document.createElement("div");
-    controlesTaille.className = "lien-preview-item-taille";
+      const etiquette = document.createElement("div");
+      etiquette.className = "lien-preview-item-label";
+      etiquette.textContent = definition.libelle;
 
-    const champLargeur = document.createElement("input");
-    champLargeur.className = "lien-preview-item-dimension";
-    champLargeur.type = "number";
-    champLargeur.min = "1";
-    champLargeur.step = "1";
-    champLargeur.inputMode = "numeric";
-    champLargeur.setAttribute("aria-label", `Largeur ${lien.libelle}`);
-    champLargeur.title = "Largeur";
+      const champ = document.createElement("input");
+      champ.className = "lien-preview-item-url";
+      champ.type = "text";
+      champ.readOnly = true;
+      champ.value = url;
+      champ.addEventListener("focus", () => champ.select());
+      champ.addEventListener("click", () => champ.select());
 
-    const champHauteur = document.createElement("input");
-    champHauteur.className = "lien-preview-item-dimension";
-    champHauteur.type = "number";
-    champHauteur.min = "1";
-    champHauteur.step = "1";
-    champHauteur.inputMode = "numeric";
-    champHauteur.setAttribute("aria-label", `Hauteur ${lien.libelle}`);
-    champHauteur.title = "Hauteur";
+      const rangee = document.createElement("div");
+      rangee.className = "lien-preview-item-rangee";
 
-    const appliquerDimensions = () => {
-      appliquerRedimensionnementSectionDepuisPreview(
-        definition?.id || "",
-        Number.parseFloat(champLargeur.value),
-        Number.parseFloat(champHauteur.value),
-      );
-    };
+      const controlesTaille = document.createElement("div");
+      controlesTaille.className = "lien-preview-item-taille";
 
-    champLargeur.addEventListener("change", appliquerDimensions);
-    champHauteur.addEventListener("change", appliquerDimensions);
-    champLargeur.addEventListener("keydown", (evenement) => {
-      if (evenement.key === "Enter") {
-        appliquerDimensions();
-      }
-    });
-    champHauteur.addEventListener("keydown", (evenement) => {
-      if (evenement.key === "Enter") {
-        appliquerDimensions();
-      }
-    });
+      const champLargeur = document.createElement("input");
+      champLargeur.className = "lien-preview-item-dimension";
+      champLargeur.type = "number";
+      champLargeur.min = "1";
+      champLargeur.step = "1";
+      champLargeur.inputMode = "numeric";
+      champLargeur.setAttribute("aria-label", `Largeur ${definition.libelle}`);
+      champLargeur.title = "Largeur";
 
-    const boutonCopier = document.createElement("button");
-    boutonCopier.className = "lien-preview-item-copier";
-    boutonCopier.type = "button";
-    boutonCopier.textContent = "Copier";
-    boutonCopier.addEventListener("click", async () => {
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(champ.value);
-        } else {
-          champ.select();
-          document.execCommand("copy");
+      const champHauteur = document.createElement("input");
+      champHauteur.className = "lien-preview-item-dimension";
+      champHauteur.type = "number";
+      champHauteur.min = "1";
+      champHauteur.step = "1";
+      champHauteur.inputMode = "numeric";
+      champHauteur.setAttribute("aria-label", `Hauteur ${definition.libelle}`);
+      champHauteur.title = "Hauteur";
+
+      const appliquerDimensions = () => {
+        appliquerRedimensionnementSectionDepuisPreview(
+          definition.id,
+          Number.parseFloat(champLargeur.value),
+          Number.parseFloat(champHauteur.value),
+        );
+      };
+
+      champLargeur.addEventListener("change", appliquerDimensions);
+      champHauteur.addEventListener("change", appliquerDimensions);
+      champLargeur.addEventListener("keydown", (evenement) => {
+        if (evenement.key === "Enter") {
+          appliquerDimensions();
         }
+      });
+      champHauteur.addEventListener("keydown", (evenement) => {
+        if (evenement.key === "Enter") {
+          appliquerDimensions();
+        }
+      });
 
-        boutonCopier.textContent = "Copié";
-        window.setTimeout(() => {
-          boutonCopier.textContent = "Copier";
-        }, 1200);
-      } catch {
-        champ.select();
-      }
-    });
+      const boutonCopier = document.createElement("button");
+      boutonCopier.className = "lien-preview-item-copier";
+      boutonCopier.type = "button";
+      boutonCopier.textContent = "Copier";
+      boutonCopier.addEventListener("click", async () => {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(champ.value);
+          } else {
+            champ.select();
+            document.execCommand("copy");
+          }
 
-    controlesTaille.appendChild(champLargeur);
-    controlesTaille.appendChild(champHauteur);
-    rangee.appendChild(controlesTaille);
-    rangee.appendChild(champ);
-    rangee.appendChild(boutonCopier);
-    ligne.appendChild(etiquette);
-    ligne.appendChild(rangee);
-    liste.appendChild(ligne);
+          boutonCopier.textContent = "Copié";
+          window.setTimeout(() => {
+            boutonCopier.textContent = "Copier";
+          }, 1200);
+        } catch {
+          champ.select();
+        }
+      });
 
-    referencesLiensPreview.set(lien.url, {
-      cle: lien.url,
-      etiquette,
-      champ,
-      champLargeur,
-      champHauteur,
-      libelle: lien.libelle,
-      definitionId: definition?.id || "",
-      sectionCle: definition?.cle || "",
-    });
+      controlesTaille.appendChild(champLargeur);
+      controlesTaille.appendChild(champHauteur);
+      rangee.appendChild(controlesTaille);
+      rangee.appendChild(champ);
+      rangee.appendChild(boutonCopier);
+      ligne.appendChild(etiquette);
+      ligne.appendChild(rangee);
+      zone.appendChild(ligne);
+
+      referencesLiensPreview.set(url, {
+        cle: url,
+        etiquette,
+        champ,
+        champLargeur,
+        champHauteur,
+        libelle: definition.libelle,
+        definitionId: definition.id,
+        sectionCle: definition.cle,
+      });
+    }
+
+    groupe.cible.appendChild(zone);
   }
 
-  panneau.hidden = false;
+  panneau.hidden = liste.children.length === 0;
+  panneauInfos.hidden = listeInfos.children.length === 0;
   mettreAJourDimensionsLiensPreview();
 }
 
@@ -1440,6 +1640,7 @@ function appliquerEtat(etat) {
   );
   imageConsole.src = iconeConsole;
   imageConsole.classList.toggle("visible", !!iconeConsole);
+  void mettreAJourDonneesExtraitesPreview();
   appliquerRayonsDynamiques();
   programmerAjustementTitreJeu();
   ajusterContenuSuccesCourant();
@@ -1464,6 +1665,7 @@ function afficherErreur(message) {
   document.getElementById("badge-succes-courant").removeAttribute("src");
   document.getElementById("badge-succes-courant").style.visibility = "hidden";
   appliquerGrilleSucces([]);
+  void mettreAJourDonneesExtraitesPreview();
   appliquerRayonsDynamiques();
   programmerAjustementTitreJeu();
   ajusterContenuSuccesCourant();

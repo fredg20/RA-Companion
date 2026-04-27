@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 /*
  * Représente l'état minimal exporté vers OBS pour les sources navigateur,
  * texte et les futurs overlays dédiés au streaming.
@@ -17,6 +19,8 @@ public sealed class EtatExportObs
     public JeuExportObs Jeu { get; init; } = new();
 
     public ProgressionExportObs Progression { get; init; } = new();
+
+    public UserInfoExportObs UserInfo { get; init; } = new();
 
     public SuccesExportObs SuccesCourant { get; init; } = new();
 
@@ -72,6 +76,34 @@ public sealed class ProgressionExportObs
 /*
  * Décrit le succès actuellement mis en avant dans Compagnon.
  */
+/*
+ * Expose les statistiques de compte utiles aux sources texte OBS, avec des
+ * noms alignés sur les données brutes RetroAchievements.
+ */
+public sealed class UserInfoExportObs
+{
+    [JsonPropertyName("lastGameID")]
+    public int LastGameId { get; init; }
+
+    [JsonPropertyName("totalPoints")]
+    public int TotalPoints { get; init; }
+
+    [JsonPropertyName("totalTruePoints")]
+    public int TotalTruePoints { get; init; }
+
+    [JsonPropertyName("rank")]
+    public int Rank { get; init; }
+
+    [JsonPropertyName("awards")]
+    public int Awards { get; init; }
+
+    [JsonPropertyName("userPic")]
+    public string UserPic { get; init; } = string.Empty;
+
+    [JsonPropertyName("retroRatio")]
+    public string RetroRatio { get; init; } = string.Empty;
+}
+
 public sealed class SuccesExportObs
 {
     public int IdentifiantJeu { get; init; }

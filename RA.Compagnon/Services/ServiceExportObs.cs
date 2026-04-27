@@ -1,4 +1,5 @@
 using System.IO;
+using System.Globalization;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using RA.Compagnon.Modeles.Obs;
@@ -149,6 +150,145 @@ public sealed class ServiceExportObs
             NettoyerTexteSource(etat.EtatSynchronisation),
             jetonAnnulation
         );
+        await EcrireSourcesTexteDetailleesAsync(etat, jetonAnnulation);
+    }
+
+    /*
+     * Publie une source texte par donnée afin de permettre une composition OBS
+     * fine, inspirée du fonctionnement de RA Layout Manager.
+     */
+    private static async Task EcrireSourcesTexteDetailleesAsync(
+        EtatExportObs etat,
+        CancellationToken jetonAnnulation
+    )
+    {
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-titre.txt"),
+            NettoyerTexteSource(etat.Jeu.Titre),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-statut.txt"),
+            NettoyerTexteSource(etat.Jeu.Statut),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-details.txt"),
+            NettoyerTexteSource(etat.Jeu.Details),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-genre.txt"),
+            NettoyerTexteSource(etat.Jeu.Genre),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-developpeur.txt"),
+            NettoyerTexteSource(etat.Jeu.Developpeur),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-progression.txt"),
+            NettoyerTexteSource(etat.Progression.Resume),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-pourcentage.txt"),
+            NettoyerTexteSource(etat.Progression.Pourcentage),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-valeur-progression.txt"),
+            Math.Clamp(etat.Progression.Valeur, 0, 100).ToString("0.##"),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-mode-affichage.txt"),
+            NettoyerTexteSource(etat.ModeAffichageSucces),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "game-info-synchronisation.txt"),
+            NettoyerTexteSource(etat.EtatSynchronisation),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-lastGameID.txt"),
+            etat.UserInfo.LastGameId.ToString(CultureInfo.InvariantCulture),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-totalPoints.txt"),
+            etat.UserInfo.TotalPoints.ToString(CultureInfo.InvariantCulture),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-totalTruePoints.txt"),
+            etat.UserInfo.TotalTruePoints.ToString(CultureInfo.InvariantCulture),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-rank.txt"),
+            etat.UserInfo.Rank.ToString(CultureInfo.InvariantCulture),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-awards.txt"),
+            etat.UserInfo.Awards.ToString(CultureInfo.InvariantCulture),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-userPic.txt"),
+            NettoyerTexteSource(etat.UserInfo.UserPic),
+            jetonAnnulation
+        );
+        await EcrireTexteAsync(
+            Path.Combine(DossierExportObs, "user-info-retroRatio.txt"),
+            NettoyerTexteSource(etat.UserInfo.RetroRatio),
+            jetonAnnulation
+        );
+        SupprimerSourcesTexteObsoletes();
+    }
+
+    /*
+     * Nettoie les anciens fichiers texte devenus inutiles afin que le dossier
+     * OBS ne conserve pas de sources supprimées dans les versions récentes.
+     */
+    private static void SupprimerSourcesTexteObsoletes()
+    {
+        string[] fichiers =
+        [
+            "game-info-id-jeu.txt",
+            "game-info-id-console.txt",
+            "user-info-succes-id.txt",
+            "user-info-succes-titre.txt",
+            "user-info-succes-description.txt",
+            "user-info-succes-points.txt",
+            "user-info-succes-faisabilite.txt",
+            "user-info-succes-hardcore.txt",
+            "user-info-succes-badge.txt",
+            "user-info-dernier-succes.txt",
+            "user-info-dernier-mode.txt",
+            "user-info-dernier-points.txt",
+            "user-info-dernier-date.txt",
+            "user-info-badges-grille.txt",
+        ];
+
+        foreach (string fichier in fichiers)
+        {
+            string chemin = Path.Combine(DossierExportObs, fichier);
+
+            try
+            {
+                if (File.Exists(chemin))
+                {
+                    File.Delete(chemin);
+                }
+            }
+            catch
+            {
+            }
+        }
     }
 
     /*

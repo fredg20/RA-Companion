@@ -12,25 +12,25 @@
     <div class="colonne-gauche">
       <section id="entete-bloc" class="entete entete-bloc" data-section="entete" data-section-label="En-tête">
         <div class="entete-principal">
-          <div class="titre-zone">
-            <h1 id="jeu">Aucun jeu</h1>
-            <img id="image-console" class="icone-console" alt="Console">
+          <div id="game-info-titre-console" class="titre-zone" data-section="game-info-titre-console" data-section-label="Jeu - titre et console">
+            <h1 id="jeu" data-section="game-info-titre" data-section-label="Jeu - titre">Aucun jeu</h1>
+            <img id="image-console" class="icone-console" alt="Console" data-section="game-info-console" data-section-label="Jeu - console">
           </div>
-          <div class="progression-entete">
-            <div id="progression" class="progression"></div>
-            <div class="barre barre-entete"><span id="barre"></span></div>
-            <div id="pourcentage" class="pourcentage"></div>
+          <div id="game-info-progression" class="progression-entete" data-section="game-info-progression" data-section-label="Jeu - progression complète">
+            <div id="progression" class="progression" data-section="game-info-progression-texte" data-section-label="Jeu - texte de progression"></div>
+            <div id="game-info-barre-progression" class="barre barre-entete" data-section="game-info-barre-progression" data-section-label="Jeu - barre de progression"><span id="barre"></span></div>
+            <div id="pourcentage" class="pourcentage" data-section="game-info-pourcentage" data-section-label="Jeu - pourcentage"></div>
           </div>
         </div>
       </section>
     </div>
     <div class="colonne-droite">
       <section class="bloc" data-section="succes-courant" data-section-label="Rétrosuccès en cours">
-        <div class="succes-courant-layout">
-          <img id="badge-succes-courant" class="badge-succes-courant" alt="Badge du rétrosuccès">
-          <div class="succes-courant-infos">
-            <div id="succes" class="succes"></div>
-            <div id="description" class="description"></div>
+        <div id="user-info-succes-courant" class="succes-courant-layout" data-section="user-info-succes-courant" data-section-label="Utilisateur - succès courant complet">
+          <img id="badge-succes-courant" class="badge-succes-courant" alt="Badge du rétrosuccès" data-section="user-info-badge-succes" data-section-label="Utilisateur - badge du succès">
+          <div id="user-info-succes-infos" class="succes-courant-infos" data-section="user-info-succes-infos" data-section-label="Utilisateur - informations du succès">
+            <div id="succes" class="succes" data-section="user-info-titre-succes" data-section-label="Utilisateur - titre du succès"></div>
+            <div id="description" class="description" data-section="user-info-description-succes" data-section-label="Utilisateur - description du succès"></div>
           </div>
         </div>
       </section>
@@ -46,8 +46,12 @@
     <button id="reinitialiser-layout" type="button">Réinitialiser</button>
   </div>
   <aside id="panneau-liens-preview" class="panneau-liens-preview" hidden>
-    <div class="panneau-liens-preview-titre">Liens HTTP OBS</div>
+    <div class="panneau-liens-preview-titre">Sections principales</div>
     <div id="liste-liens-preview" class="liste-liens-preview"></div>
+  </aside>
+  <aside id="panneau-liens-infos-preview" class="panneau-liens-preview panneau-liens-infos-preview" hidden>
+    <div class="panneau-liens-preview-titre">Sources détaillées</div>
+    <div id="liste-liens-infos-preview" class="liste-liens-preview"></div>
   </aside>
 </body>
 </html>

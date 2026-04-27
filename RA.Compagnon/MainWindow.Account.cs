@@ -1952,6 +1952,26 @@ public partial class MainWindow
             TextWrapping = TextWrapping.Wrap,
             Visibility = Visibility.Collapsed,
         };
+        string urlVersionEmulateur = ObtenirUrlVersionEmulateurValidee(definition);
+        Visibility visibiliteNoticeVersionEmulateur = string.IsNullOrWhiteSpace(
+            urlVersionEmulateur
+        )
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        SystemControls.Button lienVersionEmulateur = new()
+        {
+            Margin = new Thickness(0, dispositionCompacte ? 3 : 4, 0, 0),
+            Padding = new Thickness(0),
+            Background = Brushes.Transparent,
+            BorderBrush = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Content = urlVersionEmulateur,
+            Cursor = Cursors.Hand,
+            FontWeight = FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            ToolTip = $"Télécharger la version {definition.NomEmulateur} validée pour Compagnon",
+        };
+        lienVersionEmulateur.Visibility = visibiliteNoticeVersionEmulateur;
 
         void RafraichirBlocEmplacement()
         {
@@ -2086,6 +2106,14 @@ public partial class MainWindow
         {
             Children =
             {
+                ConstruireTexteDetailAide(
+                    $"Note importante : télécharge la version de {definition.NomEmulateur} validée pour Compagnon afin d'assurer une détection locale fiable.",
+                    0.84,
+                    FontWeights.SemiBold,
+                    visibiliteNoticeVersionEmulateur,
+                    dispositionCompacte
+                ),
+                lienVersionEmulateur,
                 ConstruireLibelleChampAide("Source locale suivie", dispositionCompacte),
                 ConstruireTexteDetailAide(source, 0.78, compact: dispositionCompacte),
                 ConstruireLibelleChampAide("Niveau de confiance", dispositionCompacte),
@@ -2172,6 +2200,7 @@ public partial class MainWindow
         boutonOuvrirEmplacement.Click += (_, _) =>
             OuvrirCheminDiagnosticAide(texteEmplacement.Text);
         boutonOuvrirSource.Click += (_, _) => OuvrirCheminDiagnosticAide(cheminAttendu);
+        lienVersionEmulateur.Click += (_, _) => OuvrirUrlExterne(urlVersionEmulateur);
 
         DispatcherTimer minuteurRafraichissementEmplacement = new()
         {
@@ -2306,6 +2335,39 @@ public partial class MainWindow
         }
 
         OuvrirDossierContenant(chemin);
+    }
+
+    /*
+     * Ouvre une adresse web depuis la modale d'aide avec le navigateur par défaut.
+     */
+    private static void OuvrirUrlExterne(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch { }
+    }
+
+    /*
+     * Retourne le lien de téléchargement de la version validée quand Compagnon
+     * recommande une build précise pour une détection locale fiable.
+     */
+    private static string ObtenirUrlVersionEmulateurValidee(DefinitionEmulateurLocal definition)
+    {
+        return definition.NomEmulateur switch
+        {
+            "BizHawk" =>
+                "https://github.com/fredg20/RA-Companion/releases/download/v1.0.6/BizHawk-2.11-win-x64-local.zip",
+            "Flycast" =>
+                "https://github.com/fredg20/RA-Companion/releases/download/v1.0.6/flycast-0.1.1-win64-portable.zip",
+            _ => string.Empty,
+        };
     }
 
     /*
