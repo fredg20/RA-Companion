@@ -46,5 +46,8 @@
     <Content Include="ObsOverlay\succes-embleme.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="ObsOverlay\succes-embleme-hardcore.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

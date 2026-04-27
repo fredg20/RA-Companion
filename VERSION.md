@@ -31,6 +31,10 @@
 - restauration locale au démarrage
 - aide utilisateur via `INSTRUCTION.md`
 - mise en avant du bouton `Aide` à la première utilisation
+- assistant OBS intégré dans `Aide`
+- export OBS avec `index.html`, `overlay.css`, `overlay.js`, `state.json` et `layout.json`
+- overlay OBS avec sections ajustables, liens par section et sauvegarde de layout
+- rendu OBS différencié `Softcore` / `Hardcore` avec emblème hardcore et dégradés dorés
 - hiérarchie visuelle retravaillée entre la carte principale et les sous-sections
 - simplification visuelle de la zone `Progression`
 
@@ -42,6 +46,25 @@
 - cycle de développement ouvert pour la prochaine version
 - aucun paquet de release `1.1` ne doit être publié tant que la version n'est pas explicitement prête
 - manifeste `update.json` conservé sur `1.0.9` tant que la release `1.1` n'est pas prête
+- ajout d'un overlay OBS structuré en blocs : en-tête, progression, rétrosuccès en cours et grille des rétrosuccès
+- séparation des fichiers OBS en `index.html`, `overlay.scss`, `normalize.scss` et `overlay.js`
+- génération de `overlay.css` depuis les fichiers SCSS lors de l'export OBS
+- ajout de liens OBS par section avec dimensions dans la prévisualisation
+- sauvegarde de la taille et de la position des sections OBS dans `layout.json`
+- ajout de la réinitialisation du layout OBS depuis l'aide
+- ajout d'un assistant OBS dans la modale `Aide` pour préparer, vérifier et dépanner l'overlay
+- ajout de la vérification des fichiers OBS requis : `state.json`, `layout.json`, `index.html`, `overlay.css`, `overlay.js`, `succes-embleme.png` et `succes-embleme-hardcore.png`
+- ajout d'un état de test OBS depuis la section `OBS` de l'aide
+- ajout de l'emblème de succès en arrière-plan de la section OBS `Rétrosuccès en cours`
+- ajout d'un emblème hardcore distinct et de dégradés dorés quand le rétrosuccès courant est réussi en `Hardcore`
+- retour automatique au rendu normal OBS lorsque le rétrosuccès courant n'est pas `Hardcore`
+- amélioration des dégradés de l'emblème de succès en mode normal
+- retrait des ombres portées dans l'overlay OBS pour un rendu plus propre dans les sources navigateur
+- ajout de règles CSS explicites pour fiabiliser l'affichage de l'emblème hardcore dans OBS
+- copie de `succes-embleme-hardcore.png` dans les sorties de build et les exports OBS
+- renforcement de l'écriture OBS avec verrou partagé, remplacement atomique et reprises courtes si un fichier est lu en même temps
+- ajout d'une checklist séparée `TODO-Validation-release.md`
+- mise à jour de `INSTRUCTION.md` avec l'assistant OBS, les fichiers générés et le dépannage de l'overlay
 
 ### 1.0.9
 
@@ -100,6 +123,9 @@
 - commentaires explicatifs ajoutés en français dans les fichiers C# du projet
 - français et accents harmonisés dans la documentation visible
 - passe de relecture effectuée sur le code source pour repérer le code manifestement inutile
+- garde-fou de build ajouté pour valider les noms XAML critiques avant compilation
+- tâches asynchrones et minuteries sensibles sécurisées avec journalisation non bloquante
+- export OBS renforcé contre les écritures concurrentes et les lectures simultanées
 
 ## Validation émulateurs
 
@@ -132,6 +158,7 @@ Non retenu :
 - `update.json`
 - `README.md`
 - `INSTRUCTION.md`
+- `TODO-Validation-release.md`
 
 ## Rappel
 

@@ -345,6 +345,81 @@ main {
   padding: 0;
 }
 
+/*
+ * Règles explicites en CSS pur pour les moteurs OBS/Chromium qui ne
+ * supportent pas toujours le nesting SCSS de manière fiable.
+ */
+#succes-bloc::before {
+  z-index: 0;
+}
+
+#succes-bloc::after {
+  z-index: 1;
+}
+
+#succes-bloc .succes-courant-layout {
+  position: relative;
+  z-index: 2;
+}
+
+#succes-bloc.hardcore {
+  background:
+    linear-gradient(
+      to top,
+      rgba(44, 25, 0, 0.98) 0%,
+      rgba(88, 55, 5, 0.86) 22%,
+      rgba(178, 123, 31, 0.48) 44%,
+      rgba(236, 190, 86, 0.14) 60%,
+      rgba(236, 190, 86, 0) 74%
+    ),
+    radial-gradient(
+      ellipse at 78% 48%,
+      rgba(255, 218, 118, 0.42) 0%,
+      rgba(212, 157, 48, 0.26) 24%,
+      rgba(102, 66, 8, 0.14) 46%,
+      rgba(14, 53, 18, 0) 70%
+    ),
+    linear-gradient(
+      138deg,
+      rgba(0, 51, 102, 0.18) 0%,
+      rgba(117, 77, 12, 0.28) 44%,
+      rgba(46, 27, 2, 0.38) 100%
+    ),
+    #4a3006;
+}
+
+#succes-bloc.hardcore::before {
+  background-image: url("succes-embleme-hardcore.png");
+  background-position: right 50%;
+  background-repeat: no-repeat;
+  background-size: 50%;
+  opacity: 1;
+  filter: drop-shadow(0 0 22px rgba(255, 218, 118, 0.42)) blur(0.18px);
+}
+
+#succes-bloc.hardcore::after {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(15, 12, 7, 0.78) 0%,
+      rgba(30, 22, 8, 0.54) 45%,
+      rgba(64, 42, 7, 0.34) 100%
+    ),
+    radial-gradient(
+      ellipse at 24% 58%,
+      rgba(255, 239, 184, 0.078) 0%,
+      rgba(255, 239, 184, 0.032) 20%,
+      rgba(255, 239, 184, 0) 48%
+    ),
+    radial-gradient(
+      ellipse at 82% 24%,
+      rgba(255, 218, 118, 0.22) 0%,
+      rgba(212, 157, 48, 0.1) 24%,
+      rgba(212, 157, 48, 0) 54%
+    );
+  opacity: 0.86;
+}
+
 /* ==========================================================================
    Blocs partagés
    ========================================================================== */

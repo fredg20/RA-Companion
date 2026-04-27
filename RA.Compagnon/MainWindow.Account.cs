@@ -1343,6 +1343,42 @@ public partial class MainWindow
             "Prévisualiser l'overlay"
         );
         UiControls.Button boutonEtatTest = ConstruireBoutonActionObs("Générer un test OBS");
+        UiControls.Button boutonPreparerObs = ConstruireBoutonActionObs(
+            "Préparer OBS automatiquement"
+        );
+        UiControls.Button boutonVerifierObs = ConstruireBoutonActionObs("Vérifier les fichiers OBS");
+        UiControls.Button boutonReinitialiserLayoutObs = ConstruireBoutonActionObs(
+            "Réinitialiser layout OBS"
+        );
+
+        string ConstruireEtatDiagnosticObs()
+        {
+            string[] fichiersAttendus =
+            [
+                ServiceExportObs.CheminOverlayHtml,
+                ServiceExportObs.CheminOverlayCss,
+                ServiceExportObs.CheminOverlayJs,
+                ServiceExportObs.CheminEtatJson,
+                ServiceExportObs.CheminLayoutJson,
+                ServiceExportObs.CheminOverlaySuccesEmblemePng,
+                ServiceExportObs.CheminOverlaySuccesEmblemeHardcorePng,
+            ];
+            List<string> fichiersManquants =
+            [
+                .. fichiersAttendus
+                    .Where(chemin => !File.Exists(chemin))
+                    .Select(Path.GetFileName)
+                    .Where(nom => !string.IsNullOrWhiteSpace(nom))
+                    .Select(nom => nom!)
+            ];
+
+            if (fichiersManquants.Count == 0)
+            {
+                return "OBS prêt : tous les fichiers attendus sont présents.";
+            }
+
+            return $"Fichiers OBS manquants : {string.Join(", ", fichiersManquants)}.";
+        }
 
         boutonOuvrirDossier.Click += (_, _) =>
         {
@@ -1403,6 +1439,66 @@ public partial class MainWindow
             }
         };
 
+        boutonPreparerObs.Click += async (_, _) =>
+        {
+            boutonPreparerObs.IsEnabled = false;
+            texteEtat.Text = "Préparation automatique d'OBS...";
+
+            try
+            {
+                Directory.CreateDirectory(ServiceExportObs.DossierExportObs);
+                _serviceServeurObsLocal.Demarrer();
+
+                if (!_configurationConnexion.ExportObsActif)
+                {
+                    await DefinirExportObsActifAsync(true);
+                    caseExportActif.IsChecked = true;
+                }
+                else
+                {
+                    await ExporterEtatObsAsync();
+                }
+
+                texteEtat.Text =
+                    $"OBS prêt. Utilise cette URL dans une source navigateur : {_serviceServeurObsLocal.UrlOverlay}";
+            }
+            catch
+            {
+                texteEtat.Text =
+                    "Impossible de préparer OBS automatiquement. Vérifie les permissions du dossier OBS.";
+            }
+            finally
+            {
+                boutonPreparerObs.IsEnabled = true;
+            }
+        };
+
+        boutonVerifierObs.Click += (_, _) =>
+        {
+            texteEtat.Text = ConstruireEtatDiagnosticObs();
+        };
+
+        boutonReinitialiserLayoutObs.Click += async (_, _) =>
+        {
+            boutonReinitialiserLayoutObs.IsEnabled = false;
+            texteEtat.Text = "Réinitialisation du layout OBS...";
+
+            try
+            {
+                await ServiceExportObs.EcrireLayoutJsonDepuisOverlayAsync("{}");
+                texteEtat.Text = "Layout OBS réinitialisé. Rafraîchis la source navigateur OBS.";
+            }
+            catch
+            {
+                texteEtat.Text =
+                    "Impossible de réinitialiser le layout OBS pour le moment.";
+            }
+            finally
+            {
+                boutonReinitialiserLayoutObs.IsEnabled = true;
+            }
+        };
+
         pile.Children.Add(
             ConstruireTexteDetailAide(
                 "OBS peut utiliser une source navigateur pointant vers l'URL locale de l'overlay, ou des sources texte pointant vers les fichiers .txt. L'overlay lit directement state.json.",
@@ -1414,6 +1510,23 @@ public partial class MainWindow
             ConstruireTexteDetailAide(
                 "Taille recommandée pour la source navigateur : 760 x 260. Le bloc HTML s'ajuste ensuite à son contenu dans cette zone.",
                 0.72,
+                compact: _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            ConstruireLibelleChampAide("Assistant de configuration OBS", _modaleAideCompacteCourante)
+        );
+        pile.Children.Add(
+            ConstruireTexteDetailAide(
+                "Utilise Préparer OBS automatiquement pour activer l'export, démarrer le serveur local, générer les fichiers requis et obtenir l'URL à coller dans une source navigateur OBS.",
+                0.82,
+                compact: _modaleAideCompacteCourante
+            )
+        );
+        pile.Children.Add(
+            ConstruireTexteDetailAide(
+                "Si l'overlay semble figé ou mal cadré, vérifie les fichiers, réinitialise layout.json, puis rafraîchis la source navigateur OBS pour vider son cache.",
+                0.74,
                 compact: _modaleAideCompacteCourante
             )
         );
@@ -1459,6 +1572,9 @@ public partial class MainWindow
                 Margin = new Thickness(0, _modaleAideCompacteCourante ? 8 : 10, 0, 0),
                 Children =
                 {
+                    boutonPreparerObs,
+                    boutonVerifierObs,
+                    boutonReinitialiserLayoutObs,
                     boutonOuvrirDossier,
                     boutonCopierEtat,
                     boutonCopierOverlay,

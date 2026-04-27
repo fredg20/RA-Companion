@@ -147,6 +147,7 @@ Elle permet notamment de :
 - relire le fonctionnement général de l'application
 - consulter les remarques de détection locale
 - retrouver des indications utiles sur certains journaux ou emplacements d'émulateurs
+- préparer, vérifier et dépanner l'overlay OBS
 
 ## 6. Utiliser la grille des rétrosuccès
 
@@ -196,6 +197,12 @@ Règle utilisée :
 - si `DateEarnedHardcore` existe, le succès est considéré `Hardcore`
 - sinon, si `DateEarned` existe, il est considéré `Softcore`
 
+Dans l'overlay OBS :
+
+- un succès `Softcore` conserve l'apparence normale de la section `Rétrosuccès en cours`
+- un succès `Hardcore` affiche l'emblème hardcore et des dégradés dorés
+- au prochain rétrosuccès non hardcore, l'overlay revient automatiquement à l'apparence normale
+
 ## 9. Détection locale des émulateurs
 
 `Compagnon` peut accélérer l'affichage du jeu courant grâce à une détection locale.
@@ -238,7 +245,82 @@ Sources d'émulateurs à surveiller pour de futures études :
 - `SkyEmu` : https://github.com/skylersaleh/SkyEmu
 - `Firelight` : https://github.com/firelight-emulator/firelight
 
-## 10. Données locales
+## 11. Overlay OBS
+
+`Compagnon` peut générer un overlay local pour OBS Studio.
+
+L'overlay est utile pour afficher dans une source navigateur :
+
+- le jeu affiché
+- la progression
+- le rétrosuccès en cours
+- la grille des rétrosuccès
+- les états visuels `Softcore` et `Hardcore`
+
+### Assistant OBS dans `Aide`
+
+Ouvre `Aide`, puis la section `OBS`.
+
+Cette section contient un assistant avec plusieurs actions :
+
+- `Préparer OBS automatiquement` active l'export OBS, démarre le serveur local, génère les fichiers requis et affiche l'URL à utiliser dans OBS
+- `Vérifier les fichiers OBS` confirme que les fichiers nécessaires sont présents
+- `Réinitialiser layout OBS` remet `layout.json` à zéro si les sections sont mal placées ou trop petites
+- `Prévisualiser l'overlay` ouvre une fenêtre de test
+- `Générer un test OBS` écrit un état de démonstration dans les fichiers OBS
+
+### Fichiers générés
+
+Les fichiers OBS sont générés dans :
+
+`%AppData%\RA-Compagnon\OBS`
+
+On y trouve notamment :
+
+- `index.html`
+- `overlay.css`
+- `overlay.js`
+- `state.json`
+- `layout.json`
+- `succes-embleme.png`
+- `succes-embleme-hardcore.png`
+
+### Utilisation recommandée dans OBS
+
+Dans OBS, ajoute une source `Navigateur`, puis colle l'URL locale fournie par l'assistant OBS.
+
+Évite de pointer OBS directement vers `index.html` en fichier local, car certains navigateurs bloquent ou limitent la lecture de `state.json`.
+
+Taille recommandée de départ :
+
+- largeur : `760`
+- hauteur : `260`
+
+Tu peux ensuite utiliser les liens de sections fournis par la prévisualisation pour afficher seulement une partie de l'overlay.
+
+### Dépannage OBS
+
+Si l'overlay ne se met pas à jour :
+
+1. ouvre `Aide`
+2. ouvre la section `OBS`
+3. clique sur `Préparer OBS automatiquement`
+4. clique sur `Vérifier les fichiers OBS`
+5. rafraîchis la source navigateur dans OBS
+
+Si les sections sont mal placées ou coupées :
+
+1. clique sur `Réinitialiser layout OBS`
+2. rafraîchis la source navigateur OBS
+3. ajuste à nouveau les sections dans la prévisualisation si nécessaire
+
+Si un emblème ou une image ne s'affiche pas :
+
+- vérifie que `succes-embleme.png` et `succes-embleme-hardcore.png` existent dans le dossier OBS
+- vérifie que l'URL de la source navigateur pointe bien vers l'URL locale de `Compagnon`
+- rafraîchis la source navigateur pour vider le cache OBS
+
+## 12. Données locales
 
 Les données utilisateur sont stockées dans :
 
@@ -252,14 +334,14 @@ On y trouve notamment :
 - `achievement.json`
 - `achievements_list.json`
 
-## 11. Conseils d'usage
+## 13. Conseils d'usage
 
 - utilise `Recharger` si l'affichage ne semble pas à jour
 - utilise `Passer` si tu veux avancer dans les succès non débloqués
 - utilise `Détails` si tu veux une vue plus complète du jeu
 - laisse `Compagnon` terminer une synchronisation avant de conclure qu'une information manque
 
-## 12. Si quelque chose semble ne pas fonctionner
+## 14. Si quelque chose semble ne pas fonctionner
 
 En cas de doute :
 

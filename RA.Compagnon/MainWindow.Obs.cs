@@ -123,21 +123,23 @@ public partial class MainWindow
             {
                 IdentifiantJeu = 1,
                 IdentifiantSucces = 1001,
-                Titre = "Succès OBS de démonstration",
-                Description = "Cet état sert à tester une source OBS sans session active.",
+                Titre = "Succès OBS softcore",
+                Description = "Cet état simule un rétrosuccès réussi en softcore.",
                 DetailsPoints = "10 pts softcore / hardcore",
                 DetailsFaisabilite = "Faisabilité : test",
+                Badge = "https://i.retroachievements.org/Badge/00000.png",
+                EstHardcore = false,
             },
             GrilleSuccesJeu =
             [
                 new SuccesBadgeExportObs
                 {
                     IdentifiantSucces = 1001,
-                    Titre = "Succès OBS de démonstration",
-                    Description = "Cet état sert à tester une source OBS sans session active.",
+                    Titre = "Succès OBS softcore",
+                    Description = "Cet état simule un rétrosuccès réussi en softcore.",
                     Badge = "https://i.retroachievements.org/Badge/00000.png",
                     EstDebloque = true,
-                    EstHardcore = true,
+                    EstHardcore = false,
                     EstSelectionne = true,
                 },
                 new SuccesBadgeExportObs
@@ -163,9 +165,9 @@ public partial class MainWindow
             {
                 IdentifiantJeu = 1,
                 IdentifiantSucces = 1001,
-                Titre = "Succès OBS de démonstration",
+                Titre = "Succès OBS softcore",
                 Points = 10,
-                Mode = "Hardcore",
+                Mode = "Softcore",
                 DateObtention = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             },
             EtatSynchronisation = "Test OBS",

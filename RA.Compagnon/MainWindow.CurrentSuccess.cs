@@ -515,10 +515,13 @@ public partial class MainWindow
             return Task.CompletedTask;
         }
 
+        AnalyseZoneRichPresence analyseZoneCourante = ObtenirAnalyseZoneRichPresenceCourante();
         SuccesAffiche succesAffiche = Services.ServicePresentationSucces.Construire(
             succesSelectionne,
             identifiantJeu,
-            _dernieresDonneesJeuAffichees?.Jeu.NumDistinctPlayers ?? 0
+            _dernieresDonneesJeuAffichees?.Jeu.NumDistinctPlayers ?? 0,
+            _succesJeuCourant,
+            analyseZoneCourante
         );
         int versionAffichage = ++_versionAffichageSuccesEnCours;
 
@@ -547,7 +550,7 @@ public partial class MainWindow
         );
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = succesAffiche.ExplicationFaisabilite;
         MettreAJourNavigationSuccesEnCours(succesSelectionne);
-        MettreAJourAnalyseSuccesEnCours(succesSelectionne);
+        MettreAJourAnalyseSuccesEnCours(succesSelectionne, analyseZoneCourante);
         LancerTacheNonBloquante(
             ChargerBadgesGroupeSuccesEnCoursAsync(identifiantJeu, versionAffichage),
             "charger_badges_groupe_succes"
@@ -592,9 +595,9 @@ public partial class MainWindow
      * Recalcule l'analyse hybride du succès courant afin de préparer un futur
      * affichage de groupes cohérents sans bloquer l'interface.
      */
-    private void MettreAJourAnalyseSuccesEnCours(GameAchievementV2 succesSelectionne)
+    private AnalyseZoneRichPresence ObtenirAnalyseZoneRichPresenceCourante()
     {
-        AnalyseZoneRichPresence analyseZoneCourante = ServiceSondeRichPresence
+        return ServiceSondeRichPresence
             .Sonder(
                 new DonneesCompteUtilisateur
                 {
@@ -604,7 +607,17 @@ public partial class MainWindow
                 journaliser: false
             )
             .AnalyseZone;
+    }
 
+    /*
+     * Recalcule l'analyse hybride du succès courant avec la zone Rich Presence
+     * déjà sondée pour éviter de multiplier les lectures de contexte.
+     */
+    private void MettreAJourAnalyseSuccesEnCours(
+        GameAchievementV2 succesSelectionne,
+        AnalyseZoneRichPresence analyseZoneCourante
+    )
+    {
         _analyseSuccesEnCours = ServiceAnalyseDescriptionsSucces.Analyser(
             succesSelectionne,
             _succesJeuCourant,

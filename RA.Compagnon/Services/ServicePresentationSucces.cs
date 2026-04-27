@@ -38,14 +38,18 @@ public sealed class ServicePresentationSucces
     public static SuccesAffiche Construire(
         GameAchievementV2 succes,
         int identifiantJeu,
-        int nombreJoueursDistinctsJeu = 0
+        int nombreJoueursDistinctsJeu = 0,
+        IReadOnlyList<GameAchievementV2>? succesJeu = null,
+        AnalyseZoneRichPresence? analyseZoneCourante = null
     )
     {
         bool estDebloque = EstDebloque(succes);
         EvaluationFaisabiliteSucces evaluation = ServiceEvaluationFaisabiliteSucces.Evaluer(
             succes,
             identifiantJeu,
-            nombreJoueursDistinctsJeu
+            nombreJoueursDistinctsJeu,
+            succesJeu,
+            analyseZoneCourante
         );
 
         return new SuccesAffiche
@@ -117,13 +121,7 @@ public sealed class ServicePresentationSucces
             return string.Empty;
         }
 
-        double pourcentage =
-            evaluation.NombreJoueursDistincts > 0
-                ? (double)evaluation.NombreJoueursDebloques
-                    / evaluation.NombreJoueursDistincts
-                    * 100d
-                : 0d;
-        return $"{evaluation.Libelle} ({pourcentage:0.#} %)";
+        return $"{evaluation.Libelle} ({evaluation.Score.ToString(CultureInfo.CurrentCulture)} %)";
     }
 
     /*
