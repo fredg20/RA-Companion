@@ -217,11 +217,13 @@ public partial class MainWindow
             {
                 _actualisationApiCibleeEnAttente = false;
                 LancerTacheNonBloquante(
-                    Dispatcher.InvokeAsync(async () =>
-                    {
-                        await ChargerJeuEnCoursAsync(false, true);
-                        RedemarrerMinuteurActualisationApi();
-                    }).Task.Unwrap(),
+                    Dispatcher
+                        .InvokeAsync(async () =>
+                        {
+                            await ChargerJeuEnCoursAsync(false, true);
+                            RedemarrerMinuteurActualisationApi();
+                        })
+                        .Task.Unwrap(),
                     "actualisation_api_ciblee_differee"
                 );
             }
@@ -514,10 +516,7 @@ public partial class MainWindow
                 "enrichissement_jeu"
             );
             LancerTacheNonBloquante(
-                EnrichirCommunauteJeuEnArrierePlanAsync(
-                    identifiantJeuEffectif,
-                    versionChargement
-                ),
+                EnrichirCommunauteJeuEnArrierePlanAsync(identifiantJeuEffectif, versionChargement),
                 "enrichissement_communaute_jeu"
             );
         }

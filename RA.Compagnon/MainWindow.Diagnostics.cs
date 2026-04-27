@@ -188,9 +188,7 @@ public partial class MainWindow
         {
             await tache;
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception exception)
         {
             JournaliserExceptionNonBloquante(contexte, exception);

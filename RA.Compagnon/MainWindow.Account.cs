@@ -1346,7 +1346,9 @@ public partial class MainWindow
         UiControls.Button boutonPreparerObs = ConstruireBoutonActionObs(
             "Préparer OBS automatiquement"
         );
-        UiControls.Button boutonVerifierObs = ConstruireBoutonActionObs("Vérifier les fichiers OBS");
+        UiControls.Button boutonVerifierObs = ConstruireBoutonActionObs(
+            "Vérifier les fichiers OBS"
+        );
         UiControls.Button boutonReinitialiserLayoutObs = ConstruireBoutonActionObs(
             "Réinitialiser layout OBS"
         );
@@ -1369,7 +1371,7 @@ public partial class MainWindow
                     .Where(chemin => !File.Exists(chemin))
                     .Select(Path.GetFileName)
                     .Where(nom => !string.IsNullOrWhiteSpace(nom))
-                    .Select(nom => nom!)
+                    .Select(nom => nom!),
             ];
 
             if (fichiersManquants.Count == 0)
@@ -1490,8 +1492,7 @@ public partial class MainWindow
             }
             catch
             {
-                texteEtat.Text =
-                    "Impossible de réinitialiser le layout OBS pour le moment.";
+                texteEtat.Text = "Impossible de réinitialiser le layout OBS pour le moment.";
             }
             finally
             {
@@ -1514,7 +1515,10 @@ public partial class MainWindow
             )
         );
         pile.Children.Add(
-            ConstruireLibelleChampAide("Assistant de configuration OBS", _modaleAideCompacteCourante)
+            ConstruireLibelleChampAide(
+                "Assistant de configuration OBS",
+                _modaleAideCompacteCourante
+            )
         );
         pile.Children.Add(
             ConstruireTexteDetailAide(

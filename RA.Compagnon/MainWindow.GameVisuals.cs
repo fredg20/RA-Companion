@@ -355,12 +355,8 @@ public partial class MainWindow
     /*
      * Lance en arrière-plan l'enrichissement complet du carrousel de visuels.
      */
-    private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
-    {
-        LancerTacheNonBloquante(
-            EnrichirVisuelsJeuEnCoursAsync(jeu),
-            "enrichissement_visuels_jeu"
-        );
+    private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu) {
+        LancerTacheNonBloquante(EnrichirVisuelsJeuEnCoursAsync(jeu), "enrichissement_visuels_jeu");
     }
 
     /*
