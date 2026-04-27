@@ -37,7 +37,7 @@ L'application reste utilisable sans émulateur, mais sait désormais exploiter u
 
 Version affichée dans l'application : `1.1`.
 
-Dernière release prête à publier : `1.0.9`.
+Dernière release prête à publier : `1.1`.
 
 ## Fonctionnalités actuelles
 

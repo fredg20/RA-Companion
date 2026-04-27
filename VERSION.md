@@ -7,8 +7,8 @@
 - Plateforme cible : `Windows x64`
 - Interface active : `WPF`
 - Livrable local : `dist/RA.Compagnon-win-x64`
-- Dernière archive de release prête : `dist/RA.Compagnon-win-x64-1.0.9.zip`
-- Manifeste de mise à jour public : `update.json` conservé sur `1.0.9`
+- Dernière archive de release prête : `dist/RA.Compagnon-win-x64-1.1.zip`
+- Manifeste de mise à jour public : `update.json` préparé pour `1.1`
 
 ## Contenu fonctionnel livré
 
@@ -43,9 +43,8 @@
 ### 1.1
 
 - version applicative du projet passée à `1.1`
-- cycle de développement ouvert pour la prochaine version
-- aucun paquet de release `1.1` ne doit être publié tant que la version n'est pas explicitement prête
-- manifeste `update.json` conservé sur `1.0.9` tant que la release `1.1` n'est pas prête
+- release `1.1` préparée pour publication
+- manifeste `update.json` mis à jour pour pointer vers l'archive `RA.Compagnon-win-x64-1.1.zip`
 - ajout d'un overlay OBS structuré en blocs : en-tête, progression, rétrosuccès en cours et grille des rétrosuccès
 - séparation des fichiers OBS en `index.html`, `overlay.scss`, `normalize.scss` et `overlay.js`
 - génération de `overlay.css` depuis les fichiers SCSS lors de l'export OBS
@@ -65,6 +64,8 @@
 - renforcement de l'écriture OBS avec verrou partagé, remplacement atomique et reprises courtes si un fichier est lu en même temps
 - ajout d'une checklist séparée `TODO-Validation-release.md`
 - mise à jour de `INSTRUCTION.md` avec l'assistant OBS, les fichiers générés et le dépannage de l'overlay
+- recalcul de faisabilité des rétrosuccès avec score hybride : rareté globale, indice hardcore, structure du succès, progression utilisateur, voisinage et Rich Presence
+- archive de release `dist/RA.Compagnon-win-x64-1.1.zip` générée
 
 ### 1.0.9
 
