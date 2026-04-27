@@ -100,12 +100,27 @@ public partial class MainWindow
         _vueModele.JeuCourant.ActionVisuelPrecedentActivee = false;
         _vueModele.JeuCourant.ActionVisuelSuivantActivee = false;
         _vueModele.Compte.LibelleBouton = "Connexion";
-        _vueModele.ConfigurerActionAfficherCompte(() => _ = ExecuterActionAfficherCompteAsync());
-        _vueModele.ConfigurerActionAfficherAide(() => _ = ExecuterActionAfficherAideAsync());
-        _vueModele.ConfigurerActionMiseAJourApplication(() =>
-            _ = ExecuterActionMiseAJourApplicationAsync()
+        _vueModele.ConfigurerActionAfficherCompte(() =>
+            LancerTacheNonBloquante(
+                ExecuterActionAfficherCompteAsync(),
+                "action_afficher_compte"
+            )
         );
-        _vueModele.ConfigurerActionRechargerJeu(() => _ = ExecuterActionRechargerJeuEnCoursAsync());
+        _vueModele.ConfigurerActionAfficherAide(() =>
+            LancerTacheNonBloquante(ExecuterActionAfficherAideAsync(), "action_afficher_aide")
+        );
+        _vueModele.ConfigurerActionMiseAJourApplication(() =>
+            LancerTacheNonBloquante(
+                ExecuterActionMiseAJourApplicationAsync(),
+                "action_mise_a_jour_application"
+            )
+        );
+        _vueModele.ConfigurerActionRechargerJeu(() =>
+            LancerTacheNonBloquante(
+                ExecuterActionRechargerJeuEnCoursAsync(),
+                "action_recharger_jeu"
+            )
+        );
         _vueModele.ConfigurerActionAfficherModuleAccueil(() =>
             AfficherModulePrincipal(ModulePrincipal.Accueil)
         );
@@ -113,35 +128,65 @@ public partial class MainWindow
             AfficherModulePrincipal(ModulePrincipal.Bibliotheque)
         );
         _vueModele.ConfigurerActionOrdreSuccesNormal(() =>
-            _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Normal)
+            LancerTacheNonBloquante(
+                ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Normal),
+                "action_ordre_succes_normal"
+            )
         );
         _vueModele.ConfigurerActionOrdreSuccesAleatoire(() =>
-            _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Aleatoire)
+            LancerTacheNonBloquante(
+                ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Aleatoire),
+                "action_ordre_succes_aleatoire"
+            )
         );
         _vueModele.ConfigurerActionOrdreSuccesFacile(() =>
-            _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Facile)
+            LancerTacheNonBloquante(
+                ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Facile),
+                "action_ordre_succes_facile"
+            )
         );
         _vueModele.ConfigurerActionOrdreSuccesDifficile(() =>
-            _ = ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Difficile)
+            LancerTacheNonBloquante(
+                ChangerOrdreSuccesGrilleAsync(OrdreSuccesGrille.Difficile),
+                "action_ordre_succes_difficile"
+            )
         );
         _vueModele.SuccesEnCours.ConfigurerNavigationPrecedente(() =>
-            _ = ExecuterNavigationSuccesEnCoursAsync(-1)
+            LancerTacheNonBloquante(
+                ExecuterNavigationSuccesEnCoursAsync(-1),
+                "navigation_succes_precedent"
+            )
         );
         _vueModele.SuccesEnCours.ConfigurerNavigationSuivante(() =>
-            _ = ExecuterNavigationSuccesEnCoursAsync(1)
+            LancerTacheNonBloquante(
+                ExecuterNavigationSuccesEnCoursAsync(1),
+                "navigation_succes_suivant"
+            )
         );
         _vueModele.SuccesEnCours.ConfigurerActionPasser(() =>
-            _ = ExecuterPassageSuccesEnCoursAsync()
+            LancerTacheNonBloquante(
+                ExecuterPassageSuccesEnCoursAsync(),
+                "action_passer_succes"
+            )
         );
         _vueModele.JeuCourant.ConfigurerActionRejouer(ExecuterActionRejouerJeuEnCours);
         _vueModele.JeuCourant.ConfigurerActionDetails(() =>
-            _ = ExecuterActionVueDetailleeJeuEnCoursAsync()
+            LancerTacheNonBloquante(
+                ExecuterActionVueDetailleeJeuEnCoursAsync(),
+                "action_details_jeu"
+            )
         );
         _vueModele.JeuCourant.ConfigurerActionVisuelPrecedent(() =>
-            _ = ExecuterActionVisuelJeuPrecedentAsync()
+            LancerTacheNonBloquante(
+                ExecuterActionVisuelJeuPrecedentAsync(),
+                "action_visuel_precedent"
+            )
         );
         _vueModele.JeuCourant.ConfigurerActionVisuelSuivant(() =>
-            _ = ExecuterActionVisuelJeuSuivantAsync()
+            LancerTacheNonBloquante(
+                ExecuterActionVisuelJeuSuivantAsync(),
+                "action_visuel_suivant"
+            )
         );
     }
 }

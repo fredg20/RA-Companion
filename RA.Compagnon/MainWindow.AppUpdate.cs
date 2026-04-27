@@ -24,7 +24,14 @@ public partial class MainWindow
      */
     private async void MinuteurMiseAJourApplication_Tick(object? sender, EventArgs e)
     {
-        await VerifierMiseAJourApplicationSiNecessaireAsync();
+        try
+        {
+            await VerifierMiseAJourApplicationSiNecessaireAsync();
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("verification_mise_a_jour_periodique", exception);
+        }
     }
 
     /*

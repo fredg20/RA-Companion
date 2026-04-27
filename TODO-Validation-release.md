@@ -1,0 +1,51 @@
+# TODO - Validation release
+
+Checklist de validation à exécuter avant de considérer une version de `Compagnon` prête pour release.
+
+- [ ] Démarrer `Compagnon` depuis un dossier propre sans fichier de configuration existant
+- [ ] Démarrer `Compagnon` avec une configuration déjà enregistrée
+- [ ] Vérifier que les données utilisateur sont rechargées automatiquement au démarrage
+- [ ] Vérifier que la sauvegarde utilisateur survit à une fermeture puis réouverture
+- [ ] Vérifier que la modale `Utilisateur` permet encore d'enregistrer, fermer et déconnecter proprement
+- [ ] Vérifier que le dernier jeu joué affiché correspond aux données du site quand elles diffèrent des données locales
+- [ ] Vérifier que le statut `Dernier jeu` ou `En jeu` s'affiche au bon endroit
+- [ ] Vérifier que la détection locale fonctionne avec un émulateur portable
+- [ ] Vérifier que la détection locale fonctionne avec un émulateur installé
+- [ ] Vérifier que `RetroArch` portable et installé sont tous les deux détectés
+- [ ] Vérifier que `BizHawk` peut être ouvert avec le bouton `Jouer`
+- [ ] Vérifier que `Rejouer` lance bien le jeu sauvegardé quand les chemins sont connus
+- [ ] Vérifier que `Rejouer` reste grisé et inactif pendant le mode `En jeu`
+- [ ] Vérifier qu'un succès local détecté ne se déclenche pas faussement à la fermeture de l'émulateur
+- [ ] Vérifier que la synchronisation API ne fige pas durablement la fenêtre
+- [ ] Vérifier que les informations du rétrosuccès en cours se restaurent après synchronisation
+- [ ] Vérifier que le premier rétrosuccès non débloqué est affiché au démarrage
+- [ ] Vérifier que le changement de mode `Normal`, `Aléatoire`, `Facile` ou `Difficile` désélectionne le succès épinglé
+- [ ] Vérifier que le mode d'affichage choisi est conservé après redémarrage
+- [ ] Vérifier que les groupes de rétrosuccès s'affichent au démarrage quand une famille fiable existe
+- [ ] Vérifier que les badges de la grille s'affichent tous, avec défilement si nécessaire
+- [ ] Vérifier que les badges `Softcore` et `Hardcore` gardent leurs indicateurs visuels
+- [ ] Vérifier que les infobulles principales s'affichent au survol
+- [ ] Vérifier que la carte `Jeu en cours` reste stable avec un titre très long
+- [ ] Vérifier que les capsules d'informations du jeu ne se chevauchent pas
+- [ ] Vérifier que la fenêtre respecte les seuils 25 %, 50 % et 75 % de largeur
+- [ ] Vérifier que le plein écran n'est pas coupé par la barre d'état
+- [ ] Vérifier que la taille et la position de la fenêtre sont sauvegardées
+- [ ] Vérifier que la modale `Aide` n'a qu'une seule zone de défilement
+- [ ] Vérifier que les accordéons de la modale `Aide` s'ouvrent et se referment correctement
+- [ ] Vérifier que la modale `Aide` reste dans la fenêtre en mode fenêtré et plein écran
+- [ ] Vérifier que la prévisualisation OBS s'ouvre depuis le bouton OBS
+- [ ] Vérifier que `state.json` se met à jour lorsqu'une donnée affichée change
+- [ ] Vérifier que `layout.json` sauvegarde la taille et la position des sections OBS
+- [ ] Vérifier que chaque lien OBS n'affiche que sa section cible
+- [ ] Vérifier que les sections OBS respectent les tailles indiquées dans les liens
+- [ ] Vérifier que l'affichage OBS n'applique pas les comportements compacts indésirables
+- [ ] Vérifier que les textes OBS restent lisibles dans OBS Studio
+- [ ] Vérifier que les fichiers `index.html`, `overlay.css`, `overlay.js`, `state.json` et `layout.json` sont générés
+- [ ] Vérifier que la mise à jour disponible affiche bien le bouton de mise à jour pendant que l'application est ouverte
+- [ ] Vérifier que le lien du runtime .NET Desktop est présent dans `INSTRUCTION.md`
+- [ ] Vérifier que `INSTRUCTION.md` est inclus dans la release portable
+- [ ] Exécuter `build.ps1` et confirmer `0 erreur` et `0 avertissement`
+- [ ] Exécuter `build.ps1 -Dist` et confirmer que l'archive portable est créée
+- [ ] Tester l'application depuis le dossier `dist` sans dépendre du dossier source
+- [ ] Relire rapidement les journaux de diagnostic après les tests pour repérer les erreurs non bloquantes
+- [ ] Valider qu'aucun mojibaké visible n'apparaît dans les modales, l'interface, OBS et la documentation

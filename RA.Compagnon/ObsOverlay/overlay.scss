@@ -211,7 +211,16 @@ main {
   padding: 0 8px;
   overflow: hidden;
   isolation: isolate;
-  background-color: #071108;
+  background:
+    linear-gradient(
+      to top,
+      rgba(5, 22, 7, 0.9) 0%,
+      rgba(5, 22, 7, 0.72) 28%,
+      rgba(5, 22, 7, 0.24) 46%,
+      rgba(5, 22, 7, 0) 50%,
+      rgba(5, 22, 7, 0) 100%
+    ),
+    #0e3512;
   --badge-succes-courant-taille-actuelle: var(--badge-succes-courant-taille);
   --succes-taille-actuelle: var(--succes-taille);
   --description-taille-actuelle: var(--description-taille);
@@ -311,11 +320,7 @@ main {
   }
 
   &::after {
-    background: linear-gradient(
-      135deg,
-      rgba(8, 12, 20, 0.9),
-      rgba(8, 12, 20, 0.72)
-    );
+    background:rgba(0, 0, 0, 0.6);
   }
 
   > * {

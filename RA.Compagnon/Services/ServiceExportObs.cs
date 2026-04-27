@@ -16,7 +16,9 @@ namespace RA.Compagnon.Services;
 public sealed class ServiceExportObs
 {
     private const string ExtensionTemporaire = ".tmp";
-    private readonly SemaphoreSlim _verrouExport = new(1, 1);
+    private const int NombreTentativesRemplacement = 4;
+    private static readonly TimeSpan DelaiRepriseRemplacement = TimeSpan.FromMilliseconds(80);
+    private static readonly SemaphoreSlim VerrouFichiersObs = new(1, 1);
 
     private static readonly JsonSerializerOptions OptionsJson = new()
     {
@@ -50,7 +52,7 @@ public sealed class ServiceExportObs
      */
     public async Task ExporterAsync(EtatExportObs etat, CancellationToken jetonAnnulation = default)
     {
-        await _verrouExport.WaitAsync(jetonAnnulation);
+        await VerrouFichiersObs.WaitAsync(jetonAnnulation);
 
         try
         {
@@ -62,7 +64,36 @@ public sealed class ServiceExportObs
         }
         finally
         {
-            _verrouExport.Release();
+            VerrouFichiersObs.Release();
+        }
+    }
+
+    /*
+     * Persiste le layout OBS reçu du navigateur avec le même verrou et le même
+     * remplacement atomique que l'export principal.
+     */
+    public static async Task EcrireLayoutJsonDepuisOverlayAsync(
+        string contenuJson,
+        CancellationToken jetonAnnulation = default
+    )
+    {
+        using JsonDocument document = JsonDocument.Parse(contenuJson);
+
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw new InvalidDataException("Le layout OBS doit être un objet JSON.");
+        }
+
+        await VerrouFichiersObs.WaitAsync(jetonAnnulation);
+
+        try
+        {
+            Directory.CreateDirectory(DossierExportObs);
+            await EcrireTexteAsync(CheminLayoutJson, contenuJson, jetonAnnulation);
+        }
+        finally
+        {
+            VerrouFichiersObs.Release();
         }
     }
 
@@ -143,7 +174,7 @@ public sealed class ServiceExportObs
     {
         string cheminTemporaire = chemin + ExtensionTemporaire;
         await File.WriteAllTextAsync(cheminTemporaire, contenu, jetonAnnulation);
-        File.Move(cheminTemporaire, chemin, overwrite: true);
+        await RemplacerFichierAvecRepriseAsync(cheminTemporaire, chemin, jetonAnnulation);
     }
 
     /*
@@ -233,7 +264,37 @@ public sealed class ServiceExportObs
     {
         string cheminTemporaire = chemin + ExtensionTemporaire;
         await File.WriteAllBytesAsync(cheminTemporaire, contenu, jetonAnnulation);
-        File.Move(cheminTemporaire, chemin, overwrite: true);
+        await RemplacerFichierAvecRepriseAsync(cheminTemporaire, chemin, jetonAnnulation);
+    }
+
+    /*
+     * Remplace un fichier avec quelques reprises courtes pour absorber les
+     * lectures simultanées d'OBS, d'un navigateur ou d'un antivirus.
+     */
+    private static async Task RemplacerFichierAvecRepriseAsync(
+        string cheminTemporaire,
+        string cheminDestination,
+        CancellationToken jetonAnnulation
+    )
+    {
+        for (int tentative = 1; tentative <= NombreTentativesRemplacement; tentative++)
+        {
+            try
+            {
+                File.Move(cheminTemporaire, cheminDestination, overwrite: true);
+                return;
+            }
+            catch (IOException) when (tentative < NombreTentativesRemplacement)
+            {
+                await Task.Delay(DelaiRepriseRemplacement, jetonAnnulation);
+            }
+            catch (UnauthorizedAccessException) when (tentative < NombreTentativesRemplacement)
+            {
+                await Task.Delay(DelaiRepriseRemplacement, jetonAnnulation);
+            }
+        }
+
+        File.Move(cheminTemporaire, cheminDestination, overwrite: true);
     }
 
     /*

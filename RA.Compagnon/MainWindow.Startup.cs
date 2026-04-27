@@ -55,9 +55,12 @@ public partial class MainWindow
         bool conserverEtatSauvegardeAuPremierChargement = await RestaurerEtatInitialAsync();
         await ChargerJeuInitialAsync(conserverEtatSauvegardeAuPremierChargement);
         _serviceServeurObsLocal.Demarrer();
-        _ = ExporterEtatObsAsync();
+        LancerTacheNonBloquante(ExporterEtatObsAsync(), "export_obs_demarrage");
         PlanifierDemarrageActualisations();
-        _ = VerifierMiseAJourApplicationSiNecessaireAsync();
+        LancerTacheNonBloquante(
+            VerifierMiseAJourApplicationSiNecessaireAsync(),
+            "verification_mise_a_jour_demarrage"
+        );
     }
 
     /*

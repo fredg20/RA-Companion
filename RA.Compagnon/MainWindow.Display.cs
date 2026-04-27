@@ -127,7 +127,10 @@ public partial class MainWindow
      */
     private void DemarrerEnrichissementMetaConsoleJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
-        _ = EnrichirMetaConsoleJeuEnCoursAsync(jeu);
+        LancerTacheNonBloquante(
+            EnrichirMetaConsoleJeuEnCoursAsync(jeu),
+            "enrichissement_meta_console"
+        );
     }
 
     /*
@@ -390,7 +393,23 @@ public partial class MainWindow
             return;
         }
 
-        await ChargerJeuEnCoursAsync(false, false);
+        _minuteurActualisationApi.Stop();
+
+        try
+        {
+            await ChargerJeuEnCoursAsync(false, false);
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("actualisation_api_periodique", exception);
+        }
+        finally
+        {
+            if (ConfigurationConnexionEstComplete() && _profilUtilisateurAccessible)
+            {
+                _minuteurActualisationApi.Start();
+            }
+        }
     }
 
     /*

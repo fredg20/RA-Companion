@@ -106,7 +106,10 @@ public partial class MainWindow
      */
     private void DemarrerRestaurationSuccesSauvegardesEnArrierePlan(int identifiantJeu)
     {
-        _ = RestaurerSuccesSauvegardesEnArrierePlanAsync(identifiantJeu);
+        LancerTacheNonBloquante(
+            RestaurerSuccesSauvegardesEnArrierePlanAsync(identifiantJeu),
+            "restauration_succes_sauvegardes"
+        );
     }
 
     /*
@@ -292,7 +295,7 @@ public partial class MainWindow
         RafraichirStyleBadgesGrilleSucces();
         MettreAJourDispositionGrilleTousSucces();
         PlanifierMiseAJourAnimationGrilleTousSucces();
-        _ = ExporterEtatObsAsync();
+        LancerTacheNonBloquante(ExporterEtatObsAsync(), "export_obs_apres_restauration");
         return Task.CompletedTask;
     }
 
@@ -552,7 +555,10 @@ public partial class MainWindow
 
         _configurationConnexion.DerniereListeSuccesAffichee = nouvelEtat;
         _derniereListeSuccesAfficheeModifiee = true;
-        _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+        LancerTacheNonBloquante(
+            PersisterDernierJeuAfficheSiNecessaireAsync(),
+            "persistance_liste_succes_affichee"
+        );
     }
 
     /*
@@ -570,7 +576,10 @@ public partial class MainWindow
         etat.SuccesPasses = [.. succesPasses];
         _configurationConnexion.DerniereListeSuccesAffichee = etat;
         _derniereListeSuccesAfficheeModifiee = true;
-        _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+        LancerTacheNonBloquante(
+            PersisterDernierJeuAfficheSiNecessaireAsync(),
+            "persistance_ordre_succes_passes"
+        );
     }
 
     /*

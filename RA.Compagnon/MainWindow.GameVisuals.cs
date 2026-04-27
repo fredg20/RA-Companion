@@ -256,7 +256,10 @@ public partial class MainWindow
 
         _indexVisuelJeuEnCours = indexConserve >= 0 ? indexConserve : 0;
         MettreAJourRotationVisuelsJeuEnCours();
-        _ = MettreAJourAffichageVisuelJeuEnCoursAsync();
+        LancerTacheNonBloquante(
+            MettreAJourAffichageVisuelJeuEnCoursAsync(),
+            "mise_a_jour_affichage_visuel"
+        );
     }
 
     /*
@@ -318,8 +321,24 @@ public partial class MainWindow
             return;
         }
 
-        _indexVisuelJeuEnCours++;
-        await MettreAJourAffichageVisuelJeuEnCoursAsync();
+        _minuteurRotationVisuelsJeuEnCours.Stop();
+
+        try
+        {
+            _indexVisuelJeuEnCours++;
+            await MettreAJourAffichageVisuelJeuEnCoursAsync();
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("rotation_visuels_jeu", exception);
+        }
+        finally
+        {
+            if (_visuelsJeuEnCours.Count > 1)
+            {
+                _minuteurRotationVisuelsJeuEnCours.Start();
+            }
+        }
     }
 
     /*
@@ -338,7 +357,10 @@ public partial class MainWindow
      */
     private void DemarrerEnrichissementVisuelsJeuEnCours(GameInfoAndUserProgressV2 jeu)
     {
-        _ = EnrichirVisuelsJeuEnCoursAsync(jeu);
+        LancerTacheNonBloquante(
+            EnrichirVisuelsJeuEnCoursAsync(jeu),
+            "enrichissement_visuels_jeu"
+        );
     }
 
     /*

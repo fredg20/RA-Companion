@@ -270,6 +270,22 @@ public sealed partial class ServiceSondeLocaleEmulateurs
     }
 
     /*
+     * Journalise une exception de sonde sans interrompre Compagnon, afin de
+     * comprendre quelle source locale a échoué.
+     */
+    private static void JournaliserExceptionSonde(
+        string contexte,
+        Exception exception,
+        string details = ""
+    )
+    {
+        JournaliserEvenement(
+            $"exception_{contexte}",
+            $"type={exception.GetType().Name};message={exception.Message};details={details}"
+        );
+    }
+
+    /*
      * Sonde les émulateurs connus et retourne le meilleur état local trouvé.
      */
     public EtatSondeLocaleEmulateur Sonder(bool journaliser = true)
@@ -293,7 +309,10 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionSonde("sonde_globale", exception);
+        }
 
         EtatSondeLocaleEmulateur etatAucun = new()
         {
@@ -1411,7 +1430,14 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 }
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionSonde(
+                "ralibretro_configuration_titre",
+                exception,
+                $"chemin={cheminConfiguration}"
+            );
+        }
 
         return string.Empty;
     }
@@ -1446,7 +1472,14 @@ public sealed partial class ServiceSondeLocaleEmulateurs
                 return NormaliserCheminJeuProbable(path.GetString()?.Trim() ?? string.Empty);
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionSonde(
+                "project64_configuration_chemin_jeu",
+                exception,
+                $"chemin={cheminConfiguration}"
+            );
+        }
 
         return string.Empty;
     }

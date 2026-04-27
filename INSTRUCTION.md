@@ -15,7 +15,21 @@ Elle permet notamment de :
 - ouvrir `BizHawk` avec `Jouer` lorsque le jeu est connu, mais que le chemin local exact n'est pas encore fiable
 - suivre certains changements de jeu détectés localement par émulateur
 
-## 2. Premier démarrage
+## 2. Prérequis
+
+`Compagnon` nécessite le runtime `Microsoft .NET Desktop Runtime 9` en `x64`.
+
+Si `Compagnon` ne démarre pas, installe ce runtime :
+
+- téléchargement direct Windows x64 : `https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/9.0.15/windowsdesktop-runtime-9.0.15-win-x64.exe`
+- page officielle .NET 9 : `https://dotnet.microsoft.com/en-us/download/dotnet/9.0`
+
+Remarque :
+
+- au `26 avril 2026`, le bon installateur direct est `windowsdesktop-runtime-9.0.15-win-x64.exe`
+- une fois le runtime installé, il n'est normalement pas nécessaire de le réinstaller à chaque mise à jour de `Compagnon`
+
+## 3. Premier démarrage
 
 Au premier lancement :
 
@@ -36,7 +50,7 @@ Remarque :
 
 - lors de la toute première utilisation, le bouton `Aide` peut être mis en avant visuellement pour guider la découverte de l'application
 
-## 3. Organisation de la fenêtre
+## 4. Organisation de la fenêtre
 
 L'interface principale est organisée en plusieurs zones.
 
@@ -85,7 +99,7 @@ Elle contient aussi :
 - la légende visuelle `Softcore` / `Hardcore`
 - le bouton de changement de mode d'affichage de la grille
 
-## 4. Boutons principaux
+## 5. Boutons principaux
 
 ### `Recharger`
 
@@ -134,7 +148,7 @@ Elle permet notamment de :
 - consulter les remarques de détection locale
 - retrouver des indications utiles sur certains journaux ou emplacements d'émulateurs
 
-## 5. Utiliser la grille des rétrosuccès
+## 6. Utiliser la grille des rétrosuccès
 
 La grille des rétrosuccès permet de parcourir rapidement tous les badges du jeu.
 
@@ -155,7 +169,7 @@ Style visuel :
 - les succès `Hardcore` utilisent un contour doré avec un halo léger
 - ce style apparaît dans la grille et dans la section `Rétrosuccès en cours`
 
-## 6. Synchronisation et états
+## 7. Synchronisation et états
 
 `Compagnon` peut afficher des états comme :
 
@@ -170,7 +184,7 @@ La synchronisation peut être déclenchée :
 - lors d'un changement d'état du jeu
 - après certaines détections locales d'émulateur ou de succès
 
-## 7. Softcore et Hardcore
+## 8. Softcore et Hardcore
 
 Un rétrosuccès peut être détecté comme :
 
@@ -182,7 +196,7 @@ Règle utilisée :
 - si `DateEarnedHardcore` existe, le succès est considéré `Hardcore`
 - sinon, si `DateEarned` existe, il est considéré `Softcore`
 
-## 8. Détection locale des émulateurs
+## 9. Détection locale des émulateurs
 
 `Compagnon` peut accélérer l'affichage du jeu courant grâce à une détection locale.
 
@@ -195,7 +209,7 @@ Quand un émulateur validé est reconnu, l'application peut :
 
 Le comportement exact dépend de l'émulateur pris en charge.
 
-## 9. Émulateurs validés et testés
+## 10. Émulateurs validés et testés
 
 Les émulateurs suivants sont actuellement validés et testés avec `Compagnon` :
 

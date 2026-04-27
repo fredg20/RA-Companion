@@ -338,7 +338,10 @@ public partial class MainWindow
             return;
         }
 
-        _ = ChargerNomsFichiersCompatiblesJouerAsync(identifiantJeu, versionChargement);
+        LancerTacheNonBloquante(
+            ChargerNomsFichiersCompatiblesJouerAsync(identifiantJeu, versionChargement),
+            "charger_noms_fichiers_compatibles"
+        );
     }
 
     /*
@@ -1223,7 +1226,10 @@ public partial class MainWindow
         jeuAffiche.CheminExecutableEmulateur = contexte.CheminExecutable;
         jeuAffiche.CheminJeuLocal = cheminJeu;
         _dernierJeuAfficheModifie = true;
-        _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+        LancerTacheNonBloquante(
+            PersisterDernierJeuAfficheSiNecessaireAsync(),
+            "persistance_dernier_jeu_apres_jouer_bizhak"
+        );
     }
 
     /*

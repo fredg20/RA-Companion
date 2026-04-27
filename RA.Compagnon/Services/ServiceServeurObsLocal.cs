@@ -2,6 +2,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Diagnostics;
 
 /*
  * Fournit un petit serveur HTTP local pour exposer les fichiers OBS sans
@@ -77,7 +78,30 @@ public sealed class ServiceServeurObsLocal : IDisposable
             try
             {
                 TcpClient client = await _serveur.AcceptTcpClientAsync(jetonAnnulation);
-                _ = Task.Run(() => RepondreAsync(client, jetonAnnulation), jetonAnnulation);
+                _ = Task.Run(
+                    async () =>
+                    {
+                        using TcpClient clientConnecte = client;
+
+                        try
+                        {
+                            await RepondreAsync(clientConnecte, jetonAnnulation);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                        }
+                        catch (Exception exception)
+                        {
+                            Debug.WriteLine(
+                                $"Erreur non bloquante serveur OBS: {exception.GetType().Name}: {exception.Message}"
+                            );
+                        }
+                    },
+                    jetonAnnulation
+                );
             }
             catch (OperationCanceledException)
             {
@@ -87,7 +111,12 @@ public sealed class ServiceServeurObsLocal : IDisposable
             {
                 return;
             }
-            catch { }
+            catch (Exception exception)
+            {
+                Debug.WriteLine(
+                    $"Erreur non bloquante écoute serveur OBS: {exception.GetType().Name}: {exception.Message}"
+                );
+            }
         }
     }
 
@@ -284,8 +313,7 @@ public sealed class ServiceServeurObsLocal : IDisposable
         }
 
         Directory.CreateDirectory(ServiceExportObs.DossierExportObs);
-        await File.WriteAllTextAsync(
-            cheminFichier,
+        await ServiceExportObs.EcrireLayoutJsonDepuisOverlayAsync(
             new string(tampon, 0, totalLu),
             jetonAnnulation
         );

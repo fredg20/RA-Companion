@@ -662,7 +662,10 @@ public partial class MainWindow
             if (modifie)
             {
                 _dernierJeuAfficheModifie = true;
-                _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+                LancerTacheNonBloquante(
+                    PersisterDernierJeuAfficheSiNecessaireAsync(),
+                    "persistance_dernier_jeu_sonde_locale"
+                );
             }
 
             MettreAJourActionRejouerJeuEnCours(jeuAffiche);
@@ -811,9 +814,12 @@ public partial class MainWindow
             "signal_dispatch_ui",
             $"emulateur={signal.NomEmulateur};source={signal.TypeSource};chemin={signal.Chemin}"
         );
-        _ = Dispatcher.InvokeAsync(
-            async () => await TraiterSignalSuccesLocalAsync(signal),
-            DispatcherPriority.Background
+        LancerTacheNonBloquante(
+            Dispatcher.InvokeAsync(
+                async () => await TraiterSignalSuccesLocalAsync(signal),
+                DispatcherPriority.Background
+            ).Task.Unwrap(),
+            "signal_succes_local_ui"
         );
     }
 

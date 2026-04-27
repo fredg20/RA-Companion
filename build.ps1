@@ -21,6 +21,8 @@ $CheminBin = Join-Path $RacineProjet "RA.Compagnon\bin"
 $CheminObj = Join-Path $RacineProjet "RA.Compagnon\obj"
 $CheminDist = Join-Path $RacineProjet "dist"
 $CheminPublication = Join-Path $CheminDist "RA.Compagnon-win-x64"
+$CheminInstruction = Join-Path $RacineProjet "INSTRUCTION.md"
+$CheminXamlPrincipal = Join-Path $RacineProjet "RA.Compagnon\MainWindow.xaml"
 
 function Ecrire-Etape {
     param([string]$Message)
@@ -89,6 +91,68 @@ function Tester-GenerationWpfDisponible {
     return $true
 }
 
+function Verifier-NomsXamlCritiques {
+    if (-not (Test-Path -LiteralPath $CheminXamlPrincipal)) {
+        throw "XAML principal introuvable : $CheminXamlPrincipal"
+    }
+
+    $contenuXaml = Get-Content -LiteralPath $CheminXamlPrincipal -Raw
+    $nomsCritiques = @(
+        "RacineModales",
+        "VoileFenetreConnexion",
+        "CadreZonePrincipale",
+        "ZonePrincipale",
+        "ConteneurZonePrincipale",
+        "GrilleCartes",
+        "CarteJeuEnCours",
+        "CadreCarteJeuEnCours",
+        "GrilleCarteJeuEnCours",
+        "EnTeteCarteJeuEnCours",
+        "SectionResumeJeuEnCours",
+        "SectionSuccesEnCours",
+        "SectionListeSuccesJeuEnCours",
+        "ZoneEtatCompteUtilisateur",
+        "BadgeEtatCompteUtilisateur",
+        "TexteEtatCompteUtilisateur",
+        "TexteSousEtatCompteUtilisateur",
+        "ConteneurTitreJeuEnCours",
+        "ZoneTitreJeuEnCours",
+        "TexteTitreJeuEnCours",
+        "ConteneurImageJeuEnCours",
+        "ColonneImageJeuEnCours",
+        "ImageJeuEnCours",
+        "ImageJeuEnCoursTransition",
+        "ImagePremierSuccesNonDebloque",
+        "CartePremierSuccesNonDebloqueVisuel",
+        "CarteListeSuccesJeuEnCours",
+        "ZonePrincipaleListeSuccesJeuEnCours",
+        "ZoneVisibleListeSuccesJeuEnCours",
+        "ConteneurGrilleTousSuccesJeuEnCours",
+        "GrilleTousSuccesJeuEnCours",
+        "BoutonAide",
+        "BoutonObs",
+        "BoutonRechargerJeu",
+        "BoutonMiseAJourApplication",
+        "BarreEtatApplication",
+        "ImageIconeTitre",
+        "ConteneurTitreFenetre",
+        "TexteTitreFenetre",
+        "TexteVersionApplication"
+    )
+
+    $nomsManquants = @()
+    foreach ($nom in $nomsCritiques) {
+        $motif = '(x:Name|Name)\s*=\s*"' + [regex]::Escape($nom) + '"'
+        if ($contenuXaml -notmatch $motif) {
+            $nomsManquants += $nom
+        }
+    }
+
+    if ($nomsManquants.Count -gt 0) {
+        throw "Noms XAML critiques manquants dans MainWindow.xaml : $($nomsManquants -join ', ')"
+    }
+}
+
 function Construire-DotnetBuildArguments {
     param([string]$ConfigurationActive)
 
@@ -140,6 +204,9 @@ if (-not (Test-Path -LiteralPath $CheminProjet)) {
     throw "Projet introuvable : $CheminProjet"
 }
 
+Ecrire-Etape "Validation des noms XAML critiques"
+Verifier-NomsXamlCritiques
+
 if (-not $NoKill) {
     Ecrire-Etape "Fermeture de RA.Compagnon si l'application est ouverte"
     $processus = Get-Process -Name "RA.Compagnon" -ErrorAction SilentlyContinue
@@ -176,6 +243,11 @@ if ($Dist) {
         -Arguments (Construire-DotnetPublishArguments -ConfigurationActive $Configuration) `
         -ConfigurationActive $Configuration `
         -Libelle "Publication"
+
+    if (Test-Path -LiteralPath $CheminInstruction) {
+        Ecrire-Etape "Ajout de la documentation utilisateur a la release"
+        Copy-Item -LiteralPath $CheminInstruction -Destination (Join-Path $CheminPublication "INSTRUCTION.md") -Force
+    }
 
     if (-not $SkipZip) {
         $version = Lire-VersionProjet

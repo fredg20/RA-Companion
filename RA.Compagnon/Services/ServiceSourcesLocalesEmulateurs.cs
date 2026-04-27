@@ -1358,7 +1358,12 @@ public static class ServiceSourcesLocalesEmulateurs
                 }
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            Debug.WriteLine(
+                $"Détection exécutable actif échouée pour {definition.NomEmulateur}: {exception.GetType().Name}: {exception.Message}"
+            );
+        }
 
         return string.Empty;
     }

@@ -216,11 +216,14 @@ public partial class MainWindow
             else if (_actualisationApiCibleeEnAttente && ConfigurationConnexionEstComplete())
             {
                 _actualisationApiCibleeEnAttente = false;
-                _ = Dispatcher.InvokeAsync(async () =>
-                {
-                    await ChargerJeuEnCoursAsync(false, true);
-                    RedemarrerMinuteurActualisationApi();
-                });
+                LancerTacheNonBloquante(
+                    Dispatcher.InvokeAsync(async () =>
+                    {
+                        await ChargerJeuEnCoursAsync(false, true);
+                        RedemarrerMinuteurActualisationApi();
+                    }).Task.Unwrap(),
+                    "actualisation_api_ciblee_differee"
+                );
             }
         }
     }
@@ -455,13 +458,16 @@ public partial class MainWindow
         bool forcerChargementSansCache
     )
     {
-        _ = ChargerJeuUtilisateurEnArrierePlanAsync(
-            identifiantJeuEffectif,
-            titreJeuProvisoire,
-            infosJeuDejaAfficheesPourCeJeu,
-            progressionDejaAfficheePourCeJeu,
-            versionChargement,
-            forcerChargementSansCache
+        LancerTacheNonBloquante(
+            ChargerJeuUtilisateurEnArrierePlanAsync(
+                identifiantJeuEffectif,
+                titreJeuProvisoire,
+                infosJeuDejaAfficheesPourCeJeu,
+                progressionDejaAfficheePourCeJeu,
+                versionChargement,
+                forcerChargementSansCache
+            ),
+            "chargement_jeu_utilisateur"
         );
     }
 
@@ -499,12 +505,21 @@ public partial class MainWindow
 
             await AppliquerProgressionJeuAsync(donneesJeu);
 
-            _ = EnrichirJeuEnArrierePlanAsync(
-                identifiantJeuEffectif,
-                versionChargement,
-                donneesJeu
+            LancerTacheNonBloquante(
+                EnrichirJeuEnArrierePlanAsync(
+                    identifiantJeuEffectif,
+                    versionChargement,
+                    donneesJeu
+                ),
+                "enrichissement_jeu"
             );
-            _ = EnrichirCommunauteJeuEnArrierePlanAsync(identifiantJeuEffectif, versionChargement);
+            LancerTacheNonBloquante(
+                EnrichirCommunauteJeuEnArrierePlanAsync(
+                    identifiantJeuEffectif,
+                    versionChargement
+                ),
+                "enrichissement_communaute_jeu"
+            );
         }
         catch
         {
@@ -638,7 +653,10 @@ public partial class MainWindow
                 await MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
             }
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("enrichissement_jeu_arriere_plan", exception);
+        }
     }
 
     /*
@@ -678,7 +696,10 @@ public partial class MainWindow
             );
             DefinirDetailsJeuEnCours(jeuAffiche.Details);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("enrichissement_communaute_jeu", exception);
+        }
     }
 
     /*
@@ -746,7 +767,10 @@ public partial class MainWindow
         int identifiantJeuProfil
     )
     {
-        _ = ChargerSuccesRecentsEnArrierePlanAsync(profil, versionChargement, identifiantJeuProfil);
+        LancerTacheNonBloquante(
+            ChargerSuccesRecentsEnArrierePlanAsync(profil, versionChargement, identifiantJeuProfil),
+            "chargement_succes_recents_arriere_plan"
+        );
     }
 
     /*
@@ -763,7 +787,10 @@ public partial class MainWindow
         {
             await ChargerSuccesRecentsAsync(profil, versionChargement, identifiantJeuProfil);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("succes_recents_arriere_plan", exception);
+        }
     }
 
     /*
@@ -992,7 +1019,10 @@ public partial class MainWindow
      */
     private void DemarrerMiseAJourCachesJeuLocaux(GameInfoAndUserProgressV2 jeu)
     {
-        _ = MettreAJourCachesJeuLocauxAsync(jeu);
+        LancerTacheNonBloquante(
+            MettreAJourCachesJeuLocauxAsync(jeu),
+            "mise_a_jour_caches_jeu_locaux"
+        );
     }
 
     /*
@@ -1008,7 +1038,10 @@ public partial class MainWindow
             await _serviceCatalogueJeuxLocal.EnregistrerJeuAsync(jeu, titreObserveLocal);
             _ = await _serviceEtatUtilisateurJeuxLocal.EnregistrerEtatJeuAsync(jeu);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("mise_a_jour_caches_jeu_locaux", exception);
+        }
     }
 
     /*

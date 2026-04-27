@@ -248,7 +248,10 @@ public partial class MainWindow
                 jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
                 jeuSauvegarde.CheminJeuLocal = cheminJeu;
                 _dernierJeuAfficheModifie = true;
-                _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+                LancerTacheNonBloquante(
+                    PersisterDernierJeuAfficheSiNecessaireAsync(),
+                    "persistance_dernier_jeu_contexte_relance"
+                );
             }
 
             break;
@@ -281,7 +284,10 @@ public partial class MainWindow
             jeuSauvegarde.CheminExecutableEmulateur = cheminExecutable;
             jeuSauvegarde.CheminJeuLocal = cheminJeu;
             _dernierJeuAfficheModifie = true;
-            _ = PersisterDernierJeuAfficheSiNecessaireAsync();
+            LancerTacheNonBloquante(
+                PersisterDernierJeuAfficheSiNecessaireAsync(),
+                "persistance_dernier_jeu_titre_relance"
+            );
             break;
         }
     }
@@ -434,7 +440,10 @@ public partial class MainWindow
      */
     private void DemarrerPrechargementJeuDepuisCacheLocal(int identifiantJeu, int versionChargement)
     {
-        _ = PrechargerJeuDepuisCacheLocalAsync(identifiantJeu, versionChargement);
+        LancerTacheNonBloquante(
+            PrechargerJeuDepuisCacheLocalAsync(identifiantJeu, versionChargement),
+            "prechargement_jeu_cache_local"
+        );
     }
 
     /*

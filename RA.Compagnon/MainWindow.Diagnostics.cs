@@ -169,6 +169,35 @@ public partial class MainWindow
     }
 
     /*
+     * Observe une tâche lancée en arrière-plan afin d'éviter qu'une exception
+     * non attendue ne reste silencieuse et ne laisse l'interface dans un état
+     * incohérent.
+     */
+    private void LancerTacheNonBloquante(Task tache, string contexte)
+    {
+        _ = ObserverTacheNonBloquanteAsync(tache, contexte);
+    }
+
+    /*
+     * Attend la fin d'une tâche de fond et journalise proprement toute erreur
+     * non bloquante utile au diagnostic.
+     */
+    private async Task ObserverTacheNonBloquanteAsync(Task tache, string contexte)
+    {
+        try
+        {
+            await tache;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante(contexte, exception);
+        }
+    }
+
+    /*
      * Nettoie un texte libre avant son écriture dans un journal de diagnostic.
      */
     private static string NettoyerDetailsDiagnostic(string? details)

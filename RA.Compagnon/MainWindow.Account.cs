@@ -703,7 +703,10 @@ public partial class MainWindow
      */
     private Task AfficherModaleAideAsync()
     {
-        _ = VerifierMiseAJourApplicationSiNecessaireAsync();
+        LancerTacheNonBloquante(
+            VerifierMiseAJourApplicationSiNecessaireAsync(),
+            "verification_mise_a_jour_aide"
+        );
         double hauteurMaximaleAide = CalculerHauteurMaximaleContenuModale();
         Rect rectangleCartePrincipale = ObtenirRectangleCartePrincipalePourModaleAide();
         Rect zoneTravail = ObtenirZoneTravailFenetreCourante();
@@ -3544,7 +3547,10 @@ public partial class MainWindow
         }
 
         JournaliserDiagnosticAffichageJeu("synchronisation_etat_jeu", raison);
-        _ = SynchroniserEtatJeuApresChangementAsync();
+        LancerTacheNonBloquante(
+            SynchroniserEtatJeuApresChangementAsync(),
+            "synchronisation_etat_jeu"
+        );
     }
 
     /*
@@ -3558,7 +3564,10 @@ public partial class MainWindow
             await ChargerJeuEnCoursAsync(false, true);
             RedemarrerMinuteurActualisationApi();
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("synchronisation_etat_jeu", exception);
+        }
     }
 
     /*

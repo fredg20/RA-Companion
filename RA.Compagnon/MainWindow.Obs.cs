@@ -27,7 +27,7 @@ public partial class MainWindow
             return;
         }
 
-        _ = ExporterEtatObsAsync();
+        LancerTacheNonBloquante(ExporterEtatObsAsync(), "export_obs");
     }
 
     /*
@@ -45,9 +45,9 @@ public partial class MainWindow
         {
             await _serviceExportObs.ExporterAsync(ConstruireEtatObs(dernierSuccesObtenu));
         }
-        catch
+        catch (Exception exception)
         {
-            // L'export OBS ne doit jamais empêcher Compagnon de continuer à fonctionner.
+            JournaliserExceptionNonBloquante("export_obs", exception);
         }
     }
 

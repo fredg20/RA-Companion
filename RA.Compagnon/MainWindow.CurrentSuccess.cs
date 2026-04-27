@@ -339,7 +339,10 @@ public partial class MainWindow
      */
     private void DemarrerMiseAJourSuccesJeuEnArrierePlan(GameInfoAndUserProgressV2 jeu)
     {
-        _ = MettreAJourSuccesJeuEnArrierePlanAsync(jeu);
+        LancerTacheNonBloquante(
+            MettreAJourSuccesJeuEnArrierePlanAsync(jeu),
+            "mise_a_jour_succes_jeu"
+        );
     }
 
     /*
@@ -368,7 +371,10 @@ public partial class MainWindow
         int versionGrille
     )
     {
-        _ = MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes, versionGrille);
+        LancerTacheNonBloquante(
+            MettreAJourGrilleTousSuccesEnArrierePlanAsync(identifiantJeu, succes, versionGrille),
+            "mise_a_jour_grille_succes"
+        );
     }
 
     /*
@@ -542,7 +548,10 @@ public partial class MainWindow
         _vueModele.SuccesEnCours.ToolTipDetailsFaisabilite = succesAffiche.ExplicationFaisabilite;
         MettreAJourNavigationSuccesEnCours(succesSelectionne);
         MettreAJourAnalyseSuccesEnCours(succesSelectionne);
-        _ = ChargerBadgesGroupeSuccesEnCoursAsync(identifiantJeu, versionAffichage);
+        LancerTacheNonBloquante(
+            ChargerBadgesGroupeSuccesEnCoursAsync(identifiantJeu, versionAffichage),
+            "charger_badges_groupe_succes"
+        );
 
         if (doitSauvegarder)
         {
@@ -565,13 +574,16 @@ public partial class MainWindow
 
         DemanderExportObs();
 
-        _ = EnrichirSuccesEnCoursAffichageAsync(
-            identifiantJeu,
-            succesSelectionne.Id,
-            succesAffiche,
-            versionAffichage,
-            doitSauvegarder,
-            estEpingleManuellement
+        LancerTacheNonBloquante(
+            EnrichirSuccesEnCoursAffichageAsync(
+                identifiantJeu,
+                succesSelectionne.Id,
+                succesAffiche,
+                versionAffichage,
+                doitSauvegarder,
+                estEpingleManuellement
+            ),
+            "enrichissement_succes_affichage"
         );
         return Task.CompletedTask;
     }

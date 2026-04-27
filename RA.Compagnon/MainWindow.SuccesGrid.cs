@@ -603,7 +603,10 @@ public partial class MainWindow
         grilleVisuel.Children.Add(imageSucces);
         conteneur.Child = grilleVisuel;
         AppliquerStyleBadgeEpingle(conteneur);
-        _ = ChargerImageBadgeGrilleEnArrierePlanAsync(imageSucces, texteSecours, succesAffiche);
+        LancerTacheNonBloquante(
+            ChargerImageBadgeGrilleEnArrierePlanAsync(imageSucces, texteSecours, succesAffiche),
+            "chargement_image_badge_grille"
+        );
         return conteneur;
     }
 
@@ -632,7 +635,10 @@ public partial class MainWindow
             imageSucces.Opacity = succesAffiche.EstDebloque ? 1 : 0.58;
             texteSecours.Visibility = Visibility.Collapsed;
         }
-        catch { }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("image_badge_grille", exception);
+        }
     }
 
     /*
@@ -757,7 +763,15 @@ public partial class MainWindow
     private async void BadgeGrilleSucces_ClicGauche(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        await AfficherSuccesGrilleSelectionneAsync(sender, permanent: true);
+
+        try
+        {
+            await AfficherSuccesGrilleSelectionneAsync(sender, permanent: true);
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("selection_badge_grille_gauche", exception);
+        }
     }
 
     /*
@@ -766,7 +780,15 @@ public partial class MainWindow
     private async void BadgeGrilleSucces_ClicDroit(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
-        await AfficherSuccesGrilleSelectionneAsync(sender, permanent: false);
+
+        try
+        {
+            await AfficherSuccesGrilleSelectionneAsync(sender, permanent: false);
+        }
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("selection_badge_grille_droit", exception);
+        }
     }
 
     /*
@@ -834,53 +856,60 @@ public partial class MainWindow
      */
     private async void MinuteurAffichageTemporaireSuccesGrille_Tick(object? sender, EventArgs e)
     {
-        _minuteurAffichageTemporaireSuccesGrille.Stop();
-        _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
-        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
-            "succes_ui_fin_temporaire",
-            $"jeu={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
-        );
-
-        if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
+        try
         {
-            return;
-        }
+            _minuteurAffichageTemporaireSuccesGrille.Stop();
+            _etatListeSuccesUi.IdentifiantSuccesTemporaire = null;
+            ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                "succes_ui_fin_temporaire",
+                $"jeu={_identifiantJeuSuccesCourant};nbSucces={_succesJeuCourant.Count}"
+            );
 
-        RafraichirStyleBadgesGrilleSucces();
+            if (_identifiantJeuSuccesCourant <= 0 || _succesJeuCourant.Count == 0)
+            {
+                return;
+            }
 
-        if (_etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire)
-        {
-            _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
+            RafraichirStyleBadgesGrilleSucces();
 
-            GameAchievementV2? premierSuccesNonDebloque = _succesJeuCourant
-                .Where(item => !SuccesEstDebloquePourAffichage(item))
-                .OrderBy(item => item.DisplayOrder)
-                .ThenBy(item => item.Id)
-                .FirstOrDefault();
+            if (_etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire)
+            {
+                _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = false;
 
-            await AppliquerSuccesEnCoursAsync(
+                GameAchievementV2? premierSuccesNonDebloque = _succesJeuCourant
+                    .Where(item => !SuccesEstDebloquePourAffichage(item))
+                    .OrderBy(item => item.DisplayOrder)
+                    .ThenBy(item => item.Id)
+                    .FirstOrDefault();
+
+                await AppliquerSuccesEnCoursAsync(
+                    _identifiantJeuSuccesCourant,
+                    premierSuccesNonDebloque,
+                    true,
+                    false
+                );
+                ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
+                    "succes_ui_retour_automatique",
+                    premierSuccesNonDebloque is null
+                        ? $"jeu={_identifiantJeuSuccesCourant};succes=0;raison=tous_debloques"
+                        : $"jeu={_identifiantJeuSuccesCourant};succes={premierSuccesNonDebloque.Id};titre={premierSuccesNonDebloque.Title}"
+                );
+                return;
+            }
+
+            await MettreAJourPremierSuccesNonDebloqueAsync(
                 _identifiantJeuSuccesCourant,
-                premierSuccesNonDebloque,
-                true,
-                false
+                _succesJeuCourant
             );
             ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
-                "succes_ui_retour_automatique",
-                premierSuccesNonDebloque is null
-                    ? $"jeu={_identifiantJeuSuccesCourant};succes=0;raison=tous_debloques"
-                    : $"jeu={_identifiantJeuSuccesCourant};succes={premierSuccesNonDebloque.Id};titre={premierSuccesNonDebloque.Title}"
+                "succes_ui_retour_normal",
+                $"jeu={_identifiantJeuSuccesCourant}"
             );
-            return;
         }
-
-        await MettreAJourPremierSuccesNonDebloqueAsync(
-            _identifiantJeuSuccesCourant,
-            _succesJeuCourant
-        );
-        ServiceSurveillanceSuccesLocaux.JournaliserEvenement(
-            "succes_ui_retour_normal",
-            $"jeu={_identifiantJeuSuccesCourant}"
-        );
+        catch (Exception exception)
+        {
+            JournaliserExceptionNonBloquante("fin_affichage_temporaire_grille", exception);
+        }
     }
 
     /*
