@@ -338,7 +338,7 @@ public partial class MainWindow
     /*
      * Convertit le succès mis en avant vers la forme publique OBS.
      */
-    private static SuccesExportObs ConstruireSuccesObs(EtatSuccesAfficheLocal? succes)
+    private SuccesExportObs ConstruireSuccesObs(EtatSuccesAfficheLocal? succes)
     {
         if (succes is null)
         {
@@ -354,7 +354,20 @@ public partial class MainWindow
             DetailsPoints = succes.DetailsPoints,
             DetailsFaisabilite = succes.DetailsFaisabilite,
             Badge = succes.CheminImageBadge,
+            EstHardcore = SuccesCourantEstReussiEnHardcore(succes),
         };
+    }
+
+    /*
+     * Détermine si le succès actuellement mis en avant a été obtenu en mode
+     * hardcore, afin d'adapter le rendu OBS sans persister un état visuel.
+     */
+    private bool SuccesCourantEstReussiEnHardcore(EtatSuccesAfficheLocal succes)
+    {
+        return _succesJeuCourant.Any(item =>
+            item.Id == succes.IdentifiantSucces
+            && !string.IsNullOrWhiteSpace(item.DateEarnedHardcore)
+        );
     }
 
     /*

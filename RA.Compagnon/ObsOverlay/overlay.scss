@@ -71,6 +71,7 @@
   --toolbar-rayon: var(--rayon-or-moyen);
   --toolbar-bouton-rayon: var(--rayon-or-petit);
   --image-embleme-succes: url("succes-embleme.png");
+  --image-embleme-succes-hardcore: url("succes-embleme-hardcore.png");
 }
 
 body.obs-mode {
@@ -214,11 +215,24 @@ main {
   background:
     linear-gradient(
       to top,
-      rgba(5, 22, 7, 0.9) 0%,
-      rgba(5, 22, 7, 0.72) 28%,
-      rgba(5, 22, 7, 0.24) 46%,
-      rgba(5, 22, 7, 0) 50%,
-      rgba(5, 22, 7, 0) 100%
+      rgba(3, 14, 5, 0.96) 0%,
+      rgba(5, 22, 7, 0.86) 20%,
+      rgba(8, 34, 11, 0.48) 42%,
+      rgba(14, 53, 18, 0.08) 58%,
+      rgba(14, 53, 18, 0) 72%
+    ),
+    radial-gradient(
+      ellipse at 78% 48%,
+      rgba(119, 181, 88, 0.28) 0%,
+      rgba(67, 168, 42, 0.18) 22%,
+      rgba(14, 53, 18, 0.1) 43%,
+      rgba(14, 53, 18, 0) 68%
+    ),
+    linear-gradient(
+      138deg,
+      rgba(0, 51, 102, 0.24) 0%,
+      rgba(14, 53, 18, 0.2) 44%,
+      rgba(6, 28, 9, 0.34) 100%
     ),
     #0e3512;
   --badge-succes-courant-taille-actuelle: var(--badge-succes-courant-taille);
@@ -240,31 +254,87 @@ main {
     background-position: right 50%;
     background-repeat: no-repeat;
     background-size: 50%;
-    opacity: 0.9;
-    transform: scale(1);
-    filter: blur(0.35px);
+    opacity: 0.96;
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 18px rgba(119, 181, 88, 0.28)) blur(0.22px);
   }
 
   &::after {
     background:
       linear-gradient(
         135deg,
-        rgba(16, 18, 24, 0.78),
-        rgba(16, 18, 24, 0.62)
+        rgba(10, 14, 18, 0.84) 0%,
+        rgba(10, 16, 18, 0.62) 45%,
+        rgba(10, 18, 12, 0.44) 100%
       ),
       radial-gradient(
-        circle at 22% 58%,
-        rgba(255, 255, 255, 0.045) 0%,
-        rgba(255, 255, 255, 0.02) 16%,
-        rgba(255, 255, 255, 0) 40%
+        ellipse at 24% 58%,
+        rgba(255, 255, 255, 0.062) 0%,
+        rgba(255, 255, 255, 0.026) 20%,
+        rgba(255, 255, 255, 0) 48%
       ),
       radial-gradient(
-        circle at 78% 20%,
-        rgba(67, 168, 42, 0.075) 0%,
-        rgba(67, 168, 42, 0.025) 18%,
-        rgba(67, 168, 42, 0) 42%
+        ellipse at 82% 24%,
+        rgba(119, 181, 88, 0.16) 0%,
+        rgba(67, 168, 42, 0.072) 22%,
+        rgba(67, 168, 42, 0) 52%
       );
-    opacity: 0.85;
+    opacity: 0.9;
+  }
+
+  &.hardcore {
+    background:
+      linear-gradient(
+        to top,
+        rgba(44, 25, 0, 0.98) 0%,
+        rgba(88, 55, 5, 0.86) 22%,
+        rgba(178, 123, 31, 0.48) 44%,
+        rgba(236, 190, 86, 0.14) 60%,
+        rgba(236, 190, 86, 0) 74%
+      ),
+      radial-gradient(
+        ellipse at 78% 48%,
+        rgba(255, 218, 118, 0.42) 0%,
+        rgba(212, 157, 48, 0.26) 24%,
+        rgba(102, 66, 8, 0.14) 46%,
+        rgba(14, 53, 18, 0) 70%
+      ),
+      linear-gradient(
+        138deg,
+        rgba(0, 51, 102, 0.18) 0%,
+        rgba(117, 77, 12, 0.28) 44%,
+        rgba(46, 27, 2, 0.38) 100%
+      ),
+      #4a3006;
+  }
+
+  &.hardcore::before {
+    background-image: var(--image-embleme-succes-hardcore);
+    opacity: 1;
+    filter: drop-shadow(0 0 22px rgba(255, 218, 118, 0.42)) blur(0.18px);
+  }
+
+  &.hardcore::after {
+    background:
+      linear-gradient(
+        135deg,
+        rgba(15, 12, 7, 0.84) 0%,
+        rgba(30, 22, 8, 0.62) 45%,
+        rgba(64, 42, 7, 0.44) 100%
+      ),
+      radial-gradient(
+        ellipse at 24% 58%,
+        rgba(255, 239, 184, 0.078) 0%,
+        rgba(255, 239, 184, 0.032) 20%,
+        rgba(255, 239, 184, 0) 48%
+      ),
+      radial-gradient(
+        ellipse at 82% 24%,
+        rgba(255, 218, 118, 0.22) 0%,
+        rgba(212, 157, 48, 0.1) 24%,
+        rgba(212, 157, 48, 0) 54%
+      );
+    opacity: 0.92;
   }
 }
 

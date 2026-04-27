@@ -87,6 +87,8 @@ public sealed class SuccesExportObs
     public string DetailsFaisabilite { get; init; } = string.Empty;
 
     public string Badge { get; init; } = string.Empty;
+
+    public bool EstHardcore { get; init; }
 }
 
 /*

@@ -41,6 +41,9 @@ public sealed class ServiceExportObs
     public static string CheminOverlaySuccesEmblemePng =>
         Path.Combine(DossierExportObs, "succes-embleme.png");
 
+    public static string CheminOverlaySuccesEmblemeHardcorePng =>
+        Path.Combine(DossierExportObs, "succes-embleme-hardcore.png");
+
     public static string CheminLayoutJson => Path.Combine(DossierExportObs, "layout.json");
 
     private static string DossierModelesOverlay =>
@@ -196,6 +199,11 @@ public sealed class ServiceExportObs
         await EcrireOctetsAsync(
             CheminOverlaySuccesEmblemePng,
             LireModeleOverlayBinaire("succes-embleme.png"),
+            jetonAnnulation
+        );
+        await EcrireOctetsAsync(
+            CheminOverlaySuccesEmblemeHardcorePng,
+            LireModeleOverlayBinaire("succes-embleme-hardcore.png"),
             jetonAnnulation
         );
     }

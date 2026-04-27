@@ -1422,6 +1422,7 @@ function appliquerEtat(etat) {
   const imageFond = normaliserUrlImageJeu(etat?.jeu?.image);
   const iconeConsole = normaliserUrlImageJeu(etat?.jeu?.imageConsole);
   const imageBadgeSuccesCourant = normaliserUrlImageJeu(etat?.succesCourant?.badge);
+  const succesCourantHardcore = !!etat?.succesCourant?.estHardcore;
 
   document.getElementById("jeu").textContent = etat?.jeu?.titre || "Aucun jeu";
   document.getElementById("progression").textContent = progression;
@@ -1431,6 +1432,7 @@ function appliquerEtat(etat) {
   document.getElementById("description").textContent = etat?.succesCourant?.description || "";
   badgeSuccesCourant.src = imageBadgeSuccesCourant;
   badgeSuccesCourant.style.visibility = imageBadgeSuccesCourant ? "visible" : "hidden";
+  document.getElementById("succes-bloc")?.classList.toggle("hardcore", succesCourantHardcore);
   appliquerGrilleSucces(etat?.grilleSuccesJeu);
   enteteBloc.style.setProperty(
     "--image-fond-entete",
