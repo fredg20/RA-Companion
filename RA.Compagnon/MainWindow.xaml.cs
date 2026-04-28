@@ -54,6 +54,8 @@ public partial class MainWindow : FluentWindow
     private static readonly TimeSpan IntervalleMasquageBarreDefilement = TimeSpan.FromSeconds(1.2);
     private static readonly TimeSpan IntervalleRelayoutApresRedimensionnement =
         TimeSpan.FromMilliseconds(90);
+    private static readonly TimeSpan IntervalleStabilisationAffichage =
+        TimeSpan.FromMilliseconds(120);
     private static readonly TimeSpan IntervalleRepriseAnimationGrilleSucces = TimeSpan.FromSeconds(
         1.3
     );

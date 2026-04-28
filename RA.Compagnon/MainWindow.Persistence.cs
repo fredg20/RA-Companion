@@ -281,12 +281,13 @@ public partial class MainWindow
                     {
                         IdentifiantSucces = succesSauvegarde.AchievementId,
                         Titre = succesSauvegarde.Title,
-                        ToolTip = succesSauvegarde.Title,
+                        ToolTip = ConstruireToolTipSuccesSauvegarde(succesSauvegarde),
                         UrlBadge = succesSauvegarde.CheminImageBadge,
                         EstDebloque = !succesSauvegarde.CheminImageBadge.Contains(
                             "_lock",
                             StringComparison.OrdinalIgnoreCase
                         ),
+                        EstHardcore = succesSauvegarde.EstHardcore,
                     }
                 )
             );
@@ -297,6 +298,23 @@ public partial class MainWindow
         PlanifierMiseAJourAnimationGrilleTousSucces();
         LancerTacheNonBloquante(ExporterEtatObsAsync(), "export_obs_apres_restauration");
         return Task.CompletedTask;
+    }
+
+    /*
+     * Reconstruit l'infobulle d'un badge restauré en conservant le mode
+     * d'obtention sauvegardé pour éviter de perdre l'indication hardcore.
+     */
+    private static string ConstruireToolTipSuccesSauvegarde(ElementListeSuccesAfficheLocal succes)
+    {
+        string titre = succes.Title?.Trim() ?? string.Empty;
+        string mode = succes.EstHardcore ? "Hardcore" : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(mode))
+        {
+            return titre;
+        }
+
+        return string.IsNullOrWhiteSpace(titre) ? mode : $"{titre}{Environment.NewLine}{mode}";
     }
 
     /*
@@ -657,6 +675,7 @@ public partial class MainWindow
 
             if (
                 !string.Equals(succesPrecedent.Title, succesCourant.Title, StringComparison.Ordinal)
+                || succesPrecedent.EstHardcore != succesCourant.EstHardcore
                 || !string.Equals(
                     succesPrecedent.CheminImageBadge,
                     succesCourant.CheminImageBadge,

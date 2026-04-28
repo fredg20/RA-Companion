@@ -924,6 +924,8 @@ public partial class MainWindow
             );
         }
 
+        FusionnerDatesObtentionSuccesSansRegression(jeuNouveau.Succes, jeuExistant.Succes);
+
         return new DonneesJeuAffiche
         {
             Jeu = jeuNouveau,
@@ -937,6 +939,58 @@ public partial class MainWindow
             CommunauteAffichee =
                 donneesNouvelles.CommunauteAffichee ?? donneesExistantes.CommunauteAffichee,
         };
+    }
+
+    /*
+     * Préserve les dates d'obtention déjà connues pour éviter qu'un cache ou un
+     * enrichissement incomplet fasse disparaître un état softcore ou hardcore.
+     */
+    private static void FusionnerDatesObtentionSuccesSansRegression(
+        Dictionary<string, GameAchievementV2> succesNouveaux,
+        Dictionary<string, GameAchievementV2> succesExistants
+    )
+    {
+        foreach ((string cleSucces, GameAchievementV2 succesNouveau) in succesNouveaux)
+        {
+            if (
+                !succesExistants.TryGetValue(cleSucces, out GameAchievementV2? succesExistant)
+                && !succesExistants.TryGetValue(
+                    succesNouveau.Id.ToString(CultureInfo.InvariantCulture),
+                    out succesExistant
+                )
+            )
+            {
+                continue;
+            }
+
+            PreserverDateObtentionSucces(succesNouveau, succesExistant);
+        }
+    }
+
+    /*
+     * Copie seulement les informations manquantes afin de ne jamais remplacer
+     * une date plus récente provenant directement de l'API.
+     */
+    private static void PreserverDateObtentionSucces(
+        GameAchievementV2 succesNouveau,
+        GameAchievementV2 succesExistant
+    )
+    {
+        if (
+            string.IsNullOrWhiteSpace(succesNouveau.DateEarned)
+            && !string.IsNullOrWhiteSpace(succesExistant.DateEarned)
+        )
+        {
+            succesNouveau.DateEarned = succesExistant.DateEarned;
+        }
+
+        if (
+            string.IsNullOrWhiteSpace(succesNouveau.DateEarnedHardcore)
+            && !string.IsNullOrWhiteSpace(succesExistant.DateEarnedHardcore)
+        )
+        {
+            succesNouveau.DateEarnedHardcore = succesExistant.DateEarnedHardcore;
+        }
     }
 
     /*

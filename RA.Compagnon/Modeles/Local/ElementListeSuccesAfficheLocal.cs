@@ -15,6 +15,8 @@ public sealed class ElementListeSuccesAfficheLocal
 
     public string CheminImageBadge { get; set; } = string.Empty;
 
+    public bool EstHardcore { get; set; }
+
     public int AchievementId
     {
         get => IdentifiantSucces;

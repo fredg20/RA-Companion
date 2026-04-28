@@ -68,6 +68,7 @@ public partial class MainWindow
     private bool _derniereListeSuccesAfficheeModifiee;
     private bool _modeAffichageSuccesModifie;
     private bool _miseAJourAnimationTitreJeuPlanifiee;
+    private string _raisonStabilisationAffichage = string.Empty;
     private int _dernierIdentifiantJeuApi;
     private int _dernierIdentifiantJeuAvecInfos;
     private int _dernierIdentifiantJeuAvecProgression;
@@ -93,7 +94,7 @@ public partial class MainWindow
     private ResultatAnalyseDescriptionsSucces? _analyseSuccesEnCours;
     private double _largeurMaxVisuelJeuEnCours;
     private double _hauteurMaxVisuelJeuEnCours;
-    private Dictionary<int, HashSet<int>> _succesDebloquesLocauxTemporaires = [];
+    private Dictionary<int, Dictionary<int, bool>> _succesDebloquesLocauxTemporaires = [];
     private Dictionary<string, DateTimeOffset> _succesDetectesRecemment = [];
     private IReadOnlyList<ConsoleV2> _consolesResolutionLocale = [];
     private Dictionary<int, EtatObservationSuccesLocal> _etatSuccesObserves = [];

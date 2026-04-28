@@ -467,11 +467,13 @@ public partial class MainWindow
                         "_lock",
                         StringComparison.OrdinalIgnoreCase
                     );
+                    succesParIdentifiant.TryGetValue(
+                        item.IdentifiantSucces,
+                        out GameAchievementV2? succesBrut
+                    );
                     bool estHardcore =
-                        succesParIdentifiant.TryGetValue(
-                            item.IdentifiantSucces,
-                            out GameAchievementV2? succesBrut
-                        ) && !string.IsNullOrWhiteSpace(succesBrut.DateEarnedHardcore);
+                        item.EstHardcore
+                        || !string.IsNullOrWhiteSpace(succesBrut?.DateEarnedHardcore);
                     string description = succesBrut?.Description?.Trim() ?? string.Empty;
 
                     return new SuccesBadgeExportObs

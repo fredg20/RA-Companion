@@ -3,7 +3,7 @@
 ## État courant
 
 - Application : `RA-Compagnon`
-- Version applicative : `1.1`
+- Version applicative : `1.1.1`
 - Plateforme cible : `Windows x64`
 - Interface active : `WPF`
 - Livrable local : `dist/RA.Compagnon-win-x64`
@@ -39,6 +39,13 @@
 - simplification visuelle de la zone `Progression`
 
 ## Historique par version
+
+### 1.1.1
+
+- version applicative du projet passée à `1.1.1`
+- correction de la persistance de l'état `Hardcore` dans la grille des rétrosuccès du jeu
+- remplacement de la grille des capsules d'informations du jeu par un panneau flexible avec retour à la ligne
+- ajustement de la largeur des capsules pour éviter les chevauchements lorsque la fenêtre se rétrécit
 
 ### 1.1
 

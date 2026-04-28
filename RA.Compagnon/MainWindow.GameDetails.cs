@@ -1896,10 +1896,12 @@ public partial class MainWindow
             _identifiantJeuSuccesObserve = 0;
             _etatSuccesObserves = [];
             await ChargerJeuEnCoursAsync(false, true, true);
+            PlanifierStabilisationAffichage("recharger_jeu");
         }
         finally
         {
             MettreAJourActionRechargerJeuEnCours();
+            PlanifierStabilisationAffichage("recharger_jeu_finalisation");
         }
     }
 

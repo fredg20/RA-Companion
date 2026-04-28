@@ -35,7 +35,7 @@ En une phrase :
 
 L'application reste utilisable sans émulateur, mais sait désormais exploiter une sonde locale quand elle est disponible.
 
-Version affichée dans l'application : `1.1`.
+Version affichée dans l'application : `1.1.1`.
 
 Dernière release prête à publier : `1.1`.
 

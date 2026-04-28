@@ -107,8 +107,16 @@ static class TestRunner
             TraductionProtegeNomsPropresProbables
         );
         ExecuterTest(
+            "Traduction protège les noms propres après les verbes d'action",
+            TraductionProtegeNomsPropresApresAction
+        );
+        ExecuterTest(
             "Traduction évite de protéger un début d'instruction banal",
             TraductionIgnoreDebutInstructionBanal
+        );
+        ExecuterTest(
+            "Traduction harmonise les tournures de rétrosuccès",
+            TraductionHarmoniseTournuresRetrosucces
         );
         ExecuterTest(
             "Analyse hybride priorise boss sur monde après niveau",
@@ -976,6 +984,34 @@ static class TestRunner
         );
     }
 
+    private static void TraductionProtegeNomsPropresApresAction()
+    {
+        MethodInfo? methode = typeof(ServiceTraductionTexte).GetMethod(
+            "ProtegerSegmentsSensibles",
+            BindingFlags.NonPublic | BindingFlags.Static
+        );
+        Assert.NotNull(methode, "La méthode interne de protection devrait exister.");
+
+        Dictionary<string, string> segmentsProteges = [];
+        string resultat =
+            (string?)
+                methode!.Invoke(null, ["Defeat Dr. Wily and rescue Zelda", segmentsProteges])
+            ?? string.Empty;
+
+        Assert.True(
+            segmentsProteges.Values.Contains("Dr. Wily"),
+            "Le nom du boss devrait être protégé."
+        );
+        Assert.True(
+            segmentsProteges.Values.Contains("Zelda"),
+            "Le nom du personnage devrait être protégé."
+        );
+        Assert.False(
+            resultat.Contains("Dr. Wily", StringComparison.Ordinal),
+            "Le nom du boss protégé ne devrait plus apparaître tel quel avant traduction."
+        );
+    }
+
     private static void TraductionIgnoreDebutInstructionBanal()
     {
         MethodInfo? methode = typeof(ServiceTraductionTexte).GetMethod(
@@ -998,6 +1034,29 @@ static class TestRunner
             0,
             segmentsProteges.Count,
             "Aucun segment ne devrait être protégé dans cette phrase générique."
+        );
+    }
+
+    private static void TraductionHarmoniseTournuresRetrosucces()
+    {
+        MethodInfo? methode = typeof(ServiceTraductionTexte).GetMethod(
+            "AmeliorerTraductionFrancais",
+            BindingFlags.NonPublic | BindingFlags.Static
+        );
+        Assert.NotNull(methode, "La méthode interne d'amélioration devrait exister.");
+
+        string resultat =
+            (string?)
+                methode!.Invoke(
+                    null,
+                    ["Effacer le Niveau 1 et obtenir toutes les réalisations Hardcore"]
+                )
+            ?? string.Empty;
+
+        Assert.Equal(
+            "Terminer le niveau 1 et Ramasser tous les rétrosuccès hardcore",
+            resultat,
+            "La passe devrait harmoniser le vocabulaire et les tournures fréquentes."
         );
     }
 

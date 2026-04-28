@@ -1953,9 +1953,7 @@ public partial class MainWindow
             Visibility = Visibility.Collapsed,
         };
         string urlVersionEmulateur = ObtenirUrlVersionEmulateurValidee(definition);
-        Visibility visibiliteNoticeVersionEmulateur = string.IsNullOrWhiteSpace(
-            urlVersionEmulateur
-        )
+        Visibility visibiliteNoticeVersionEmulateur = string.IsNullOrWhiteSpace(urlVersionEmulateur)
             ? Visibility.Collapsed
             : Visibility.Visible;
         SystemControls.Button lienVersionEmulateur = new()
@@ -1970,8 +1968,8 @@ public partial class MainWindow
             FontWeight = FontWeights.SemiBold,
             HorizontalAlignment = HorizontalAlignment.Left,
             ToolTip = $"Télécharger la version {definition.NomEmulateur} validée pour Compagnon",
+            Visibility = visibiliteNoticeVersionEmulateur,
         };
-        lienVersionEmulateur.Visibility = visibiliteNoticeVersionEmulateur;
 
         void RafraichirBlocEmplacement()
         {

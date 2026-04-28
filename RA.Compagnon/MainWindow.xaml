@@ -550,11 +550,13 @@
                                   </Canvas>
                                 </Border>
                               </Grid>
-                              <Grid
-                                x:Name="GrilleInformationsJeuEnCours"
+                              <WrapPanel
+                                x:Name="PanneauInformationsJeuEnCours"
                                 Grid.Row="1"
                                 Margin="{x:Static compagnon:ConstantesDesign.MargeSousTitreCompacte}"
-                                SizeChanged="GrilleInformationsJeuEnCours_TailleChangee"
+                                HorizontalAlignment="Stretch"
+                                Orientation="Horizontal"
+                                SizeChanged="PanneauInformationsJeuEnCours_TailleChangee"
                                 Visibility="{Binding JeuCourant.InformationsVisibles, Converter={StaticResource ConvertisseurBooleenVersVisibilite}}"
                               >
                                 <Border
@@ -667,7 +669,7 @@
                                     TextTrimming="CharacterEllipsis"
                                   />
                                 </Border>
-                              </Grid>
+                              </WrapPanel>
                             </Grid>
 
                             <Grid

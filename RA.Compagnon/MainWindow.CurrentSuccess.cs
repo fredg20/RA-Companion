@@ -511,6 +511,7 @@ public partial class MainWindow
                     TexteVisuel = _vueModele.SuccesEnCours.TexteVisuel,
                 }
             );
+            PlanifierStabilisationAffichage("succes_aucun");
             DemanderExportObs();
             return Task.CompletedTask;
         }
@@ -575,6 +576,7 @@ public partial class MainWindow
             );
         }
 
+        PlanifierStabilisationAffichage("succes_courant_initial");
         DemanderExportObs();
 
         LancerTacheNonBloquante(
@@ -1250,6 +1252,7 @@ public partial class MainWindow
                 );
             }
 
+            PlanifierStabilisationAffichage("succes_courant_enrichi");
             DemanderExportObs();
         }
         catch { }
@@ -1301,14 +1304,14 @@ public partial class MainWindow
         if (
             !_succesDebloquesLocauxTemporaires.TryGetValue(
                 succesDetecte.IdentifiantJeu,
-                out HashSet<int>? succesTemp
+                out Dictionary<int, bool>? succesTemp
             )
         )
         {
             succesTemp = [];
             _succesDebloquesLocauxTemporaires[succesDetecte.IdentifiantJeu] = succesTemp;
         }
-        succesTemp.Add(succesDetecte.IdentifiantSucces);
+        succesTemp[succesDetecte.IdentifiantSucces] = succesDetecte.Hardcore;
         _succesDebloqueDetecteEnAttente = null;
         _etatListeSuccesUi.IdentifiantSuccesTemporaire = succes.Id;
         _etatListeSuccesUi.RetourPremierSuccesApresSelectionTemporaire = true;
@@ -1357,7 +1360,10 @@ public partial class MainWindow
     {
         if (
             identifiantJeu <= 0
-            || !_succesDebloquesLocauxTemporaires.TryGetValue(identifiantJeu, out HashSet<int>? ids)
+            || !_succesDebloquesLocauxTemporaires.TryGetValue(
+                identifiantJeu,
+                out Dictionary<int, bool>? ids
+            )
             || ids.Count == 0
         )
         {
@@ -1369,11 +1375,20 @@ public partial class MainWindow
             CultureInfo.InvariantCulture
         );
 
-        foreach (GameAchievementV2 succesJeu in succes.Where(item => ids.Contains(item.Id)))
+        foreach (GameAchievementV2 succesJeu in succes.Where(item => ids.ContainsKey(item.Id)))
         {
             if (string.IsNullOrWhiteSpace(succesJeu.DateEarned))
             {
                 succesJeu.DateEarned = dateSession;
+            }
+
+            if (ids.TryGetValue(succesJeu.Id, out bool estHardcore) && estHardcore)
+            {
+                succesJeu.DateEarnedHardcore = string.IsNullOrWhiteSpace(
+                    succesJeu.DateEarnedHardcore
+                )
+                    ? dateSession
+                    : succesJeu.DateEarnedHardcore;
             }
         }
     }
@@ -1388,9 +1403,9 @@ public partial class MainWindow
             _identifiantJeuSuccesCourant > 0
             && _succesDebloquesLocauxTemporaires.TryGetValue(
                 _identifiantJeuSuccesCourant,
-                out HashSet<int>? ids
+                out Dictionary<int, bool>? ids
             )
-            && ids.Contains(succes.Id)
+            && ids.ContainsKey(succes.Id)
         )
         {
             return true;

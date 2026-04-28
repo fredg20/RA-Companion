@@ -47,6 +47,7 @@ public partial class MainWindow
         _vueModele.JeuCourant.Details = string.Empty;
         _vueModele.JeuCourant.DetailsVisible = false;
         _vueModele.JeuCourant.InformationsVisibles = false;
+        PlanifierStabilisationAffichage("meta_reinitialisee");
         JournaliserDiagnosticAffichageJeu("meta_reinitialisee");
     }
 
@@ -207,6 +208,7 @@ public partial class MainWindow
     {
         _vueModele.JeuCourant.Details = details;
         _vueModele.JeuCourant.DetailsVisible = !string.IsNullOrWhiteSpace(details);
+        MettreAJourVisibiliteInformationsJeuEnCours();
         JournaliserDiagnosticAffichageJeu(
             "details_jeu",
             $"visible={_vueModele.JeuCourant.DetailsVisible};details={details}"
@@ -555,6 +557,7 @@ public partial class MainWindow
             || _vueModele.JeuCourant.DetailsVisible;
 
         _vueModele.JeuCourant.InformationsVisibles = auMoinsUneLigneVisible;
+        PlanifierStabilisationAffichage("infos_jeu");
         JournaliserDiagnosticAffichageJeu(
             "visibilite_meta",
             $"grille={_vueModele.JeuCourant.InformationsVisibles};console={_vueModele.JeuCourant.ConsoleVisible};genre={_vueModele.JeuCourant.GenreVisible};credits={_vueModele.JeuCourant.CreditsVisible};sortie={_vueModele.JeuCourant.DateSortieVisible};temps={_vueModele.JeuCourant.TempsDeJeuVisible};details={_vueModele.JeuCourant.DetailsVisible}"

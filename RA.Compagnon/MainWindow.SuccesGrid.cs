@@ -490,6 +490,7 @@ public partial class MainWindow
                         IdentifiantSucces = succesJeu.Id,
                         Titre = succesAffiche.Titre,
                         CheminImageBadge = succesAffiche.UrlBadge,
+                        EstHardcore = succesAffiche.EstHardcore,
                     }
                 );
             }
@@ -550,6 +551,10 @@ public partial class MainWindow
         SuccesGrilleAffiche succesAffiche
     )
     {
+        double tailleVisuelInterne = Math.Max(
+            1,
+            TailleBadgeGrilleSucces - (ConstantesDesign.EpaisseurContourAccent * 2)
+        );
         SystemControls.Border conteneur = new()
         {
             Width = TailleBadgeGrilleSucces,
@@ -558,7 +563,7 @@ public partial class MainWindow
             Background = Brushes.Transparent,
             BorderThickness = new Thickness(0),
             CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(0),
+            Padding = new Thickness(ConstantesDesign.EpaisseurContourAccent),
             Cursor = Cursors.Hand,
             ToolTip = succesAffiche.ToolTip,
             Tag = new BadgeSuccesGrilleContexte(
@@ -573,7 +578,13 @@ public partial class MainWindow
         conteneur.MouseLeftButtonUp += BadgeGrilleSucces_ClicGauche;
         conteneur.MouseRightButtonUp += BadgeGrilleSucces_ClicDroit;
 
-        SystemControls.Grid grilleVisuel = new();
+        SystemControls.Grid grilleVisuel = new()
+        {
+            Width = tailleVisuelInterne,
+            Height = tailleVisuelInterne,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         SystemControls.TextBlock texteSecours = new()
         {
             HorizontalAlignment = HorizontalAlignment.Center,
@@ -589,8 +600,8 @@ public partial class MainWindow
         };
         SystemControls.Image imageSucces = new()
         {
-            Width = TailleBadgeGrilleSucces,
-            Height = TailleBadgeGrilleSucces,
+            Width = tailleVisuelInterne,
+            Height = tailleVisuelInterne,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             Opacity = 0,

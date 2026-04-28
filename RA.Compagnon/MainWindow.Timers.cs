@@ -23,6 +23,7 @@ public partial class MainWindow
     );
     private readonly DispatcherTimer _minuteurMasquageBarreDefilement = new();
     private readonly DispatcherTimer _minuteurRelayoutApresRedimensionnement = new();
+    private readonly DispatcherTimer _minuteurStabilisationAffichage = new();
     private readonly DispatcherTimer _minuteurRepriseAnimationGrilleSucces = new();
     private readonly DispatcherTimer _minuteurAffichageTemporaireSuccesGrille = new();
     private readonly DispatcherTimer _minuteurRotationVisuelsJeuEnCours = new();
@@ -53,6 +54,9 @@ public partial class MainWindow
 
         _minuteurRelayoutApresRedimensionnement.Interval = IntervalleRelayoutApresRedimensionnement;
         _minuteurRelayoutApresRedimensionnement.Tick += MinuteurRelayoutApresRedimensionnement_Tick;
+
+        _minuteurStabilisationAffichage.Interval = IntervalleStabilisationAffichage;
+        _minuteurStabilisationAffichage.Tick += MinuteurStabilisationAffichage_Tick;
 
         _minuteurRepriseAnimationGrilleSucces.Interval = IntervalleRepriseAnimationGrilleSucces;
         _minuteurRepriseAnimationGrilleSucces.Tick += MinuteurRepriseAnimationGrilleSucces_Tick;
@@ -116,6 +120,7 @@ public partial class MainWindow
         _minuteurActualisationRichPresence.Stop();
         _minuteurPresenceLocaleCompte.Stop();
         _minuteurSondeLocaleEmulateurs.Stop();
+        _minuteurStabilisationAffichage.Stop();
         _minuteurRotationVisuelsJeuEnCours.Stop();
         _minuteurSauvegardeGeometrieFenetre.Stop();
         _minuteurMiseAJourApplication.Stop();

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text.Json;
 using RA.Compagnon.Modeles.Api.V2.Game;
 using RA.Compagnon.Modeles.Catalogue;
@@ -391,7 +392,10 @@ public sealed class ServiceJeuRetroAchievements
                 BadgeName = succesCatalogue.BadgeName,
                 Type = succesCatalogue.Type,
                 DateEarned = etatSucces?.DateDeblocageUtc ?? string.Empty,
-                DateEarnedHardcore = etatSucces?.DateDeblocageHardcoreUtc ?? string.Empty,
+                DateEarnedHardcore =
+                    etatSucces?.EstHardcore == true
+                        ? ChoisirDateHardcoreLocale(etatSucces)
+                        : string.Empty,
             };
             succes[succesJeu.Id.ToString()] = succesJeu;
         }
@@ -424,5 +428,24 @@ public sealed class ServiceJeuRetroAchievements
         };
 
         return new DonneesJeuAffiche { Jeu = jeu };
+    }
+
+    /*
+     * Retourne une date hardcore exploitable Ã  partir du cache local, mÃªme si
+     * seul le drapeau hardcore a Ã©tÃ© conservÃ© lors d'une observation locale.
+     */
+    private static string ChoisirDateHardcoreLocale(EtatSuccesUtilisateurLocal etatSucces)
+    {
+        if (!string.IsNullOrWhiteSpace(etatSucces.DateDeblocageHardcoreUtc))
+        {
+            return etatSucces.DateDeblocageHardcoreUtc.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(etatSucces.DateDeblocageUtc))
+        {
+            return etatSucces.DateDeblocageUtc.Trim();
+        }
+
+        return DateTimeOffset.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
     }
 }

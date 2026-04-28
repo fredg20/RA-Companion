@@ -544,6 +544,25 @@ public partial class MainWindow
     }
 
     /*
+     * Programme une stabilisation visuelle aprÃ¨s une modification de donnÃ©es
+     * affichÃ©es, afin de laisser WPF appliquer les bindings avant de recalculer
+     * les hauteurs, capsules, animations et grilles.
+     */
+    private void PlanifierStabilisationAffichage(string raison)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        _raisonStabilisationAffichage = string.IsNullOrWhiteSpace(_raisonStabilisationAffichage)
+            ? raison
+            : $"{_raisonStabilisationAffichage},{raison}";
+        _minuteurStabilisationAffichage.Stop();
+        _minuteurStabilisationAffichage.Start();
+    }
+
+    /*
      * Exécute le relayout différé après redimensionnement pour restaurer des
      * dimensions stables sur les cartes et la grille de succès.
      */
@@ -565,6 +584,39 @@ public partial class MainWindow
         PlanifierAjustementHauteurListeSuccesJeuEnCours();
         PlanifierMiseAJourAnimationGrilleTousSucces();
         JournaliserDimensionsListeSucces("relayout_apres_redimensionnement");
+    }
+
+    /*
+     * Applique une seule stabilisation visuelle après une rafale de changements
+     * afin de limiter les recalculs de layout qui peuvent provoquer des sauts.
+     */
+    private void MinuteurStabilisationAffichage_Tick(object? sender, EventArgs e)
+    {
+        _minuteurStabilisationAffichage.Stop();
+        string raison = _raisonStabilisationAffichage;
+        _raisonStabilisationAffichage = string.Empty;
+
+        CarteJeuEnCours?.InvalidateMeasure();
+        CarteJeuEnCours?.InvalidateArrange();
+        CartePremierSuccesNonDebloqueVisuel?.InvalidateMeasure();
+        CartePremierSuccesNonDebloqueVisuel?.InvalidateArrange();
+        CarteListeSuccesJeuEnCours?.InvalidateMeasure();
+        CarteListeSuccesJeuEnCours?.InvalidateArrange();
+        PanneauInformationsJeuEnCours?.InvalidateMeasure();
+        PanneauInformationsJeuEnCours?.InvalidateArrange();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateMeasure();
+        ZoneVisibleListeSuccesJeuEnCours?.InvalidateArrange();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateMeasure();
+        ConteneurGrilleTousSuccesJeuEnCours?.InvalidateArrange();
+
+        AjusterDisposition();
+        AjusterHauteurCarteJeuEnCours();
+        AjusterDispositionCapsulesJeuEnCours();
+        PlanifierMiseAJourAnimationTitreJeuEnCours();
+        PlanifierMiseAJourDispositionGrilleTousSucces();
+        PlanifierAjustementHauteurListeSuccesJeuEnCours();
+        PlanifierMiseAJourAnimationGrilleTousSucces();
+        JournaliserDiagnosticAffichageJeu("stabilisation_affichage", raison);
     }
 
     /*
@@ -813,22 +865,23 @@ public partial class MainWindow
     }
 
     /*
-     * Réagit au changement de taille du bloc des capsules d'information du
-     * jeu pour recalculer leur nombre de colonnes.
+     * Réagit au changement de taille du panneau flexible des capsules
+     * d'information du jeu pour recalculer leur largeur utile.
      */
-    private void GrilleInformationsJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
+    private void PanneauInformationsJeuEnCours_TailleChangee(object sender, SizeChangedEventArgs e)
     {
         AjusterDispositionCapsulesJeuEnCours();
     }
 
     /*
-     * Réorganise les capsules d'information du jeu en 1, 2 ou 3 colonnes
-     * selon la largeur réellement disponible dans la carte.
+     * Répartit les capsules d'information du jeu dans un panneau de type
+     * flexbox avec retour à la ligne, tout en bornant leur largeur pour
+     * empêcher les textes longs de chevaucher les capsules voisines.
      */
     private void AjusterDispositionCapsulesJeuEnCours()
     {
         if (
-            GrilleInformationsJeuEnCours is null
+            PanneauInformationsJeuEnCours is null
             || ZoneConsoleJeuEnCours is null
             || EtiquetteTypeJeuEnCours is null
             || EtiquetteDateSortieJeuEnCours is null
@@ -851,15 +904,17 @@ public partial class MainWindow
             .. capsulesVisibles.Where(capsule => capsule.Visibility == Visibility.Visible),
         ];
 
-        GrilleInformationsJeuEnCours.ColumnDefinitions.Clear();
-        GrilleInformationsJeuEnCours.RowDefinitions.Clear();
-
         if (capsulesVisibles.Length == 0)
         {
             return;
         }
 
-        double largeurDisponible = Math.Max(0, GrilleInformationsJeuEnCours.ActualWidth);
+        double largeurDisponible = Math.Max(0, PanneauInformationsJeuEnCours.ActualWidth);
+        if (largeurDisponible <= 0)
+        {
+            return;
+        }
+
         double largeurMinimaleCapsule = ConstantesDesign.LargeurMinimaleCapsuleInformation;
         double largeurMinimaleCapsuleDeuxColonnes = Math.Max(
             Math.Round(largeurMinimaleCapsule * ConstantesDesign.InverseNombreOr, 2),
@@ -884,21 +939,11 @@ public partial class MainWindow
             nombreColonnes = 2;
         }
 
-        for (int indexColonne = 0; indexColonne < nombreColonnes; indexColonne++)
-        {
-            GrilleInformationsJeuEnCours.ColumnDefinitions.Add(
-                new SystemControls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }
-            );
-        }
-
         int nombreRangees = (int)Math.Ceiling(capsulesVisibles.Length / (double)nombreColonnes);
-
-        for (int indexRangee = 0; indexRangee < nombreRangees; indexRangee++)
-        {
-            GrilleInformationsJeuEnCours.RowDefinitions.Add(
-                new SystemControls.RowDefinition { Height = GridLength.Auto }
-            );
-        }
+        double largeurCapsule = Math.Max(
+            0,
+            (largeurDisponible - (espacement * (nombreColonnes - 1))) / nombreColonnes
+        );
 
         for (int indexCapsule = 0; indexCapsule < capsulesVisibles.Length; indexCapsule++)
         {
@@ -908,11 +953,9 @@ public partial class MainWindow
             bool derniereColonne = colonne == nombreColonnes - 1;
             bool derniereRangee = rangee == nombreRangees - 1;
 
-            SystemControls.Grid.SetColumn(capsule, colonne);
-            SystemControls.Grid.SetRow(capsule, rangee);
-            capsule.Width = double.NaN;
+            capsule.Width = largeurCapsule;
             capsule.MinWidth = 0;
-            capsule.MaxWidth = double.PositiveInfinity;
+            capsule.MaxWidth = largeurCapsule;
             capsule.HorizontalAlignment = HorizontalAlignment.Stretch;
             capsule.Margin = new Thickness(
                 0,
