@@ -747,7 +747,7 @@ main {
   }
 }
 
-.panneau-liens-preview {
+.liste-liens-preview {
   position: fixed;
   left: 12px;
   bottom: 12px;
@@ -761,22 +761,6 @@ main {
   border-radius: var(--toolbar-rayon);
   overflow: auto;
   background: rgba(12, 12, 14, 0.94);
-}
-
-.panneau-liens-infos-preview {
-  right: 12px;
-  left: auto;
-}
-
-.panneau-liens-preview-titre {
-  color: var(--texte);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.liste-liens-preview {
-  display: grid;
-  gap: 8px;
 }
 
 .donnees-extraites-preview {
@@ -953,8 +937,7 @@ body.section-isolee main > .source-isolee-conteneur > .succes-courant-infos {
 }
 
 body.section-isolee .toolbar-edition,
-body.section-isolee .panneau-liens-preview,
-body.section-isolee .panneau-liens-infos-preview {
+body.section-isolee .liste-liens-preview {
   display: none !important;
 }
 

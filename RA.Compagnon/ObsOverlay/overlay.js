@@ -816,7 +816,7 @@ function appliquerFiltreSectionSiNecessaire() {
 
   const main = obtenirMain();
   const toolbar = document.getElementById("toolbar-edition");
-  const panneauPreview = document.getElementById("panneau-liens-preview");
+  const panneauPreview = document.getElementById("liste-liens-preview");
   const definitions = obtenirDefinitionsSectionsDisponibles();
   const definitionCible = definitions.find((definition) => definition.cle === SECTION_DEMANDEE);
 
@@ -900,12 +900,9 @@ function appliquerFiltreSectionSiNecessaire() {
 }
 
 function initialiserPanneauLiensPreview() {
-  const panneau = document.getElementById("panneau-liens-preview");
   const liste = document.getElementById("liste-liens-preview");
-  const panneauInfos = document.getElementById("panneau-liens-infos-preview");
-  const listeInfos = document.getElementById("liste-liens-infos-preview");
 
-  if (!panneau || !liste || !panneauInfos || !listeInfos || !EST_MODE_PREVIEW || SECTION_DEMANDEE) {
+  if (!liste || !EST_MODE_PREVIEW || SECTION_DEMANDEE) {
     return;
   }
 
@@ -916,20 +913,9 @@ function initialiserPanneauLiensPreview() {
       cible: liste,
       definitions: definitions.filter((definition) => estBlocEditable(definition.id)),
     },
-    {
-      titre: "Game-info",
-      cible: listeInfos,
-      definitions: definitions.filter((definition) => definition.cle.startsWith("game-info-")),
-    },
-    {
-      titre: "User-info",
-      cible: listeInfos,
-      definitions: definitions.filter((definition) => definition.cle.startsWith("user-info-")),
-    },
   ];
 
   liste.innerHTML = "";
-  listeInfos.innerHTML = "";
   referencesLiensPreview.clear();
 
   for (const groupe of groupesLiens) {
@@ -1053,8 +1039,7 @@ function initialiserPanneauLiensPreview() {
     groupe.cible.appendChild(zone);
   }
 
-  panneau.hidden = liste.children.length === 0;
-  panneauInfos.hidden = listeInfos.children.length === 0;
+  liste.hidden = liste.children.length === 0;
   mettreAJourDimensionsLiensPreview();
 }
 
